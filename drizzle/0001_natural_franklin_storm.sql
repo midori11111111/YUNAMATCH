@@ -1,0 +1,2 @@
+CREATE UNIQUE INDEX `idx_applications_recruit_applicant` ON `applications` (`recruit_id`,`applicant_id`);--> statement-breakpoint
+CREATE INDEX `idx_recruits_status_created` ON `recruits` (`status`,`created_at`);
