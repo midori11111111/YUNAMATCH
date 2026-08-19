@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "https://unite-mate-jp.tomoki-ashizawa.chatgpt.site/" },
+    { "source": "/:path*", "destination": "https://unite-mate-jp.tomoki-ashizawa.chatgpt.site/:path*" }
+  ]
+}
