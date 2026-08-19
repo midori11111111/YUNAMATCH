@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "UNITE MATE｜相性で探すユナイト仲間",
+  title: "ユナマッチ｜相性で探すユナイト仲間",
   description: "使用ポケモン・試合数・勝率から、相性ぴったりのデュオ仲間を探せるファンメイドサービス。",
   icons: {
     icon: "/favicon.svg",
