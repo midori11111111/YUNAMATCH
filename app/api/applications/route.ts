@@ -13,5 +13,5 @@ export async function POST(request:Request){
  const exists=await db.select().from(applications).where(and(eq(applications.recruitId,p.recruitId),eq(applications.applicantId,user.userId))).limit(1);
  if(exists.length)return Response.json({error:"すでに申請済みです"},{status:409});
  await db.insert(applications).values({recruitId:p.recruitId,applicantId:user.userId,applicantName:p.applicantName.slice(0,24),pokemon:p.pokemon,message:p.message.slice(0,180),createdAt:new Date()});
- return Response.json({ok:true});
+ return Response.json({ok:true,contact:recruit.contact});
 }
