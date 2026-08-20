@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { headers } from "next/headers";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,14 +13,24 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "ユナマッチ｜相性で探すユナイト仲間",
-  description: "使用ポケモン・試合数・勝率から、相性ぴったりのデュオ仲間を探せるファンメイドサービス。",
-  icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "yunamatch.vercel.app";
+  const protocol = requestHeaders.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  const base = new URL(`${protocol}://${host}`);
+  const title = "ユナマッチ｜相性でつながるユナイト仲間";
+  const description = "使用ポケモンと実力からメイトを探し、プレイ申請・承認で一緒にユナイトできるファンメイドサービス。";
+  const socialImage = new URL("/og.png", base).toString();
+
+  return {
+    metadataBase: base,
+    title,
+    description,
+    icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
+    openGraph: { title, description, type: "website", images: [{ url: socialImage, width: 1536, height: 1024 }] },
+    twitter: { card: "summary_large_image", title, description, images: [socialImage] },
+  };
+}
 
 export default function RootLayout({
   children,
