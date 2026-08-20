@@ -5,7 +5,10 @@ import Line from "next-auth/providers/line";
 import Twitter from "next-auth/providers/twitter";
 
 const xProvider = Twitter({
-  authorization: { params: { scope: "tweet.read users.read" } },
+  authorization: {
+    url: "https://x.com/i/oauth2/authorize",
+    params: { scope: "tweet.read users.read" },
+  },
 });
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
