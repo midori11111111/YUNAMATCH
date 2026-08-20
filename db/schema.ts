@@ -22,6 +22,7 @@ export const applications = sqliteTable("applications", {
   recruitId: integer("recruit_id").notNull().references(() => recruits.id),
   applicantId: text("applicant_id").notNull(),
   applicantName: text("applicant_name").notNull(),
+  applicantContact: text("applicant_contact").notNull().default(""),
   pokemon: text("pokemon").notNull(),
   message: text("message").notNull(),
   status: text("status").notNull().default("pending"),

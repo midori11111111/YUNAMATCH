@@ -15,6 +15,13 @@
       "when": 1787164076019,
       "tag": "0001_natural_franklin_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1787217058370,
+      "tag": "0002_futuristic_lake",
+      "breakpoints": true
     }
   ]
 }
