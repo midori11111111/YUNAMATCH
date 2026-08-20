@@ -1,36 +1,43 @@
 import type { NextConfig } from "next";
 
+const upstream =
+  process.env.YUNAMATCH_UPSTREAM_URL ||
+  "https://unite-mate-jp.tomoki-ashizawa.chatgpt.site";
+
 const nextConfig: NextConfig = {
   turbopack: { root: process.cwd() },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "Cache-Control", value: "no-store, max-age=0" },
+          { key: "CDN-Cache-Control", value: "no-store" },
+          { key: "Vercel-CDN-Cache-Control", value: "no-store" },
+        ],
+      },
+    ];
+  },
   async rewrites() {
     return {
       beforeFiles: [
         {
           source: "/_next/static/css/:path*",
-          destination:
-            "https://unite-mate-jp.tomoki-ashizawa.chatgpt.site/_next/static/css/:path*",
+          destination: `${upstream}/_next/static/css/:path*`,
         },
         {
           source: "/_next/static/_vinext_fonts/:path*",
-          destination:
-            "https://unite-mate-jp.tomoki-ashizawa.chatgpt.site/_next/static/_vinext_fonts/:path*",
+          destination: `${upstream}/_next/static/_vinext_fonts/:path*`,
         },
-        ...[
-          "index",
-          "framework",
-          "layout-segment-context",
-          "match-app",
-          "rolldown-runtime",
-        ].map((name) => ({
-          source: `/_next/static/chunks/${name}-:hash.js`,
-          destination: `https://unite-mate-jp.tomoki-ashizawa.chatgpt.site/_next/static/chunks/${name}-:hash.js`,
-        })),
+        {
+          source: "/_next/static/chunks/:path*",
+          destination: `${upstream}/_next/static/chunks/:path*`,
+        },
       ],
       fallback: [
         {
           source: "/:path*",
-          destination:
-            "https://unite-mate-jp.tomoki-ashizawa.chatgpt.site/:path*",
+          destination: `${upstream}/:path*`,
         },
       ],
     };
