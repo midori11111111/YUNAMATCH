@@ -27,10 +27,12 @@ test("renders the login-only entrance for anonymous visitors", async () => {
 });
 
 test("ships the matching app and its social card", async () => {
-  const [page, app, css] = await Promise.all([
+  const [page, app, css, authGateway, loginPage] = await Promise.all([
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/match-app.tsx", root), "utf8"),
     readFile(new URL("app/globals.css", root), "utf8"),
+    readFile(new URL("vercel-proxy/auth.ts", root), "utf8"),
+    readFile(new URL("vercel-proxy/app/login/page.tsx", root), "utf8"),
     access(new URL("public/og.png", root)),
   ]);
   assert.match(page, /getChatGPTUser/);
@@ -38,4 +40,6 @@ test("ships the matching app and its social card", async () => {
   assert.match(app, /プレイ申請を送る/);
   assert.match(app, /マッチ成立/);
   assert.match(css, /bottomNav/);
+  assert.match(authGateway, /providers: \[Google, Line\]/);
+  assert.match(loginPage, /LINEでログイン/);
 });

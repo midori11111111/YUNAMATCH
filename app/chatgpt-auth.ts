@@ -31,11 +31,16 @@ export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
           secret: authSecret,
           secureCookie,
         });
-        const email = typeof token?.email === "string" ? token.email : null;
-        if (token?.sub && email) {
+        if (token?.sub) {
+          const provider =
+            typeof token.provider === "string" ? token.provider : "oauth";
+          const email =
+            typeof token.email === "string"
+              ? token.email
+              : `${provider}:${token.sub}`;
           const fullName = typeof token.name === "string" ? token.name : null;
           return {
-            userId: `oauth:${token.sub}`,
+            userId: `oauth:${provider}:${token.sub}`,
             displayName: fullName ?? email,
             email,
             fullName,
