@@ -3,7 +3,7 @@ import { getDb } from "../../../db";
 import { blocks, connections, recruits, reports } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
 
-const allowedReasons = new Set(["出会い目的", "迷惑行為", "暴言・嫌がらせ", "なりすまし", "不正なプロフィール", "その他"]);
+const allowedReasons = new Set(["出会い目的", "迷惑行為", "暴言・嫌がらせ", "なりすまし", "不正なプロフィール", "不適切なプロフィール画像", "その他"]);
 
 async function resolveTarget(userId: string, recruitId?: number, connectionId?: number) {
   const db = getDb();

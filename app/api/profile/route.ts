@@ -36,7 +36,7 @@ function publicProfile(row:typeof profiles.$inferSelect){
   let playTime:string[]=[];
   try{const parsed=JSON.parse(row.mainPokemon);if(Array.isArray(parsed))mainPokemon=parsed.filter(value=>typeof value==="string").slice(0,5)}catch{/* 不正な旧データは空として扱う */}
   try{const parsed=JSON.parse(row.playTime);if(Array.isArray(parsed))playTime=parsed.filter(value=>typeof value==="string"&&playTimes.has(value)).slice(0,7)}catch{if(playTimes.has(row.playTime))playTime=[row.playTime]}
-  return {trainerName:row.trainerName,mainPokemon,highestRate:row.highestRate,playTime,gender:row.gender,contact:row.contact};
+  return {trainerName:row.trainerName,mainPokemon,highestRate:row.highestRate,playTime,gender:row.gender,contact:row.contact,avatarUrl:row.avatarUrl,ageConfirmed:row.ageConfirmed,termsAccepted:Boolean(row.termsAcceptedAt)};
 }
 
 export async function GET(){
@@ -44,6 +44,7 @@ export async function GET(){
   if(!user)return Response.json({error:"ログインが必要です",signIn:"/login"},{status:401});
   const db=getDb();
   const [row]=await db.select().from(profiles).where(eq(profiles.userId,user.userId)).limit(1);
+  if(row?.suspendedAt)return Response.json({error:"このアカウントは現在利用できません",suspended:true},{status:403});
   return Response.json({profile:row?publicProfile(row):null,suggested:{trainerName:user.displayName.includes("@")?user.displayName.split("@")[0]:user.displayName,contact:contactFor(user.provider,user.contactId)}});
 }
 
@@ -57,11 +58,15 @@ export async function PUT(request:Request){
   const playTime=Array.isArray(body.playTime)?[...new Set(body.playTime.filter((value):value is string=>typeof value==="string"&&playTimes.has(value)))].slice(0,7):typeof body.playTime==="string"&&playTimes.has(body.playTime)?[body.playTime]:[];
   const gender=typeof body.gender==="string"?body.gender:"";
   const contact=typeof body.contact==="string"?body.contact.trim().replace(/\s+/g," "):"";
-  if(!trainerName||trainerName.length>24||mainPokemon.length===0||!rates.has(highestRate)||playTime.length===0||!genders.has(gender)||!contact||contact.length>120)return Response.json({error:"入力内容を確認してください"},{status:400});
+  const avatarUrl=typeof body.avatarUrl==="string"?body.avatarUrl:"";
+  const validAvatar=!avatarUrl||/^\/api\/media\/avatar\/[a-f0-9]{64}\?v=\d+$/.test(avatarUrl)||(avatarUrl.length<=500_000&&/^data:image\/(?:jpeg|png|webp);base64,[a-zA-Z0-9+/=]+$/.test(avatarUrl));
+  const ageConfirmed=body.ageConfirmed===true;
+  const termsAccepted=body.termsAccepted===true;
+  if(!trainerName||trainerName.length>24||mainPokemon.length===0||!rates.has(highestRate)||playTime.length===0||!genders.has(gender)||!contact||contact.length>120||!validAvatar||!ageConfirmed||!termsAccepted)return Response.json({error:"入力内容と利用条件への同意を確認してください"},{status:400});
   const now=new Date();
-  const values={userId:user.userId,trainerName,mainPokemon:JSON.stringify(mainPokemon),highestRate,playTime:JSON.stringify(playTime),gender,contact,authProvider:user.provider,createdAt:now,updatedAt:now};
+  const values={userId:user.userId,trainerName,mainPokemon:JSON.stringify(mainPokemon),highestRate,playTime:JSON.stringify(playTime),gender,contact,avatarUrl,ageConfirmed,termsAcceptedAt:now,authProvider:user.provider,createdAt:now,updatedAt:now};
   const db=getDb();
-  await db.insert(profiles).values(values).onConflictDoUpdate({target:profiles.userId,set:{trainerName:values.trainerName,mainPokemon:values.mainPokemon,highestRate:values.highestRate,playTime:values.playTime,gender:values.gender,contact:values.contact,authProvider:values.authProvider,updatedAt:now}});
+  await db.insert(profiles).values(values).onConflictDoUpdate({target:profiles.userId,set:{trainerName:values.trainerName,mainPokemon:values.mainPokemon,highestRate:values.highestRate,playTime:values.playTime,gender:values.gender,contact:values.contact,avatarUrl:values.avatarUrl,ageConfirmed:true,termsAcceptedAt:now,authProvider:values.authProvider,updatedAt:now}});
   const [row]=await db.select().from(profiles).where(eq(profiles.userId,user.userId)).limit(1);
   return Response.json({profile:publicProfile(row)});
 }

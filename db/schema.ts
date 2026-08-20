@@ -8,6 +8,10 @@ export const profiles = sqliteTable("profiles", {
   playTime: text("play_time").notNull(),
   gender: text("gender").notNull(),
   contact: text("contact").notNull(),
+  avatarUrl: text("avatar_url").notNull().default(""),
+  ageConfirmed: integer("age_confirmed", { mode: "boolean" }).notNull().default(false),
+  termsAcceptedAt: integer("terms_accepted_at", { mode: "timestamp_ms" }),
+  suspendedAt: integer("suspended_at", { mode: "timestamp_ms" }),
   authProvider: text("auth_provider").notNull(),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
@@ -41,8 +45,17 @@ export const recruits = sqliteTable("recruits", {
   note: text("note").notNull(),
   contact: text("contact").notNull(),
   status: text("status").notNull().default("open"),
+  startAt: integer("start_at", { mode: "timestamp_ms" }).notNull().default(0),
+  expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull().default(0),
+  partySize: integer("party_size").notNull().default(2),
+  desiredPokemon: text("desired_pokemon").notNull().default("すべて"),
+  desiredRole: text("desired_role").notNull().default("指定なし"),
+  acceptedCount: integer("accepted_count").notNull().default(0),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
-}, (table) => [index("idx_recruits_status_created").on(table.status, table.createdAt)]);
+}, (table) => [
+  index("idx_recruits_status_created").on(table.status, table.createdAt),
+  index("idx_recruits_status_expires").on(table.status, table.expiresAt),
+]);
 
 export const applications = sqliteTable("applications", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -70,6 +83,8 @@ export const connections = sqliteTable("connections", {
   userBContact: text("user_b_contact").notNull(),
   userAAgain: integer("user_a_again", { mode: "boolean" }).notNull().default(false),
   userBAgain: integer("user_b_again", { mode: "boolean" }).notNull().default(false),
+  userALastReadAt: integer("user_a_last_read_at", { mode: "timestamp_ms" }),
+  userBLastReadAt: integer("user_b_last_read_at", { mode: "timestamp_ms" }),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 }, (table) => [
   uniqueIndex("idx_connections_application").on(table.applicationId),
@@ -109,3 +124,52 @@ export const reports = sqliteTable("reports", {
   index("idx_reports_status_created").on(table.status, table.createdAt),
   index("idx_reports_reporter_created").on(table.reporterId, table.createdAt),
 ]);
+
+export const lobbies = sqliteTable("lobbies", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  recruitId: integer("recruit_id").notNull().references(() => recruits.id),
+  ownerId: text("owner_id").notNull(),
+  status: text("status").notNull().default("forming"),
+  scheduledAt: integer("scheduled_at", { mode: "timestamp_ms" }).notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  finishedAt: integer("finished_at", { mode: "timestamp_ms" }),
+}, (table) => [
+  uniqueIndex("idx_lobbies_recruit").on(table.recruitId),
+  index("idx_lobbies_owner_status").on(table.ownerId, table.status),
+]);
+
+export const lobbyMembers = sqliteTable("lobby_members", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  lobbyId: integer("lobby_id").notNull().references(() => lobbies.id),
+  userId: text("user_id").notNull(),
+  applicationId: integer("application_id").references(() => applications.id),
+  connectionId: integer("connection_id").references(() => connections.id),
+  trainerName: text("trainer_name").notNull(),
+  pokemon: text("pokemon").notNull(),
+  contact: text("contact").notNull().default(""),
+  ready: integer("ready", { mode: "boolean" }).notNull().default(false),
+  status: text("status").notNull().default("active"),
+  joinedAt: integer("joined_at", { mode: "timestamp_ms" }).notNull(),
+}, (table) => [
+  uniqueIndex("idx_lobby_members_lobby_user").on(table.lobbyId, table.userId),
+  index("idx_lobby_members_user_status").on(table.userId, table.status),
+]);
+
+export const pushSubscriptions = sqliteTable("push_subscriptions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: text("user_id").notNull(),
+  endpoint: text("endpoint").notNull(),
+  subscription: text("subscription").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+}, (table) => [
+  uniqueIndex("idx_push_subscriptions_endpoint").on(table.endpoint),
+  index("idx_push_subscriptions_user").on(table.userId),
+]);
+
+export const presence = sqliteTable("presence", {
+  userId: text("user_id").primaryKey(),
+  connectionId: integer("connection_id"),
+  typing: integer("typing", { mode: "boolean" }).notNull().default(false),
+  lastSeenAt: integer("last_seen_at", { mode: "timestamp_ms" }).notNull(),
+});

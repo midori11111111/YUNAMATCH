@@ -27,6 +27,8 @@ export async function generateMetadata(): Promise<Metadata> {
     title,
     description,
     icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
+    manifest:"/manifest.webmanifest",
+    appleWebApp:{capable:true,statusBarStyle:"default",title:"ユナマッチ"},
     openGraph: { title, description, type: "website", images: [{ url: socialImage, width: 1536, height: 1024 }] },
     twitter: { card: "summary_large_image", title, description, images: [socialImage] },
   };
