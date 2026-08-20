@@ -226,7 +226,6 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
             <div className="cardDetails">
               <div className="identityLine"><div className="mateAvatar">{current.trainerName.slice(0,1).toUpperCase()}</div><div><h1>{current.trainerName}</h1><p className="rankText">{current.rank} ・ {current.gender}</p></div><span>受付中</span></div>
               <div className="pairingLine"><div><small>あなた</small><span>{primaryPokemon}</span></div><b>×</b><div><small>相手</small><span>{current.pokemon}</span></div></div>
-              <p className="synergyCopy"><strong>この組み合わせが強い理由</strong>{synergy?.copy}</p>
               <div className="statGrid"><div><strong>{current.matches.toLocaleString()}</strong><span>試合数</span></div><div><strong>{current.winRate}<small>%</small></strong><span>勝率</span></div><div><strong>{current.role.replace("型","")}</strong><span>得意ロール</span></div></div>
               <div className="timeChip"><span>◷</span><div><small>遊べる時間帯</small><strong>{current.playTime}</strong></div></div><p className="profileNote"><strong>ひとこと</strong>“{current.note}”</p>
             </div>

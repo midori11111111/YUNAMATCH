@@ -110,8 +110,6 @@ button { cursor: pointer; }
 .pairingLine small { color: #9187a0; font-size: 7px; font-weight: 800; }
 .pairingLine span { font-size: 11px; font-weight: 950; }
 .pairingLine b { color: var(--pink); font-size: 15px; }
-.synergyCopy { min-height: 36px; margin: 0 1px 11px; color: #554f5d; font-size: 10px; line-height: 1.5; }
-.synergyCopy strong { display: block; margin-bottom: 3px; color: var(--purple); font-size: 8px; }
 .statGrid { display: grid; grid-template-columns: 1fr 1fr 1.25fr; border: 1px solid var(--line); border-radius: 13px; }
 .statGrid div { min-width: 0; display: grid; gap: 2px; padding: 9px 10px; }
 .statGrid div + div { border-left: 1px solid var(--line); }
@@ -384,7 +382,6 @@ button { cursor: pointer; }
   .identityLine { grid-template-columns: 35px 1fr auto; gap: 8px; }
   .identityLine h1 { font-size: 19px; }
   .pairingLine { margin: 8px 0 7px; padding: 7px; }
-  .synergyCopy { min-height: 0; margin-bottom: 7px; line-height: 1.4; }
   .statGrid div { padding: 8px 9px; }
   .timeChip { margin-top: 8px; }
   .profileNote { max-height: 29px; overflow: hidden; margin-top: 7px; }
