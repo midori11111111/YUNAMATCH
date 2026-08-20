@@ -59,6 +59,8 @@ test("ships the matching app, onboarding, lobby, safety, and notifications", asy
   assert.match(app, /あなたのことを/);
   assert.match(app, /1〜5体・複数選択できます/);
   assert.match(app, /登録してメイトを探す/);
+  assert.match(app, /未入力の項目/);
+  assert.match(app, /onboardingMissing/);
   assert.match(app, /募集中のメイト/);
   assert.match(app, /この人にプレイ申請/);
   assert.match(app, /集合ロビー/);
