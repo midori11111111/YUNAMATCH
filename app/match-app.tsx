@@ -63,6 +63,22 @@ const roleClass: Record<string, string> = {
   "サポート型": "support",
 };
 
+const strongPairs: Record<string, { score: number; copy: string }> = {
+  "ゲッコウガ|ハピナス": { score: 96, copy: "中央キャリーを回復と強化で支える王道コンビ" },
+  "カビゴン|ピカチュウ": { score: 93, copy: "足止めから高火力を重ねやすい前後衛コンビ" },
+  "キュワワー|ゾロアーク": { score: 94, copy: "高機動アタッカーの継戦力を大きく伸ばせます" },
+  "ブラッキー|ミュウツーY": { score: 92, copy: "前線を作りながら後衛の火力を通しやすい構成" },
+};
+
+function getSynergy(ownPokemon: string, matePokemon: string, role: string) {
+  const key = [ownPokemon, matePokemon].sort((a, b) => a.localeCompare(b, "ja")).join("|");
+  const known = strongPairs[key];
+  if (known) return known;
+  if (role === "サポート型") return { score: 91, copy: "サポートと連携して主力の動きを通しやすい組み合わせ" };
+  if (role === "ディフェンス型") return { score: 88, copy: "前線を任せて安全にダメージを出しやすい組み合わせ" };
+  return { score: 84, copy: "得意な時間帯を合わせると力を発揮しやすい組み合わせ" };
+}
+
 export default function MatchApp({
   displayName,
   preview = false,
@@ -160,6 +176,7 @@ export default function MatchApp({
   }, [recruits, preview, wanted, minRate, minMatches, womenOnly]);
 
   const current = cards.length ? cards[index % cards.length] : null;
+  const synergy = current ? getSynergy(profile.pokemon, current.pokemon, current.role) : null;
   const pendingCount = incoming.filter((notice) => notice.status === "pending").length;
 
   const moveNext = (direction: "left" | "right") => {
@@ -256,13 +273,17 @@ export default function MatchApp({
       <section className="phoneShell">
         <header className="appHeader">
           <button className="miniAvatar" onClick={() => switchTab("profile")} aria-label="マイページを開く">{profile.trainerName.slice(0, 1).toUpperCase()}</button>
-          <div className="appBrand"><span>Y</span>YUNAMATCH</div>
+          <div className="appBrand"><span>Y</span><div><strong>YUNAMATCH</strong><small>PLAY TOGETHER</small></div></div>
           <button className="headerIcon" onClick={() => tab === "discover" ? setFilterOpen(true) : switchTab("matches")} aria-label={tab === "discover" ? "絞り込み" : "通知"}>{tab === "discover" ? "☷" : "♢"}{pendingCount > 0 && <i>{pendingCount}</i>}</button>
         </header>
 
         <div className="appViewport">
           {tab === "discover" && (
             <section className="discoverView">
+              <div className="discoverHero">
+                <div><small>FIND YOUR DUO</small><h1>今夜の相棒を、<br /><em>相性</em>から。</h1></div>
+                <button onClick={() => setFilterOpen(true)} aria-label="検索条件を変更"><span>☷</span><small>{wanted === "すべて" ? "条件を設定" : wanted}</small></button>
+              </div>
               <div className="feedTabs">
                 <button className={feed === "recommend" ? "active" : ""} onClick={() => setFeed("recommend")}>おすすめ</button>
                 <button className={feed === "incoming" ? "active" : ""} onClick={() => { setFeed("incoming"); loadNotices(); }}>相手から{pendingCount > 0 && <b>{pendingCount}</b>}</button>
@@ -270,7 +291,7 @@ export default function MatchApp({
 
               {feed === "recommend" ? (
                 <>
-                  <div className="recommendMeta"><span>あなたに合いそうなメイト</span><button onClick={() => setFilterOpen(true)}>{wanted === "すべて" ? "条件なし" : wanted} ▾</button></div>
+                  <div className="recommendMeta"><span>あなたへのおすすめ</span><div><b>{cards.length}</b>人が募集中</div></div>
                   {loading ? (
                     <div className="stateCard"><div className="loadingBall" /><h2>メイトを探しています</h2></div>
                   ) : current ? (
@@ -281,25 +302,28 @@ export default function MatchApp({
                     >
                       <div className={`cardArtwork ${roleClass[current.role] || "support"}`}>
                         <div className="artDots" />
-                        <span>{current.pokemon.slice(0, 1)}</span>
-                        <small>{current.pokemon}</small>
-                        <div className="roleBadge">{current.role}</div>
+                        <div className="artWatermark">{current.pokemon}</div>
+                        <div className="cardTopline"><span>● NOW RECRUITING</span><strong>相性 {synergy?.score}<small>%</small></strong></div>
+                        <div className="pokemonMonogram"><span>{current.pokemon.slice(0, 1)}</span></div>
+                        <div className="pokemonTitle"><small>{current.role}</small><strong>{current.pokemon}</strong></div>
                       </div>
                       <div className="cardDetails">
-                        <div className="identityLine"><h1>{current.trainerName}</h1><span>● 募集中</span></div>
-                        <p className="rankText">{current.rank} ・ {current.gender}</p>
-                        <p className="profileNote">“{current.note}”</p>
+                        <div className="identityLine"><div className="mateAvatar">{current.trainerName.slice(0, 1).toUpperCase()}</div><div><h1>{current.trainerName}</h1><p className="rankText">{current.rank} ・ {current.gender}</p></div><span>ONLINE</span></div>
+                        <div className="pairingLine"><span>{profile.pokemon}</span><b>×</b><span>{current.pokemon}</span></div>
+                        <p className="synergyCopy"><strong>おすすめ理由</strong>{synergy?.copy}</p>
                         <div className="statGrid">
                           <div><strong>{current.matches.toLocaleString()}</strong><span>試合数</span></div>
                           <div><strong>{current.winRate}<small>%</small></strong><span>勝率</span></div>
+                          <div><strong>{current.role.replace("型", "")}</strong><span>得意ロール</span></div>
                         </div>
-                        <div className="timeChip">◷ {current.playTime}</div>
+                        <div className="timeChip"><span>◷</span><div><small>PLAY TIME</small><strong>{current.playTime}</strong></div></div>
+                        <p className="profileNote">“{current.note}”</p>
                       </div>
                     </article>
                   ) : (
                     <div className="stateCard emptyState"><div className="emptyOrb">Y</div><h2>新しいメイトを待っています</h2><p>最初の募集を出すと、ほかのトレーナーからプレイ申請が届きます。</p><button onClick={() => setCompose(true)}>募集を作る</button></div>
                   )}
-                  {current && <div className="choiceArea"><button className="passButton" onClick={() => moveNext("left")} aria-label="次のメイトを見る">×<small>次へ</small></button><p>左右にスワイプ</p><button className="likeButton" onClick={() => moveNext("right")} aria-label="この人とプレイしたい">⚡<small>組みたい</small></button></div>}
+                  {current && <div className="choiceArea"><button className="passButton" onClick={() => moveNext("left")} aria-label="次のメイトを見る"><span>×</span><small>次を見る</small></button><p><span>←</span> スワイプでも選べます <span>→</span></p><button className="likeButton" onClick={() => moveNext("right")} aria-label="この人とプレイしたい"><span>⚡</span><small>一緒に遊ぶ</small></button></div>}
                 </>
               ) : (
                 <IncomingList incoming={incoming} decide={decide} />
