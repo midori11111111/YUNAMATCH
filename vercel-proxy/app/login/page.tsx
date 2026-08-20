@@ -32,6 +32,17 @@ export default function LoginPage() {
               LINEでログイン
             </button>
           </form>
+          <form
+            action={async () => {
+              "use server";
+              await signIn("discord", { redirectTo: "/" });
+            }}
+          >
+            <button className="discordButton" type="submit">
+              <span className="discordMark" aria-hidden="true">D</span>
+              Discordでログイン
+            </button>
+          </form>
         </div>
         <p className="loginNote">ログイン後すぐにメイト探しを始められます</p>
       </section>

@@ -1,9 +1,10 @@
 import NextAuth from "next-auth";
+import Discord from "next-auth/providers/discord";
 import Google from "next-auth/providers/google";
 import Line from "next-auth/providers/line";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  providers: [Google, Line],
+  providers: [Google, Line, Discord],
   session: { strategy: "jwt" },
   trustHost: true,
   callbacks: {

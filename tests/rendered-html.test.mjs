@@ -40,6 +40,7 @@ test("ships the matching app and its social card", async () => {
   assert.match(app, /プレイ申請を送る/);
   assert.match(app, /マッチ成立/);
   assert.match(css, /bottomNav/);
-  assert.match(authGateway, /providers: \[Google, Line\]/);
+  assert.match(authGateway, /providers: \[Google, Line, Discord\]/);
   assert.match(loginPage, /LINEでログイン/);
+  assert.match(loginPage, /Discordでログイン/);
 });

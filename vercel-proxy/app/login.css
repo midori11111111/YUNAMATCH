@@ -52,7 +52,8 @@ h1 span { color: #ff6c91; }
 .loginActions { display: grid; gap: 12px; }
 .loginActions form { margin: 0; }
 .googleButton,
-.lineButton {
+.lineButton,
+.discordButton {
   width: 100%;
   min-height: 56px;
   display: flex;
@@ -68,15 +69,28 @@ h1 span { color: #ff6c91; }
 }
 .googleButton { background: #fff; color: #202124; }
 .lineButton { background: #06c755; color: #fff; }
+.discordButton { background: #5865f2; color: #fff; }
 .googleButton:hover,
-.lineButton:hover { transform: translateY(-1px); }
+.lineButton:hover,
+.discordButton:hover { transform: translateY(-1px); }
 .googleButton:focus-visible,
-.lineButton:focus-visible { outline: 3px solid #ff7a9b; outline-offset: 3px; }
+.lineButton:focus-visible,
+.discordButton:focus-visible { outline: 3px solid #ff7a9b; outline-offset: 3px; }
 .googleMark { font-size: 20px; font-weight: 900; color: #4285f4; }
 .lineMark {
   min-width: 36px;
   font-size: 10px;
   font-weight: 900;
   letter-spacing: -.03em;
+}
+.discordMark {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 2px solid currentColor;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 900;
 }
 .loginNote { margin: 18px 0 0; color: #777d97; font-size: 12px; }
