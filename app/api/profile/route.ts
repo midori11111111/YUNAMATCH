@@ -50,7 +50,7 @@ export async function PUT(request:Request){
   if(!user)return Response.json({error:"ログインが必要です",signIn:"/login"},{status:401});
   const body=await request.json() as Record<string,unknown>;
   const trainerName=typeof body.trainerName==="string"?body.trainerName.trim():"";
-  const mainPokemon=Array.isArray(body.mainPokemon)?[...new Set(body.mainPokemon.filter((value):value is string=>typeof value==="string"&&value.trim()).map(value=>value.trim()))].slice(0,5):[];
+  const mainPokemon=Array.isArray(body.mainPokemon)?[...new Set(body.mainPokemon.filter((value):value is string=>typeof value==="string"&&Boolean(value.trim())).map(value=>value.trim()))].slice(0,5):[];
   const highestRate=typeof body.highestRate==="string"?body.highestRate:"";
   const playTime=typeof body.playTime==="string"?body.playTime:"";
   const gender=typeof body.gender==="string"?body.gender:"";

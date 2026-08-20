@@ -263,12 +263,12 @@ button { cursor: pointer; }
 .onboardingSubmit { width: 100%; border: 0; border-radius: 14px; padding: 15px; color: #fff; background: linear-gradient(135deg, var(--purple), #8d75f1); font-size: 10px; font-weight: 900; box-shadow: 0 10px 24px #7257e835; }
 .onboardingSubmit:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
 
-.bottomNav { height: 72px; position: absolute; z-index: 5; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); background: #fffffff7; box-shadow: 0 -8px 26px #3c315c0d; backdrop-filter: blur(15px); }
+.bottomNav { height: 72px; position: absolute; z-index: 5; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(5, 1fr); border-top: 1px solid var(--line); background: #fffffff7; box-shadow: 0 -8px 26px #3c315c0d; backdrop-filter: blur(15px); }
 .bottomNav button { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 0; background: transparent; color: #a49daa; font-size: 7px; font-weight: 850; }
 .bottomNav button > span { width: 32px; height: 27px; display: grid; place-items: center; border-radius: 10px; font-size: 18px; line-height: 1; }
 .bottomNav button.active { color: var(--purple); }
 .bottomNav button.active > span { background: #eee9ff; }
-.bottomNav i { width: 15px; height: 15px; top: 7px; right: 22px; }
+.bottomNav i { width: 15px; height: 15px; top: 7px; right: 15px; }
 
 .chatView { height: 100%; display: flex; flex-direction: column; padding-bottom: 0; }
 .chatList { display: grid; gap: 10px; }
@@ -285,10 +285,11 @@ button { cursor: pointer; }
 .chatHeader h1 { margin: 0; font-size: 15px; }
 .chatHeader p { margin: 3px 0 0; color: #958e9e; font-size: 7px; }
 .chatHeader .chatSafety { font-size: 9px; letter-spacing: 1px; }
-.reconnectBar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px 0 9px; }
+.reconnectBar { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; padding: 12px 0 9px; }
 .reconnectBar button { border: 1px solid #e8e3ed; border-radius: 12px; padding: 10px 8px; color: #81798a; background: #fff; font-size: 8px; font-weight: 900; }
 .reconnectBar button.active { color: var(--pink); border-color: #ffd5e5; background: #fff0f6; }
 .reconnectBar .rematchButton { color: #fff; border-color: transparent; background: linear-gradient(135deg, var(--purple), #8d75f1); }
+.reconnectBar .vcJoinButton { color: #fff; border-color: transparent; background: #5865f2; }
 .heartNotice { margin-bottom: 8px; padding: 9px 11px; border-radius: 11px; color: #c93671; background: #fff0f6; font-size: 7px; font-weight: 850; text-align: center; }
 .messageThread { min-height: 0; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 9px 2px 14px; }
 .messageBubble { max-width: 82%; align-self: flex-start; }
@@ -305,6 +306,36 @@ button { cursor: pointer; }
 .messageComposer input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px #7257e813; }
 .messageComposer button { width: 42px; height: 42px; border: 0; border-radius: 14px; color: #fff; background: var(--purple); font-size: 15px; }
 .messageComposer button:disabled { opacity: .35; }
+
+.communityView { display: grid; gap: 14px; padding-bottom: 30px; }
+.discordHero { position: relative; overflow: hidden; padding: 25px 22px 22px; border-radius: 25px; color: #fff; background: linear-gradient(145deg, #5865f2 0%, #7058d8 62%, #8e64d5 100%); box-shadow: 0 16px 36px #5865f233; }
+.discordHero:after { content: ""; width: 170px; height: 170px; position: absolute; right: -72px; top: -78px; border: 28px solid #ffffff12; border-radius: 50%; }
+.discordMark { width: 46px; height: 46px; display: grid; place-items: center; margin-bottom: 17px; border-radius: 15px; color: #5865f2; background: #fff; font-size: 20px; font-weight: 950; box-shadow: 0 9px 22px #342c8d55; }
+.discordHero > small, .vcSteps > small, .voiceRooms header small { font-size: 6px; font-weight: 950; letter-spacing: 1.4px; }
+.discordHero h1 { position: relative; z-index: 1; margin: 6px 0 8px; font-size: 27px; line-height: 1.16; letter-spacing: -1.2px; }
+.discordHero p { position: relative; z-index: 1; width: 82%; margin: 0 0 18px; color: #eeefff; font-size: 8px; line-height: 1.7; }
+.discordHero > button { width: 100%; position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; border: 0; border-radius: 14px; padding: 14px 16px; color: #4d58d5; background: #fff; font-size: 9px; font-weight: 950; box-shadow: 0 8px 22px #3a329a3d; }
+.discordHero > button span { font-size: 14px; }
+.vcSteps, .voiceRooms { padding: 18px; border: 1px solid var(--line); border-radius: 21px; background: #fff; box-shadow: 0 8px 24px #322b4a0b; }
+.vcSteps > small, .voiceRooms header small { color: #7c6ff1; }
+.vcSteps h2, .voiceRooms h2 { margin: 4px 0 14px; font-size: 16px; }
+.vcSteps > div { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.vcSteps article { min-width: 0; padding: 11px 8px; border-radius: 14px; background: #f7f5fb; text-align: center; }
+.vcSteps article b { width: 25px; height: 25px; display: grid; place-items: center; margin: 0 auto 8px; border-radius: 50%; color: #fff; background: var(--purple); font-size: 9px; }
+.vcSteps article span { display: block; font-size: 8px; font-weight: 950; }
+.vcSteps article p { margin: 5px 0 0; color: #928b99; font-size: 6px; line-height: 1.45; }
+.voiceRooms header { display: flex; align-items: flex-start; justify-content: space-between; }
+.voiceRooms header > span { margin-top: 3px; color: #42b883; font-size: 6px; font-weight: 950; }
+.voiceRooms > button { width: 100%; display: grid; grid-template-columns: 37px 1fr auto; align-items: center; gap: 10px; padding: 10px 0; text-align: left; border: 0; border-top: 1px solid #f0edf4; color: var(--ink); background: transparent; }
+.roomIcon { width: 37px; height: 37px; display: grid; place-items: center; border-radius: 12px; background: #eef0ff; font-size: 15px; }
+.voiceRooms button div { display: grid; gap: 3px; }
+.voiceRooms button strong { font-size: 9px; }
+.voiceRooms button small { color: #9991a0; font-size: 7px; }
+.voiceRooms button > b { color: #5865f2; font-size: 8px; }
+.discordSafety { display: flex; align-items: flex-start; gap: 11px; padding: 13px 15px; border-radius: 16px; color: #5f5870; background: #f3f0fb; }
+.discordSafety > span { font-size: 17px; }
+.discordSafety strong { display: block; font-size: 8px; }
+.discordSafety p { margin: 4px 0 0; color: #8c8495; font-size: 7px; line-height: 1.55; }
 
 .modalBackdrop { position: fixed; z-index: 30; inset: 0; display: grid; place-items: center; padding: 18px; background: #211b36b8; backdrop-filter: blur(7px); }
 .backdropDismiss { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: transparent; }
@@ -379,6 +410,7 @@ button { cursor: pointer; }
 .matchModal h2 { margin: 5px; font-size: 28px; }
 .matchModal > p { color: #827c8a; font-size: 10px; }
 .contactBox { margin: 20px 0; padding: 15px; border: 1px dashed #d7cee8; border-radius: 12px; background: #f8f5ff; color: var(--purple); font-size: 13px; font-weight: 900; }
+.discordMatchButton { width: 100%; margin-top: 9px; border: 0; border-radius: 14px; padding: 13px; color: #fff; background: #5865f2; font-size: 9px; font-weight: 900; }
 .textButton { margin-top: 10px; border: 0; background: none; color: #918b98; font-size: 9px; text-decoration: underline; }
 .toast { position: fixed; z-index: 50; left: 50%; bottom: 28px; transform: translateX(-50%); padding: 12px 16px; border-radius: 99px; color: #fff; background: #211d34; font-size: 9px; font-weight: 800; box-shadow: 0 10px 30px #0003; animation: toastIn .25s ease; }
 @keyframes toastIn { from { transform: translate(-50%, 10px); opacity: 0; } }
