@@ -3,7 +3,7 @@ import { getDb } from "../../../db";
 import { applications, recruits } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
 
-const signIn = "/signin-with-chatgpt?return_to=%2F";
+const signIn = "/login";
 
 export async function GET(){
  const user=await getChatGPTUser();

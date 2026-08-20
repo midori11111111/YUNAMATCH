@@ -21,7 +21,7 @@ test("renders the login-only entrance for anonymous visitors", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
   const html = await response.text();
   assert.match(html, /YUNA<span>MATCH/);
-  assert.match(html, /ChatGPTでログイン/);
+  assert.match(html, /Googleでログイン/);
   assert.match(html, /相性でつながるユナイト仲間/);
   assert.doesNotMatch(html, /Your site is taking shape|codex-preview/i);
 });

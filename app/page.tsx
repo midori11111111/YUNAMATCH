@@ -20,7 +20,7 @@ export default async function Home({
           <p className="loginEyebrow">POKÉMON UNITE MATCHING</p>
           <h1>相性でつながる、<br /><span>ユナマッチ。</span></h1>
           <p>使用ポケモンとプレイスタイルから、<br />今夜一緒に戦うメイトを見つけよう。</p>
-          <a className="loginButton" href={chatGPTSignInPath("/")}>ChatGPTでログイン</a>
+          <a className="loginButton" href={chatGPTSignInPath("/")}>Googleでログイン</a>
           <small>ログイン後すぐにメイト探しを始められます</small>
         </section>
       </main>

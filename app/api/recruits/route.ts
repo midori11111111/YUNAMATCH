@@ -10,7 +10,7 @@ export async function GET() {
 
 export async function POST(request:Request) {
   const user=await getChatGPTUser();
-  if(!user) return Response.json({error:"ログインが必要です",signIn:"/signin-with-chatgpt?return_to=%2F"},{status:401});
+  if(!user) return Response.json({error:"ログインが必要です",signIn:"/login"},{status:401});
   const p=await request.json() as Record<string,unknown>;
   const required=["trainerName","gender","pokemon","role","rank","playTime","note","contact"];
   if(required.some(k=>typeof p[k]!=="string"||!(p[k] as string).trim())) return Response.json({error:"すべての項目を入力してください"},{status:400});

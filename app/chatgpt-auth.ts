@@ -1,3 +1,4 @@
+import { getToken } from "@auth/core/jwt";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -14,12 +15,38 @@ const USER_FULL_NAME_HEADER = "oai-authenticated-user-full-name";
 const USER_FULL_NAME_ENCODING_HEADER =
   "oai-authenticated-user-full-name-encoding";
 const PERCENT_ENCODED_UTF8 = "percent-encoded-utf-8";
-const SIGN_IN_PATH = "/signin-with-chatgpt";
-const SIGN_OUT_PATH = "/signout-with-chatgpt";
-const CALLBACK_PATH = "/callback";
+const SIGN_IN_PATH = "/login";
+const SIGN_OUT_PATH = "/api/auth/signout";
+const CALLBACK_PATH = "/api/auth/callback";
 
 export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
   const requestHeaders = await headers();
+  const authSecret = process.env.AUTH_SECRET;
+
+  if (authSecret) {
+    for (const secureCookie of [true, false]) {
+      try {
+        const token = await getToken({
+          req: { headers: requestHeaders },
+          secret: authSecret,
+          secureCookie,
+        });
+        const email = typeof token?.email === "string" ? token.email : null;
+        if (token?.sub && email) {
+          const fullName = typeof token.name === "string" ? token.name : null;
+          return {
+            userId: `oauth:${token.sub}`,
+            displayName: fullName ?? email,
+            email,
+            fullName,
+          };
+        }
+      } catch {
+        // 別形式のCookieか、ログイン前のアクセス。次の認証方法を確認する。
+      }
+    }
+  }
+
   const userId = requestHeaders.get(USER_ID_HEADER);
   const email = requestHeaders.get(USER_EMAIL_HEADER);
   if (!userId || !email) return null;
@@ -49,13 +76,13 @@ export async function requireChatGPTUser(
 }
 
 export function chatGPTSignInPath(returnTo: string): string {
-  const safeReturnTo = safeRelativeReturnPath(returnTo);
-  return `${SIGN_IN_PATH}?return_to=${encodeURIComponent(safeReturnTo)}`;
+  safeRelativeReturnPath(returnTo);
+  return SIGN_IN_PATH;
 }
 
 export function chatGPTSignOutPath(returnTo = "/"): string {
   const safeReturnTo = safeRelativeReturnPath(returnTo);
-  return `${SIGN_OUT_PATH}?return_to=${encodeURIComponent(safeReturnTo)}`;
+  return `${SIGN_OUT_PATH}?callbackUrl=${encodeURIComponent(safeReturnTo)}`;
 }
 
 function safeRelativeReturnPath(value: string): string {

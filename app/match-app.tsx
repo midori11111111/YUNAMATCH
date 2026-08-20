@@ -354,7 +354,7 @@ export default function MatchApp({
                 <label>承認後に伝える連絡先<input value={profile.contact} placeholder="Discord ID / トレーナーID" onChange={(event) => setProfile({ ...profile, contact: event.target.value })} /></label>
                 <button className="primaryButton">プロフィールを保存</button>
               </form>
-              <a className="signOutLink" href="/signout-with-chatgpt?return_to=%2F">ログアウト</a>
+              <a className="signOutLink" href="/api/auth/signout?callbackUrl=%2F">ログアウト</a>
               <p className="fanNote">非公式ファンメイドサービスです。ゲーム運営会社とは関係ありません。</p>
             </section>
           )}
