@@ -8,13 +8,14 @@ export async function GET() {
   const user = await getChatGPTUser();
   const rows = await db.select({ id:recruits.id, ownerId:recruits.ownerId, trainerName:recruits.trainerName, gender:recruits.gender, pokemon:recruits.pokemon, role:recruits.role, matches:recruits.matches, winRate:recruits.winRate, rank:recruits.rank, playTime:recruits.playTime, note:recruits.note, createdAt:recruits.createdAt }).from(recruits).where(eq(recruits.status,"open")).orderBy(desc(recruits.createdAt)).limit(100);
   const visibleRecruit=(row:typeof rows[number])=>({id:row.id,trainerName:row.trainerName,gender:row.gender,pokemon:row.pokemon,role:row.role,matches:row.matches,winRate:row.winRate,rank:row.rank,playTime:row.playTime,note:row.note,createdAt:row.createdAt});
-  if (!user) return Response.json({ recruits: rows.map(visibleRecruit) });
+  if (!user) return Response.json({ recruits: rows.map(visibleRecruit), myRecruit:null });
   const [blockedByMe, blockedMe] = await Promise.all([
     db.select({ id: blocks.blockedId }).from(blocks).where(eq(blocks.blockerId, user.userId)),
     db.select({ id: blocks.blockerId }).from(blocks).where(eq(blocks.blockedId, user.userId)),
   ]);
   const hidden = new Set([...blockedByMe, ...blockedMe].map((row) => row.id));
-  return Response.json({ recruits: rows.filter((row) => row.ownerId !== user.userId && !hidden.has(row.ownerId)).map(visibleRecruit) });
+  const myRecruit=rows.find((row)=>row.ownerId===user.userId);
+  return Response.json({ recruits: rows.filter((row) => row.ownerId !== user.userId && !hidden.has(row.ownerId)).map(visibleRecruit), myRecruit:myRecruit?visibleRecruit(myRecruit):null });
 }
 
 export async function POST(request:Request) {

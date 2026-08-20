@@ -157,6 +157,14 @@ button { cursor: pointer; }
 .recruitSummary strong { font-size: 23px; line-height: 1; }
 .recruitSummary span { font-size: 9px; font-weight: 900; }
 .recruitSummary p { margin: 0; padding-left: 13px; border-left: 1px solid #d9d0f3; color: #777080; font-size: 9px; line-height: 1.5; }
+.myRecruitCard { display: grid; grid-template-columns: 54px 1fr auto; align-items: center; gap: 11px; margin-bottom: 13px; padding: 12px; border: 1px solid #dcd2ff; border-radius: 18px; background: linear-gradient(135deg, #f5f1ff, #fff7fb); box-shadow: 0 8px 22px #7257e814; }
+.myRecruitCard .pokemonTile { width: 54px; height: 54px; border-radius: 16px; }
+.myRecruitCard .pokemonTile .pokemonVisualImage { width: 54px; height: 54px; }
+.myRecruitCard > div:nth-child(2) { min-width: 0; display: grid; gap: 2px; }
+.myRecruitCard small { color: var(--purple); font-size: 7px; font-weight: 900; letter-spacing: .5px; }
+.myRecruitCard strong { font-size: 11px; }
+.myRecruitCard span { overflow: hidden; color: #81798a; font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
+.myRecruitCard > button { border: 0; border-radius: 11px; padding: 10px 12px; color: #fff; background: var(--purple); font-size: 8px; font-weight: 900; }
 .recruitList, .noticeList, .incomingList { display: grid; gap: 13px; }
 .recruitItem { display: grid; gap: 13px; padding: 17px; border: 1px solid #e6e0ea; border-radius: 22px; background: #fff; box-shadow: 0 10px 25px #3c315c10; }
 .recruitCardHeader { display: grid; grid-template-columns: 68px 1fr; align-items: center; gap: 13px; }
@@ -301,8 +309,8 @@ button { cursor: pointer; }
 .modalBackdrop { position: fixed; z-index: 30; inset: 0; display: grid; place-items: center; padding: 18px; background: #211b36b8; backdrop-filter: blur(7px); }
 .backdropDismiss { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: transparent; }
 .sheetModal, .matchModal { width: min(430px, 100%); max-height: 92dvh; position: relative; z-index: 1; overflow: auto; padding: 28px 25px; border-radius: 28px; background: #fff; box-shadow: 0 30px 90px #17112555; }
-.notificationSheet, .shareModal { width: min(430px, 100%); max-height: 92dvh; position: relative; z-index: 1; overflow: auto; padding: 28px 22px; border-radius: 28px; background: #fff; box-shadow: 0 30px 90px #17112555; }
-.notificationSheet > h2, .shareModal > h2 { margin: 6px 0 20px; font-size: 25px; }
+.notificationSheet, .shareModal, .recruitShareModal { width: min(430px, 100%); max-height: 92dvh; position: relative; z-index: 1; overflow: auto; padding: 28px 22px; border-radius: 28px; background: #fff; box-shadow: 0 30px 90px #17112555; }
+.notificationSheet > h2, .shareModal > h2, .recruitShareModal > h2 { margin: 6px 0 20px; font-size: 25px; }
 .notificationList { display: grid; gap: 9px; }
 .notificationRow { width: 100%; display: grid; grid-template-columns: 38px 1fr auto; align-items: center; gap: 10px; padding: 12px; text-align: left; border: 1px solid var(--line); border-radius: 15px; background: #fff; }
 .notificationRow > span { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; color: var(--purple); background: #eee9ff; font-size: 16px; font-weight: 900; }
@@ -341,6 +349,28 @@ button { cursor: pointer; }
 .trainerShareCard footer { position: absolute; left: 22px; bottom: 18px; font-size: 7px; font-weight: 800; }
 .xShareButton { width: 100%; margin-top: 16px; border: 0; border-radius: 14px; padding: 14px; color: #fff; background: #17131f; font-size: 10px; font-weight: 900; }
 .shareModal > p { margin: 11px 8px 0; color: #98919f; font-size: 7px; line-height: 1.6; text-align: center; }
+.recruitSharePreview { min-height: 140px; position: relative; overflow: hidden; display: grid; grid-template-columns: 105px 1fr; align-items: center; gap: 5px; padding: 17px; border-radius: 21px; color: #fff; background: linear-gradient(145deg, #6c43c4, #a585ed); isolation: isolate; }
+.recruitSharePreview:before { content: ""; position: absolute; inset: 0; z-index: -1; opacity: .22; background-image: radial-gradient(#fff 1.4px, transparent 1.4px); background-size: 19px 19px; transform: rotate(8deg); }
+.recruitSharePreview.attack { background: linear-gradient(145deg, #d94c63, #ff8d78); }
+.recruitSharePreview.speed { background: linear-gradient(145deg, #178aa9, #5bcaca); }
+.recruitSharePreview.defense { background: linear-gradient(145deg, #c1871c, #f4c75d); }
+.recruitSharePreview.support { background: linear-gradient(145deg, #ec5794, #ff9fc4); }
+.sharePokemon { width: 100px; height: 105px; display: grid; place-items: center; }
+.sharePokemon .pokemonVisualImage { width: 112px; height: 112px; }
+.recruitSharePreview > div:last-child { min-width: 0; display: grid; gap: 4px; }
+.recruitSharePreview small { font-size: 6px; font-weight: 900; letter-spacing: 1px; }
+.recruitSharePreview strong { font-size: 16px; line-height: 1.2; }
+.recruitSharePreview span { font-size: 8px; font-weight: 800; }
+.recruitSharePreview p { margin: 4px 0 0; font-size: 7px; }
+.socialShareGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-top: 15px; }
+.socialShareGrid button { min-width: 0; display: grid; place-items: center; gap: 6px; border: 0; border-radius: 15px; padding: 13px 6px; color: #fff; font-size: 8px; font-weight: 900; }
+.socialShareGrid b { min-height: 16px; font-size: 15px; line-height: 1; }
+.socialShareGrid .shareX { background: #17131f; }
+.socialShareGrid .shareDiscord { background: #5865f2; }
+.socialShareGrid .shareLine { background: #06c755; }
+.socialShareGrid .shareLine b { font-size: 8px; }
+.nativeShareButton { width: 100%; margin-top: 9px; border: 1px solid #ded7e8; border-radius: 13px; padding: 12px; color: var(--purple); background: #f5f1ff; font-size: 8px; font-weight: 900; }
+.shareHelp { margin: 10px 7px 0; color: #96909c; font-size: 7px; line-height: 1.6; text-align: center; }
 .applyPokemon { width: 65px; height: 65px; position: relative; display: grid; place-items: center; margin-bottom: 13px; border-radius: 18px; color: #fff; font-size: 25px; font-weight: 900; }
 .applyPokemon .pokemonVisualImage { width: 73px; height: 73px; filter: drop-shadow(0 8px 8px #3d183538); }
 .matchModal { text-align: center; }
@@ -363,7 +393,7 @@ button { cursor: pointer; }
   .stateCard { min-height: 50dvh; }
   .modalBackdrop { place-items: end center; padding: 0; }
   .sheetModal { width: 100%; max-height: 91dvh; border-radius: 28px 28px 0 0; padding-bottom: max(28px, env(safe-area-inset-bottom)); }
-  .notificationSheet, .shareModal { width: 100%; max-height: 91dvh; border-radius: 28px 28px 0 0; padding-bottom: max(28px, env(safe-area-inset-bottom)); }
+  .notificationSheet, .shareModal, .recruitShareModal { width: 100%; max-height: 91dvh; border-radius: 28px 28px 0 0; padding-bottom: max(28px, env(safe-area-inset-bottom)); }
   .sheetHandle { display: block; width: 42px; height: 4px; margin: -16px auto 16px; border-radius: 99px; background: #ddd7e2; }
   .matchModal { margin: auto 18px; }
   .loginCard { border: 0; background: transparent; box-shadow: none; }

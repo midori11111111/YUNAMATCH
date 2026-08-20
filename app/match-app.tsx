@@ -56,6 +56,8 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
   const providerName=authProvider==="twitter"?"X":authProvider==="discord"?"Discord":authProvider==="line"?"LINE":authProvider==="google"?"Google":"ログインアカウント";
   const [tab,setTab]=useState<AppTab>("discover");
   const [recruits,setRecruits]=useState<Recruit[]>([]);
+  const [myRecruit,setMyRecruit]=useState<Recruit|null>(null);
+  const [sharedRecruitId]=useState<number|null>(()=>{if(typeof window==="undefined")return null;const value=Number(new URLSearchParams(window.location.search).get("recruit"));return Number.isInteger(value)&&value>0?value:null});
   const [loading,setLoading]=useState(true);
   const [index,setIndex]=useState(0);
   const [animation,setAnimation]=useState<""|"left"|"right">("");
@@ -77,6 +79,7 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
   const [messageText,setMessageText]=useState("");
   const [notificationOpen,setNotificationOpen]=useState(false);
   const [shareOpen,setShareOpen]=useState(false);
+  const [recruitShare,setRecruitShare]=useState<Recruit|null>(null);
   const [safetyTarget,setSafetyTarget]=useState<SafetyTarget|null>(null);
   const [matchedContact,setMatchedContact]=useState<string|null>(null);
   const [profile,setProfile]=useState<Profile>({trainerName:shortName,mainPokemon:[],highestRate:"マスター 1400〜1599",playTime:"平日 夜（18〜22時）",gender:"",contact:`${providerName}: ${authContact}`});
@@ -87,7 +90,7 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
   const notify=(message:string)=>{setToast(message);window.setTimeout(()=>setToast(""),2600)};
 
   const loadRecruits=async()=>{
-    try{const response=await fetch("/api/recruits");const data=await response.json();setRecruits(data.recruits||[])}
+    try{const response=await fetch("/api/recruits");const data=await response.json();setRecruits(data.recruits||[]);setMyRecruit(data.myRecruit||null)}
     catch{notify("募集を読み込めませんでした")}finally{setLoading(false)}
   };
   const loadNotices=async()=>{
@@ -109,6 +112,7 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
     ]).then(([recruitData,noticeData,connectionData])=>{
       if(!active)return;
       setRecruits(recruitData.recruits||[]);
+      setMyRecruit(recruitData.myRecruit||null);
       if(noticeData){setIncoming(noticeData.incoming||[]);setOutgoing(noticeData.outgoing||[])}
       if(connectionData)setConnections(connectionData.connections||[]);
     }).catch(()=>undefined).finally(()=>{if(active)setLoading(false)});
@@ -124,8 +128,9 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
 
   const visibleRecruits=useMemo(()=>recruits.length===0&&preview?[previewRecruit]:recruits,[recruits,preview]);
   const cards=useMemo(()=>{
-    return visibleRecruits.filter(person=>(wanted==="すべて"||person.pokemon===wanted)&&person.winRate>=minRate&&person.matches>=minMatches&&(!womenOnly||person.gender==="女性"));
-  },[visibleRecruits,wanted,minRate,minMatches,womenOnly]);
+    const filtered=visibleRecruits.filter(person=>(wanted==="すべて"||person.pokemon===wanted)&&person.winRate>=minRate&&person.matches>=minMatches&&(!womenOnly||person.gender==="女性"));
+    if(!sharedRecruitId)return filtered;const shared=filtered.find(person=>person.id===sharedRecruitId);return shared?[shared,...filtered.filter(person=>person.id!==sharedRecruitId)]:filtered;
+  },[visibleRecruits,wanted,minRate,minMatches,womenOnly,sharedRecruitId]);
   const current=cards.length?cards[index%cards.length]:null;
   const synergy=current?getSynergy(primaryPokemon,current.pokemon,current.role):null;
   const pendingCount=incoming.filter(n=>n.status==="pending").length;
@@ -151,11 +156,21 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
     setApplyTo(null);notify("プレイ申請を送りました");setIndex(v=>v+1);loadNotices();
   };
   const submitRecruit=async(event:FormEvent<HTMLFormElement>)=>{
-    event.preventDefault();setSending(true);const body=Object.fromEntries(new FormData(event.currentTarget));
+    event.preventDefault();const body=Object.fromEntries(new FormData(event.currentTarget));
+    if(preview){const recruit={...previewRecruit,id:-2,trainerName:profile.trainerName,gender:profile.gender||"女性",pokemon:String(body.pokemon),role:String(body.role),matches:Number(body.matches),winRate:Number(body.winRate),rank:profile.highestRate,playTime:profile.playTime,note:String(body.note)};setMyRecruit(recruit);setRecruitShare(recruit);setCompose(false);setTab("recruit");notify("募集を公開しました");return}
+    setSending(true);
     const response=await fetch("/api/recruits",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});const data=await response.json();setSending(false);
     if(response.status===401){location.href=data.signIn;return}if(!response.ok){notify(data.error||"募集を投稿できませんでした");return}
-    setCompose(false);notify("募集を公開しました");await loadRecruits();setTab("discover");
+    setMyRecruit(data.recruit);setRecruitShare(data.recruit);setCompose(false);notify("募集を公開しました");await loadRecruits();setTab("recruit");
   };
+
+  const recruitUrl=(recruit:Recruit)=>recruit.id>0?`https://yunamatch.vercel.app/?recruit=${recruit.id}`:"https://yunamatch.vercel.app/";
+  const recruitShareText=(recruit:Recruit)=>`【ポケモンユナイト仲間募集】\n${recruit.pokemon} / ${recruit.role}\n${recruit.rank}・勝率${recruit.winRate}%\n${recruit.playTime}\n${recruit.note}\n#YUNAMATCH #ポケモンユナイト募集`;
+  const copyText=async(text:string)=>{try{await navigator.clipboard.writeText(text);return true}catch{const area=document.createElement("textarea");area.value=text;area.style.position="fixed";area.style.opacity="0";document.body.appendChild(area);area.select();const copied=document.execCommand("copy");area.remove();return copied}};
+  const shareRecruitToX=(recruit:Recruit)=>window.open(`https://x.com/intent/post?text=${encodeURIComponent(recruitShareText(recruit))}&url=${encodeURIComponent(recruitUrl(recruit))}`,"_blank","noopener,noreferrer");
+  const shareRecruitToDiscord=async(recruit:Recruit)=>{window.open("https://discord.com/channels/@me","_blank","noopener,noreferrer");await copyText(`${recruitShareText(recruit)}\n${recruitUrl(recruit)}`);notify("Discord用の募集文をコピーしました")};
+  const shareRecruitToLine=(recruit:Recruit)=>window.open(`https://line.me/R/share?text=${encodeURIComponent(`${recruitShareText(recruit)}\n${recruitUrl(recruit)}`)}`,"_blank","noopener,noreferrer");
+  const shareRecruitNatively=async(recruit:Recruit)=>{const text=recruitShareText(recruit),url=recruitUrl(recruit);try{if(navigator.share){await navigator.share({title:"YUNAMATCH 募集",text,url});return}}catch(error){if((error as Error).name==="AbortError")return}await copyText(`${text}\n${url}`);notify("募集文とリンクをコピーしました")};
   const decide=async(applicationId:number,action:"accept"|"decline")=>{
     const response=await fetch("/api/applications",{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({applicationId,action})});const data=await response.json();
     if(!response.ok){notify(data.error||"処理できませんでした");return}if(action==="accept")setMatchedContact(data.applicantContact);
@@ -245,7 +260,12 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
         </>:<div className="stateCard emptyState"><div className="emptyOrb">Y</div><h2>新しいメイトを待っています</h2><p>今は条件に合う募集がありません。あなたの募集から始めてみませんか？</p><button onClick={()=>setCompose(true)}>募集を作る</button></div>}
       </section>}
 
-      {tab==="recruit"&&<section className="panelView recruitView"><div className="viewHeading"><div><small>LIVE RECRUITING</small><h1>募集中のメイト</h1></div><button onClick={()=>setCompose(true)}>＋ 募集する</button></div><div className="recruitSummary"><div><strong>{visibleRecruits.length}</strong><span>人が募集中</span></div><p>ポケモン・実力・時間帯を見比べて選べます</p></div><div className="recruitList">{visibleRecruits.length?visibleRecruits.map(recruit=><article key={recruit.id} className="recruitItem"><header className="recruitCardHeader"><div className={`pokemonTile ${roleClass[recruit.role]||"support"}`}><PokemonImage name={recruit.pokemon}/></div><div><div className="recruitTop"><h2>{recruit.trainerName}</h2><span>● 募集中</span></div><strong>{recruit.pokemon}</strong><small>{recruit.role}</small></div></header><div className="recruitBadges"><span>{recruit.rank}</span><span>{recruit.gender}</span></div><p className="recruitNote">“{recruit.note}”</p><div className="recruitFacts"><div><span>◷</span><small>遊べる時間</small><strong>{recruit.playTime}</strong></div><div><small>試合数</small><strong>{recruit.matches.toLocaleString()}戦</strong></div><div><small>勝率</small><strong>{recruit.winRate}%</strong></div></div><button className="recruitApply" onClick={()=>setApplyTo(recruit)}>この人にプレイ申請 <span>›</span></button></article>):<div className="listEmpty">まだ公開中の募集はありません。<br/>あなたの募集から始めてみませんか？</div>}</div></section>}
+      {tab==="recruit"&&<section className="panelView recruitView">
+        <div className="viewHeading"><div><small>LIVE RECRUITING</small><h1>募集中のメイト</h1></div><button onClick={()=>setCompose(true)}>＋ 募集する</button></div>
+        <div className="recruitSummary"><div><strong>{visibleRecruits.length}</strong><span>人が募集中</span></div><p>ポケモン・実力・時間帯を見比べて選べます</p></div>
+        {myRecruit&&<article className="myRecruitCard"><div className={`pokemonTile ${roleClass[myRecruit.role]||"support"}`}><PokemonImage name={myRecruit.pokemon}/></div><div><small>あなたの募集</small><strong>{myRecruit.pokemon}で募集中</strong><span>{myRecruit.playTime}</span></div><button onClick={()=>setRecruitShare(myRecruit)}>共有</button></article>}
+        <div className="recruitList">{visibleRecruits.length?visibleRecruits.map(recruit=><article key={recruit.id} className="recruitItem"><header className="recruitCardHeader"><div className={`pokemonTile ${roleClass[recruit.role]||"support"}`}><PokemonImage name={recruit.pokemon}/></div><div><div className="recruitTop"><h2>{recruit.trainerName}</h2><span>● 募集中</span></div><strong>{recruit.pokemon}</strong><small>{recruit.role}</small></div></header><div className="recruitBadges"><span>{recruit.rank}</span><span>{recruit.gender}</span></div><p className="recruitNote">“{recruit.note}”</p><div className="recruitFacts"><div><span>◷</span><small>遊べる時間</small><strong>{recruit.playTime}</strong></div><div><small>試合数</small><strong>{recruit.matches.toLocaleString()}戦</strong></div><div><small>勝率</small><strong>{recruit.winRate}%</strong></div></div><button className="recruitApply" onClick={()=>setApplyTo(recruit)}>この人にプレイ申請 <span>›</span></button></article>):<div className="listEmpty">まだ公開中の募集はありません。<br/>あなたの募集から始めてみませんか？</div>}</div>
+      </section>}
 
       {tab==="chat"&&<section className="panelView chatView">{selectedConnection?<>
         <div className="chatHeader"><button onClick={()=>{setSelectedConnection(null);setMessages([])}} aria-label="チャット一覧へ戻る">←</button><div className="chatMateAvatar">{selectedConnection.mateName.slice(0,1)}</div><div><h1>{selectedConnection.mateName}</h1><p>{selectedConnection.matePokemon} ・ マッチ済み</p></div><button className="chatSafety" onClick={()=>setSafetyTarget({name:selectedConnection.mateName,connectionId:selectedConnection.id})}>•••</button></div>
@@ -273,6 +293,8 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
   {filterOpen&&<div className="modalBackdrop"><button className="backdropDismiss" onClick={()=>setFilterOpen(false)} aria-label="絞り込みを閉じる"/><section className="sheetModal"><div className="sheetHandle"/><button className="closeButton" onClick={()=>setFilterOpen(false)}>×</button><small className="modalKicker">SEARCH FILTER</small><h2>希望のメイト</h2><label>使ってほしいポケモン<select value={wanted} onChange={e=>{setWanted(e.target.value);setIndex(0)}}><option>すべて</option>{pokemon.map(name=><option key={name}>{name}</option>)}</select></label><div className="twoFields"><label>最低勝率<select value={minRate} onChange={e=>{setMinRate(Number(e.target.value));setIndex(0)}}><option value="0">指定なし</option><option value="50">50%以上</option><option value="55">55%以上</option><option value="60">60%以上</option></select></label><label>最低試合数<select value={minMatches} onChange={e=>{setMinMatches(Number(e.target.value));setIndex(0)}}><option value="0">指定なし</option><option value="500">500試合〜</option><option value="1000">1,000試合〜</option><option value="1500">1,500試合〜</option></select></label></div><label className="toggleRow"><input type="checkbox" checked={womenOnly} onChange={e=>{setWomenOnly(e.target.checked);setIndex(0)}}/><span>女性プレイヤーのみ</span></label><button className="primaryButton" onClick={()=>setFilterOpen(false)}>この条件で探す</button></section></div>}
 
   {compose&&<div className="modalBackdrop"><form className="sheetModal formSheet" onSubmit={submitRecruit}><button type="button" className="closeButton" onClick={()=>setCompose(false)}>×</button><small className="modalKicker">CREATE RECRUIT</small><h2>メイトを募集</h2><div className="twoFields"><label>使用ポケモン<select name="pokemon" defaultValue={primaryPokemon}>{profile.mainPokemon.map(name=><option key={name}>{name}</option>)}</select></label><label>型<select name="role"><option>アタック型</option><option>バランス型</option><option>スピード型</option><option>ディフェンス型</option><option>サポート型</option></select></label></div><div className="twoFields"><label>試合数<input name="matches" type="number" min="0" max="99999" defaultValue="1000" required/></label><label>勝率<input name="winRate" type="number" min="0" max="100" step="0.1" defaultValue="50" required/></label></div><label>ひとこと<textarea name="note" maxLength={180} placeholder="楽しくランクを回したいです！" required/></label><p className="privacyText">{profile.trainerName}・{profile.highestRate}・{profile.playTime}で募集します。連絡先は承認した相手にだけ表示されます。</p><button className="primaryButton" disabled={sending}>{sending?"公開中…":"募集を公開する"}</button></form></div>}
+
+  {recruitShare&&<div className="modalBackdrop"><section className="recruitShareModal"><button className="closeButton" onClick={()=>setRecruitShare(null)}>×</button><small className="modalKicker">SHARE RECRUIT</small><h2>募集を広めよう</h2><div className={`recruitSharePreview ${roleClass[recruitShare.role]||"support"}`}><div className="sharePokemon"><PokemonImage name={recruitShare.pokemon}/></div><div><small>POKÉMON UNITE</small><strong>{recruitShare.pokemon}で募集中</strong><span>{recruitShare.rank} ・ 勝率{recruitShare.winRate}%</span><p>{recruitShare.playTime}</p></div></div><div className="socialShareGrid"><button className="shareX" onClick={()=>shareRecruitToX(recruitShare)}><b>𝕏</b><span>Xに投稿</span></button><button className="shareDiscord" onClick={()=>shareRecruitToDiscord(recruitShare)}><b>D</b><span>Discord</span></button><button className="shareLine" onClick={()=>shareRecruitToLine(recruitShare)}><b>LINE</b><span>LINE・オプチャ</span></button></div><button className="nativeShareButton" onClick={()=>shareRecruitNatively(recruitShare)}>共有メニューを開く / リンクをコピー</button><p className="shareHelp">Discordは募集文をコピーして開きます。LINEでオープンチャットが共有先に出ない場合は、コピーした文を貼り付けてください。</p></section></div>}
 
   {applyTo&&<div className="modalBackdrop"><form className="sheetModal formSheet" onSubmit={submitApplication}><button type="button" className="closeButton" onClick={()=>setApplyTo(null)}>×</button><div className={`applyPokemon ${roleClass[applyTo.role]||"support"}`}><PokemonImage name={applyTo.pokemon}/></div><small className="modalKicker">PLAY REQUEST</small><h2>{applyTo.trainerName}さんと<br/>一緒に遊ぶ</h2><label>使用ポケモン<select name="pokemon" defaultValue={primaryPokemon}>{profile.mainPokemon.map(name=><option key={name}>{name}</option>)}</select></label><label>メッセージ<textarea name="message" maxLength={180} defaultValue={`${applyTo.pokemon}と一緒にランクへ行きたいです！`} required/></label><p className="privacyText">申請時はトレーナー名だけを送り、連絡先は承認後に表示します。</p><button className="primaryButton" disabled={sending}>{sending?"送信中…":"プレイ申請を送る"}</button></form></div>}
 
