@@ -1,6 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { applications, recruits } from "../../../db/schema";
+import { applications, connections, recruits } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
 
 const signIn = "/login";
@@ -32,10 +32,13 @@ export async function PATCH(request:Request){
  const user=await getChatGPTUser();if(!user)return Response.json({error:"ログインが必要です",signIn},{status:401});
  const p=await request.json() as {applicationId?:number;action?:"accept"|"decline"};
  if(!p.applicationId||!p.action)return Response.json({error:"操作を確認してください"},{status:400});
- const db=getDb();const [row]=await db.select({id:applications.id,recruitId:applications.recruitId,applicantContact:applications.applicantContact}).from(applications).innerJoin(recruits,eq(applications.recruitId,recruits.id)).where(and(eq(applications.id,p.applicationId),eq(recruits.ownerId,user.userId),eq(applications.status,"pending"))).limit(1);
+ const db=getDb();const [row]=await db.select({id:applications.id,recruitId:applications.recruitId,applicantId:applications.applicantId,applicantName:applications.applicantName,applicantContact:applications.applicantContact,applicantPokemon:applications.pokemon,ownerId:recruits.ownerId,ownerName:recruits.trainerName,ownerContact:recruits.contact,ownerPokemon:recruits.pokemon}).from(applications).innerJoin(recruits,eq(applications.recruitId,recruits.id)).where(and(eq(applications.id,p.applicationId),eq(recruits.ownerId,user.userId),eq(applications.status,"pending"))).limit(1);
  if(!row)return Response.json({error:"申請が見つからないか、処理済みです"},{status:404});
  const status=p.action==="accept"?"accepted":"declined";
  await db.update(applications).set({status}).where(eq(applications.id,row.id));
- if(status==="accepted")await db.update(recruits).set({status:"closed"}).where(eq(recruits.id,row.recruitId));
+ if(status==="accepted"){
+  await db.update(recruits).set({status:"closed"}).where(eq(recruits.id,row.recruitId));
+  await db.insert(connections).values({applicationId:row.id,recruitId:row.recruitId,userAId:row.ownerId,userBId:row.applicantId,userAName:row.ownerName,userBName:row.applicantName,userAPokemon:row.ownerPokemon,userBPokemon:row.applicantPokemon,userAContact:row.ownerContact,userBContact:row.applicantContact,createdAt:new Date()}).onConflictDoNothing();
+ }
  return Response.json({ok:true,status,applicantContact:status==="accepted"?row.applicantContact:null});
 }

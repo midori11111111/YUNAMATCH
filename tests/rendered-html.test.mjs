@@ -27,19 +27,30 @@ test("renders the login-only entrance for anonymous visitors", async () => {
 });
 
 test("ships the matching app and its social card", async () => {
-  const [page, app, css, authGateway, loginPage] = await Promise.all([
+  const [page, app, css, authGateway, loginPage, connectionsApi, messagesApi, safetyApi, migration] = await Promise.all([
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/match-app.tsx", root), "utf8"),
     readFile(new URL("app/globals.css", root), "utf8"),
     readFile(new URL("vercel-proxy/auth.ts", root), "utf8"),
     readFile(new URL("vercel-proxy/app/login/page.tsx", root), "utf8"),
+    readFile(new URL("app/api/connections/route.ts", root), "utf8"),
+    readFile(new URL("app/api/messages/route.ts", root), "utf8"),
+    readFile(new URL("app/api/safety/route.ts", root), "utf8"),
+    readFile(new URL("drizzle/0003_nifty_spyke.sql", root), "utf8"),
     access(new URL("public/og.png", root)),
   ]);
   assert.match(page, /getChatGPTUser/);
   assert.match(app, /moveNext/);
   assert.match(app, /プレイ申請を送る/);
   assert.match(app, /マッチ成立/);
+  assert.match(app, /また遊びたい/);
+  assert.match(app, /トレーナーカードを共有/);
+  assert.match(app, /通報せずブロックのみ/);
   assert.match(css, /bottomNav/);
+  assert.match(connectionsApi, /mutualAgain/);
+  assert.match(messagesApi, /connectionId/);
+  assert.match(safetyApi, /allowedReasons/);
+  assert.match(migration, /CREATE TABLE `connections`/);
   assert.match(authGateway, /scope: "tweet\.read users\.read"/);
   assert.match(authGateway, /providers: \[Google, Line, Discord, xProvider\]/);
   assert.match(loginPage, /LINEでログイン/);

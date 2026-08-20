@@ -44,6 +44,9 @@ button { cursor: pointer; }
 .headerIcon { justify-self: end; background: #f7f4fa; font-size: 15px; }
 .headerIcon i, .bottomNav i { position: absolute; display: grid; place-items: center; border-radius: 99px; color: #fff; background: var(--pink); font-size: 7px; font-style: normal; }
 .headerIcon i { width: 16px; height: 16px; right: -4px; top: -5px; }
+.notificationButton { width: 40px; height: 40px; position: relative; justify-self: end; border: 1px solid var(--line); border-radius: 14px; background: #f7f4fa; color: var(--ink); }
+.notificationButton > span { font-size: 16px; filter: grayscale(1); }
+.notificationButton i { width: 18px; height: 18px; position: absolute; right: -5px; top: -6px; display: grid; place-items: center; border: 2px solid #fff; border-radius: 50%; color: #fff; background: var(--pink); font-size: 7px; font-style: normal; font-weight: 900; }
 
 .appViewport { height: calc(100% - 142px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; background: #fff; }
 .appViewport::-webkit-scrollbar { display: none; }
@@ -63,6 +66,13 @@ button { cursor: pointer; }
 .recommendMeta > span:before { content: "✦"; margin-right: 6px; color: #ffb22c; }
 .recommendMeta > div { font-weight: 700; }
 .recommendMeta b { margin-right: 2px; color: var(--purple); font-size: 12px; }
+.instantCards { padding-top: 0; }
+.searchStrip { height: 60px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 17px; background: #fff; }
+.searchStrip > div { display: grid; gap: 3px; }
+.searchStrip strong { font-size: 13px; letter-spacing: -.3px; }
+.searchStrip small { color: #9a94a3; font-size: 7px; }
+.searchStrip button { max-width: 155px; overflow: hidden; padding: 9px 11px; border: 1px solid #e9e4ef; border-radius: 12px; color: var(--purple); background: #f6f3ff; font-size: 8px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+.searchStrip button span { margin-right: 6px; font-size: 12px; }
 
 .discoverCard { margin: 0 15px; overflow: hidden; border: 1px solid #e9e3ef; border-radius: 28px; background: #fff; box-shadow: 0 18px 42px #33294d20; touch-action: pan-y; transform-origin: 50% 100%; }
 .discoverCard.left { animation: swipeLeft .26s ease forwards; }
@@ -87,6 +97,8 @@ button { cursor: pointer; }
 .pokemonTitle { position: absolute; z-index: 2; left: 17px; bottom: 16px; display: grid; gap: 2px; }
 .pokemonTitle small { font-size: 7px; font-weight: 850; letter-spacing: 1px; }
 .pokemonTitle strong { font-size: 21px; line-height: 1; letter-spacing: -1px; }
+.cardSafetyButton { width: 34px; height: 30px; position: absolute; z-index: 4; top: 10px; right: 10px; border: 1px solid #ffffff42; border-radius: 11px; color: #fff; background: #261a4333; font-size: 10px; font-weight: 900; letter-spacing: 1px; backdrop-filter: blur(8px); }
+.instantCards .cardTopline { right: 52px; }
 .cardDetails { padding: 16px 17px 15px; }
 .identityLine { display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 10px; }
 .mateAvatar { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 13px; color: #fff; background: linear-gradient(145deg, #6c4df6, #a68fff); font-size: 14px; font-weight: 950; box-shadow: 0 6px 14px #6c4df629; }
@@ -169,6 +181,7 @@ button { cursor: pointer; }
 .profileHero small { display: block; margin-top: 12px; color: var(--purple); font-size: 7px; font-weight: 900; letter-spacing: 1.8px; }
 .profileHero h1 { margin: 4px 0; font-size: 22px; }
 .profileHero p { margin: 0; color: #958e9e; font-size: 9px; }
+.shareCardButton { margin-top: 13px; padding: 10px 14px; border: 0; border-radius: 12px; color: #fff; background: #17131f; font-size: 8px; font-weight: 900; box-shadow: 0 8px 18px #17131f22; }
 .profileForm, .formSheet { display: grid; gap: 12px; }
 .profileForm label, .sheetModal label { display: grid; gap: 6px; color: #625c6a; font-size: 8px; font-weight: 900; }
 .profileForm input, .profileForm select, .sheetModal input, .sheetModal select, .sheetModal textarea { width: 100%; border: 1px solid #e3dee8; border-radius: 12px; padding: 12px; background: #fff; color: var(--ink); font-size: 10px; outline: none; }
@@ -187,15 +200,84 @@ button { cursor: pointer; }
 .bottomNav button.active > span { background: #eee9ff; }
 .bottomNav i { width: 15px; height: 15px; top: 7px; right: 22px; }
 
+.chatView { height: 100%; display: flex; flex-direction: column; padding-bottom: 0; }
+.chatList { display: grid; gap: 10px; }
+.chatListItem { width: 100%; display: grid; grid-template-columns: 48px 1fr auto auto; align-items: center; gap: 11px; padding: 13px; text-align: left; border: 1px solid var(--line); border-radius: 18px; background: #fff; box-shadow: 0 7px 20px #33294d0c; }
+.chatMateAvatar { width: 46px; height: 46px; display: grid; place-items: center; flex: none; border-radius: 15px; color: #fff; background: linear-gradient(145deg, var(--purple), #a18aff); font-size: 15px; font-weight: 950; }
+.chatListItem > div:nth-child(2) { min-width: 0; }
+.chatListItem strong { font-size: 12px; }
+.chatListItem p { margin: 4px 0 3px; overflow: hidden; color: #777080; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.chatListItem small { color: var(--purple); font-size: 7px; font-weight: 850; }
+.chatListItem > b { color: #a69fab; font-size: 19px; }
+.heartDot { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; color: var(--pink); background: #ffe9f1; font-size: 14px; font-weight: 900; }
+.chatHeader { display: grid; grid-template-columns: 34px 46px 1fr 34px; align-items: center; gap: 9px; margin: -9px -4px 0; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.chatHeader > button { width: 34px; height: 34px; border: 0; border-radius: 11px; color: #706879; background: #f2eff5; font-size: 16px; }
+.chatHeader h1 { margin: 0; font-size: 15px; }
+.chatHeader p { margin: 3px 0 0; color: #958e9e; font-size: 7px; }
+.chatHeader .chatSafety { font-size: 9px; letter-spacing: 1px; }
+.reconnectBar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px 0 9px; }
+.reconnectBar button { border: 1px solid #e8e3ed; border-radius: 12px; padding: 10px 8px; color: #81798a; background: #fff; font-size: 8px; font-weight: 900; }
+.reconnectBar button.active { color: var(--pink); border-color: #ffd5e5; background: #fff0f6; }
+.reconnectBar .rematchButton { color: #fff; border-color: transparent; background: linear-gradient(135deg, var(--purple), #8d75f1); }
+.heartNotice { margin-bottom: 8px; padding: 9px 11px; border-radius: 11px; color: #c93671; background: #fff0f6; font-size: 7px; font-weight: 850; text-align: center; }
+.messageThread { min-height: 0; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 9px 2px 14px; }
+.messageBubble { max-width: 82%; align-self: flex-start; }
+.messageBubble p { margin: 0; padding: 10px 12px; border-radius: 6px 15px 15px 15px; color: #544d5b; background: #f0edf4; font-size: 9px; line-height: 1.5; }
+.messageBubble.me { align-self: flex-end; text-align: right; }
+.messageBubble.me p { color: #fff; border-radius: 15px 6px 15px 15px; background: linear-gradient(135deg, var(--purple), #8e76f2); text-align: left; }
+.messageBubble small { display: block; margin-top: 3px; color: #aaa4af; font-size: 6px; }
+.chatEmpty { margin: auto; text-align: center; }
+.chatEmpty span { font-size: 28px; }
+.chatEmpty h2 { margin: 10px 0 5px; font-size: 13px; }
+.chatEmpty p { margin: 0; color: #98919f; font-size: 8px; }
+.messageComposer { display: grid; grid-template-columns: 1fr 42px; gap: 8px; margin: 0 -4px; padding: 11px 0 8px; border-top: 1px solid var(--line); background: #fbfafc; }
+.messageComposer input { width: 100%; border: 1px solid #e2dce7; border-radius: 14px; padding: 11px 13px; background: #fff; font-size: 9px; outline: none; }
+.messageComposer input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px #7257e813; }
+.messageComposer button { width: 42px; height: 42px; border: 0; border-radius: 14px; color: #fff; background: var(--purple); font-size: 15px; }
+.messageComposer button:disabled { opacity: .35; }
+
 .modalBackdrop { position: fixed; z-index: 30; inset: 0; display: grid; place-items: center; padding: 18px; background: #211b36b8; backdrop-filter: blur(7px); }
 .backdropDismiss { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: transparent; }
 .sheetModal, .matchModal { width: min(430px, 100%); max-height: 92dvh; position: relative; z-index: 1; overflow: auto; padding: 28px 25px; border-radius: 28px; background: #fff; box-shadow: 0 30px 90px #17112555; }
+.notificationSheet, .shareModal { width: min(430px, 100%); max-height: 92dvh; position: relative; z-index: 1; overflow: auto; padding: 28px 22px; border-radius: 28px; background: #fff; box-shadow: 0 30px 90px #17112555; }
+.notificationSheet > h2, .shareModal > h2 { margin: 6px 0 20px; font-size: 25px; }
+.notificationList { display: grid; gap: 9px; }
+.notificationRow { width: 100%; display: grid; grid-template-columns: 38px 1fr auto; align-items: center; gap: 10px; padding: 12px; text-align: left; border: 1px solid var(--line); border-radius: 15px; background: #fff; }
+.notificationRow > span { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; color: var(--purple); background: #eee9ff; font-size: 16px; font-weight: 900; }
+.notificationRow.heart > span { color: var(--pink); background: #ffeaf2; }
+.notificationRow.accepted > span { color: var(--green); background: #e6f8f2; }
+.notificationRow strong { font-size: 10px; }
+.notificationRow p { margin: 4px 0 0; color: #918a98; font-size: 7px; }
+.notificationRow > b { color: #aaa4af; font-size: 17px; }
+.notificationRequest { overflow: hidden; border: 1px solid #eadff0; border-radius: 16px; background: #fff; }
+.notificationRequest .notificationRow { border: 0; border-radius: 0; }
+.notificationRequest > div:last-child { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; padding: 0 12px 12px; }
+.notificationRequest > div:last-child button { border: 0; border-radius: 10px; padding: 9px; color: #777080; background: #f1eef4; font-size: 8px; font-weight: 900; }
+.notificationRequest > div:last-child button:last-child { color: #fff; background: var(--pink); }
 .sheetHandle { display: none; }
 .closeButton { position: absolute; right: 15px; top: 13px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: #f5f2f7; color: #87818f; font-size: 18px; }
 .sheetModal > h2 { margin: 6px 0 22px; font-size: 23px; letter-spacing: -1px; }
 .toggleRow { display: flex !important; align-items: center; gap: 9px !important; padding: 12px; border-radius: 11px; background: #f7f5fa; }
 .toggleRow input { width: auto !important; accent-color: var(--purple); }
 .privacyText { margin: 0; color: #9a94a2; font-size: 7px; }
+.safetySheet > p { margin: -10px 0 6px; color: #8c8593; font-size: 8px; line-height: 1.6; }
+.dangerButton, .blockButton { width: 100%; border: 0; border-radius: 13px; padding: 13px; font-size: 9px; font-weight: 900; }
+.dangerButton { color: #fff; background: #e24762; }
+.blockButton { color: #a33d50; background: #fff0f2; }
+.trainerShareCard { aspect-ratio: 16/9; position: relative; overflow: hidden; padding: 22px; border-radius: 22px; color: #fff; background: radial-gradient(circle at 85% 30%, #ffffff24, transparent 24%), linear-gradient(135deg, #34216d, #6c4df6 58%, #ff4f91); box-shadow: 0 16px 35px #3f2d7a32; }
+.trainerShareCard:before { content: ""; position: absolute; inset: 0; opacity: .14; background-image: radial-gradient(#fff 1.5px, transparent 1.5px); background-size: 22px 22px; transform: rotate(7deg); }
+.trainerShareCard > * { position: relative; z-index: 1; }
+.shareBrand { font-size: 10px; font-weight: 950; letter-spacing: 1px; }
+.trainerShareCard > small { font-size: 5px; font-weight: 850; letter-spacing: 1.4px; }
+.trainerShareCard h3 { margin: 22px 0 2px; font-size: 27px; letter-spacing: -1.5px; }
+.trainerShareCard > p { margin: 0; font-size: 8px; }
+.trainerShareCard > div:nth-of-type(2) { display: grid; gap: 2px; margin-top: 20px; }
+.trainerShareCard > div:nth-of-type(2) span { color: #ffdcea; font-size: 6px; font-weight: 900; letter-spacing: 1px; }
+.trainerShareCard > div:nth-of-type(2) strong { font-size: 22px; }
+.trainerShareCard > b { position: absolute; right: 25px; top: 50%; opacity: .85; font-size: 84px; transform: translateY(-35%); }
+.trainerShareCard footer { position: absolute; left: 22px; bottom: 18px; font-size: 7px; font-weight: 800; }
+.xShareButton { width: 100%; margin-top: 16px; border: 0; border-radius: 14px; padding: 14px; color: #fff; background: #17131f; font-size: 10px; font-weight: 900; }
+.shareModal > p { margin: 11px 8px 0; color: #98919f; font-size: 7px; line-height: 1.6; text-align: center; }
 .applyPokemon { width: 65px; height: 65px; display: grid; place-items: center; margin-bottom: 13px; border-radius: 18px; color: #fff; font-size: 25px; font-weight: 900; }
 .matchModal { text-align: center; }
 .matchBurst { width: 78px; height: 78px; margin: auto; display: grid; place-items: center; border-radius: 26px; color: #fff; background: linear-gradient(145deg, var(--pink), #ff9abe); font-size: 31px; box-shadow: 0 13px 30px #ff5f9f38; }
@@ -217,6 +299,7 @@ button { cursor: pointer; }
   .stateCard { min-height: 50dvh; }
   .modalBackdrop { place-items: end center; padding: 0; }
   .sheetModal { width: 100%; max-height: 91dvh; border-radius: 28px 28px 0 0; padding-bottom: max(28px, env(safe-area-inset-bottom)); }
+  .notificationSheet, .shareModal { width: 100%; max-height: 91dvh; border-radius: 28px 28px 0 0; padding-bottom: max(28px, env(safe-area-inset-bottom)); }
   .sheetHandle { display: block; width: 42px; height: 4px; margin: -16px auto 16px; border-radius: 99px; background: #ddd7e2; }
   .matchModal { margin: auto 18px; }
   .loginCard { border: 0; background: transparent; box-shadow: none; }
@@ -226,13 +309,24 @@ button { cursor: pointer; }
 }
 
 @media (max-height: 800px) {
-  .discoverHero { min-height: 92px; padding-top: 6px; padding-bottom: 7px; }
-  .discoverHero h1 { font-size: 22px; }
-  .discoverHero > button { min-height: 58px; }
-  .cardArtwork { height: 205px; }
-  .cardDetails { padding-top: 12px; }
-  .pairingLine { margin-top: 10px; }
-  .choiceArea { height: 76px; }
+  .appHeader { height: 62px; }
+  .appViewport { height: calc(100% - 130px); }
+  .bottomNav { height: 68px; }
+  .searchStrip { height: 52px; padding-top: 5px; padding-bottom: 5px; }
+  .cardArtwork { height: 176px; min-height: 176px; }
+  .pokemonMonogram { width: 102px; height: 102px; }
+  .pokemonMonogram span { font-size: 55px; }
+  .cardDetails { padding: 10px 14px; }
+  .mateAvatar { width: 35px; height: 35px; }
+  .identityLine { grid-template-columns: 35px 1fr auto; gap: 8px; }
+  .identityLine h1 { font-size: 17px; }
+  .pairingLine { margin: 7px 0 6px; padding: 6px; }
+  .synergyCopy { min-height: 0; margin-bottom: 7px; line-height: 1.35; }
+  .statGrid div { padding: 7px 9px; }
+  .timeChip { margin-top: 7px; }
+  .profileNote { max-height: 12px; overflow: hidden; margin-top: 6px; white-space: nowrap; text-overflow: ellipsis; }
+  .choiceArea { height: 66px; }
+  .choiceArea button { height: 46px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

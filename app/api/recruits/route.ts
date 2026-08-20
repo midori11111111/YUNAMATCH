@@ -1,11 +1,19 @@
 import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { recruits } from "../../../db/schema";
+import { blocks, recruits } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
 
 export async function GET() {
-  const rows = await getDb().select({ id:recruits.id, trainerName:recruits.trainerName, gender:recruits.gender, pokemon:recruits.pokemon, role:recruits.role, matches:recruits.matches, winRate:recruits.winRate, rank:recruits.rank, playTime:recruits.playTime, note:recruits.note, createdAt:recruits.createdAt }).from(recruits).where(eq(recruits.status,"open")).orderBy(desc(recruits.createdAt)).limit(100);
-  return Response.json({ recruits: rows });
+  const db = getDb();
+  const user = await getChatGPTUser();
+  const rows = await db.select({ id:recruits.id, ownerId:recruits.ownerId, trainerName:recruits.trainerName, gender:recruits.gender, pokemon:recruits.pokemon, role:recruits.role, matches:recruits.matches, winRate:recruits.winRate, rank:recruits.rank, playTime:recruits.playTime, note:recruits.note, createdAt:recruits.createdAt }).from(recruits).where(eq(recruits.status,"open")).orderBy(desc(recruits.createdAt)).limit(100);
+  if (!user) return Response.json({ recruits: rows.map(({ ownerId: _ownerId, ...row }) => row) });
+  const [blockedByMe, blockedMe] = await Promise.all([
+    db.select({ id: blocks.blockedId }).from(blocks).where(eq(blocks.blockerId, user.userId)),
+    db.select({ id: blocks.blockerId }).from(blocks).where(eq(blocks.blockedId, user.userId)),
+  ]);
+  const hidden = new Set([...blockedByMe, ...blockedMe].map((row) => row.id));
+  return Response.json({ recruits: rows.filter((row) => row.ownerId !== user.userId && !hidden.has(row.ownerId)).map(({ ownerId: _ownerId, ...row }) => row) });
 }
 
 export async function POST(request:Request) {

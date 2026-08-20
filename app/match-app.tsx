@@ -2,423 +2,244 @@
 
 import { FormEvent, PointerEvent, useEffect, useMemo, useState } from "react";
 
-type Recruit = {
-  id: number;
-  trainerName: string;
-  gender: string;
-  pokemon: string;
-  role: string;
-  matches: number;
-  winRate: number;
-  rank: string;
-  playTime: string;
-  note: string;
-};
-
-type Notice = {
-  id: number;
-  applicantName?: string;
-  applicantContact?: string;
-  trainerName?: string;
-  pokemon: string;
-  message?: string;
-  status: string;
-  recruitPokemon?: string;
-  ownerContact?: string | null;
-};
-
-type Profile = {
-  trainerName: string;
-  pokemon: string;
-  rank: string;
-  playTime: string;
-  gender: string;
-  contact: string;
-};
-
-type AppTab = "discover" | "recruit" | "matches" | "profile";
+type Recruit = { id:number; trainerName:string; gender:string; pokemon:string; role:string; matches:number; winRate:number; rank:string; playTime:string; note:string };
+type Notice = { id:number; applicantName?:string; applicantContact?:string; trainerName?:string; pokemon:string; message?:string; status:string; recruitPokemon?:string; ownerContact?:string|null };
+type Profile = { trainerName:string; pokemon:string; rank:string; playTime:string; gender:string; contact:string };
+type Connection = { id:number; mateName:string; matePokemon:string; mateContact:string; myPokemon:string; againByMe:boolean; againByMate:boolean; mutualAgain:boolean; latestMessage:string; latestAt:string };
+type ChatMessage = { id:number; body:string; sender:"me"|"mate"; createdAt:string };
+type SafetyTarget = { name:string; recruitId?:number; connectionId?:number };
+type AppTab = "discover" | "recruit" | "chat" | "profile";
 
 const pokemon = [
   "アブソル","アマージョ","アローラキュウコン","アローラライチュウ","イワパレス","インテレオン","ウーラオス","ウッウ","エースバーン","エーフィ","エンペルト","オーロット","カイリキー","カイリュー","カビゴン","カメックス","ガブリアス","ガラルギャロップ","キュワワー","ギャラドス","ギルガルド","グレイシア","グレンアルマ","ゲッコウガ","ゲンガー","コダック","サーナイト","ザシアン","シャンデラ","ジュナイパー","ジュラルドン","シャワーズ","スイクン","ストライク","ゼラオラ","ソウブレイズ","ゾロアーク","タイレーツ","ダークライ","ダダリン","デカヌチャン","ドードリオ","ドラパルト","ニンフィア","ヌメルゴン","ハッサム","ハピナス","バシャーモ","バリヤード","バンギラス","パーモット","ピカチュウ","ピクシー","ファイアロー","フーパ","フシギバナ","ブラッキー","プクリン","ホウオウ","マスカーニャ","マッシブーン","マフォクシー","マホイップ","マリルリ","マンムー","ミミッキュ","ミュウ","ミュウツーX","ミュウツーY","ミライドン","メタグロス","ヤドラン","ヤミラミ","ヨクバリス","ラティアス","ラティオス","ラプラス","リーフィア","リザードン","ルカリオ","ワタシラガ"
 ];
 
-const previewRecruit: Recruit = {
-  id: -1,
-  trainerName: "momo",
-  gender: "女性",
-  pokemon: "ハピナス",
-  role: "サポート型",
-  matches: 1842,
-  winRate: 58.7,
-  rank: "マスター 1600〜",
-  playTime: "平日 夜（18〜22時）",
-  note: "中央キャリーを支えるのが好きです。楽しく連携しながら勝ちたい！",
+const previewRecruit: Recruit = { id:-1, trainerName:"momo", gender:"女性", pokemon:"ハピナス", role:"サポート型", matches:1842, winRate:58.7, rank:"マスター 1600〜", playTime:"平日 夜（18〜22時）", note:"中央キャリーを支えるのが好きです。楽しく連携しながら勝ちたい！" };
+const roleClass: Record<string,string> = { "アタック型":"attack", "バランス型":"balance", "スピード型":"speed", "ディフェンス型":"defense", "サポート型":"support" };
+const strongPairs: Record<string,{score:number;copy:string}> = {
+  "ゲッコウガ|ハピナス":{score:96,copy:"中央キャリーを回復と強化で支える王道コンビ"},
+  "カビゴン|ピカチュウ":{score:93,copy:"足止めから高火力を重ねやすい前後衛コンビ"},
+  "キュワワー|ゾロアーク":{score:94,copy:"高機動アタッカーの継戦力を大きく伸ばせます"},
+  "ブラッキー|ミュウツーY":{score:92,copy:"前線を作りながら後衛の火力を通しやすい構成"},
 };
 
-const roleClass: Record<string, string> = {
-  "アタック型": "attack",
-  "バランス型": "balance",
-  "スピード型": "speed",
-  "ディフェンス型": "defense",
-  "サポート型": "support",
-};
-
-const strongPairs: Record<string, { score: number; copy: string }> = {
-  "ゲッコウガ|ハピナス": { score: 96, copy: "中央キャリーを回復と強化で支える王道コンビ" },
-  "カビゴン|ピカチュウ": { score: 93, copy: "足止めから高火力を重ねやすい前後衛コンビ" },
-  "キュワワー|ゾロアーク": { score: 94, copy: "高機動アタッカーの継戦力を大きく伸ばせます" },
-  "ブラッキー|ミュウツーY": { score: 92, copy: "前線を作りながら後衛の火力を通しやすい構成" },
-};
-
-function getSynergy(ownPokemon: string, matePokemon: string, role: string) {
-  const key = [ownPokemon, matePokemon].sort((a, b) => a.localeCompare(b, "ja")).join("|");
-  const known = strongPairs[key];
-  if (known) return known;
-  if (role === "サポート型") return { score: 91, copy: "サポートと連携して主力の動きを通しやすい組み合わせ" };
-  if (role === "ディフェンス型") return { score: 88, copy: "前線を任せて安全にダメージを出しやすい組み合わせ" };
-  return { score: 84, copy: "得意な時間帯を合わせると力を発揮しやすい組み合わせ" };
+function getSynergy(own:string,mate:string,role:string){
+  const known=strongPairs[[own,mate].sort((a,b)=>a.localeCompare(b,"ja")).join("|")];
+  if(known)return known;
+  if(role==="サポート型")return{score:91,copy:"サポートと連携して主力の動きを通しやすい組み合わせ"};
+  if(role==="ディフェンス型")return{score:88,copy:"前線を任せて安全にダメージを出しやすい組み合わせ"};
+  return{score:84,copy:"得意な時間帯を合わせると力を発揮しやすい組み合わせ"};
 }
 
-export default function MatchApp({
-  displayName,
-  preview = false,
-}: {
-  displayName: string;
-  preview?: boolean;
-}) {
-  const shortName = displayName.includes("@") ? displayName.split("@")[0] : displayName;
-  const [tab, setTab] = useState<AppTab>("discover");
-  const [feed, setFeed] = useState<"recommend" | "incoming">("recommend");
-  const [recruits, setRecruits] = useState<Recruit[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [index, setIndex] = useState(0);
-  const [animation, setAnimation] = useState<"" | "left" | "right">("");
-  const [dragStart, setDragStart] = useState<number | null>(null);
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [wanted, setWanted] = useState("すべて");
-  const [minRate, setMinRate] = useState(0);
-  const [minMatches, setMinMatches] = useState(0);
-  const [womenOnly, setWomenOnly] = useState(false);
-  const [compose, setCompose] = useState(false);
-  const [applyTo, setApplyTo] = useState<Recruit | null>(null);
-  const [sending, setSending] = useState(false);
-  const [toast, setToast] = useState("");
-  const [incoming, setIncoming] = useState<Notice[]>([]);
-  const [outgoing, setOutgoing] = useState<Notice[]>([]);
-  const [matchedContact, setMatchedContact] = useState<string | null>(null);
-  const [profile, setProfile] = useState<Profile>({
-    trainerName: shortName,
-    pokemon: "ゲッコウガ",
-    rank: "マスター 1400〜1599",
-    playTime: "平日 夜（18〜22時）",
-    gender: "回答しない",
-    contact: "",
-  });
+export default function MatchApp({displayName,preview=false}:{displayName:string;preview?:boolean}){
+  const shortName=displayName.includes("@")?displayName.split("@")[0]:displayName;
+  const [tab,setTab]=useState<AppTab>("discover");
+  const [recruits,setRecruits]=useState<Recruit[]>([]);
+  const [loading,setLoading]=useState(true);
+  const [index,setIndex]=useState(0);
+  const [animation,setAnimation]=useState<""|"left"|"right">("");
+  const [dragStart,setDragStart]=useState<number|null>(null);
+  const [filterOpen,setFilterOpen]=useState(false);
+  const [wanted,setWanted]=useState("すべて");
+  const [minRate,setMinRate]=useState(0);
+  const [minMatches,setMinMatches]=useState(0);
+  const [womenOnly,setWomenOnly]=useState(false);
+  const [compose,setCompose]=useState(false);
+  const [applyTo,setApplyTo]=useState<Recruit|null>(null);
+  const [sending,setSending]=useState(false);
+  const [toast,setToast]=useState("");
+  const [incoming,setIncoming]=useState<Notice[]>([]);
+  const [outgoing,setOutgoing]=useState<Notice[]>([]);
+  const [connections,setConnections]=useState<Connection[]>([]);
+  const [selectedConnection,setSelectedConnection]=useState<Connection|null>(null);
+  const [messages,setMessages]=useState<ChatMessage[]>([]);
+  const [messageText,setMessageText]=useState("");
+  const [notificationOpen,setNotificationOpen]=useState(false);
+  const [shareOpen,setShareOpen]=useState(false);
+  const [safetyTarget,setSafetyTarget]=useState<SafetyTarget|null>(null);
+  const [matchedContact,setMatchedContact]=useState<string|null>(null);
+  const [profile,setProfile]=useState<Profile>({trainerName:shortName,pokemon:"ゲッコウガ",rank:"マスター 1400〜1599",playTime:"平日 夜（18〜22時）",gender:"回答しない",contact:""});
 
-  const notify = (message: string) => {
-    setToast(message);
-    window.setTimeout(() => setToast(""), 2600);
+  const notify=(message:string)=>{setToast(message);window.setTimeout(()=>setToast(""),2600)};
+
+  const loadRecruits=async()=>{
+    try{const response=await fetch("/api/recruits");const data=await response.json();setRecruits(data.recruits||[])}
+    catch{notify("募集を読み込めませんでした")}finally{setLoading(false)}
+  };
+  const loadNotices=async()=>{
+    try{const response=await fetch("/api/applications");if(!response.ok)return;const data=await response.json();setIncoming(data.incoming||[]);setOutgoing(data.outgoing||[])}catch{/* カード表示は続ける */}
+  };
+  const loadConnections=async()=>{
+    try{const response=await fetch("/api/connections");if(!response.ok)return;const data=await response.json();setConnections(data.connections||[])}catch{/* 検索は続ける */}
+  };
+  const loadMessages=async(connection:Connection)=>{
+    const response=await fetch(`/api/messages?connectionId=${connection.id}`);if(!response.ok)return;const data=await response.json();setMessages(data.messages||[]);
   };
 
-  const loadRecruits = async () => {
-    try {
-      const response = await fetch("/api/recruits");
-      const data = await response.json();
-      setRecruits(data.recruits || []);
-    } catch {
-      notify("募集を読み込めませんでした");
-    } finally {
-      setLoading(false);
+  useEffect(()=>{
+    let active=true;
+    Promise.all([
+      fetch("/api/recruits").then(r=>r.json()),
+      fetch("/api/applications").then(r=>r.ok?r.json():null),
+      fetch("/api/connections").then(r=>r.ok?r.json():null),
+    ]).then(([recruitData,noticeData,connectionData])=>{
+      if(!active)return;
+      setRecruits(recruitData.recruits||[]);
+      if(noticeData){setIncoming(noticeData.incoming||[]);setOutgoing(noticeData.outgoing||[])}
+      if(connectionData)setConnections(connectionData.connections||[]);
+    }).catch(()=>undefined).finally(()=>{if(active)setLoading(false)});
+    const stored=window.localStorage.getItem("yunamatch-profile");
+    if(stored){try{const saved=JSON.parse(stored);window.setTimeout(()=>{if(active)setProfile(saved)},0)}catch{/* 古い端末データは無視 */}}
+    return()=>{active=false};
+  },[]);
+
+  const cards=useMemo(()=>{
+    const source=recruits.length===0&&preview?[previewRecruit]:recruits;
+    return source.filter(person=>(wanted==="すべて"||person.pokemon===wanted)&&person.winRate>=minRate&&person.matches>=minMatches&&(!womenOnly||person.gender==="女性"));
+  },[recruits,preview,wanted,minRate,minMatches,womenOnly]);
+  const current=cards.length?cards[index%cards.length]:null;
+  const synergy=current?getSynergy(profile.pokemon,current.pokemon,current.role):null;
+  const pendingCount=incoming.filter(n=>n.status==="pending").length;
+  const heartCount=connections.filter(c=>c.againByMate&&!c.againByMe).length;
+  const notificationCount=pendingCount+heartCount;
+
+  const moveNext=(direction:"left"|"right")=>{
+    if(!current||animation)return;
+    if(direction==="right"){
+      if(current.id===-1){notify("公開版では実際の募集にプレイ申請できます");return}
+      setApplyTo(current);return;
     }
+    setAnimation(direction);window.setTimeout(()=>{setIndex(v=>v+1);setAnimation("")},260);
+  };
+  const handlePointerUp=(event:PointerEvent<HTMLElement>)=>{if(dragStart===null)return;const distance=event.clientX-dragStart;setDragStart(null);if(Math.abs(distance)>=65)moveNext(distance>0?"right":"left")};
+
+  const submitApplication=async(event:FormEvent<HTMLFormElement>)=>{
+    event.preventDefault();if(!applyTo)return;setSending(true);
+    const body=Object.fromEntries(new FormData(event.currentTarget));
+    const response=await fetch("/api/applications",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({...body,recruitId:applyTo.id})});
+    const data=await response.json();setSending(false);
+    if(response.status===401){location.href=data.signIn;return}if(!response.ok){notify(data.error||"申請できませんでした");return}
+    setApplyTo(null);notify("プレイ申請を送りました");setIndex(v=>v+1);loadNotices();
+  };
+  const submitRecruit=async(event:FormEvent<HTMLFormElement>)=>{
+    event.preventDefault();setSending(true);const body=Object.fromEntries(new FormData(event.currentTarget));
+    const response=await fetch("/api/recruits",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});const data=await response.json();setSending(false);
+    if(response.status===401){location.href=data.signIn;return}if(!response.ok){notify(data.error||"募集を投稿できませんでした");return}
+    setCompose(false);notify("募集を公開しました");await loadRecruits();setTab("discover");
+  };
+  const decide=async(applicationId:number,action:"accept"|"decline")=>{
+    const response=await fetch("/api/applications",{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({applicationId,action})});const data=await response.json();
+    if(!response.ok){notify(data.error||"処理できませんでした");return}if(action==="accept")setMatchedContact(data.applicantContact);
+    notify(action==="accept"?"マッチ成立！チャットが開通しました":"今回は見送りました");await Promise.all([loadNotices(),loadConnections(),loadRecruits()]);
+  };
+  const openChat=async(connection:Connection)=>{setSelectedConnection(connection);setTab("chat");setNotificationOpen(false);await loadMessages(connection)};
+  const sendMessage=async(event:FormEvent<HTMLFormElement>)=>{
+    event.preventDefault();if(!selectedConnection||!messageText.trim())return;
+    const response=await fetch("/api/messages",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({connectionId:selectedConnection.id,body:messageText})});const data=await response.json();
+    if(!response.ok){notify(data.error||"送信できませんでした");return}setMessages(rows=>[...rows,data.message]);setMessageText("");loadConnections();
+  };
+  const toggleAgain=async(connection:Connection)=>{
+    const response=await fetch("/api/connections",{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({connectionId:connection.id,action:"again"})});const data=await response.json();
+    if(!response.ok){notify(data.error||"操作できませんでした");return}
+    setConnections(rows=>rows.map(row=>row.id===connection.id?{...row,...data}:row));
+    setSelectedConnection(value=>value?.id===connection.id?{...value,...data}:value);
+    notify(data.mutualAgain?"両想いです！再マッチできます":data.againByMe?"また遊びたいを送りました":"取り消しました");
+  };
+  const rematch=async(connection:Connection)=>{
+    const response=await fetch("/api/connections",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({connectionId:connection.id,action:"rematch"})});const data=await response.json();
+    if(!response.ok){notify(data.error||"再マッチできませんでした");return}notify("再マッチのお誘いを送りました");await openChat(connection);
+  };
+  const submitSafety=async(event:FormEvent<HTMLFormElement>)=>{
+    event.preventDefault();if(!safetyTarget)return;const body=Object.fromEntries(new FormData(event.currentTarget));
+    const response=await fetch("/api/safety",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({...body,...safetyTarget,action:"report",alsoBlock:body.alsoBlock==="on"})});const data=await response.json();
+    if(!response.ok){notify(data.error||"通報できませんでした");return}setSafetyTarget(null);notify("通報を受け付けました");await Promise.all([loadRecruits(),loadConnections()]);
+  };
+  const blockTarget=async()=>{
+    if(!safetyTarget)return;const response=await fetch("/api/safety",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({...safetyTarget,action:"block"})});const data=await response.json();
+    if(!response.ok){notify(data.error||"ブロックできませんでした");return}setSafetyTarget(null);setSelectedConnection(null);notify("このユーザーをブロックしました");await Promise.all([loadRecruits(),loadConnections()]);
+  };
+  const saveProfile=(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();window.localStorage.setItem("yunamatch-profile",JSON.stringify(profile));notify("プロフィールを保存しました")};
+
+  const shareTrainerCard=async()=>{
+    const canvas=document.createElement("canvas");canvas.width=1200;canvas.height=675;const ctx=canvas.getContext("2d");if(!ctx)return;
+    const gradient=ctx.createLinearGradient(0,0,1200,675);gradient.addColorStop(0,"#35216f");gradient.addColorStop(.55,"#6c4df6");gradient.addColorStop(1,"#ff4f91");ctx.fillStyle=gradient;ctx.fillRect(0,0,1200,675);
+    ctx.globalAlpha=.14;for(let x=40;x<1200;x+=72)for(let y=35;y<675;y+=72){ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill()}ctx.globalAlpha=1;
+    ctx.fillStyle="#fff";ctx.font="900 42px sans-serif";ctx.fillText("YUNAMATCH",70,82);ctx.font="700 20px sans-serif";ctx.fillText("MY TRAINER CARD",72,118);
+    ctx.fillStyle="#ffffff22";ctx.beginPath();ctx.roundRect(64,160,1072,430,34);ctx.fill();
+    ctx.fillStyle="#fff";ctx.font="900 76px sans-serif";ctx.fillText(profile.trainerName||"TRAINER",110,270);ctx.font="800 30px sans-serif";ctx.fillText(profile.rank,112,322);
+    ctx.fillStyle="#ffdfeb";ctx.font="900 28px sans-serif";ctx.fillText("MAIN POKÉMON",112,405);ctx.fillStyle="#fff";ctx.font="900 70px sans-serif";ctx.fillText(profile.pokemon,110,485);
+    ctx.font="700 25px sans-serif";ctx.fillText(profile.playTime,112,545);ctx.textAlign="right";ctx.font="900 172px sans-serif";ctx.fillText(profile.pokemon.slice(0,1),1065,465);ctx.textAlign="left";
+    const blob=await new Promise<Blob|null>(resolve=>canvas.toBlob(resolve,"image/png"));if(!blob)return;const file=new File([blob],"yunamatch-trainer-card.png",{type:"image/png"});
+    const text=`${profile.pokemon}を使っています！相性のいいメイトを探しています。 #YUNAMATCH`;
+    try{if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}))){await navigator.share({title:"YUNAMATCH トレーナーカード",text,url:"https://yunamatch.vercel.app/",files:[file]});setShareOpen(false);return}}catch(error){if((error as Error).name==="AbortError")return}
+    const download=document.createElement("a");download.href=URL.createObjectURL(blob);download.download=file.name;download.click();window.setTimeout(()=>URL.revokeObjectURL(download.href),1000);
+    window.open(`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent("https://yunamatch.vercel.app/")}`,"_blank","noopener,noreferrer");notify("カード画像を保存しました。Xの投稿に添付してください");setShareOpen(false);
   };
 
-  const loadNotices = async () => {
-    try {
-      const response = await fetch("/api/applications");
-      if (!response.ok) return;
-      const data = await response.json();
-      setIncoming(data.incoming || []);
-      setOutgoing(data.outgoing || []);
-    } catch {
-      // 通知が取得できなくても、メイト探しは続けられる。
-    }
-  };
+  return <main className="appStage"><section className="phoneShell">
+    <header className="appHeader">
+      <button className="miniAvatar" onClick={()=>setTab("profile")} aria-label="マイページを開く">{profile.trainerName.slice(0,1).toUpperCase()}</button>
+      <div className="appBrand"><span>Y</span><div><strong>YUNAMATCH</strong><small>PLAY TOGETHER</small></div></div>
+      <button className="notificationButton" onClick={()=>setNotificationOpen(true)} aria-label={`通知を開く${notificationCount?`、${notificationCount}件`:""}`}><span aria-hidden="true">🔔</span>{notificationCount>0&&<i>{notificationCount}</i>}</button>
+    </header>
 
-  useEffect(() => {
-    let active = true;
-    fetch("/api/recruits")
-      .then((response) => response.json())
-      .then((data) => { if (active) setRecruits(data.recruits || []); })
-      .catch(() => undefined)
-      .finally(() => { if (active) setLoading(false); });
-    fetch("/api/applications")
-      .then((response) => response.ok ? response.json() : null)
-      .then((data) => { if (active && data) { setIncoming(data.incoming || []); setOutgoing(data.outgoing || []); } })
-      .catch(() => undefined);
-    const stored = window.localStorage.getItem("yunamatch-profile");
-    if (stored) {
-      try {
-        const savedProfile = JSON.parse(stored);
-        window.setTimeout(() => { if (active) setProfile(savedProfile); }, 0);
-      } catch { /* 古い端末データは無視 */ }
-    }
-    return () => { active = false; };
-  }, []);
+    <div className="appViewport">
+      {tab==="discover"&&<section className="discoverView instantCards">
+        <div className="searchStrip"><div><strong>相性でメイトを探す</strong><small>{cards.length}人が募集中</small></div><button onClick={()=>setFilterOpen(true)}><span>☷</span>{wanted==="すべて"?"条件を絞る":wanted}</button></div>
+        {loading?<div className="stateCard"><div className="loadingBall"/><h2>メイトを探しています</h2></div>:current?<>
+          <article className={`discoverCard ${animation}`} onPointerDown={event=>setDragStart(event.clientX)} onPointerUp={handlePointerUp}>
+            <div className={`cardArtwork ${roleClass[current.role]||"support"}`}>
+              <div className="artDots"/><div className="artWatermark">{current.pokemon}</div>
+              <div className="cardTopline"><span>● 募集中</span><strong>相性 {synergy?.score}<small>%</small></strong></div>
+              {current.id!==-1&&<button className="cardSafetyButton" onClick={()=>setSafetyTarget({name:current.trainerName,recruitId:current.id})} aria-label={`${current.trainerName}さんを通報またはブロック`}>•••</button>}
+              <div className="pokemonMonogram"><span>{current.pokemon.slice(0,1)}</span></div><div className="pokemonTitle"><small>{current.role}</small><strong>{current.pokemon}</strong></div>
+            </div>
+            <div className="cardDetails">
+              <div className="identityLine"><div className="mateAvatar">{current.trainerName.slice(0,1).toUpperCase()}</div><div><h1>{current.trainerName}</h1><p className="rankText">{current.rank} ・ {current.gender}</p></div><span>ONLINE</span></div>
+              <div className="pairingLine"><span>{profile.pokemon}</span><b>×</b><span>{current.pokemon}</span></div>
+              <p className="synergyCopy"><strong>おすすめ理由</strong>{synergy?.copy}</p>
+              <div className="statGrid"><div><strong>{current.matches.toLocaleString()}</strong><span>試合数</span></div><div><strong>{current.winRate}<small>%</small></strong><span>勝率</span></div><div><strong>{current.role.replace("型","")}</strong><span>得意ロール</span></div></div>
+              <div className="timeChip"><span>◷</span><div><small>PLAY TIME</small><strong>{current.playTime}</strong></div></div><p className="profileNote">“{current.note}”</p>
+            </div>
+          </article>
+          <div className="choiceArea"><button className="passButton" onClick={()=>moveNext("left")}><span>×</span><small>次を見る</small></button><p>左右にスワイプ</p><button className="likeButton" onClick={()=>moveNext("right")}><span>⚡</span><small>一緒に遊ぶ</small></button></div>
+        </>:<div className="stateCard emptyState"><div className="emptyOrb">Y</div><h2>新しいメイトを待っています</h2><p>今は条件に合う募集がありません。あなたの募集から始めてみませんか？</p><button onClick={()=>setCompose(true)}>募集を作る</button></div>}
+      </section>}
 
-  const cards = useMemo(() => {
-    const source = recruits.length === 0 && preview ? [previewRecruit] : recruits;
-    return source.filter((person) =>
-      (wanted === "すべて" || person.pokemon === wanted) &&
-      person.winRate >= minRate &&
-      person.matches >= minMatches &&
-      (!womenOnly || person.gender === "女性")
-    );
-  }, [recruits, preview, wanted, minRate, minMatches, womenOnly]);
+      {tab==="recruit"&&<section className="panelView"><div className="viewHeading"><div><small>LIVE RECRUITING</small><h1>募集を探す</h1></div><button onClick={()=>setCompose(true)}>＋ 募集する</button></div><p className="viewLead">一覧で比較して、気になる募集へ申請できます。</p><div className="recruitList">{recruits.length?recruits.map(recruit=><article key={recruit.id} className="recruitItem"><div className={`pokemonTile ${roleClass[recruit.role]||"support"}`}>{recruit.pokemon.slice(0,1)}</div><div><div className="recruitTop"><h2>{recruit.trainerName}</h2><span>募集中</span></div><p>{recruit.pokemon} ・ {recruit.rank}</p><small>{recruit.playTime} ・ 勝率 {recruit.winRate}%</small></div><button onClick={()=>setApplyTo(recruit)}>申請</button></article>):<div className="listEmpty">まだ公開中の募集はありません。<br/>あなたの募集から始めてみませんか？</div>}</div></section>}
 
-  const current = cards.length ? cards[index % cards.length] : null;
-  const synergy = current ? getSynergy(profile.pokemon, current.pokemon, current.role) : null;
-  const pendingCount = incoming.filter((notice) => notice.status === "pending").length;
+      {tab==="chat"&&<section className="panelView chatView">{selectedConnection?<>
+        <div className="chatHeader"><button onClick={()=>{setSelectedConnection(null);setMessages([])}} aria-label="チャット一覧へ戻る">←</button><div className="chatMateAvatar">{selectedConnection.mateName.slice(0,1)}</div><div><h1>{selectedConnection.mateName}</h1><p>{selectedConnection.matePokemon} ・ マッチ済み</p></div><button className="chatSafety" onClick={()=>setSafetyTarget({name:selectedConnection.mateName,connectionId:selectedConnection.id})}>•••</button></div>
+        <div className="reconnectBar"><button className={selectedConnection.againByMe?"active":""} onClick={()=>toggleAgain(selectedConnection)}>♡ {selectedConnection.againByMe?"送信済み":"また遊びたい"}</button><button className="rematchButton" onClick={()=>rematch(selectedConnection)}>↻ 再マッチ</button></div>
+        {selectedConnection.againByMate&&<div className="heartNotice">♡ {selectedConnection.mateName}さんも、また遊びたいと思っています</div>}
+        <div className="messageThread">{messages.length?messages.map(message=><div key={message.id} className={`messageBubble ${message.sender}`}><p>{message.body}</p><small>{new Date(message.createdAt).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}</small></div>):<div className="chatEmpty"><span>👋</span><h2>チャットが開通しました</h2><p>プレイ時間や編成を相談してみよう。</p></div>}</div>
+        <form className="messageComposer" onSubmit={sendMessage}><input value={messageText} onChange={event=>setMessageText(event.target.value)} maxLength={300} placeholder="メッセージを入力" aria-label="メッセージ"/><button disabled={!messageText.trim()} aria-label="送信">➤</button></form>
+      </>:<><div className="viewHeading"><div><small>YOUR MATES</small><h1>チャット</h1></div></div><p className="viewLead">マッチした相手と次のプレイを相談できます。</p><div className="chatList">{connections.length?connections.map(connection=><button key={connection.id} className="chatListItem" onClick={()=>openChat(connection)}><div className="chatMateAvatar">{connection.mateName.slice(0,1)}</div><div><strong>{connection.mateName}</strong><p>{connection.latestMessage}</p><small>{connection.matePokemon}</small></div>{connection.againByMate&&<span className="heartDot">♡</span>}<b>›</b></button>):<div className="noticeEmpty">マッチすると、ここからチャットできます。<br/>まずはカードからプレイ申請を送りましょう。</div>}</div></>}</section>}
 
-  const moveNext = (direction: "left" | "right") => {
-    if (!current || animation) return;
-    if (direction === "right") {
-      if (current.id === -1) {
-        notify("公開版では実際の募集にプレイ申請できます");
-      } else {
-        setApplyTo(current);
-        return;
-      }
-    }
-    setAnimation(direction);
-    window.setTimeout(() => {
-      setIndex((value) => value + 1);
-      setAnimation("");
-    }, 260);
-  };
+      {tab==="profile"&&<section className="panelView profileView"><div className="profileHero"><div>{profile.trainerName.slice(0,1).toUpperCase()}</div><small>MY PROFILE</small><h1>{profile.trainerName}</h1><p>{profile.pokemon} ・ {profile.rank}</p><button className="shareCardButton" onClick={()=>setShareOpen(true)}>𝕏 トレーナーカードを共有</button></div><form className="profileForm" onSubmit={saveProfile}><label>トレーナー名<input value={profile.trainerName} maxLength={24} onChange={e=>setProfile({...profile,trainerName:e.target.value})} required/></label><label>メインポケモン<select value={profile.pokemon} onChange={e=>setProfile({...profile,pokemon:e.target.value})}>{pokemon.map(name=><option key={name}>{name}</option>)}</select></label><label>現在のレート<select value={profile.rank} onChange={e=>setProfile({...profile,rank:e.target.value})}><option>エキスパート</option><option>マスター 1200〜1399</option><option>マスター 1400〜1599</option><option>マスター 1600〜1799</option><option>マスター 1800〜</option></select></label><label>遊べる時間<select value={profile.playTime} onChange={e=>setProfile({...profile,playTime:e.target.value})}><option>平日 朝（6〜12時）</option><option>平日 昼（12〜18時）</option><option>平日 夜（18〜22時）</option><option>平日 深夜（22〜翌2時）</option><option>土日 朝・昼</option><option>土日 夜・深夜</option><option>時間帯はいつでも</option></select></label><label>性別<select value={profile.gender} onChange={e=>setProfile({...profile,gender:e.target.value})}><option>回答しない</option><option>女性</option><option>男性</option><option>その他</option></select></label><label>承認後に伝える連絡先<input value={profile.contact} placeholder="Discord ID / トレーナーID" onChange={e=>setProfile({...profile,contact:e.target.value})}/></label><button className="primaryButton">プロフィールを保存</button></form><a className="signOutLink" href="/api/auth/signout?callbackUrl=%2F">ログアウト</a><p className="fanNote">非公式ファンメイドサービスです。ゲーム仲間探し以外の目的での利用は禁止です。</p></section>}
+    </div>
 
-  const handlePointerUp = (event: PointerEvent<HTMLElement>) => {
-    if (dragStart === null) return;
-    const distance = event.clientX - dragStart;
-    setDragStart(null);
-    if (Math.abs(distance) < 65) return;
-    moveNext(distance > 0 ? "right" : "left");
-  };
+    <nav className="bottomNav" aria-label="メインメニュー"><button className={tab==="discover"?"active":""} onClick={()=>setTab("discover")}><span>⌕</span>さがす</button><button className={tab==="recruit"?"active":""} onClick={()=>setTab("recruit")}><span>＋</span>募集</button><button className={tab==="chat"?"active":""} onClick={()=>{setTab("chat");loadConnections()}}><span>▢</span>チャット{heartCount>0&&<i>{heartCount}</i>}</button><button className={tab==="profile"?"active":""} onClick={()=>setTab("profile")}><span>○</span>マイページ</button></nav>
+  </section>
 
-  const submitApplication = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!applyTo) return;
-    setSending(true);
-    const body = Object.fromEntries(new FormData(event.currentTarget));
-    const response = await fetch("/api/applications", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ ...body, recruitId: applyTo.id }),
-    });
-    const data = await response.json();
-    setSending(false);
-    if (response.status === 401) { location.href = data.signIn; return; }
-    if (!response.ok) { notify(data.error || "申請できませんでした"); return; }
-    setApplyTo(null);
-    notify("プレイ申請を送りました");
-    setIndex((value) => value + 1);
-    loadNotices();
-  };
+  {notificationOpen&&<div className="modalBackdrop"><button className="backdropDismiss" onClick={()=>setNotificationOpen(false)} aria-label="通知を閉じる"/><section className="notificationSheet"><div className="sheetHandle"/><button className="closeButton" onClick={()=>setNotificationOpen(false)}>×</button><small className="modalKicker">NOTIFICATIONS</small><h2>通知</h2><div className="notificationList">
+    {heartCount>0&&connections.filter(c=>c.againByMate&&!c.againByMe).map(connection=><button key={`heart-${connection.id}`} className="notificationRow heart" onClick={()=>openChat(connection)}><span>♡</span><div><strong>{connection.mateName}さんからハート</strong><p>「また遊びたい」が届きました</p></div><b>›</b></button>)}
+    {incoming.filter(n=>n.status==="pending").map(notice=><article key={`request-${notice.id}`} className="notificationRequest"><div className="notificationRow"><span>⚡</span><div><strong>{notice.applicantName}さんから申請</strong><p>{notice.pokemon}で一緒に遊びたいそうです</p></div></div><div><button onClick={()=>decide(notice.id,"decline")}>見送る</button><button onClick={()=>decide(notice.id,"accept")}>承認する</button></div></article>)}
+    {outgoing.filter(n=>n.status==="accepted").map(notice=><button key={`accepted-${notice.id}`} className="notificationRow accepted" onClick={()=>{const connection=connections.find(c=>c.mateName===notice.trainerName);if(connection)openChat(connection)}}><span>✓</span><div><strong>{notice.trainerName}さんとマッチ成立</strong><p>チャットからプレイ時間を相談できます</p></div><b>›</b></button>)}
+    {!heartCount&&!pendingCount&&!outgoing.some(n=>n.status==="accepted")&&<div className="noticeEmpty">新しい通知はありません</div>}
+  </div></section></div>}
 
-  const submitRecruit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setSending(true);
-    const body = Object.fromEntries(new FormData(event.currentTarget));
-    const response = await fetch("/api/recruits", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const data = await response.json();
-    setSending(false);
-    if (response.status === 401) { location.href = data.signIn; return; }
-    if (!response.ok) { notify(data.error || "募集を投稿できませんでした"); return; }
-    setCompose(false);
-    notify("募集を公開しました");
-    loadRecruits();
-    setTab("recruit");
-  };
+  {filterOpen&&<div className="modalBackdrop"><button className="backdropDismiss" onClick={()=>setFilterOpen(false)} aria-label="絞り込みを閉じる"/><section className="sheetModal"><div className="sheetHandle"/><button className="closeButton" onClick={()=>setFilterOpen(false)}>×</button><small className="modalKicker">SEARCH FILTER</small><h2>希望のメイト</h2><label>使ってほしいポケモン<select value={wanted} onChange={e=>{setWanted(e.target.value);setIndex(0)}}><option>すべて</option>{pokemon.map(name=><option key={name}>{name}</option>)}</select></label><div className="twoFields"><label>最低勝率<select value={minRate} onChange={e=>{setMinRate(Number(e.target.value));setIndex(0)}}><option value="0">指定なし</option><option value="50">50%以上</option><option value="55">55%以上</option><option value="60">60%以上</option></select></label><label>最低試合数<select value={minMatches} onChange={e=>{setMinMatches(Number(e.target.value));setIndex(0)}}><option value="0">指定なし</option><option value="500">500試合〜</option><option value="1000">1,000試合〜</option><option value="1500">1,500試合〜</option></select></label></div><label className="toggleRow"><input type="checkbox" checked={womenOnly} onChange={e=>{setWomenOnly(e.target.checked);setIndex(0)}}/><span>女性プレイヤーのみ</span></label><button className="primaryButton" onClick={()=>setFilterOpen(false)}>この条件で探す</button></section></div>}
 
-  const decide = async (applicationId: number, action: "accept" | "decline") => {
-    const response = await fetch("/api/applications", {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ applicationId, action }),
-    });
-    const data = await response.json();
-    if (!response.ok) { notify(data.error || "処理できませんでした"); return; }
-    if (action === "accept") setMatchedContact(data.applicantContact);
-    notify(action === "accept" ? "マッチ成立！" : "今回は見送りました");
-    loadNotices();
-    loadRecruits();
-  };
+  {compose&&<div className="modalBackdrop"><form className="sheetModal formSheet" onSubmit={submitRecruit}><button type="button" className="closeButton" onClick={()=>setCompose(false)}>×</button><small className="modalKicker">CREATE RECRUIT</small><h2>メイトを募集</h2><div className="twoFields"><label>トレーナー名<input name="trainerName" defaultValue={profile.trainerName} required/></label><label>性別<select name="gender" defaultValue={profile.gender}><option>回答しない</option><option>女性</option><option>男性</option><option>その他</option></select></label></div><div className="twoFields"><label>使用ポケモン<select name="pokemon" defaultValue={profile.pokemon}>{pokemon.map(name=><option key={name}>{name}</option>)}</select></label><label>型<select name="role"><option>アタック型</option><option>バランス型</option><option>スピード型</option><option>ディフェンス型</option><option>サポート型</option></select></label></div><div className="twoFields"><label>試合数<input name="matches" type="number" min="0" max="99999" defaultValue="1000" required/></label><label>勝率<input name="winRate" type="number" min="0" max="100" step="0.1" defaultValue="50" required/></label></div><label>現在のレート<select name="rank" defaultValue={profile.rank}><option>エキスパート</option><option>マスター 1200〜1399</option><option>マスター 1400〜1599</option><option>マスター 1600〜1799</option><option>マスター 1800〜</option></select></label><label>遊べる時間<select name="playTime" defaultValue={profile.playTime}><option>平日 朝（6〜12時）</option><option>平日 昼（12〜18時）</option><option>平日 夜（18〜22時）</option><option>平日 深夜（22〜翌2時）</option><option>土日 朝・昼</option><option>土日 夜・深夜</option><option>時間帯はいつでも</option></select></label><label>ひとこと<textarea name="note" maxLength={180} placeholder="楽しくランクを回したいです！" required/></label><label>承認後に伝える連絡先<input name="contact" defaultValue={profile.contact} placeholder="Discord ID / トレーナーID" required/></label><p className="privacyText">連絡先は承認した相手にだけ表示されます。</p><button className="primaryButton" disabled={sending}>{sending?"公開中…":"募集を公開する"}</button></form></div>}
 
-  const saveProfile = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    window.localStorage.setItem("yunamatch-profile", JSON.stringify(profile));
-    notify("プロフィールを保存しました");
-  };
+  {applyTo&&<div className="modalBackdrop"><form className="sheetModal formSheet" onSubmit={submitApplication}><button type="button" className="closeButton" onClick={()=>setApplyTo(null)}>×</button><div className={`applyPokemon ${roleClass[applyTo.role]||"support"}`}>{applyTo.pokemon.slice(0,1)}</div><small className="modalKicker">PLAY REQUEST</small><h2>{applyTo.trainerName}さんと<br/>一緒に遊ぶ</h2><label>あなたのトレーナー名<input name="applicantName" defaultValue={profile.trainerName} required/></label><label>使用ポケモン<select name="pokemon" defaultValue={profile.pokemon}>{pokemon.map(name=><option key={name}>{name}</option>)}</select></label><label>承認後に伝える連絡先<input name="applicantContact" defaultValue={profile.contact} placeholder="Discord ID / トレーナーID" required/></label><label>メッセージ<textarea name="message" maxLength={180} defaultValue={`${applyTo.pokemon}と一緒にランクへ行きたいです！`} required/></label><button className="primaryButton" disabled={sending}>{sending?"送信中…":"プレイ申請を送る"}</button></form></div>}
 
-  const switchTab = (next: AppTab) => {
-    setTab(next);
-    if (next === "matches") loadNotices();
-  };
+  {safetyTarget&&<div className="modalBackdrop"><form className="sheetModal safetySheet" onSubmit={submitSafety}><button type="button" className="closeButton" onClick={()=>setSafetyTarget(null)}>×</button><small className="modalKicker">SAFETY</small><h2>{safetyTarget.name}さんを報告</h2><p>内容は相手に通知されません。危険を感じた場合はブロックも利用してください。</p><label>通報理由<select name="reason" required defaultValue=""><option value="" disabled>選択してください</option><option>出会い目的</option><option>迷惑行為</option><option>暴言・嫌がらせ</option><option>なりすまし</option><option>不正なプロフィール</option><option>その他</option></select></label><label>詳細<textarea name="details" maxLength={500} placeholder="状況をできる範囲で教えてください"/></label><label className="toggleRow"><input type="checkbox" name="alsoBlock"/><span>通報と同時にブロックする</span></label><button className="dangerButton">この内容で通報</button><button type="button" className="blockButton" onClick={blockTarget}>通報せずブロックのみ</button></form></div>}
 
-  return (
-    <main className="appStage">
-      <section className="phoneShell">
-        <header className="appHeader">
-          <button className="miniAvatar" onClick={() => switchTab("profile")} aria-label="マイページを開く">{profile.trainerName.slice(0, 1).toUpperCase()}</button>
-          <div className="appBrand"><span>Y</span><div><strong>YUNAMATCH</strong><small>PLAY TOGETHER</small></div></div>
-          <button className="headerIcon" onClick={() => tab === "discover" ? setFilterOpen(true) : switchTab("matches")} aria-label={tab === "discover" ? "絞り込み" : "通知"}>{tab === "discover" ? "☷" : "♢"}{pendingCount > 0 && <i>{pendingCount}</i>}</button>
-        </header>
+  {shareOpen&&<div className="modalBackdrop"><section className="shareModal"><button className="closeButton" onClick={()=>setShareOpen(false)}>×</button><small className="modalKicker">SHARE YOUR CARD</small><h2>トレーナーカード</h2><div className="trainerShareCard"><div className="shareBrand">YUNAMATCH</div><small>MY TRAINER CARD</small><h3>{profile.trainerName}</h3><p>{profile.rank}</p><div><span>MAIN</span><strong>{profile.pokemon}</strong></div><b>{profile.pokemon.slice(0,1)}</b><footer>{profile.playTime}</footer></div><button className="xShareButton" onClick={shareTrainerCard}>𝕏 画像つきで共有する</button><p>スマホでは共有先にXを選べます。PCでは画像を保存して投稿画面を開きます。</p></section></div>}
 
-        <div className="appViewport">
-          {tab === "discover" && (
-            <section className="discoverView">
-              <div className="discoverHero">
-                <div><small>FIND YOUR DUO</small><h1>今夜の相棒を、<br /><em>相性</em>から。</h1></div>
-                <button onClick={() => setFilterOpen(true)} aria-label="検索条件を変更"><span>☷</span><small>{wanted === "すべて" ? "条件を設定" : wanted}</small></button>
-              </div>
-              <div className="feedTabs">
-                <button className={feed === "recommend" ? "active" : ""} onClick={() => setFeed("recommend")}>おすすめ</button>
-                <button className={feed === "incoming" ? "active" : ""} onClick={() => { setFeed("incoming"); loadNotices(); }}>相手から{pendingCount > 0 && <b>{pendingCount}</b>}</button>
-              </div>
-
-              {feed === "recommend" ? (
-                <>
-                  <div className="recommendMeta"><span>あなたへのおすすめ</span><div><b>{cards.length}</b>人が募集中</div></div>
-                  {loading ? (
-                    <div className="stateCard"><div className="loadingBall" /><h2>メイトを探しています</h2></div>
-                  ) : current ? (
-                    <article
-                      className={`discoverCard ${animation}`}
-                      onPointerDown={(event) => setDragStart(event.clientX)}
-                      onPointerUp={handlePointerUp}
-                    >
-                      <div className={`cardArtwork ${roleClass[current.role] || "support"}`}>
-                        <div className="artDots" />
-                        <div className="artWatermark">{current.pokemon}</div>
-                        <div className="cardTopline"><span>● NOW RECRUITING</span><strong>相性 {synergy?.score}<small>%</small></strong></div>
-                        <div className="pokemonMonogram"><span>{current.pokemon.slice(0, 1)}</span></div>
-                        <div className="pokemonTitle"><small>{current.role}</small><strong>{current.pokemon}</strong></div>
-                      </div>
-                      <div className="cardDetails">
-                        <div className="identityLine"><div className="mateAvatar">{current.trainerName.slice(0, 1).toUpperCase()}</div><div><h1>{current.trainerName}</h1><p className="rankText">{current.rank} ・ {current.gender}</p></div><span>ONLINE</span></div>
-                        <div className="pairingLine"><span>{profile.pokemon}</span><b>×</b><span>{current.pokemon}</span></div>
-                        <p className="synergyCopy"><strong>おすすめ理由</strong>{synergy?.copy}</p>
-                        <div className="statGrid">
-                          <div><strong>{current.matches.toLocaleString()}</strong><span>試合数</span></div>
-                          <div><strong>{current.winRate}<small>%</small></strong><span>勝率</span></div>
-                          <div><strong>{current.role.replace("型", "")}</strong><span>得意ロール</span></div>
-                        </div>
-                        <div className="timeChip"><span>◷</span><div><small>PLAY TIME</small><strong>{current.playTime}</strong></div></div>
-                        <p className="profileNote">“{current.note}”</p>
-                      </div>
-                    </article>
-                  ) : (
-                    <div className="stateCard emptyState"><div className="emptyOrb">Y</div><h2>新しいメイトを待っています</h2><p>最初の募集を出すと、ほかのトレーナーからプレイ申請が届きます。</p><button onClick={() => setCompose(true)}>募集を作る</button></div>
-                  )}
-                  {current && <div className="choiceArea"><button className="passButton" onClick={() => moveNext("left")} aria-label="次のメイトを見る"><span>×</span><small>次を見る</small></button><p><span>←</span> スワイプでも選べます <span>→</span></p><button className="likeButton" onClick={() => moveNext("right")} aria-label="この人とプレイしたい"><span>⚡</span><small>一緒に遊ぶ</small></button></div>}
-                </>
-              ) : (
-                <IncomingList incoming={incoming} decide={decide} />
-              )}
-            </section>
-          )}
-
-          {tab === "recruit" && (
-            <section className="panelView">
-              <div className="viewHeading"><div><small>LIVE RECRUITING</small><h1>今夜の募集</h1></div><button onClick={() => setCompose(true)}>＋ 募集する</button></div>
-              <p className="viewLead">条件の合う募集にプレイ申請を送れます。</p>
-              <div className="recruitList">
-                {recruits.length ? recruits.map((recruit) => (
-                  <article key={recruit.id} className="recruitItem">
-                    <div className={`pokemonTile ${roleClass[recruit.role] || "support"}`}>{recruit.pokemon.slice(0, 1)}</div>
-                    <div><div className="recruitTop"><h2>{recruit.trainerName}</h2><span>募集中</span></div><p>{recruit.pokemon} ・ {recruit.rank}</p><small>{recruit.playTime} ・ 勝率 {recruit.winRate}%</small></div>
-                    <button onClick={() => setApplyTo(recruit)}>見る</button>
-                  </article>
-                )) : <div className="listEmpty">まだ公開中の募集はありません。<br />あなたの募集から始めてみませんか？</div>}
-              </div>
-            </section>
-          )}
-
-          {tab === "matches" && (
-            <section className="panelView">
-              <div className="viewHeading"><div><small>CONNECTIONS</small><h1>マッチ・通知</h1></div></div>
-              <h2 className="subHeading">届いた申請</h2>
-              <IncomingList incoming={incoming} decide={decide} compact />
-              <h2 className="subHeading">送った申請</h2>
-              <div className="noticeList">
-                {outgoing.length ? outgoing.map((notice) => (
-                  <article className="noticeItem" key={notice.id}>
-                    <div className="noticeAvatar">{notice.trainerName?.slice(0, 1)}</div>
-                    <div><h3>{notice.trainerName}</h3><p>{notice.pokemon}の募集</p></div>
-                    <StatusPill status={notice.status} />
-                    {notice.ownerContact && <button className="contactLink" onClick={() => setMatchedContact(notice.ownerContact || null)}>連絡先</button>}
-                  </article>
-                )) : <p className="noticeEmpty">送信した申請はありません</p>}
-              </div>
-            </section>
-          )}
-
-          {tab === "profile" && (
-            <section className="panelView profileView">
-              <div className="profileHero"><div>{profile.trainerName.slice(0, 1).toUpperCase()}</div><small>MY PROFILE</small><h1>{profile.trainerName}</h1><p>{profile.pokemon} ・ {profile.rank}</p></div>
-              <form className="profileForm" onSubmit={saveProfile}>
-                <label>トレーナー名<input value={profile.trainerName} maxLength={24} onChange={(event) => setProfile({ ...profile, trainerName: event.target.value })} required /></label>
-                <label>メインポケモン<select value={profile.pokemon} onChange={(event) => setProfile({ ...profile, pokemon: event.target.value })}>{pokemon.map((name) => <option key={name}>{name}</option>)}</select></label>
-                <label>現在のレート<select value={profile.rank} onChange={(event) => setProfile({ ...profile, rank: event.target.value })}><option>エキスパート</option><option>マスター 1200〜1399</option><option>マスター 1400〜1599</option><option>マスター 1600〜1799</option><option>マスター 1800〜</option></select></label>
-                <label>遊べる時間<select value={profile.playTime} onChange={(event) => setProfile({ ...profile, playTime: event.target.value })}><option>平日 朝（6〜12時）</option><option>平日 昼（12〜18時）</option><option>平日 夜（18〜22時）</option><option>平日 深夜（22〜翌2時）</option><option>土日 朝・昼</option><option>土日 夜・深夜</option><option>時間帯はいつでも</option></select></label>
-                <label>性別<select value={profile.gender} onChange={(event) => setProfile({ ...profile, gender: event.target.value })}><option>回答しない</option><option>女性</option><option>男性</option><option>その他</option></select></label>
-                <label>承認後に伝える連絡先<input value={profile.contact} placeholder="Discord ID / トレーナーID" onChange={(event) => setProfile({ ...profile, contact: event.target.value })} /></label>
-                <button className="primaryButton">プロフィールを保存</button>
-              </form>
-              <a className="signOutLink" href="/api/auth/signout?callbackUrl=%2F">ログアウト</a>
-              <p className="fanNote">非公式ファンメイドサービスです。ゲーム運営会社とは関係ありません。</p>
-            </section>
-          )}
-        </div>
-
-        <nav className="bottomNav" aria-label="メインメニュー">
-          <button className={tab === "discover" ? "active" : ""} onClick={() => switchTab("discover")}><span>◇</span>さがす</button>
-          <button className={tab === "recruit" ? "active" : ""} onClick={() => switchTab("recruit")}><span>◫</span>募集</button>
-          <button className={tab === "matches" ? "active" : ""} onClick={() => switchTab("matches")}><span>♡</span>マッチ{pendingCount > 0 && <i>{pendingCount}</i>}</button>
-          <button className={tab === "profile" ? "active" : ""} onClick={() => switchTab("profile")}><span>○</span>マイページ</button>
-        </nav>
-      </section>
-
-      {filterOpen && (
-        <div className="modalBackdrop"><button className="backdropDismiss" onClick={() => setFilterOpen(false)} aria-label="絞り込みを閉じる" /><section className="sheetModal"><div className="sheetHandle" /><button className="closeButton" onClick={() => setFilterOpen(false)}>×</button><small className="modalKicker">SEARCH FILTER</small><h2>希望のメイト</h2><label>使ってほしいポケモン<select value={wanted} onChange={(event) => { setWanted(event.target.value); setIndex(0); }}><option>すべて</option>{pokemon.map((name) => <option key={name}>{name}</option>)}</select></label><div className="twoFields"><label>最低勝率<select value={minRate} onChange={(event) => { setMinRate(Number(event.target.value)); setIndex(0); }}><option value="0">指定なし</option><option value="50">50%以上</option><option value="55">55%以上</option><option value="60">60%以上</option></select></label><label>最低試合数<select value={minMatches} onChange={(event) => { setMinMatches(Number(event.target.value)); setIndex(0); }}><option value="0">指定なし</option><option value="500">500試合〜</option><option value="1000">1,000試合〜</option><option value="1500">1,500試合〜</option></select></label></div><label className="toggleRow"><input type="checkbox" checked={womenOnly} onChange={(event) => { setWomenOnly(event.target.checked); setIndex(0); }} /><span>女性プレイヤーのみ</span></label><button className="primaryButton" onClick={() => setFilterOpen(false)}>この条件で探す</button></section></div>
-      )}
-
-      {compose && (
-        <div className="modalBackdrop"><form className="sheetModal formSheet" onSubmit={submitRecruit}><button type="button" className="closeButton" onClick={() => setCompose(false)}>×</button><small className="modalKicker">CREATE RECRUIT</small><h2>今夜のメイトを募集</h2><div className="twoFields"><label>トレーナー名<input name="trainerName" defaultValue={profile.trainerName} required /></label><label>性別<select name="gender" defaultValue={profile.gender}><option>回答しない</option><option>女性</option><option>男性</option><option>その他</option></select></label></div><div className="twoFields"><label>使用ポケモン<select name="pokemon" defaultValue={profile.pokemon}>{pokemon.map((name) => <option key={name}>{name}</option>)}</select></label><label>型<select name="role"><option>アタック型</option><option>バランス型</option><option>スピード型</option><option>ディフェンス型</option><option>サポート型</option></select></label></div><div className="twoFields"><label>試合数<input name="matches" type="number" min="0" max="99999" defaultValue="1000" required /></label><label>勝率<input name="winRate" type="number" min="0" max="100" step="0.1" defaultValue="50" required /></label></div><label>現在のレート<select name="rank" defaultValue={profile.rank}><option>エキスパート</option><option>マスター 1200〜1399</option><option>マスター 1400〜1599</option><option>マスター 1600〜1799</option><option>マスター 1800〜</option></select></label><label>遊べる時間<select name="playTime" defaultValue={profile.playTime}><option>平日 朝（6〜12時）</option><option>平日 昼（12〜18時）</option><option>平日 夜（18〜22時）</option><option>平日 深夜（22〜翌2時）</option><option>土日 朝・昼</option><option>土日 夜・深夜</option><option>時間帯はいつでも</option></select></label><label>ひとこと<textarea name="note" maxLength={180} placeholder="楽しくランクを回したいです！" required /></label><label>承認後に伝える連絡先<input name="contact" defaultValue={profile.contact} placeholder="Discord ID / トレーナーID" required /></label><p className="privacyText">連絡先は承認した相手にだけ表示されます。</p><button className="primaryButton" disabled={sending}>{sending ? "公開中…" : "募集を公開する"}</button></form></div>
-      )}
-
-      {applyTo && (
-        <div className="modalBackdrop"><form className="sheetModal formSheet" onSubmit={submitApplication}><button type="button" className="closeButton" onClick={() => setApplyTo(null)}>×</button><div className={`applyPokemon ${roleClass[applyTo.role] || "support"}`}>{applyTo.pokemon.slice(0, 1)}</div><small className="modalKicker">PLAY REQUEST</small><h2>{applyTo.trainerName}さんと<br />ユナイトする</h2><label>あなたのトレーナー名<input name="applicantName" defaultValue={profile.trainerName} required /></label><label>使用ポケモン<select name="pokemon" defaultValue={profile.pokemon}>{pokemon.map((name) => <option key={name}>{name}</option>)}</select></label><label>承認後に伝える連絡先<input name="applicantContact" defaultValue={profile.contact} placeholder="Discord ID / トレーナーID" required /></label><label>メッセージ<textarea name="message" maxLength={180} defaultValue={`${applyTo.pokemon}と一緒にランクへ行きたいです！`} required /></label><button className="primaryButton" disabled={sending}>{sending ? "送信中…" : "プレイ申請を送る"}</button></form></div>
-      )}
-
-      {matchedContact && (
-        <div className="modalBackdrop"><section className="matchModal"><div className="matchBurst">⚡</div><small>MATCH!</small><h2>マッチ成立！</h2><p>相手の連絡先から、プレイ時間を相談しましょう。</p><div className="contactBox">{matchedContact}</div><button className="primaryButton" onClick={() => { navigator.clipboard?.writeText(matchedContact); notify("連絡先をコピーしました"); }}>連絡先をコピー</button><button className="textButton" onClick={() => setMatchedContact(null)}>閉じる</button></section></div>
-      )}
-
-      {toast && <div className="toast">✓ {toast}</div>}
-    </main>
-  );
-}
-
-function IncomingList({ incoming, decide, compact = false }: { incoming: Notice[]; decide: (id: number, action: "accept" | "decline") => void; compact?: boolean }) {
-  if (!incoming.length) return <div className={compact ? "noticeEmpty" : "stateCard miniState"}><div className="emptyOrb">♡</div><h2>届いた申請はありません</h2><p>あなたの募集に申請が届くと、ここから承認できます。</p></div>;
-  return <div className={`incomingList ${compact ? "compact" : ""}`}>{incoming.map((notice) => <article className="incomingCard" key={notice.id}><div className="requestAvatar">{notice.applicantName?.slice(0, 1)}</div><div className="requestCopy"><div><h2>{notice.applicantName}</h2><StatusPill status={notice.status} /></div><p>{notice.pokemon}で、{notice.recruitPokemon}の募集に申請</p>{notice.message && <blockquote>{notice.message}</blockquote>}</div>{notice.status === "pending" && <div className="requestActions"><button onClick={() => decide(notice.id, "decline")}>見送る</button><button onClick={() => decide(notice.id, "accept")}>承認する</button></div>}</article>)}</div>;
-}
-
-function StatusPill({ status }: { status: string }) {
-  const label = status === "accepted" ? "マッチ成立" : status === "declined" ? "見送り" : "承認待ち";
-  return <span className={`statusPill ${status}`}>{label}</span>;
+  {matchedContact&&<div className="modalBackdrop"><section className="matchModal"><div className="matchBurst">⚡</div><small>MATCH!</small><h2>マッチ成立！</h2><p>チャットが開通しました。外部で合流するときだけ連絡先を使えます。</p><div className="contactBox">{matchedContact}</div><button className="primaryButton" onClick={()=>{navigator.clipboard?.writeText(matchedContact);notify("連絡先をコピーしました")}}>連絡先をコピー</button><button className="textButton" onClick={()=>{setMatchedContact(null);setTab("chat")}}>チャットを見る</button></section></div>}
+  {toast&&<div className="toast">✓ {toast}</div>}
+  </main>;
 }
