@@ -93,7 +93,10 @@ button { cursor: pointer; }
 .cardTopline > strong { padding: 6px 9px; border-radius: 99px; background: #2a164b32; font-size: 15px; }
 .cardTopline > strong small { margin-left: 1px; font-size: 9px; }
 .pokemonMonogram { width: 132px; height: 132px; position: absolute; left: 50%; top: 50%; display: grid; place-items: center; border: 1px solid #ffffff55; border-radius: 50%; background: radial-gradient(circle at 36% 30%, #ffffff52, #ffffff14 52%, #ffffff08); box-shadow: 0 22px 45px #43204035, 0 0 0 11px #ffffff10; transform: translate(-50%, -54%); backdrop-filter: blur(4px); }
-.pokemonMonogram span { font-size: 69px; font-weight: 950; line-height: 1; text-shadow: 0 12px 30px #3d183530; }
+.pokemonVisualFallback { grid-area: 1 / 1; font-weight: 950; line-height: 1; text-shadow: 0 12px 30px #3d183530; }
+.pokemonVisualImage { grid-area: 1 / 1; position: relative; z-index: 1; display: block; object-fit: contain; filter: drop-shadow(0 15px 15px #3d183538); }
+.pokemonMonogram .pokemonVisualFallback { font-size: 69px; }
+.pokemonMonogram .pokemonVisualImage { width: 158px; height: 158px; }
 .pokemonTitle { position: absolute; z-index: 2; left: 17px; bottom: 16px; display: grid; gap: 2px; }
 .pokemonTitle small { font-size: 9px; font-weight: 850; letter-spacing: 1px; }
 .pokemonTitle strong { font-size: 25px; line-height: 1; letter-spacing: -1px; }
@@ -158,6 +161,7 @@ button { cursor: pointer; }
 .recruitItem { display: grid; gap: 13px; padding: 17px; border: 1px solid #e6e0ea; border-radius: 22px; background: #fff; box-shadow: 0 10px 25px #3c315c10; }
 .recruitCardHeader { display: grid; grid-template-columns: 68px 1fr; align-items: center; gap: 13px; }
 .pokemonTile { width: 68px; height: 68px; position: relative; overflow: hidden; display: grid; place-items: center; border-radius: 20px; color: #fff; font-size: 29px; font-weight: 900; isolation: isolate; box-shadow: 0 8px 18px #b7447f25; }
+.pokemonTile .pokemonVisualImage { width: 66px; height: 66px; filter: drop-shadow(0 7px 7px #3d183530); }
 .recruitTop { display: flex; align-items: center; gap: 7px; }
 .recruitTop h2 { margin: 0; font-size: 18px; letter-spacing: -.4px; }
 .recruitTop span { margin-left: auto; padding: 5px 8px; border-radius: 99px; color: var(--green); background: #e7f8f2; font-size: 7px; font-weight: 900; white-space: nowrap; }
@@ -332,11 +336,13 @@ button { cursor: pointer; }
 .trainerShareCard > div:nth-of-type(2) { display: grid; gap: 2px; margin-top: 20px; }
 .trainerShareCard > div:nth-of-type(2) span { color: #ffdcea; font-size: 6px; font-weight: 900; letter-spacing: 1px; }
 .trainerShareCard > div:nth-of-type(2) strong { font-size: 22px; }
-.trainerShareCard > b { position: absolute; right: 25px; top: 50%; opacity: .85; font-size: 84px; transform: translateY(-35%); }
+.trainerShareCard > b { width: 180px; height: 180px; position: absolute; right: 13px; top: 50%; display: grid; place-items: center; opacity: .92; font-size: 84px; transform: translateY(-42%); }
+.trainerShareCard > b .pokemonVisualImage { width: 100%; height: 100%; filter: drop-shadow(0 18px 18px #24164e70); }
 .trainerShareCard footer { position: absolute; left: 22px; bottom: 18px; font-size: 7px; font-weight: 800; }
 .xShareButton { width: 100%; margin-top: 16px; border: 0; border-radius: 14px; padding: 14px; color: #fff; background: #17131f; font-size: 10px; font-weight: 900; }
 .shareModal > p { margin: 11px 8px 0; color: #98919f; font-size: 7px; line-height: 1.6; text-align: center; }
-.applyPokemon { width: 65px; height: 65px; display: grid; place-items: center; margin-bottom: 13px; border-radius: 18px; color: #fff; font-size: 25px; font-weight: 900; }
+.applyPokemon { width: 65px; height: 65px; position: relative; display: grid; place-items: center; margin-bottom: 13px; border-radius: 18px; color: #fff; font-size: 25px; font-weight: 900; }
+.applyPokemon .pokemonVisualImage { width: 73px; height: 73px; filter: drop-shadow(0 8px 8px #3d183538); }
 .matchModal { text-align: center; }
 .matchBurst { width: 78px; height: 78px; margin: auto; display: grid; place-items: center; border-radius: 26px; color: #fff; background: linear-gradient(145deg, var(--pink), #ff9abe); font-size: 31px; box-shadow: 0 13px 30px #ff5f9f38; }
 .matchModal > small { display: block; margin-top: 15px; color: var(--pink); font-size: 8px; font-weight: 900; letter-spacing: 2px; }
@@ -376,7 +382,8 @@ button { cursor: pointer; }
   .searchStrip { height: 52px; padding-top: 5px; padding-bottom: 5px; }
   .cardArtwork { height: 176px; min-height: 176px; }
   .pokemonMonogram { width: 102px; height: 102px; }
-  .pokemonMonogram span { font-size: 55px; }
+  .pokemonMonogram .pokemonVisualFallback { font-size: 55px; }
+  .pokemonMonogram .pokemonVisualImage { width: 124px; height: 124px; }
   .cardDetails { padding: 11px 14px 10px; }
   .mateAvatar { width: 35px; height: 35px; }
   .identityLine { grid-template-columns: 35px 1fr auto; gap: 8px; }
