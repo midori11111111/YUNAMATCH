@@ -51,6 +51,8 @@ test("ships the matching app, onboarding, and its social card", async () => {
   assert.match(app, /あなたのことを/);
   assert.match(app, /1〜5体・複数選択できます/);
   assert.match(app, /登録してメイトを探す/);
+  assert.match(app, /募集中のメイト/);
+  assert.match(app, /この人にプレイ申請/);
   assert.match(css, /bottomNav/);
   assert.match(connectionsApi, /mutualAgain/);
   assert.match(messagesApi, /connectionId/);

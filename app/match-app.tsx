@@ -114,10 +114,10 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
     return()=>{active=false};
   },[preview]);
 
+  const visibleRecruits=useMemo(()=>recruits.length===0&&preview?[previewRecruit]:recruits,[recruits,preview]);
   const cards=useMemo(()=>{
-    const source=recruits.length===0&&preview?[previewRecruit]:recruits;
-    return source.filter(person=>(wanted==="すべて"||person.pokemon===wanted)&&person.winRate>=minRate&&person.matches>=minMatches&&(!womenOnly||person.gender==="女性"));
-  },[recruits,preview,wanted,minRate,minMatches,womenOnly]);
+    return visibleRecruits.filter(person=>(wanted==="すべて"||person.pokemon===wanted)&&person.winRate>=minRate&&person.matches>=minMatches&&(!womenOnly||person.gender==="女性"));
+  },[visibleRecruits,wanted,minRate,minMatches,womenOnly]);
   const current=cards.length?cards[index%cards.length]:null;
   const synergy=current?getSynergy(primaryPokemon,current.pokemon,current.role):null;
   const pendingCount=incoming.filter(n=>n.status==="pending").length;
@@ -235,7 +235,7 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
         </>:<div className="stateCard emptyState"><div className="emptyOrb">Y</div><h2>新しいメイトを待っています</h2><p>今は条件に合う募集がありません。あなたの募集から始めてみませんか？</p><button onClick={()=>setCompose(true)}>募集を作る</button></div>}
       </section>}
 
-      {tab==="recruit"&&<section className="panelView"><div className="viewHeading"><div><small>LIVE RECRUITING</small><h1>募集を探す</h1></div><button onClick={()=>setCompose(true)}>＋ 募集する</button></div><p className="viewLead">一覧で比較して、気になる募集へ申請できます。</p><div className="recruitList">{recruits.length?recruits.map(recruit=><article key={recruit.id} className="recruitItem"><div className={`pokemonTile ${roleClass[recruit.role]||"support"}`}>{recruit.pokemon.slice(0,1)}</div><div><div className="recruitTop"><h2>{recruit.trainerName}</h2><span>募集中</span></div><p>{recruit.pokemon} ・ {recruit.rank}</p><small>{recruit.playTime} ・ 勝率 {recruit.winRate}%</small></div><button onClick={()=>setApplyTo(recruit)}>申請</button></article>):<div className="listEmpty">まだ公開中の募集はありません。<br/>あなたの募集から始めてみませんか？</div>}</div></section>}
+      {tab==="recruit"&&<section className="panelView recruitView"><div className="viewHeading"><div><small>LIVE RECRUITING</small><h1>募集中のメイト</h1></div><button onClick={()=>setCompose(true)}>＋ 募集する</button></div><div className="recruitSummary"><div><strong>{visibleRecruits.length}</strong><span>人が募集中</span></div><p>ポケモン・実力・時間帯を見比べて選べます</p></div><div className="recruitList">{visibleRecruits.length?visibleRecruits.map(recruit=><article key={recruit.id} className="recruitItem"><header className="recruitCardHeader"><div className={`pokemonTile ${roleClass[recruit.role]||"support"}`}>{recruit.pokemon.slice(0,1)}</div><div><div className="recruitTop"><h2>{recruit.trainerName}</h2><span>● 募集中</span></div><strong>{recruit.pokemon}</strong><small>{recruit.role}</small></div></header><div className="recruitBadges"><span>{recruit.rank}</span><span>{recruit.gender}</span></div><p className="recruitNote">“{recruit.note}”</p><div className="recruitFacts"><div><span>◷</span><small>遊べる時間</small><strong>{recruit.playTime}</strong></div><div><small>試合数</small><strong>{recruit.matches.toLocaleString()}戦</strong></div><div><small>勝率</small><strong>{recruit.winRate}%</strong></div></div><button className="recruitApply" onClick={()=>setApplyTo(recruit)}>この人にプレイ申請 <span>›</span></button></article>):<div className="listEmpty">まだ公開中の募集はありません。<br/>あなたの募集から始めてみませんか？</div>}</div></section>}
 
       {tab==="chat"&&<section className="panelView chatView">{selectedConnection?<>
         <div className="chatHeader"><button onClick={()=>{setSelectedConnection(null);setMessages([])}} aria-label="チャット一覧へ戻る">←</button><div className="chatMateAvatar">{selectedConnection.mateName.slice(0,1)}</div><div><h1>{selectedConnection.mateName}</h1><p>{selectedConnection.matePokemon} ・ マッチ済み</p></div><button className="chatSafety" onClick={()=>setSafetyTarget({name:selectedConnection.mateName,connectionId:selectedConnection.id})}>•••</button></div>
