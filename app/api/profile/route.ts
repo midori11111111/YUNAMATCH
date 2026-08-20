@@ -54,9 +54,10 @@ export async function PUT(request:Request){
   const highestRate=typeof body.highestRate==="string"?body.highestRate:"";
   const playTime=typeof body.playTime==="string"?body.playTime:"";
   const gender=typeof body.gender==="string"?body.gender:"";
-  if(!trainerName||trainerName.length>24||mainPokemon.length===0||!rates.has(highestRate)||!playTimes.has(playTime)||!genders.has(gender))return Response.json({error:"入力内容を確認してください"},{status:400});
+  const contact=typeof body.contact==="string"?body.contact.trim().replace(/\s+/g," "):"";
+  if(!trainerName||trainerName.length>24||mainPokemon.length===0||!rates.has(highestRate)||!playTimes.has(playTime)||!genders.has(gender)||!contact||contact.length>120)return Response.json({error:"入力内容を確認してください"},{status:400});
   const now=new Date();
-  const values={userId:user.userId,trainerName,mainPokemon:JSON.stringify(mainPokemon),highestRate,playTime,gender,contact:contactFor(user.provider,user.contactId),authProvider:user.provider,createdAt:now,updatedAt:now};
+  const values={userId:user.userId,trainerName,mainPokemon:JSON.stringify(mainPokemon),highestRate,playTime,gender,contact,authProvider:user.provider,createdAt:now,updatedAt:now};
   const db=getDb();
   await db.insert(profiles).values(values).onConflictDoUpdate({target:profiles.userId,set:{trainerName:values.trainerName,mainPokemon:values.mainPokemon,highestRate:values.highestRate,playTime:values.playTime,gender:values.gender,contact:values.contact,authProvider:values.authProvider,updatedAt:now}});
   const [row]=await db.select().from(profiles).where(eq(profiles.userId,user.userId)).limit(1);
