@@ -7,6 +7,8 @@ export type ChatGPTUser = {
   displayName: string;
   email: string;
   fullName: string | null;
+  provider: string;
+  contactId: string;
 };
 
 const USER_ID_HEADER = "oai-authenticated-user-id";
@@ -39,11 +41,14 @@ export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
               ? token.email
               : `${provider}:${token.sub}`;
           const fullName = typeof token.name === "string" ? token.name : null;
+          const contactId = typeof token.contactId === "string" ? token.contactId : email;
           return {
             userId: `oauth:${provider}:${token.sub}`,
             displayName: fullName ?? email,
             email,
             fullName,
+            provider,
+            contactId,
           };
         }
       } catch {
@@ -68,6 +73,8 @@ export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
     displayName: fullName ?? email,
     email,
     fullName,
+    provider: "chatgpt",
+    contactId: email,
   };
 }
 

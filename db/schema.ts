@@ -1,5 +1,18 @@
 import { index, integer, real, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
+export const profiles = sqliteTable("profiles", {
+  userId: text("user_id").primaryKey(),
+  trainerName: text("trainer_name").notNull(),
+  mainPokemon: text("main_pokemon").notNull(),
+  highestRate: text("highest_rate").notNull(),
+  playTime: text("play_time").notNull(),
+  gender: text("gender").notNull(),
+  contact: text("contact").notNull(),
+  authProvider: text("auth_provider").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+});
+
 export const recruits = sqliteTable("recruits", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   ownerId: text("owner_id").notNull(),

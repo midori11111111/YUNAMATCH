@@ -27,5 +27,5 @@ export default async function Home({
     );
   }
 
-  return <MatchApp displayName={user?.displayName ?? "preview_trainer"} preview={preview} />;
+  return <MatchApp displayName={user?.displayName ?? "preview_trainer"} authProvider={user?.provider ?? "discord"} authContact={user?.contactId ?? "preview_trainer"} preview={preview} />;
 }

@@ -16,8 +16,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   session: { strategy: "jwt" },
   trustHost: true,
   callbacks: {
-    jwt({ token, account }) {
+    jwt({ token, account, profile }) {
       if (account?.provider) token.provider = account.provider;
+      if (account?.provider) {
+        const source = profile as Record<string, unknown> | undefined;
+        const nested = source?.data as Record<string, unknown> | undefined;
+        const username =
+          typeof source?.username === "string" ? source.username :
+          typeof source?.preferred_username === "string" ? source.preferred_username :
+          typeof nested?.username === "string" ? nested.username : null;
+        token.contactId = account.provider === "google"
+          ? token.email
+          : username ?? account.providerAccountId;
+      }
       return token;
     },
     session({ session, token }) {

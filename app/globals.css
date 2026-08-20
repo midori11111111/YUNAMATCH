@@ -186,12 +186,50 @@ button { cursor: pointer; }
 .profileForm label, .sheetModal label { display: grid; gap: 6px; color: #625c6a; font-size: 8px; font-weight: 900; }
 .profileForm input, .profileForm select, .sheetModal input, .sheetModal select, .sheetModal textarea { width: 100%; border: 1px solid #e3dee8; border-radius: 12px; padding: 12px; background: #fff; color: var(--ink); font-size: 10px; outline: none; }
 .profileForm input:focus, .profileForm select:focus, .sheetModal input:focus, .sheetModal select:focus, .sheetModal textarea:focus { border-color: var(--purple); box-shadow: 0 0 0 3px #7257e814; }
+.profileForm input[readonly], .onboardingCard input[readonly] { color: #736c7b; background: #f6f3f8; }
 .sheetModal textarea { min-height: 70px; resize: vertical; }
 .primaryButton { width: 100%; border: 0; border-radius: 14px; padding: 14px; color: #fff; background: linear-gradient(135deg, var(--purple), #8d75f1); font-size: 10px; font-weight: 900; box-shadow: 0 9px 20px #7257e82b; }
 .primaryButton:disabled { opacity: .55; cursor: wait; }
 .signOutLink { display: block; margin: 23px auto 0; text-align: center; color: #9f99a7; font-size: 8px; }
 .fanNote { text-align: center; color: #b1abb7; font-size: 7px; line-height: 1.6; margin: 25px 30px; }
 .twoFields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pokemonPicker { display: grid; gap: 8px; }
+.pickerHeading { display: flex; align-items: center; justify-content: space-between; color: #625c6a; font-size: 8px; font-weight: 900; }
+.pickerHeading small { color: #9a93a2; font-size: 7px; font-weight: 700; }
+.selectedPokemon { min-height: 40px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 7px; border: 1px solid #e3dee8; border-radius: 12px; background: #fff; }
+.selectedPokemon p { width: 100%; margin: 0; color: #aaa3b0; font-size: 8px; text-align: center; }
+.selectedPokemon button { display: flex; align-items: center; gap: 6px; border: 0; border-radius: 99px; padding: 7px 9px; color: #fff; background: var(--purple); font-size: 8px; font-weight: 850; }
+.selectedPokemon button span { opacity: .7; }
+.pokemonSearch { width: 100%; border: 1px solid #e3dee8; border-radius: 12px; padding: 11px 12px; background: #fff; color: var(--ink); font-size: 9px; outline: none; }
+.pokemonSearch:focus { border-color: var(--purple); box-shadow: 0 0 0 3px #7257e814; }
+.pokemonChoices { max-height: 128px; overflow-y: auto; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 6px; padding: 9px; border-radius: 12px; background: #f7f4fa; }
+.pokemonChoices button { border: 1px solid #e5dfea; border-radius: 99px; padding: 7px 9px; color: #746d7c; background: #fff; font-size: 7px; font-weight: 800; }
+.pokemonChoices button.selected { color: var(--purple); border-color: #bdb0ff; background: #eee9ff; }
+.genderChoice { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0; padding: 0; border: 0; }
+.genderChoice legend { grid-column: 1/-1; margin-bottom: 6px; color: #625c6a; font-size: 8px; font-weight: 900; }
+.genderChoice button { border: 1px solid #e3dee8; border-radius: 12px; padding: 12px; color: #7c7584; background: #fff; font-size: 9px; font-weight: 900; }
+.genderChoice button.selected { color: #fff; border-color: var(--purple); background: linear-gradient(135deg, var(--purple), #8d75f1); box-shadow: 0 7px 15px #7257e825; }
+
+.profileLoading { display: grid; place-items: center; align-content: center; gap: 16px; text-align: center; }
+.profileLoading h1 { font-size: 15px; }
+.onboardingBackdrop { position: fixed; z-index: 80; inset: 0; display: grid; place-items: center; padding: 18px; background: radial-gradient(circle at 10% 10%, #ffe0eb 0, transparent 30%), radial-gradient(circle at 90% 90%, #d7ceff 0, transparent 35%), #f8f5ff; }
+.onboardingCard { width: min(470px, 100%); max-height: calc(100dvh - 36px); overflow-y: auto; display: grid; gap: 14px; padding: 28px 30px 30px; border: 1px solid #e9e2f1; border-radius: 32px; background: #fffffff5; box-shadow: 0 30px 90px #3c315c25; }
+.onboardingBrand { display: flex; align-items: center; gap: 10px; }
+.onboardingBrand > span { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 13px; color: #fff; background: linear-gradient(145deg, var(--purple), #9a84ff); font-size: 15px; font-weight: 950; transform: rotate(-7deg); }
+.onboardingBrand > div { display: grid; gap: 2px; }
+.onboardingBrand strong { font-size: 11px; letter-spacing: .7px; }
+.onboardingBrand small { color: #9d96a4; font-size: 6px; font-weight: 850; letter-spacing: 1.4px; }
+.onboardingProgress { display: flex; align-items: center; justify-content: space-between; margin-top: 3px; color: var(--purple); font-size: 7px; font-weight: 900; }
+.onboardingProgress:after { content: ""; height: 4px; flex: 1; order: -1; margin-right: 10px; border-radius: 99px; background: linear-gradient(90deg, var(--purple), var(--pink)); }
+.onboardingProgress b { margin-left: 8px; }
+.onboardingCard h1 { margin: 0; font-size: 30px; line-height: 1.2; letter-spacing: -1.5px; }
+.onboardingLead { margin: -6px 0 1px; color: #847d8b; font-size: 9px; line-height: 1.6; }
+.onboardingCard > label { display: grid; gap: 6px; color: #625c6a; font-size: 8px; font-weight: 900; }
+.onboardingCard input, .onboardingCard select { width: 100%; border: 1px solid #e3dee8; border-radius: 12px; padding: 12px; background: #fff; color: var(--ink); font-size: 9px; outline: none; }
+.onboardingCard input:focus, .onboardingCard select:focus { border-color: var(--purple); box-shadow: 0 0 0 3px #7257e814; }
+.contactNote { display: flex; align-items: flex-start; gap: 7px; margin: -7px 0 0; color: #918a98; font-size: 7px; line-height: 1.5; }
+.onboardingSubmit { width: 100%; border: 0; border-radius: 14px; padding: 15px; color: #fff; background: linear-gradient(135deg, var(--purple), #8d75f1); font-size: 10px; font-weight: 900; box-shadow: 0 10px 24px #7257e835; }
+.onboardingSubmit:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
 
 .bottomNav { height: 72px; position: absolute; z-index: 5; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); background: #fffffff7; box-shadow: 0 -8px 26px #3c315c0d; backdrop-filter: blur(15px); }
 .bottomNav button { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 0; background: transparent; color: #a49daa; font-size: 7px; font-weight: 850; }
@@ -306,6 +344,9 @@ button { cursor: pointer; }
   .loginPage { padding: 20px; }
   .bottomNav { padding-bottom: env(safe-area-inset-bottom); height: calc(72px + env(safe-area-inset-bottom)); }
   .appViewport { height: calc(100% - 142px - env(safe-area-inset-bottom)); }
+  .onboardingBackdrop { padding: 0; place-items: stretch; }
+  .onboardingCard { width: 100%; max-height: 100dvh; min-height: 100dvh; padding: 24px 22px max(28px, env(safe-area-inset-bottom)); border: 0; border-radius: 0; box-shadow: none; }
+  .onboardingCard h1 { font-size: 27px; }
 }
 
 @media (max-height: 800px) {
