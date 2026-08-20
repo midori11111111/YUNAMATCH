@@ -8,6 +8,7 @@ export type ChatGPTUser = {
   email: string;
   fullName: string | null;
   provider: string;
+  providerAccountId: string;
   contactId: string;
 };
 
@@ -36,6 +37,10 @@ export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
         if (token?.sub) {
           const provider =
             typeof token.provider === "string" ? token.provider : "oauth";
+          const providerAccountId =
+            typeof token.providerAccountId === "string" ? token.providerAccountId : token.sub;
+          const userId =
+            typeof token.userId === "string" ? token.userId : `oauth:${provider}:${providerAccountId}`;
           const email =
             typeof token.email === "string"
               ? token.email
@@ -43,11 +48,12 @@ export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
           const fullName = typeof token.name === "string" ? token.name : null;
           const contactId = typeof token.contactId === "string" ? token.contactId : email;
           return {
-            userId: `oauth:${provider}:${token.sub}`,
+            userId,
             displayName: fullName ?? email,
             email,
             fullName,
             provider,
+            providerAccountId,
             contactId,
           };
         }
@@ -74,6 +80,7 @@ export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
     email,
     fullName,
     provider: "chatgpt",
+    providerAccountId: userId,
     contactId: email,
   };
 }

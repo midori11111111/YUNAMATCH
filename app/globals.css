@@ -215,6 +215,10 @@ button { cursor: pointer; }
 .profileHero p { margin: 0; color: #958e9e; font-size: 9px; }
 .shareCardButton { margin-top: 13px; padding: 10px 14px; border: 0; border-radius: 12px; color: #fff; background: #17131f; font-size: 8px; font-weight: 900; box-shadow: 0 8px 18px #17131f22; }
 .profileForm, .formSheet { display: grid; gap: 12px; }
+.profileSectionHeading { margin-bottom: 2px; }
+.profileSectionHeading small { color: var(--purple); font-size: 6px; font-weight: 950; letter-spacing: 1.5px; }
+.profileSectionHeading h2 { margin: 4px 0 5px; font-size: 17px; }
+.profileSectionHeading p { margin: 0; color: #928b99; font-size: 8px; line-height: 1.55; }
 .profileForm label, .sheetModal label { display: grid; gap: 6px; color: #625c6a; font-size: 8px; font-weight: 900; }
 .profileForm input, .profileForm select, .sheetModal input, .sheetModal select, .sheetModal textarea { width: 100%; border: 1px solid #e3dee8; border-radius: 12px; padding: 12px; background: #fff; color: var(--ink); font-size: 10px; outline: none; }
 .profileForm input:focus, .profileForm select:focus, .sheetModal input:focus, .sheetModal select:focus, .sheetModal textarea:focus { border-color: var(--purple); box-shadow: 0 0 0 3px #7257e814; }
@@ -222,6 +226,22 @@ button { cursor: pointer; }
 .sheetModal textarea { min-height: 70px; resize: vertical; }
 .primaryButton { width: 100%; border: 0; border-radius: 14px; padding: 14px; color: #fff; background: linear-gradient(135deg, var(--purple), #8d75f1); font-size: 10px; font-weight: 900; box-shadow: 0 9px 20px #7257e82b; }
 .primaryButton:disabled { opacity: .55; cursor: wait; }
+.linkedAccountSettings { margin-top: 18px; padding: 18px; border: 1px solid var(--line); border-radius: 20px; background: #fff; box-shadow: 0 8px 24px #322b4a0b; }
+.linkedAccountList { display: grid; gap: 8px; margin-top: 15px; }
+.linkedAccountList article { display: grid; grid-template-columns: 38px 1fr auto; align-items: center; gap: 10px; padding: 10px; border: 1px solid #ece7f0; border-radius: 14px; background: #faf9fb; }
+.linkedAccountList article.linked { border-color: #dcd5ff; background: #f7f5ff; }
+.providerMark { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; color: #fff; background: #999; font-size: 12px; font-weight: 950; }
+.providerMark.google { color: #4285f4; background: #fff; border: 1px solid #e3e0e6; }
+.providerMark.line { background: #06c755; font-size: 7px; }
+.providerMark.discord { background: #5865f2; }
+.providerMark.twitter { background: #17131f; }
+.linkedAccountList article > div { min-width: 0; display: grid; gap: 3px; }
+.linkedAccountList strong { font-size: 9px; }
+.linkedAccountList small { overflow: hidden; color: #98919f; font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
+.linkedAccountList b, .linkedAccountList a { border-radius: 9px; padding: 7px 9px; font-size: 7px; font-weight: 900; text-decoration: none; }
+.linkedAccountList b { color: #6d5edb; background: #ebe7ff; }
+.linkedAccountList a { color: #fff; background: var(--purple); }
+.accountChoiceNote { margin: 11px 3px 0; color: #9a93a2; font-size: 7px; line-height: 1.5; }
 .signOutLink { display: block; margin: 23px auto 0; text-align: center; color: #9f99a7; font-size: 8px; }
 .fanNote { text-align: center; color: #b1abb7; font-size: 7px; line-height: 1.6; margin: 25px 30px; }
 .twoFields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -237,6 +257,13 @@ button { cursor: pointer; }
 .pokemonChoices { max-height: 128px; overflow-y: auto; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 6px; padding: 9px; border-radius: 12px; background: #f7f4fa; }
 .pokemonChoices button { border: 1px solid #e5dfea; border-radius: 99px; padding: 7px 9px; color: #746d7c; background: #fff; font-size: 7px; font-weight: 800; }
 .pokemonChoices button.selected { color: var(--purple); border-color: #bdb0ff; background: #eee9ff; }
+.playTimePicker { margin: 0; padding: 0; border: 0; }
+.playTimePicker legend { margin-bottom: 8px; color: #625c6a; font-size: 8px; font-weight: 900; }
+.playTimePicker legend small { margin-left: 5px; color: #9a93a2; font-size: 7px; font-weight: 700; }
+.playTimePicker > div { display: flex; flex-wrap: wrap; gap: 7px; }
+.playTimePicker button { display: flex; align-items: center; gap: 5px; border: 1px solid #e3dee8; border-radius: 11px; padding: 9px 10px; color: #776f7f; background: #fff; font-size: 7px; font-weight: 850; }
+.playTimePicker button.selected { color: var(--purple); border-color: #b9acff; background: #eee9ff; }
+.playTimePicker button span { width: 15px; height: 15px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--purple); font-size: 7px; }
 .genderChoice { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0; padding: 0; border: 0; }
 .genderChoice legend { grid-column: 1/-1; margin-bottom: 6px; color: #625c6a; font-size: 8px; font-weight: 900; }
 .genderChoice button { border: 1px solid #e3dee8; border-radius: 12px; padding: 12px; color: #7c7584; background: #fff; font-size: 9px; font-weight: 900; }

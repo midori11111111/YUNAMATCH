@@ -9,11 +9,12 @@ export default function LoginPage() {
         <p className="loginEyebrow">POKÉMON UNITE MATCHING</p>
         <h1>相性でつながる、<br /><span>ユナマッチ。</span></h1>
         <p className="loginLead">使用ポケモンとプレイスタイルから、<br />今夜一緒に戦うメイトを見つけよう。</p>
+        <div className="accountChoiceTitle"><strong>ログインするアカウントを選択</strong><span>あとから設定で追加連携できます</span></div>
         <div className="loginActions">
           <form
             action={async () => {
               "use server";
-              await signIn("google", { redirectTo: "/" });
+              await signIn("google", { redirectTo: "/" }, { prompt: "select_account" });
             }}
           >
             <button className="googleButton" type="submit">
@@ -24,7 +25,7 @@ export default function LoginPage() {
           <form
             action={async () => {
               "use server";
-              await signIn("line", { redirectTo: "/" });
+              await signIn("line", { redirectTo: "/" }, { prompt: "consent" });
             }}
           >
             <button className="lineButton" type="submit">
@@ -35,7 +36,7 @@ export default function LoginPage() {
           <form
             action={async () => {
               "use server";
-              await signIn("discord", { redirectTo: "/" });
+              await signIn("discord", { redirectTo: "/" }, { prompt: "consent" });
             }}
           >
             <button className="discordButton" type="submit">
@@ -46,7 +47,7 @@ export default function LoginPage() {
           <form
             action={async () => {
               "use server";
-              await signIn("twitter", { redirectTo: "/" });
+              await signIn("twitter", { redirectTo: "/" }, { force_login: "true" });
             }}
           >
             <button className="xButton" type="submit">

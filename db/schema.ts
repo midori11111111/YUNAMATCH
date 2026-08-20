@@ -13,6 +13,20 @@ export const profiles = sqliteTable("profiles", {
   updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
 });
 
+export const accountLinks = sqliteTable("account_links", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  canonicalUserId: text("canonical_user_id").notNull(),
+  provider: text("provider").notNull(),
+  providerAccountId: text("provider_account_id").notNull(),
+  contactId: text("contact_id").notNull(),
+  displayName: text("display_name"),
+  email: text("email"),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+}, (table) => [
+  uniqueIndex("idx_account_links_provider_account").on(table.provider, table.providerAccountId),
+  index("idx_account_links_canonical_user").on(table.canonicalUserId),
+]);
+
 export const recruits = sqliteTable("recruits", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   ownerId: text("owner_id").notNull(),

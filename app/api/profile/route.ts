@@ -33,8 +33,10 @@ function contactFor(provider:string, contactId:string){
 
 function publicProfile(row:typeof profiles.$inferSelect){
   let mainPokemon:string[]=[];
+  let playTime:string[]=[];
   try{const parsed=JSON.parse(row.mainPokemon);if(Array.isArray(parsed))mainPokemon=parsed.filter(value=>typeof value==="string").slice(0,5)}catch{/* 不正な旧データは空として扱う */}
-  return {trainerName:row.trainerName,mainPokemon,highestRate:row.highestRate,playTime:row.playTime,gender:row.gender,contact:row.contact};
+  try{const parsed=JSON.parse(row.playTime);if(Array.isArray(parsed))playTime=parsed.filter(value=>typeof value==="string"&&playTimes.has(value)).slice(0,7)}catch{if(playTimes.has(row.playTime))playTime=[row.playTime]}
+  return {trainerName:row.trainerName,mainPokemon,highestRate:row.highestRate,playTime,gender:row.gender,contact:row.contact};
 }
 
 export async function GET(){
@@ -52,12 +54,12 @@ export async function PUT(request:Request){
   const trainerName=typeof body.trainerName==="string"?body.trainerName.trim():"";
   const mainPokemon=Array.isArray(body.mainPokemon)?[...new Set(body.mainPokemon.filter((value):value is string=>typeof value==="string"&&Boolean(value.trim())).map(value=>value.trim()))].slice(0,5):[];
   const highestRate=typeof body.highestRate==="string"?body.highestRate:"";
-  const playTime=typeof body.playTime==="string"?body.playTime:"";
+  const playTime=Array.isArray(body.playTime)?[...new Set(body.playTime.filter((value):value is string=>typeof value==="string"&&playTimes.has(value)))].slice(0,7):typeof body.playTime==="string"&&playTimes.has(body.playTime)?[body.playTime]:[];
   const gender=typeof body.gender==="string"?body.gender:"";
   const contact=typeof body.contact==="string"?body.contact.trim().replace(/\s+/g," "):"";
-  if(!trainerName||trainerName.length>24||mainPokemon.length===0||!rates.has(highestRate)||!playTimes.has(playTime)||!genders.has(gender)||!contact||contact.length>120)return Response.json({error:"入力内容を確認してください"},{status:400});
+  if(!trainerName||trainerName.length>24||mainPokemon.length===0||!rates.has(highestRate)||playTime.length===0||!genders.has(gender)||!contact||contact.length>120)return Response.json({error:"入力内容を確認してください"},{status:400});
   const now=new Date();
-  const values={userId:user.userId,trainerName,mainPokemon:JSON.stringify(mainPokemon),highestRate,playTime,gender,contact,authProvider:user.provider,createdAt:now,updatedAt:now};
+  const values={userId:user.userId,trainerName,mainPokemon:JSON.stringify(mainPokemon),highestRate,playTime:JSON.stringify(playTime),gender,contact,authProvider:user.provider,createdAt:now,updatedAt:now};
   const db=getDb();
   await db.insert(profiles).values(values).onConflictDoUpdate({target:profiles.userId,set:{trainerName:values.trainerName,mainPokemon:values.mainPokemon,highestRate:values.highestRate,playTime:values.playTime,gender:values.gender,contact:values.contact,authProvider:values.authProvider,updatedAt:now}});
   const [row]=await db.select().from(profiles).where(eq(profiles.userId,user.userId)).limit(1);

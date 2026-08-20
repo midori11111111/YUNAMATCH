@@ -36,6 +36,13 @@
       "when": 1787245735017,
       "tag": "0004_omniscient_juggernaut",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1787250713197,
+      "tag": "0005_open_cargill",
+      "breakpoints": true
     }
   ]
 }

@@ -48,7 +48,10 @@ body { margin: 0; }
 .loginEyebrow { margin: 8px 0 28px; color: #8e93ad; font-size: 11px; letter-spacing: .16em; }
 h1 { margin: 0; font-size: clamp(30px, 8vw, 40px); line-height: 1.25; letter-spacing: -.04em; }
 h1 span { color: #ff6c91; }
-.loginLead { margin: 18px 0 30px; color: #b8bbcc; font-size: 14px; line-height: 1.8; }
+.loginLead { margin: 18px 0 22px; color: #b8bbcc; font-size: 14px; line-height: 1.8; }
+.accountChoiceTitle { display: grid; gap: 4px; margin-bottom: 14px; text-align: left; }
+.accountChoiceTitle strong { font-size: 14px; }
+.accountChoiceTitle span { color: #858aa2; font-size: 11px; }
 .loginActions { display: grid; gap: 12px; }
 .loginActions form { margin: 0; }
 .googleButton,
