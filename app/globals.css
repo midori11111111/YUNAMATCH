@@ -69,9 +69,9 @@ button { cursor: pointer; }
 .instantCards { padding-top: 0; }
 .searchStrip { height: 60px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 17px; background: #fff; }
 .searchStrip > div { display: grid; gap: 3px; }
-.searchStrip strong { font-size: 13px; letter-spacing: -.3px; }
-.searchStrip small { color: #9a94a3; font-size: 7px; }
-.searchStrip button { max-width: 155px; overflow: hidden; padding: 9px 11px; border: 1px solid #e9e4ef; border-radius: 12px; color: var(--purple); background: #f6f3ff; font-size: 8px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+.searchStrip strong { font-size: 15px; letter-spacing: -.3px; }
+.searchStrip small { color: #77717f; font-size: 9px; }
+.searchStrip button { max-width: 160px; overflow: hidden; padding: 10px 12px; border: 1px solid #ded7e8; border-radius: 12px; color: var(--purple); background: #f3efff; font-size: 10px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
 .searchStrip button span { margin-right: 6px; font-size: 12px; }
 
 .discoverCard { margin: 0 15px; overflow: hidden; border: 1px solid #e9e3ef; border-radius: 28px; background: #fff; box-shadow: 0 18px 42px #33294d20; touch-action: pan-y; transform-origin: 50% 100%; }
@@ -89,46 +89,47 @@ button { cursor: pointer; }
 .artDots { position: absolute; inset: -30px; opacity: .16; background-image: radial-gradient(#fff 1.4px, transparent 1.4px); background-size: 20px 20px; transform: rotate(9deg); }
 .artWatermark { position: absolute; left: -12px; right: -12px; bottom: -6px; overflow: hidden; opacity: .11; font-size: clamp(50px, 13vw, 68px); font-weight: 950; letter-spacing: -4px; line-height: 1; text-align: center; white-space: nowrap; }
 .cardTopline { position: absolute; z-index: 2; top: 16px; left: 17px; right: 17px; display: flex; align-items: center; justify-content: space-between; }
-.cardTopline > span { padding: 6px 8px; border: 1px solid #ffffff45; border-radius: 99px; background: #281a4522; font-size: 6px; font-weight: 900; letter-spacing: .6px; backdrop-filter: blur(7px); }
-.cardTopline > strong { font-size: 12px; }
-.cardTopline > strong small { margin-left: 1px; font-size: 7px; }
+.cardTopline > span { padding: 7px 10px; border: 1px solid #ffffff65; border-radius: 99px; background: #281a4540; font-size: 8px; font-weight: 900; letter-spacing: .4px; backdrop-filter: blur(7px); }
+.cardTopline > strong { padding: 6px 9px; border-radius: 99px; background: #2a164b32; font-size: 15px; }
+.cardTopline > strong small { margin-left: 1px; font-size: 9px; }
 .pokemonMonogram { width: 132px; height: 132px; position: absolute; left: 50%; top: 50%; display: grid; place-items: center; border: 1px solid #ffffff55; border-radius: 50%; background: radial-gradient(circle at 36% 30%, #ffffff52, #ffffff14 52%, #ffffff08); box-shadow: 0 22px 45px #43204035, 0 0 0 11px #ffffff10; transform: translate(-50%, -54%); backdrop-filter: blur(4px); }
 .pokemonMonogram span { font-size: 69px; font-weight: 950; line-height: 1; text-shadow: 0 12px 30px #3d183530; }
 .pokemonTitle { position: absolute; z-index: 2; left: 17px; bottom: 16px; display: grid; gap: 2px; }
-.pokemonTitle small { font-size: 7px; font-weight: 850; letter-spacing: 1px; }
-.pokemonTitle strong { font-size: 21px; line-height: 1; letter-spacing: -1px; }
+.pokemonTitle small { font-size: 9px; font-weight: 850; letter-spacing: 1px; }
+.pokemonTitle strong { font-size: 25px; line-height: 1; letter-spacing: -1px; }
 .cardSafetyButton { width: 34px; height: 30px; position: absolute; z-index: 4; top: 10px; right: 10px; border: 1px solid #ffffff42; border-radius: 11px; color: #fff; background: #261a4333; font-size: 10px; font-weight: 900; letter-spacing: 1px; backdrop-filter: blur(8px); }
 .instantCards .cardTopline { right: 52px; }
 .cardDetails { padding: 16px 17px 15px; }
 .identityLine { display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 10px; }
 .mateAvatar { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 13px; color: #fff; background: linear-gradient(145deg, #6c4df6, #a68fff); font-size: 14px; font-weight: 950; box-shadow: 0 6px 14px #6c4df629; }
 .identityLine h1 { margin: 0; font-size: 19px; line-height: 1.05; letter-spacing: -.7px; }
-.identityLine > span { padding: 5px 7px; border-radius: 99px; color: var(--green); background: #e7f8f2; font-size: 6px; font-weight: 950; }
-.rankText { margin: 4px 0 0; color: #918b99; font-size: 8px; }
-.pairingLine { display: flex; align-items: center; justify-content: center; gap: 9px; margin: 13px 0 9px; padding: 9px; border-radius: 12px; background: #f7f4ff; color: var(--purple-dark); font-size: 9px; font-weight: 900; }
-.pairingLine span { flex: 1; text-align: center; }
+.identityLine > span { padding: 6px 8px; border-radius: 99px; color: var(--green); background: #e7f8f2; font-size: 8px; font-weight: 950; }
+.rankText { margin: 5px 0 0; color: #6f6877; font-size: 10px; }
+.pairingLine { display: grid; grid-template-columns: 1fr 24px 1fr; align-items: center; gap: 7px; margin: 12px 0 10px; padding: 9px; border-radius: 13px; background: #f4f0ff; color: var(--purple-dark); }
+.pairingLine > div { display: grid; gap: 2px; text-align: center; }
+.pairingLine small { color: #9187a0; font-size: 7px; font-weight: 800; }
+.pairingLine span { font-size: 11px; font-weight: 950; }
 .pairingLine b { color: var(--pink); font-size: 15px; }
-.synergyCopy { min-height: 32px; margin: 0 1px 11px; color: #6d6675; font-size: 8px; line-height: 1.55; }
-.synergyCopy strong { display: inline-block; margin-right: 7px; color: var(--purple); font-size: 7px; }
+.synergyCopy { min-height: 36px; margin: 0 1px 11px; color: #554f5d; font-size: 10px; line-height: 1.5; }
+.synergyCopy strong { display: block; margin-bottom: 3px; color: var(--purple); font-size: 8px; }
 .statGrid { display: grid; grid-template-columns: 1fr 1fr 1.25fr; border: 1px solid var(--line); border-radius: 13px; }
 .statGrid div { min-width: 0; display: grid; gap: 2px; padding: 9px 10px; }
 .statGrid div + div { border-left: 1px solid var(--line); }
-.statGrid strong { overflow: hidden; font-size: 13px; line-height: 1; text-overflow: ellipsis; white-space: nowrap; }
-.statGrid strong small { font-size: 7px; }
-.statGrid span { color: #9a94a3; font-size: 6px; }
+.statGrid strong { overflow: hidden; font-size: 16px; line-height: 1; text-overflow: ellipsis; white-space: nowrap; }
+.statGrid strong small { font-size: 9px; }
+.statGrid span { color: #7d7685; font-size: 8px; }
 .timeChip { display: flex; align-items: center; gap: 8px; margin-top: 10px; color: #746d7c; }
 .timeChip > span { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 9px; color: var(--purple); background: #eee9ff; font-size: 12px; }
 .timeChip div { display: grid; gap: 1px; }
-.timeChip small { color: #aaa4b0; font-size: 5px; font-weight: 900; letter-spacing: 1px; }
-.timeChip strong { font-size: 8px; }
-.profileNote { margin: 10px 1px 0; color: #716a79; font-size: 8px; line-height: 1.5; }
-.choiceArea { height: 88px; display: grid; grid-template-columns: 76px 1fr 88px; align-items: center; gap: 4px; margin: 0 24px; }
-.choiceArea > p { text-align: center; color: #b1aab7; font-size: 6px; }
-.choiceArea > p span { color: #8d8497; }
+.timeChip small { color: #8d8694; font-size: 7px; font-weight: 900; letter-spacing: .5px; }
+.timeChip strong { font-size: 10px; }
+.profileNote { margin: 9px 1px 0; color: #5e5767; font-size: 9px; line-height: 1.5; }
+.profileNote strong { margin-right: 6px; color: var(--purple); font-size: 8px; }
+.choiceArea { height: 78px; display: grid; grid-template-columns: .8fr 1.35fr; align-items: center; gap: 10px; margin: 0 16px; }
 .choiceArea button { height: 54px; display: flex; align-items: center; justify-content: center; gap: 5px; border: 1px solid #ece7f0; border-radius: 18px; background: #fff; box-shadow: 0 9px 22px #3b31541a; transition: .2s; }
 .choiceArea button:hover { transform: translateY(-2px); }
 .choiceArea button > span { font-size: 21px; }
-.choiceArea button small { font-size: 7px; font-weight: 900; }
+.choiceArea button small { font-size: 10px; font-weight: 900; }
 .passButton { color: #817989; }
 .likeButton { color: #fff; border: 0 !important; background: linear-gradient(145deg, var(--pink), #ff7daa) !important; box-shadow: 0 11px 25px #ff5f9f35 !important; }
 
@@ -378,17 +379,17 @@ button { cursor: pointer; }
   .cardArtwork { height: 176px; min-height: 176px; }
   .pokemonMonogram { width: 102px; height: 102px; }
   .pokemonMonogram span { font-size: 55px; }
-  .cardDetails { padding: 10px 14px; }
+  .cardDetails { padding: 11px 14px 10px; }
   .mateAvatar { width: 35px; height: 35px; }
   .identityLine { grid-template-columns: 35px 1fr auto; gap: 8px; }
-  .identityLine h1 { font-size: 17px; }
-  .pairingLine { margin: 7px 0 6px; padding: 6px; }
-  .synergyCopy { min-height: 0; margin-bottom: 7px; line-height: 1.35; }
-  .statGrid div { padding: 7px 9px; }
-  .timeChip { margin-top: 7px; }
-  .profileNote { max-height: 12px; overflow: hidden; margin-top: 6px; white-space: nowrap; text-overflow: ellipsis; }
-  .choiceArea { height: 66px; }
-  .choiceArea button { height: 46px; }
+  .identityLine h1 { font-size: 19px; }
+  .pairingLine { margin: 8px 0 7px; padding: 7px; }
+  .synergyCopy { min-height: 0; margin-bottom: 7px; line-height: 1.4; }
+  .statGrid div { padding: 8px 9px; }
+  .timeChip { margin-top: 8px; }
+  .profileNote { max-height: 29px; overflow: hidden; margin-top: 7px; }
+  .choiceArea { height: 72px; }
+  .choiceArea button { height: 50px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

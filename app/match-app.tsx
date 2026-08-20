@@ -219,19 +219,19 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
           <article className={`discoverCard ${animation}`} onPointerDown={event=>setDragStart(event.clientX)} onPointerUp={handlePointerUp}>
             <div className={`cardArtwork ${roleClass[current.role]||"support"}`}>
               <div className="artDots"/><div className="artWatermark">{current.pokemon}</div>
-              <div className="cardTopline"><span>● 募集中</span><strong>相性 {synergy?.score}<small>%</small></strong></div>
+              <div className="cardTopline"><span>● 今すぐ募集中</span><strong>相性 {synergy?.score}<small>%</small></strong></div>
               {current.id!==-1&&<button className="cardSafetyButton" onClick={()=>setSafetyTarget({name:current.trainerName,recruitId:current.id})} aria-label={`${current.trainerName}さんを通報またはブロック`}>•••</button>}
               <div className="pokemonMonogram"><span>{current.pokemon.slice(0,1)}</span></div><div className="pokemonTitle"><small>{current.role}</small><strong>{current.pokemon}</strong></div>
             </div>
             <div className="cardDetails">
-              <div className="identityLine"><div className="mateAvatar">{current.trainerName.slice(0,1).toUpperCase()}</div><div><h1>{current.trainerName}</h1><p className="rankText">{current.rank} ・ {current.gender}</p></div><span>ONLINE</span></div>
-              <div className="pairingLine"><span>{primaryPokemon}</span><b>×</b><span>{current.pokemon}</span></div>
-              <p className="synergyCopy"><strong>おすすめ理由</strong>{synergy?.copy}</p>
+              <div className="identityLine"><div className="mateAvatar">{current.trainerName.slice(0,1).toUpperCase()}</div><div><h1>{current.trainerName}</h1><p className="rankText">{current.rank} ・ {current.gender}</p></div><span>受付中</span></div>
+              <div className="pairingLine"><div><small>あなた</small><span>{primaryPokemon}</span></div><b>×</b><div><small>相手</small><span>{current.pokemon}</span></div></div>
+              <p className="synergyCopy"><strong>この組み合わせが強い理由</strong>{synergy?.copy}</p>
               <div className="statGrid"><div><strong>{current.matches.toLocaleString()}</strong><span>試合数</span></div><div><strong>{current.winRate}<small>%</small></strong><span>勝率</span></div><div><strong>{current.role.replace("型","")}</strong><span>得意ロール</span></div></div>
-              <div className="timeChip"><span>◷</span><div><small>PLAY TIME</small><strong>{current.playTime}</strong></div></div><p className="profileNote">“{current.note}”</p>
+              <div className="timeChip"><span>◷</span><div><small>遊べる時間帯</small><strong>{current.playTime}</strong></div></div><p className="profileNote"><strong>ひとこと</strong>“{current.note}”</p>
             </div>
           </article>
-          <div className="choiceArea"><button className="passButton" onClick={()=>moveNext("left")}><span>×</span><small>次を見る</small></button><p>左右にスワイプ</p><button className="likeButton" onClick={()=>moveNext("right")}><span>⚡</span><small>一緒に遊ぶ</small></button></div>
+          <div className="choiceArea"><button className="passButton" onClick={()=>moveNext("left")}><span>×</span><small>スキップ</small></button><button className="likeButton" onClick={()=>moveNext("right")}><span>⚡</span><small>一緒に遊びたい</small></button></div>
         </>:<div className="stateCard emptyState"><div className="emptyOrb">Y</div><h2>新しいメイトを待っています</h2><p>今は条件に合う募集がありません。あなたの募集から始めてみませんか？</p><button onClick={()=>setCompose(true)}>募集を作る</button></div>}
       </section>}
 
