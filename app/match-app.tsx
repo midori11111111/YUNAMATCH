@@ -7,7 +7,7 @@ import { getPokemonImagePath } from "./pokemon-images";
 
 type Recruit = { id:number; trainerName:string; gender:string; pokemon:string; role:string; matches:number; winRate:number; rank:string; playTime:string; note:string; avatarUrl?:string; startAt:string; expiresAt:string; partySize:number; desiredPokemon:string; desiredRole:string; acceptedCount:number };
 type Notice = { id:number; applicantName?:string; applicantContact?:string; trainerName?:string; pokemon:string; message?:string; status:string; recruitPokemon?:string; ownerContact?:string|null };
-type Profile = { trainerName:string; mainPokemon:string[]; highestRate:string; playTime:string[]; gender:"男性"|"女性"|""; contact:string; avatarUrl:string; ageConfirmed:boolean; termsAccepted:boolean };
+export type Profile = { trainerName:string; mainPokemon:string[]; highestRate:string; playTime:string[]; gender:"男性"|"女性"|""; contact:string; avatarUrl:string; ageConfirmed:boolean; termsAccepted:boolean };
 type Connection = { id:number; mateName:string; mateAvatarUrl?:string; matePokemon:string; mateContact:string; myPokemon:string; againByMe:boolean; againByMate:boolean; mutualAgain:boolean; latestMessage:string; latestAt:string; unreadCount:number };
 type ChatMessage = { id:number; body:string; sender:"me"|"mate"; createdAt:string; read?:boolean };
 type SafetyTarget = { name:string; recruitId?:number; connectionId?:number };
@@ -72,7 +72,7 @@ function PlayTimePicker({selected,onChange}:{selected:string[];onChange:(times:s
   return <fieldset className="playTimePicker"><legend>遊べる時間帯 <small>複数選択できます</small></legend><div>{playTimeOptions.map(time=><button type="button" key={time} className={selected.includes(time)?"selected":""} aria-pressed={selected.includes(time)} onClick={()=>toggle(time)}>{selected.includes(time)&&<span>✓</span>}{time}</button>)}</div></fieldset>;
 }
 
-export default function MatchApp({displayName,authProvider,authContact,preview=false}:{displayName:string;authProvider:string;authContact:string;preview?:boolean}){
+export default function MatchApp({displayName,authProvider,authContact,preview=false,initialProfile,initialSuspended=false}:{displayName:string;authProvider:string;authContact:string;preview?:boolean;initialProfile?:Profile|null;initialSuspended?:boolean}){
   const shortName=displayName.includes("@")?displayName.split("@")[0]:displayName;
   const providerName=authProvider==="twitter"?"X":authProvider==="discord"?"Discord":authProvider==="line"?"LINE":authProvider==="google"?"Google":"ログインアカウント";
   const [tab,setTab]=useState<AppTab>("discover");
@@ -106,12 +106,13 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
   const [safetyTarget,setSafetyTarget]=useState<SafetyTarget|null>(null);
   const [matchedContact,setMatchedContact]=useState<string|null>(null);
   const [linkedAccounts,setLinkedAccounts]=useState<LinkedAccount[]>(preview?[{provider:"discord",label:"Discord",contactId:"preview_trainer",displayName:"preview_trainer",isCurrent:true}]:[]);
-  const [profile,setProfile]=useState<Profile>({trainerName:shortName,mainPokemon:[],highestRate:"マスター 1400〜1599",playTime:["平日 夜（18〜22時）"],gender:"",contact:`${providerName}: ${authContact}`,avatarUrl:"",ageConfirmed:false,termsAccepted:false});
+  const defaultProfile:Profile={trainerName:shortName,mainPokemon:[],highestRate:"マスター 1400〜1599",playTime:["平日 夜（18〜22時）"],gender:"",contact:`${providerName}: ${authContact}`,avatarUrl:"",ageConfirmed:false,termsAccepted:false};
+  const [profile,setProfile]=useState<Profile>(initialProfile||defaultProfile);
   const [avatarProcessing,setAvatarProcessing]=useState(false);
   const [pushState,setPushState]=useState<"off"|"on"|"unsupported">("off");
-  const [profileReady,setProfileReady]=useState(preview);
-  const [suspended,setSuspended]=useState(false);
-  const [onboardingOpen,setOnboardingOpen]=useState(preview);
+  const [profileReady,setProfileReady]=useState(preview||initialProfile!==undefined);
+  const [suspended,setSuspended]=useState(initialSuspended);
+  const [onboardingOpen,setOnboardingOpen]=useState(preview||(initialProfile!==undefined&&(!initialProfile||!initialProfile.ageConfirmed||!initialProfile.termsAccepted)));
   const primaryPokemon=profile.mainPokemon[0]||"ゲッコウガ";
 
   const notify=(message:string)=>{setToast(message);window.setTimeout(()=>setToast(""),2600)};
@@ -167,16 +168,17 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
       if(connectionData)setConnections(connectionData.connections||[]);
       if(lobbyData)setLobbies(lobbyData.lobbies||[]);
     }).catch(()=>undefined).finally(()=>{if(active)setLoading(false)});
-    if(preview)return()=>{active=false};
-    fetch("/api/profile").then(async response=>({response,data:await response.json()})).then(({response,data})=>{
+    if(preview||initialProfile!==undefined)return()=>{active=false};
+    const controller=new AbortController();const timeout=window.setTimeout(()=>controller.abort(),10_000);
+    fetch("/api/profile",{signal:controller.signal,cache:"no-store"}).then(async response=>({response,data:await response.json()})).then(({response,data})=>{
       if(!active)return;
       if(response.status===401){location.href=data.signIn||"/login";return}
       if(data.suspended){setSuspended(true);setOnboardingOpen(false)}
       else if(data.profile){setProfile(data.profile);setOnboardingOpen(!data.profile.ageConfirmed||!data.profile.termsAccepted)}
       else{setProfile(value=>({...value,trainerName:data.suggested?.trainerName||value.trainerName,contact:data.suggested?.contact||value.contact}));setOnboardingOpen(true)}
-    }).catch(()=>{if(active)notify("プロフィールを確認できませんでした")}).finally(()=>{if(active)setProfileReady(true)});
-    return()=>{active=false};
-  },[preview]);
+    }).catch(()=>{if(active)notify("プロフィールを確認できませんでした。再読み込みしてください")}).finally(()=>{window.clearTimeout(timeout);if(active)setProfileReady(true)});
+    return()=>{active=false;window.clearTimeout(timeout);controller.abort()};
+  },[preview,initialProfile]);
 
   useEffect(()=>{if(preview)return;if(!("serviceWorker" in navigator)||!("PushManager" in window)){Promise.resolve().then(()=>setPushState("unsupported"));return}navigator.serviceWorker.register("/sw.js").then(async registration=>{if(await registration.pushManager.getSubscription())setPushState("on")}).catch(()=>setPushState("unsupported"))},[preview]);
 

@@ -46,7 +46,11 @@ test("ships the matching app, onboarding, lobby, safety, and notifications", asy
     access(new URL("public/og.png", root)),
   ]);
   assert.match(page, /getChatGPTUser/);
+  assert.match(page, /initialProfile/);
+  assert.match(page, /getDb\(\)\.select\(\)\.from\(profiles\)/);
   assert.match(app, /moveNext/);
+  assert.match(app, /preview\|\|initialProfile!==undefined/);
+  assert.match(app, /AbortController/);
   assert.match(app, /プレイ申請を送る/);
   assert.match(app, /マッチ成立/);
   assert.match(app, /また遊びたい/);
