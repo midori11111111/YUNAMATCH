@@ -4,8 +4,12 @@ import Google from "next-auth/providers/google";
 import Line from "next-auth/providers/line";
 import Twitter from "next-auth/providers/twitter";
 
+const xProvider = Twitter({
+  authorization: { params: { scope: "tweet.read users.read" } },
+});
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  providers: [Google, Line, Discord, Twitter],
+  providers: [Google, Line, Discord, xProvider],
   session: { strategy: "jwt" },
   trustHost: true,
   callbacks: {
