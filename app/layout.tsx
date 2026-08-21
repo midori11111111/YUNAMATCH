@@ -21,7 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const base = new URL(`${protocol}://${host}`);
   const title = "ユナマッチ｜相性でつながるユナイト仲間";
   const description = "使用ポケモンと実力からメイトを探し、プレイ申請・承認で一緒にユナイトできるファンメイドサービス。";
-  const socialImage = new URL("/og-comfey-zoroark.png", base).toString();
+  const socialImage = new URL("/og-simple-comfey-zoroark.png", base).toString();
 
   return {
     metadataBase: base,
@@ -30,7 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
     icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
     manifest:"/manifest.webmanifest",
     appleWebApp:{capable:true,statusBarStyle:"default",title:"ユナマッチ"},
-    openGraph: { title, description, type: "website", images: [{ url: socialImage, width: 1536, height: 1024 }] },
+    openGraph: { title, description, type: "website", images: [{ url: socialImage, width: 1200, height: 630 }] },
     twitter: { card: "summary_large_image", title, description, images: [socialImage] },
   };
 }
