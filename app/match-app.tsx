@@ -578,9 +578,6 @@ export default function MatchApp({
   const [filterOpen, setFilterOpen] = useState(false);
   const [pokemonQuery, setPokemonQuery] = useState("");
   const [trainerQuery, setTrainerQuery] = useState("");
-  const [genderFilter, setGenderFilter] = useState<"すべて" | "男性" | "女性">(
-    "すべて",
-  );
   const [sharedTimeOnly, setSharedTimeOnly] = useState(false);
   const [compose, setCompose] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
@@ -1210,7 +1207,6 @@ export default function MatchApp({
             person.trainerName
               .toLocaleLowerCase("ja-JP")
               .includes(normalizedTrainerQuery)) &&
-          (genderFilter === "すべて" || person.gender === genderFilter) &&
           (!sharedTimeOnly ||
             person.playTime.includes("時間帯はいつでも") ||
             profile.playTime.includes("時間帯はいつでも") ||
@@ -1221,7 +1217,6 @@ export default function MatchApp({
       profileCandidates,
       normalizedPokemonQuery,
       normalizedTrainerQuery,
-      genderFilter,
       sharedTimeOnly,
       profile.playTime,
     ],
@@ -1235,7 +1230,6 @@ export default function MatchApp({
   const activeFilterCount =
     Number(Boolean(pokemonQuery.trim())) +
     Number(Boolean(trainerQuery.trim())) +
-    Number(genderFilter !== "すべて") +
     Number(sharedTimeOnly);
   const current = cards.length
     ? cards[((index % cards.length) + cards.length) % cards.length]
@@ -4334,20 +4328,6 @@ export default function MatchApp({
                 }}
               />
             </label>
-            <label>
-              性別
-              <select
-                value={genderFilter}
-                onChange={(e) => {
-                  setGenderFilter(e.target.value as "すべて" | "男性" | "女性");
-                  setIndex(0);
-                }}
-              >
-                <option value="すべて">すべて</option>
-                <option value="男性">男性</option>
-                <option value="女性">女性</option>
-              </select>
-            </label>
             <label className="toggleRow">
               <input
                 type="checkbox"
@@ -4365,7 +4345,6 @@ export default function MatchApp({
                 onClick={() => {
                   setPokemonQuery("");
                   setTrainerQuery("");
-                  setGenderFilter("すべて");
                   setSharedTimeOnly(false);
                   setIndex(0);
                 }}
