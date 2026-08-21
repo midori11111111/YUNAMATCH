@@ -25,6 +25,8 @@ test("renders the login-only entrance for anonymous visitors", async () => {
   assert.match(html, /YUNA<span>MATCH/);
   assert.match(html, /ログイン \/ 新規登録/);
   assert.match(html, /\/api\/login\/google/);
+  assert.match(html, /プライバシーポリシー/);
+  assert.match(html, /\/contact/);
   assert.match(html, /相性でつながるユナイト仲間/);
   assert.doesNotMatch(html, /Your site is taking shape|codex-preview/i);
 });
@@ -58,6 +60,10 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     likesApi,
     likesMigration,
     pokemonArt,
+    ogImage,
+    privacyPage,
+    contactPage,
+    publicSupportApi,
   ] = await Promise.all([
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/match-app.tsx", root), "utf8"),
@@ -87,6 +93,9 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     readFile(new URL("drizzle/0011_tearful_karma.sql", root), "utf8"),
     readFile(new URL("lib/pokemon-art.ts", root), "utf8"),
     access(new URL("public/og.png", root)),
+    readFile(new URL("app/privacy/page.tsx", root), "utf8"),
+    readFile(new URL("app/contact/page.tsx", root), "utf8"),
+    readFile(new URL("app/api/public-support/route.ts", root), "utf8"),
   ]);
   assert.match(page, /getChatGPTUser/);
   assert.match(page, /initialProfile/);
@@ -181,6 +190,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(likesApi, /onConflictDoNothing/);
   assert.match(likesMigration, /CREATE TABLE `profile_likes`/);
   assert.match(pokemonArt, /official-artwork/);
+  assert.equal(ogImage, undefined);
   assert.match(app, /アカウントを削除して退会/);
   assert.match(app, /Discordで募集・VCに参加/);
   assert.match(app, /運営ダッシュボード/);
@@ -190,4 +200,10 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(loginPage, /LINEでログイン/);
   assert.match(loginPage, /Discordでログイン/);
   assert.match(loginPage, /Xでログイン/);
+  assert.match(privacyPage, /取得する情報/);
+  assert.match(privacyPage, /外部サービスと委託先/);
+  assert.match(privacyPage, /YUNAMATCH運営（個人開発）/);
+  assert.match(contactPage, /ログインできない場合/);
+  assert.match(publicSupportApi, /public-support/);
+  assert.match(publicSupportApi, /sha256/);
 });

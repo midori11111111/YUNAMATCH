@@ -1,6 +1,7 @@
 import MatchApp, { type Profile } from "./match-app";
 import { getChatGPTUser } from "./chatgpt-auth";
 import { isAdminUser } from "../lib/admin";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,15 @@ export default async function Home({
             <a className="directLoginButton twitter" href="/api/login/twitter"><span>𝕏</span>X</a>
           </div>
           <small>選んだサービスの認証画面へ直接進みます</small>
+          <div className="loginLegal">
+            <strong>ログイン前にご確認ください</strong>
+            <p>認証時に取得する情報と利用目的を公開しています。</p>
+            <nav aria-label="サービス情報">
+              <Link href="/privacy">プライバシーポリシー</Link>
+              <Link href="/terms">利用規約</Link>
+              <Link href="/contact">お問い合わせ</Link>
+            </nav>
+          </div>
         </section>
       </main>
     );
