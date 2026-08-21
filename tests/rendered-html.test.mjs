@@ -132,6 +132,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /登録してメイトを探す/);
   assert.match(app, /未入力の項目/);
   assert.match(app, /onboardingMissing/);
+  assert.match(app, /id="profile-edit-form"[\s\S]*termsAccepted/);
   assert.match(app, /募集中のメイト/);
   assert.match(app, /未定（役割から募集）/);
   assert.match(app, /任意・複数選択できます/);

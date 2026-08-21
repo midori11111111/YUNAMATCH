@@ -3524,6 +3524,28 @@ export default function MatchApp({
                 <p className="privacyText">
                   連絡先は自動表示されません。マッチした相手ごとに「共有する」を選んだ場合だけ、その相手へ表示されます。
                 </p>
+                <label className="termsCheck">
+                  <input
+                    type="checkbox"
+                    checked={profile.termsAccepted}
+                    onChange={(event) =>
+                      setProfile({
+                        ...profile,
+                        termsAccepted: event.target.checked,
+                      })
+                    }
+                  />
+                  <span>
+                    <a href="/terms" target="_blank" rel="noreferrer">
+                      利用規約
+                    </a>
+                    と
+                    <a href="/privacy" target="_blank" rel="noreferrer">
+                      プライバシーポリシー
+                    </a>
+                    に同意します。
+                  </span>
+                </label>
                 <button
                   className="primaryButton"
                   disabled={sending || avatarProcessing}
