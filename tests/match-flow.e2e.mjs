@@ -91,12 +91,25 @@ try {
   assert.equal(notices.incoming.length, 1);
   const accepted = await api("/api/applications", { user: owner, method: "PATCH", body: { applicationId: notices.incoming[0].id, action: "accept" } });
   assert.ok(accepted.lobbyId);
+  assert.equal(accepted.applicantContact, null);
 
-  const ownerConnections = await api("/api/connections", { user: owner });
-  const applicantConnections = await api("/api/connections", { user: applicant });
+  let ownerConnections = await api("/api/connections", { user: owner });
+  let applicantConnections = await api("/api/connections", { user: applicant });
   assert.equal(ownerConnections.connections.length, 1);
   assert.equal(applicantConnections.connections.length, 1);
+  assert.equal(ownerConnections.connections[0].mateContact, null);
+  assert.equal(applicantConnections.connections[0].mateContact, null);
   const connectionId = ownerConnections.connections[0].id;
+
+  await api("/api/connections", { user: owner, method: "PATCH", body: { connectionId, action: "share_contact" } });
+  applicantConnections = await api("/api/connections", { user: applicant });
+  assert.equal(applicantConnections.connections[0].mateContact, "Discord: owner-test");
+  await api("/api/connections", { user: applicant, method: "PATCH", body: { connectionId, action: "share_contact" } });
+  ownerConnections = await api("/api/connections", { user: owner });
+  assert.equal(ownerConnections.connections[0].mateContact, "Discord: applicant-test");
+  await api("/api/connections", { user: owner, method: "PATCH", body: { connectionId, action: "share_contact" } });
+  applicantConnections = await api("/api/connections", { user: applicant });
+  assert.equal(applicantConnections.connections[0].mateContact, null);
 
   const prohibitedMessage = await fetch(`${base}/api/messages`, { method: "POST", headers: { ...applicant, "content-type": "application/json" }, body: JSON.stringify({ connectionId, body: "リアルで会おう" }) });
   assert.equal(prohibitedMessage.status, 400);

@@ -68,7 +68,7 @@ export async function PUT(request:Request){
   const ageConfirmed=body.ageConfirmed===true;
   const termsAccepted=body.termsAccepted===true;
   if(containsProhibitedContent(trainerName))return Response.json({error:prohibitedContentMessage},{status:400});
-  if(!trainerName||trainerName.length>24||mainPokemon.length===0||!rates.has(highestRate)||playTime.length===0||!genders.has(gender)||!contact||contact.length>120||!validAvatar||!ageConfirmed||!termsAccepted)return Response.json({error:"入力内容と利用条件への同意を確認してください"},{status:400});
+  if(!trainerName||trainerName.length>24||mainPokemon.length===0||!rates.has(highestRate)||playTime.length===0||!genders.has(gender)||contact.length>120||!validAvatar||!ageConfirmed||!termsAccepted)return Response.json({error:"入力内容と利用条件への同意を確認してください"},{status:400});
   const now=new Date();
   const values={userId:user.userId,trainerName,mainPokemon:JSON.stringify(mainPokemon),highestRate,playTime:JSON.stringify(playTime),gender,contact,avatarUrl,ageConfirmed,termsAcceptedAt:now,authProvider:user.provider,createdAt:now,updatedAt:now};
   const db=getDb();

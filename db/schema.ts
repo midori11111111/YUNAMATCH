@@ -150,6 +150,12 @@ export const connections = sqliteTable(
     userBPokemon: text("user_b_pokemon").notNull(),
     userAContact: text("user_a_contact").notNull(),
     userBContact: text("user_b_contact").notNull(),
+    userAShareContact: integer("user_a_share_contact", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    userBShareContact: integer("user_b_share_contact", { mode: "boolean" })
+      .notNull()
+      .default(false),
     userAAgain: integer("user_a_again", { mode: "boolean" })
       .notNull()
       .default(false),

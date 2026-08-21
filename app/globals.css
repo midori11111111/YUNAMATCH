@@ -515,6 +515,14 @@ button { cursor: pointer; }
 .chatHeader h1 { margin: 0; font-size: 15px; }
 .chatHeader p { margin: 3px 0 0; color: #958e9e; font-size: 7px; }
 .chatHeader .chatSafety { font-size: 9px; letter-spacing: 1px; }
+.contactConsentBar { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 8px; margin: 10px 0 2px; padding: 11px 12px; border: 1px solid #e7e0ef; border-radius: 14px; background: #faf8fc; }
+.contactConsentBar > div { min-width: 0; display: grid; gap: 3px; }
+.contactConsentBar strong { font-size: 8px; }
+.contactConsentBar small { overflow: hidden; color: #8d8694; font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
+.contactConsentBar button { border: 0; border-radius: 9px; padding: 8px 9px; color: #fff; background: var(--purple); font-size: 7px; font-weight: 900; }
+.contactConsentBar button:last-child { color: var(--purple); background: #ece7ff; }
+.contactPrivateBox { margin: 12px 0; padding: 14px; border-radius: 13px; color: #7d7585; background: #f3f0f5; font-size: 9px; font-weight: 800; text-align: center; }
+@media (max-width: 560px){.contactConsentBar { grid-template-columns: 1fr auto; }.contactConsentBar > div { grid-column: 1 / -1; }.contactConsentBar button { min-height: 34px; }}
 .reconnectBar { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; padding: 12px 0 9px; }
 .reconnectBar button { border: 1px solid #e8e3ed; border-radius: 12px; padding: 10px 8px; color: #81798a; background: #fff; font-size: 8px; font-weight: 900; }
 .reconnectBar button.active { color: var(--pink); border-color: #ffd5e5; background: #fff0f6; }

@@ -38,11 +38,9 @@ async function backfillAcceptedConnections(userId: string) {
       ownerId: recruits.ownerId,
       ownerName: recruits.trainerName,
       ownerPokemon: recruits.pokemon,
-      ownerContact: recruits.contact,
       applicantId: applications.applicantId,
       applicantName: applications.applicantName,
       applicantPokemon: applications.pokemon,
-      applicantContact: applications.applicantContact,
       createdAt: applications.createdAt,
     })
     .from(applications)
@@ -68,8 +66,8 @@ async function backfillAcceptedConnections(userId: string) {
         userBName: row.applicantName,
         userAPokemon: row.ownerPokemon,
         userBPokemon: row.applicantPokemon,
-        userAContact: row.ownerContact,
-        userBContact: row.applicantContact,
+        userAContact: "",
+        userBContact: "",
         createdAt: row.createdAt,
       })),
     )
@@ -122,12 +120,19 @@ export async function GET() {
   ];
   const mateProfiles = mateIds.length
     ? await db
-        .select({ userId: profiles.userId, avatarUrl: profiles.avatarUrl })
+        .select({
+          userId: profiles.userId,
+          avatarUrl: profiles.avatarUrl,
+          contact: profiles.contact,
+        })
         .from(profiles)
         .where(inArray(profiles.userId, mateIds))
     : [];
   const mateAvatars = new Map(
     mateProfiles.map((profile) => [profile.userId, profile.avatarUrl]),
+  );
+  const mateContacts = new Map(
+    mateProfiles.map((profile) => [profile.userId, profile.contact]),
   );
   const result = await Promise.all(
     visible.map(async (row) => {
@@ -156,7 +161,15 @@ export async function GET() {
         mateName: isA ? row.userBName : row.userAName,
         mateAvatarUrl: mateAvatars.get(mateId) || "",
         matePokemon: isA ? row.userBPokemon : row.userAPokemon,
-        mateContact: isA ? row.userBContact : row.userAContact,
+        mateContact: (isA ? row.userBShareContact : row.userAShareContact)
+          ? mateContacts.get(mateId) || null
+          : null,
+        mateContactShared: isA
+          ? row.userBShareContact
+          : row.userAShareContact,
+        myContactShared: isA
+          ? row.userAShareContact
+          : row.userBShareContact,
         myPokemon: isA ? row.userAPokemon : row.userBPokemon,
         againByMe: isA ? row.userAAgain : row.userBAgain,
         againByMate: isA ? row.userBAgain : row.userAAgain,
@@ -193,11 +206,11 @@ export async function PATCH(request: Request) {
   if (!rateLimit.allowed) return rateLimitResponse(rateLimit.retryAfter);
   const payload = (await request.json()) as {
     connectionId?: number;
-    action?: "again" | "played";
+    action?: "again" | "played" | "share_contact";
   };
   if (
     !payload.connectionId ||
-    !["again", "played"].includes(payload.action || "")
+    !["again", "played", "share_contact"].includes(payload.action || "")
   ) {
     return Response.json({ error: "操作を確認してください" }, { status: 400 });
   }
@@ -205,6 +218,26 @@ export async function PATCH(request: Request) {
   if (!row)
     return Response.json({ error: "マッチが見つかりません" }, { status: 404 });
   const isA = row.userAId === user.userId;
+  if (payload.action === "share_contact") {
+    const next = !(isA ? row.userAShareContact : row.userBShareContact);
+    if (next) {
+      const [profile] = await getDb()
+        .select({ contact: profiles.contact })
+        .from(profiles)
+        .where(eq(profiles.userId, user.userId))
+        .limit(1);
+      if (!profile?.contact.trim())
+        return Response.json(
+          { error: "先にプロフィールへ連絡先を登録してください" },
+          { status: 409 },
+        );
+    }
+    await getDb()
+      .update(connections)
+      .set(isA ? { userAShareContact: next } : { userBShareContact: next })
+      .where(eq(connections.id, row.id));
+    return Response.json({ ok: true, myContactShared: next });
+  }
   if (payload.action === "played") {
     const alreadyPlayed = isA ? row.userAPlayed : row.userBPlayed;
     if (!alreadyPlayed) {

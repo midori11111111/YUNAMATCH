@@ -64,6 +64,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     privacyPage,
     contactPage,
     publicSupportApi,
+    connectionsSchema,
+    connectionsApiSource,
   ] = await Promise.all([
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/match-app.tsx", root), "utf8"),
@@ -96,6 +98,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     readFile(new URL("app/privacy/page.tsx", root), "utf8"),
     readFile(new URL("app/contact/page.tsx", root), "utf8"),
     readFile(new URL("app/api/public-support/route.ts", root), "utf8"),
+    readFile(new URL("db/schema.ts", root), "utf8"),
+    readFile(new URL("app/api/connections/route.ts", root), "utf8"),
   ]);
   assert.match(page, /getChatGPTUser/);
   assert.match(page, /initialProfile/);
@@ -210,4 +214,10 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(contactPage, /ログインできない場合/);
   assert.match(publicSupportApi, /public-support/);
   assert.match(publicSupportApi, /sha256/);
+  assert.match(app, /共有せずチャットへ/);
+  assert.match(app, /連絡先を共有/);
+  assert.match(privacyPage, /初期状態は非公開/);
+  assert.match(connectionsSchema, /userAShareContact/);
+  assert.match(connectionsSchema, /userBShareContact/);
+  assert.match(connectionsApiSource, /action === "share_contact"/);
 });

@@ -80,7 +80,9 @@ type Connection = {
   mateName: string;
   mateAvatarUrl?: string;
   matePokemon: string;
-  mateContact: string;
+  mateContact: string | null;
+  mateContactShared: boolean;
+  myContactShared: boolean;
   myPokemon: string;
   againByMe: boolean;
   againByMate: boolean;
@@ -586,7 +588,10 @@ export default function MatchApp({
   );
   const [deletionOpen, setDeletionOpen] = useState(false);
   const [deletionText, setDeletionText] = useState("");
-  const [matchedContact, setMatchedContact] = useState<string | null>(null);
+  const [matchResult, setMatchResult] = useState<{
+    connectionId: number;
+    mateContact: string | null;
+  } | null>(null);
   const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>(
     preview
       ? [
@@ -631,7 +636,6 @@ export default function MatchApp({
     profile.mainPokemon.length === 0 && "メインポケモン",
     profile.playTime.length === 0 && "遊べる時間帯",
     !profile.gender && "性別",
-    !profile.contact.trim() && "連絡先",
     !profile.ageConfirmed && "年齢確認",
     !profile.termsAccepted && "利用規約への同意",
   ].filter((value): value is string => Boolean(value));
@@ -1123,7 +1127,7 @@ export default function MatchApp({
       Boolean(profile.highestRate),
       profile.playTime.length > 0,
       Boolean(profile.gender),
-      Boolean(profile.contact.trim()),
+      true,
       Boolean(profile.avatarUrl),
       profile.mainPokemon.length >= 2,
       profile.playTime.length >= 2,
@@ -1523,7 +1527,11 @@ export default function MatchApp({
       notify(data.error || "処理できませんでした");
       return;
     }
-    if (action === "accept") setMatchedContact(data.applicantContact);
+    if (action === "accept" && data.connectionId)
+      setMatchResult({
+        connectionId: data.connectionId,
+        mateContact: data.applicantContact || null,
+      });
     notify(
       action === "accept"
         ? "マッチ成立！チャットが開通しました"
@@ -1586,6 +1594,47 @@ export default function MatchApp({
           ? "また遊びたいを送りました"
           : "取り消しました",
     );
+  };
+  const toggleContactSharing = async (connectionId: number) => {
+    if (preview) {
+      setConnections((rows) =>
+        rows.map((row) =>
+          row.id === connectionId
+            ? { ...row, myContactShared: !row.myContactShared }
+            : row,
+        ),
+      );
+      setSelectedConnection((value) =>
+        value?.id === connectionId
+          ? { ...value, myContactShared: !value.myContactShared }
+          : value,
+      );
+      return true;
+    }
+    const response = await fetch("/api/connections", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ connectionId, action: "share_contact" }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      notify(data.error || "連絡先の共有設定を変更できませんでした");
+      return false;
+    }
+    setConnections((rows) =>
+      rows.map((row) =>
+        row.id === connectionId ? { ...row, ...data } : row,
+      ),
+    );
+    setSelectedConnection((value) =>
+      value?.id === connectionId ? { ...value, ...data } : value,
+    );
+    notify(
+      data.myContactShared
+        ? "この相手に連絡先を共有しました"
+        : "連絡先の共有を解除しました",
+    );
+    return true;
   };
   const markPlayed = async (connection: Connection) => {
     if (connection.playedByMe) return;
@@ -2479,6 +2528,41 @@ export default function MatchApp({
                       🎧 VCで合流
                     </button>
                   </div>
+                  <div className="contactConsentBar">
+                    <div>
+                      <strong>
+                        {selectedConnection.myContactShared
+                          ? "あなたの連絡先を共有中"
+                          : "あなたの連絡先は非公開"}
+                      </strong>
+                      <small>
+                        {selectedConnection.mateContact
+                          ? `相手の連絡先：${selectedConnection.mateContact}`
+                          : "相手の連絡先はまだ共有されていません"}
+                      </small>
+                    </div>
+                    <button
+                      onClick={() =>
+                        toggleContactSharing(selectedConnection.id)
+                      }
+                    >
+                      {selectedConnection.myContactShared
+                        ? "共有をやめる"
+                        : "連絡先を共有"}
+                    </button>
+                    {selectedConnection.mateContact && (
+                      <button
+                        onClick={() => {
+                          navigator.clipboard?.writeText(
+                            selectedConnection.mateContact || "",
+                          );
+                          notify("相手の連絡先をコピーしました");
+                        }}
+                      >
+                        コピー
+                      </button>
+                    )}
+                  </div>
                   {selectedConnection.againByMate && (
                     <div className="heartNotice">
                       ♡ {selectedConnection.mateName}
@@ -2853,7 +2937,7 @@ export default function MatchApp({
                 <div className="profileSectionHeading">
                   <small>PROFILE EDIT</small>
                   <h2>プロフィール編集</h2>
-                  <p>登録内容と、マッチ成立後に伝える連絡先を変更できます。</p>
+                  <p>登録内容と、マッチ後に任意で共有する連絡先を変更できます。</p>
                 </div>
                 {avatarEditor()}
                 <label>
@@ -2908,7 +2992,7 @@ export default function MatchApp({
                   </button>
                 </fieldset>
                 <label>
-                  マッチ後に伝える連絡先
+                  共有用の連絡先（任意）
                   <input
                     value={profile.contact}
                     maxLength={120}
@@ -2916,11 +3000,10 @@ export default function MatchApp({
                       setProfile({ ...profile, contact: e.target.value })
                     }
                     placeholder="Discord: username / X: @username"
-                    required
                   />
                 </label>
                 <p className="privacyText">
-                  Discord名、XのID、LINEの連絡方法などを自由に変更できます。マッチ成立後だけ相手に表示されます。
+                  連絡先は自動表示されません。マッチした相手ごとに「共有する」を選んだ場合だけ、その相手へ表示されます。
                 </p>
                 <button
                   className="primaryButton"
@@ -3180,19 +3263,18 @@ export default function MatchApp({
               </button>
             </fieldset>
             <label>
-              マッチ後に伝える連絡先
+              共有用の連絡先（任意）
               <input
                 value={profile.contact}
                 maxLength={120}
                 onChange={(event) =>
                   setProfile({ ...profile, contact: event.target.value })
                 }
-                required
               />
             </label>
             <p className="contactNote">
               <span>🔒</span>
-              ログインアカウントのIDを初期値にしています。自由に変更でき、マッチ成立後の相手にだけ表示されます。
+              ログインアカウントのIDを初期値にしています。マッチ後も自動では表示されず、相手ごとに共有するか選べます。
             </p>
             <label className="termsCheck">
               <input
@@ -3870,7 +3952,7 @@ export default function MatchApp({
               ))}
             </div>
             <p className="privacyText">
-              申請時はトレーナー名だけを送り、連絡先は承認後に表示します。
+              申請時に連絡先は送信されません。マッチ後、相手ごとに共有するか選べます。
             </p>
             <button className="primaryButton" disabled={sending}>
               {sending ? "送信中…" : "プレイ申請を送る"}
@@ -3931,7 +4013,7 @@ export default function MatchApp({
               ))}
             </div>
             <p className="privacyText">
-              時間を今決めなくても申請できます。承認後にチャットで相談してください。連絡先は承認後だけ表示されます。
+              時間を今決めなくても申請できます。承認後にチャットで相談してください。連絡先はマッチ後に本人が共有した場合だけ表示されます。
             </p>
             <button className="primaryButton" disabled={sending}>
               {sending ? "送信中…" : "メイト申請を送る"}
@@ -4035,24 +4117,33 @@ export default function MatchApp({
         </div>
       )}
 
-      {matchedContact && (
+      {matchResult && (
         <div className="modalBackdrop">
           <section className="matchModal">
             <div className="matchBurst">⚡</div>
             <small>MATCH!</small>
             <h2>マッチ成立！</h2>
             <p>
-              チャットが開通しました。外部で合流するときだけ連絡先を使えます。
+              チャットが開通しました。この相手に連絡先を共有するか選べます。
             </p>
-            <div className="contactBox">{matchedContact}</div>
+            {matchResult.mateContact ? (
+              <div className="contactBox">{matchResult.mateContact}</div>
+            ) : (
+              <div className="contactPrivateBox">
+                相手の連絡先はまだ共有されていません
+              </div>
+            )}
             <button
               className="primaryButton"
-              onClick={() => {
-                navigator.clipboard?.writeText(matchedContact);
-                notify("連絡先をコピーしました");
+              onClick={async () => {
+                if (await toggleContactSharing(matchResult.connectionId)) {
+                  setMatchResult(null);
+                  setTab("chat");
+                  await loadConnections();
+                }
               }}
             >
-              連絡先をコピー
+              自分の連絡先を共有してチャットへ
             </button>
             <button className="discordMatchButton" onClick={openDiscord}>
               🎧 DiscordのVCで合流
@@ -4060,11 +4151,11 @@ export default function MatchApp({
             <button
               className="textButton"
               onClick={() => {
-                setMatchedContact(null);
+                setMatchResult(null);
                 setTab("chat");
               }}
             >
-              チャットを見る
+              共有せずチャットへ
             </button>
           </section>
         </div>
