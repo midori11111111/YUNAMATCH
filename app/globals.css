@@ -336,11 +336,18 @@ button { cursor: pointer; }
 .profileHero p { margin: 0; color: #958e9e; font-size: 9px; }
 .shareCardButton { margin-top: 13px; padding: 10px 14px; border: 0; border-radius: 12px; color: #fff; background: #17131f; font-size: 8px; font-weight: 900; box-shadow: 0 8px 18px #17131f22; }
 .profileDashboardHero { padding-top: 15px; }
-.profileCompletionRing { width: 136px; height: 136px; position: relative; margin: 0 auto 20px; border-radius: 50%; background: conic-gradient(from 0deg, var(--pink) 0 var(--profile-progress), #ebe7ef var(--profile-progress) 360deg); box-shadow: 0 13px 30px #352a4d12; }
-.profileCompletionRing:before { content: ""; position: absolute; inset: 6px; z-index: 0; border-radius: 50%; background: #fff; }
-.profileDashboardHero .profileHeroAvatar { width: auto; height: auto; position: absolute; z-index: 1; inset: 10px; overflow: hidden; margin: 0; border: 0; border-radius: 50%; box-shadow: none; }
-.profileCompletionRing > button { width: 43px; height: 43px; position: absolute; z-index: 3; right: -7px; top: -1px; border: 3px solid #fff; border-radius: 50%; color: #fff; background: var(--pink); font-size: 18px; font-weight: 900; box-shadow: 0 8px 18px #ff4f9140; }
-.profileCompletionRing > span { position: absolute; z-index: 3; left: 50%; bottom: -12px; transform: translateX(-50%); padding: 6px 11px; border-radius: 99px; color: #fff; background: linear-gradient(145deg, var(--pink), #ff7da9); font-size: 8px; font-weight: 950; white-space: nowrap; box-shadow: 0 5px 12px #ff4f9130; }
+.profileAvatarFrame { width: 128px; height: 128px; position: relative; margin: 0 auto 16px; }
+.profileDashboardHero .profileAvatarFrame .profileHeroAvatar { width: 128px; height: 128px; position: static; display: grid; overflow: hidden; margin: 0; border: 5px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px #e7e1ec, 0 14px 30px #352a4d18; }
+.profileAvatarFrame > button { width: 43px; height: 43px; position: absolute; z-index: 2; right: -7px; top: 3px; border: 3px solid #fff; border-radius: 50%; color: #fff; background: var(--pink); font-size: 18px; font-weight: 900; box-shadow: 0 8px 18px #ff4f9140; }
+.profileCompletionCard { width: min(310px, 100%); margin: 14px auto 0; padding: 12px 14px; border: 1px solid #ebe5f0; border-radius: 16px; background: #faf8fc; text-align: left; }
+.profileCompletionCard > div { display: flex; align-items: center; justify-content: space-between; }
+.profileCompletionCard strong { color: #302741; font-size: 8px; }
+.profileCompletionCard span { color: var(--pink); font-size: 9px; font-weight: 950; }
+.profileCompletionCard progress { width: 100%; height: 7px; display: block; overflow: hidden; margin: 8px 0 6px; appearance: none; border: 0; border-radius: 99px; background: #e9e4ee; }
+.profileCompletionCard progress::-webkit-progress-bar { border-radius: 99px; background: #e9e4ee; }
+.profileCompletionCard progress::-webkit-progress-value { border-radius: 99px; background: linear-gradient(90deg, var(--purple), var(--pink)); }
+.profileCompletionCard progress::-moz-progress-bar { border-radius: 99px; background: linear-gradient(90deg, var(--purple), var(--pink)); }
+.profileCompletionCard > small { display: block; margin: 0; color: #847d8c; font-size: 7px; font-weight: 700; line-height: 1.55; letter-spacing: 0; }
 .profileQuickStats { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin: 4px 0 24px; }
 .profileQuickStats button { min-width: 0; height: 82px; display: grid; place-items: center; align-content: center; gap: 2px; padding: 6px 3px; border: 0; border-radius: 19px; color: #302747; background: #f3f1f5; }
 .profileQuickStats span { color: var(--pink); font-size: 17px; font-weight: 950; }
