@@ -1,6 +1,6 @@
 import MatchApp, { type Profile } from "./match-app";
 import { getChatGPTUser } from "./chatgpt-auth";
-import { isAdminUser } from "../lib/admin";
+import { requireAdmin } from "../lib/admin";
 import { normalizeRank } from "../lib/ranks";
 
 export const dynamic = "force-dynamic";
@@ -33,5 +33,6 @@ export default async function Home({
     }
   }
 
-  return <MatchApp displayName={user?.displayName ?? "ゲスト"} authProvider={user?.provider ?? "guest"} authContact={user?.contactId ?? ""} authenticated={Boolean(user)} preview={preview} initialProfile={initialProfile} initialSuspended={initialSuspended} isAdmin={Boolean(user&&isAdminUser(user))} />;
+  const isAdmin=await requireAdmin();
+  return <MatchApp displayName={user?.displayName ?? "ゲスト"} authProvider={user?.provider ?? "guest"} authContact={user?.contactId ?? ""} authenticated={Boolean(user)} preview={preview} initialProfile={initialProfile} initialSuspended={initialSuspended} isAdmin={isAdmin} />;
 }

@@ -688,6 +688,14 @@ button { cursor: pointer; }
 .cancelLobbyButton { padding: 8px; color: #9c8790; background: transparent; }
 
 .legalPage,.adminPage { min-height: 100vh; padding: 45px 20px; color: var(--ink); background: #f7f4fa; }
+.adminLoginPage { min-height: 100svh; display: grid; place-items: center; padding: 24px; color: var(--ink); background: radial-gradient(circle at 50% 0%, #dfd4ff 0, transparent 38%), linear-gradient(155deg,#f8f5ff,#f4eef8); }
+.adminLoginCard { width: min(410px,100%); padding: 36px 29px 30px; border: 1px solid #dfd8e8; border-radius: 28px; background: #fffffff2; box-shadow: 0 24px 70px #2c1c4930; text-align: center; backdrop-filter: blur(18px); }
+.adminLoginMark { width: 62px; height: 62px; display: grid; place-items: center; margin: 0 auto 14px; border-radius: 20px; color: #fff; background: linear-gradient(145deg,var(--purple),#9a7dff); font-size: 27px; font-weight: 950; box-shadow: 0 12px 28px #7257e83d; }
+.adminLoginCard > small { color: var(--purple); font-size: 9px; font-weight: 950; letter-spacing: 1.4px; }
+.adminLoginCard h1 { margin: 8px 0 7px; font-size: 26px; }.adminLoginCard > p { margin: 0 0 22px; color: #81798a; font-size: 12px; }
+.adminLoginCard form { display: grid; gap: 9px; text-align: left; }.adminLoginCard label { color: #655d6d; font-size: 11px; font-weight: 900; }.adminLoginCard input { width: 100%; border: 1px solid #dcd4e4; border-radius: 13px; padding: 13px 14px; background: #fff; font: inherit; outline: none; }.adminLoginCard input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px #7257e818; }
+.adminLoginCard form button { border: 0; border-radius: 13px; padding: 14px; color: #fff; background: linear-gradient(135deg,var(--purple),#8d75f1); font-weight: 900; }.adminLoginCard form button:disabled { opacity: .55; }.adminLoginError { margin: 0 !important; color: #b83250 !important; font-size: 10px !important; }
+.adminLoginCard > a { display: inline-block; margin-top: 20px; color: var(--purple); font-size: 11px; font-weight: 850; text-decoration: none; }
 .legalPage > section,.adminPage > section,.adminPage > header { width: min(760px,100%); margin: auto; }
 .legalPage > section { padding: 34px; border: 1px solid #e4deea; border-radius: 24px; background: #fff; box-shadow: 0 16px 45px #35284c12; }
 .legalPage a,.adminPage a { color: var(--purple); font-weight: 850; text-decoration: none; }
@@ -706,6 +714,7 @@ button { cursor: pointer; }
 .contactResult { padding: 12px 14px; border-radius: 11px; color: #266a55 !important; background: #e8f8f1; }
 .contactResult.error { color: #9b354d !important; background: #fff0f3; }
 .adminPage > header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.adminPage > header nav { display: flex; align-items: center; gap: 9px; }.adminPage > header nav button { border: 1px solid #ddd5e5; border-radius: 9px; padding: 8px 10px; color: #81798a; background: #fff; font-size: 9px; font-weight: 850; }
 .adminPage header small { color: var(--purple); font-weight: 900; letter-spacing: 1px; }
 .adminPage header h1 { margin: 4px 0 0; }
 .adminPage > section { display: grid; gap: 12px; }
@@ -773,6 +782,7 @@ button { cursor: pointer; }
 @media (max-width: 720px) {
   .adminPage { padding: 26px 14px 60px; }
   .adminPage > header { align-items: flex-start; }
+  .adminPage > header nav { align-items: flex-end; flex-direction: column; }
   .adminPage header h1 { font-size: 22px; }
   .adminStatGrid { grid-template-columns: 1fr 1fr; }
   .adminStatGrid article { min-height: 125px; }

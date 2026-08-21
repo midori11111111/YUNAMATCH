@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { requireAdmin } from "../../lib/admin";
 import AdminPanel from "./admin-panel";
+import AdminLogin from "./admin-login";
 
 export const dynamic="force-dynamic";
-export default async function AdminPage(){const user=await requireAdmin();if(!user)return <main className="legalPage"><section><h1>管理者専用</h1><p>このページを表示する権限がありません。</p><Link href="/">YUNAMATCHへ戻る</Link></section></main>;return <AdminPanel/>}
+export default async function AdminPage(){return await requireAdmin()?<AdminPanel/>:<AdminLogin/>}

@@ -73,6 +73,10 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     ranks,
     legendRankMigration,
     ageMigration,
+    adminPage,
+    adminLogin,
+    adminAuth,
+    adminSessionApi,
   ] = await Promise.all([
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/match-app.tsx", root), "utf8"),
@@ -114,6 +118,10 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     readFile(new URL("lib/ranks.ts", root), "utf8"),
     readFile(new URL("drizzle/0017_legend_rank.sql", root), "utf8"),
     readFile(new URL("drizzle/0018_unique_ironclad.sql", root), "utf8"),
+    readFile(new URL("app/admin/page.tsx", root), "utf8"),
+    readFile(new URL("app/admin/admin-login.tsx", root), "utf8"),
+    readFile(new URL("lib/admin.ts", root), "utf8"),
+    readFile(new URL("app/api/admin/session/route.ts", root), "utf8"),
   ]);
   assert.match(page, /getChatGPTUser/);
   assert.match(page, /initialProfile/);
@@ -281,4 +289,12 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(profileApi, /age<13\|\|age>99/);
   assert.match(ageMigration, /ALTER TABLE `profiles` ADD `age` integer/);
   assert.match(privacyPage, /遊べる時間帯、年齢、性別/);
+  assert.match(adminPage, /AdminLogin/);
+  assert.match(adminLogin, /管理者パスワードを入力してください/);
+  assert.match(adminAuth, /HMAC/);
+  assert.match(adminAuth, /HttpOnly|adminSessionCookieName/);
+  assert.match(adminSessionApi, /SameSite=Strict/);
+  assert.match(adminSessionApi, /admin-login/);
+  assert.match(adminSessionApi, /limit: 5/);
+  assert.doesNotMatch(adminAuth + adminSessionApi, /unimatch/);
 });

@@ -22,7 +22,8 @@ export default function AdminPanel(){
   const actTicket=async(ticket:Ticket,action:"resolve"|"reopen")=>{await fetch("/api/admin/support",{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({ticketId:ticket.id,action})});load()};
   const maxVisitors=Math.max(1,...(stats?.daily.map(day=>day.visitors)||[]));
   const visibleReports=reports.filter(item=>showResolved||item.status!=="resolved"),visibleTickets=tickets.filter(item=>showResolved||item.status!=="resolved");
-  return <main className="adminPage"><header><div><small>YUNAMATCH ADMIN</small><h1>運営ダッシュボード</h1></div><Link href="/">アプリへ戻る</Link></header>
+  const logout=async()=>{await fetch("/api/admin/session",{method:"DELETE"});location.reload()};
+  return <main className="adminPage"><header><div><small>YUNAMATCH ADMIN</small><h1>運営ダッシュボード</h1></div><nav><Link href="/">アプリへ戻る</Link><button onClick={logout}>管理画面からログアウト</button></nav></header>
     <section className="adminAnalytics"><div className="adminSectionTitle"><div><small>ACCESS OVERVIEW</small><h2>アクセス状況</h2></div><button onClick={load}>更新</button></div>
       {loading||!stats?<p>集計中…</p>:<>
         <div className="adminStatGrid">
