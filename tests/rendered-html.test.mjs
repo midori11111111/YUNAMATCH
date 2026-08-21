@@ -84,6 +84,11 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /カードの使い方/);
   assert.match(app, /yunamatch-discover-tutorial-v1/);
   assert.doesNotMatch(app, /次の人/);
+  assert.match(app, /まだやりとりがありません/);
+  assert.match(app, /yunamatch-chat-tutorial-v1/);
+  assert.match(app, /次のプレイまで/);
+  assert.match(app, /profileCompletion/);
+  assert.match(app, /もらったいいね/);
   assert.match(app, /メイト申請を送る/);
   assert.match(app, /いいね済み/);
   assert.match(app, /PokemonLabel/);
