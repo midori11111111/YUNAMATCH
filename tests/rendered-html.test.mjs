@@ -190,6 +190,11 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /承認前のあいさつ/);
   assert.match(app, /あなたに手を振っています/);
   assert.match(app, /相手の承認を待っています/);
+  assert.match(app, /shareMatchToX/);
+  assert.match(app, /x\.com\/intent\/tweet/);
+  assert.match(app, /このマッチをシェア/);
+  assert.match(app, /マッチをシェア/);
+  assert.match(applicationsApi, /matePokemon:row\.applicantPokemon/);
   assert.match(discoverApi, /kind:\s*"profile"/);
   assert.match(discoverApi, /👋 手を振っています/);
   assert.match(discoverApi, /me\.gender\s*===\s*"男性"/);

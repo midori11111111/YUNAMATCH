@@ -57,7 +57,7 @@ export async function PATCH(request:Request){
   if(!lobby){[lobby]=await db.insert(lobbies).values({recruitId:row.recruitId,ownerId:row.ownerId,status:"forming",scheduledAt:row.startAt,createdAt:now}).returning();await db.insert(lobbyMembers).values({lobbyId:lobby.id,userId:row.ownerId,trainerName:row.ownerName,pokemon:row.ownerPokemon,contact:"",joinedAt:now}).onConflictDoNothing()}
   await db.insert(lobbyMembers).values({lobbyId:lobby.id,userId:row.applicantId,applicationId:row.id,connectionId:savedConnection?.id,trainerName:row.applicantName,pokemon:row.applicantPokemon,contact:"",joinedAt:now}).onConflictDoNothing();
   await sendPush(row.applicantId,"マッチ成立！",`${row.ownerName}さんの集合ロビーに参加しました`,`/?lobby=${lobby.id}`);
-  return Response.json({ok:true,status,applicantContact:null,connectionId:savedConnection?.id,lobbyId:lobby.id});
+  return Response.json({ok:true,status,applicantContact:null,connectionId:savedConnection?.id,lobbyId:lobby.id,mateName:row.applicantName,matePokemon:row.applicantPokemon});
  }
  return Response.json({ok:true,status,applicantContact:null});
 }

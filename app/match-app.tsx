@@ -635,6 +635,8 @@ export default function MatchApp({
   const [matchResult, setMatchResult] = useState<{
     connectionId: number;
     mateContact: string | null;
+    mateName: string;
+    matePokemon: string;
   } | null>(null);
   const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>(
     preview
@@ -1735,6 +1737,8 @@ export default function MatchApp({
       setMatchResult({
         connectionId: data.connectionId,
         mateContact: data.applicantContact || null,
+        mateName: data.mateName || "メイト",
+        matePokemon: data.matePokemon || "ポケモン",
       });
     if (selectedPending?.notice.id === applicationId)
       setSelectedPending(null);
@@ -1766,6 +1770,14 @@ export default function MatchApp({
     setSelectedPending({ notice, direction });
     setTab("chat");
     setNotificationOpen(false);
+  };
+  const shareMatchToX = (matePokemon: string) => {
+    const text = `YUNAMATCHで${matePokemon}を使うメイトとマッチしました！これから一緒にユナイトします⚡ #YUNAMATCH #ポケモンユナイト`;
+    window.open(
+      `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent("https://yunamatch.vercel.app/")}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
   };
   const sendMessage = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -2950,6 +2962,14 @@ export default function MatchApp({
                     </button>
                     <button className="vcJoinButton" onClick={openDiscord}>
                       🎧 VCで合流
+                    </button>
+                    <button
+                      className="shareMatchButton"
+                      onClick={() =>
+                        shareMatchToX(selectedConnection.matePokemon)
+                      }
+                    >
+                      𝕏 マッチをシェア
                     </button>
                   </div>
                   <div className="contactConsentBar">
@@ -4746,6 +4766,9 @@ export default function MatchApp({
             <div className="matchBurst">⚡</div>
             <small>MATCH!</small>
             <h2>マッチ成立！</h2>
+            <strong className="matchMateName">
+              {matchResult.mateName}さんとマッチしました
+            </strong>
             <p>
               チャットが開通しました。この相手に連絡先を共有するか選べます。
             </p>
@@ -4756,6 +4779,12 @@ export default function MatchApp({
                 相手の連絡先はまだ共有されていません
               </div>
             )}
+            <button
+              className="matchShareButton"
+              onClick={() => shareMatchToX(matchResult.matePokemon)}
+            >
+              𝕏 このマッチをシェア
+            </button>
             <button
               className="primaryButton"
               onClick={async () => {

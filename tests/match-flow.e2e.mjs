@@ -96,6 +96,8 @@ try {
   const accepted = await api("/api/applications", { user: owner, method: "PATCH", body: { applicationId: notices.incoming[0].id, action: "accept" } });
   assert.ok(accepted.lobbyId);
   assert.equal(accepted.applicantContact, null);
+  assert.equal(accepted.mateName, "申請テスター");
+  assert.equal(accepted.matePokemon, "ハピナス");
 
   let ownerConnections = await api("/api/connections", { user: owner });
   let applicantConnections = await api("/api/connections", { user: applicant });
