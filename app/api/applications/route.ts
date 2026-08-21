@@ -12,8 +12,8 @@ export async function GET(){
  const user=await getChatGPTUser();
  if(!user)return Response.json({error:"ログインが必要です",signIn},{status:401});
  const db=getDb();
- const incoming=await db.select({id:applications.id,applicantName:applications.applicantName,pokemon:applications.pokemon,message:applications.message,status:applications.status,recruitPokemon:recruits.pokemon,createdAt:applications.createdAt}).from(applications).innerJoin(recruits,eq(applications.recruitId,recruits.id)).where(eq(recruits.ownerId,user.userId)).orderBy(desc(applications.createdAt)).limit(50);
- const outgoing=await db.select({id:applications.id,trainerName:recruits.trainerName,pokemon:applications.pokemon,message:applications.message,status:applications.status,recruitPokemon:recruits.pokemon,createdAt:applications.createdAt}).from(applications).innerJoin(recruits,eq(applications.recruitId,recruits.id)).where(eq(applications.applicantId,user.userId)).orderBy(desc(applications.createdAt)).limit(50);
+ const incoming=await db.select({id:applications.id,recruitId:applications.recruitId,applicantName:applications.applicantName,pokemon:applications.pokemon,message:applications.message,status:applications.status,recruitPokemon:recruits.pokemon,createdAt:applications.createdAt}).from(applications).innerJoin(recruits,eq(applications.recruitId,recruits.id)).where(eq(recruits.ownerId,user.userId)).orderBy(desc(applications.createdAt)).limit(50);
+ const outgoing=await db.select({id:applications.id,recruitId:applications.recruitId,trainerName:recruits.trainerName,pokemon:applications.pokemon,message:applications.message,status:applications.status,recruitPokemon:recruits.pokemon,createdAt:applications.createdAt}).from(applications).innerJoin(recruits,eq(applications.recruitId,recruits.id)).where(eq(applications.applicantId,user.userId)).orderBy(desc(applications.createdAt)).limit(50);
  return Response.json({incoming,outgoing});
 }
 

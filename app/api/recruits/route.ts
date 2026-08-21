@@ -1,10 +1,11 @@
-import { and, desc, eq, lt } from "drizzle-orm";
+import { and, desc, eq, lt, or } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { applications, blocks, lobbies, lobbyMembers, profiles, recruits } from "../../../db/schema";
+import { applications, blocks, lobbies, lobbyMembers, profiles, recruitAlerts, recruits } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { checkRateLimit, rateLimitResponse } from "../../../lib/rate-limit";
 import { containsProhibitedContent, prohibitedContentMessage } from "../../../lib/content-policy";
 import { normalizeRank } from "../../../lib/ranks";
+import { sendPush } from "../../../lib/push";
 
 const recruitRoles=new Set(["上レーン","下レーン","中央","キャリー","タンク","サポート","アタック型","バランス型","スピード型","ディフェンス型","サポート型"]);
 
@@ -55,6 +56,24 @@ export async function POST(request:Request) {
   const [row]=await db.insert(recruits).values({ownerId:user.userId,trainerName:profile.trainerName,gender:profile.gender,pokemon,role,matches:Math.round(matches),winRate,rank:normalizeRank(profile.highestRate),playTime:profilePlayTimes.filter(Boolean).join("・")||profile.playTime,note,contact:"",startAt,startTimeUndecided,expiresAt,partySize,desiredPokemon,desiredRole,createdAt:now}).returning();
   const [lobby]=await db.insert(lobbies).values({recruitId:row.id,ownerId:user.userId,status:"forming",scheduledAt:startAt,createdAt:now}).returning();
   await db.insert(lobbyMembers).values({lobbyId:lobby.id,userId:user.userId,trainerName:profile.trainerName,pokemon:row.pokemon,contact:"",joinedAt:now});
+  const [alertRows, blockRows] = await Promise.all([
+    db.select({ userId: recruitAlerts.userId }).from(recruitAlerts).where(eq(recruitAlerts.enabled, true)).limit(100),
+    db.select({ blockerId: blocks.blockerId, blockedId: blocks.blockedId }).from(blocks).where(or(eq(blocks.blockerId, user.userId), eq(blocks.blockedId, user.userId))),
+  ]);
+  const hiddenAlertUsers = new Set(
+    blockRows.map((block) => block.blockerId === user.userId ? block.blockedId : block.blockerId),
+  );
+  const startLabel = startTimeUndecided ? "時間は相談" : startsIn === 0 ? "今から" : `${startsIn}分後`;
+  await Promise.allSettled(
+    alertRows
+      .filter((alert) => alert.userId !== user.userId && !hiddenAlertUsers.has(alert.userId))
+      .map((alert) => sendPush(
+        alert.userId,
+        "新しいユナイト募集が届きました",
+        `${profile.trainerName}さんが${startLabel}・${partySize}人で募集中です`,
+        `/?recruit=${row.id}`,
+      )),
+  );
   return Response.json({recruit:{...row,avatarUrl:profile.avatarUrl}},{status:201});
 }
 

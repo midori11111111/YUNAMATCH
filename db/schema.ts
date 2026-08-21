@@ -360,6 +360,17 @@ export const pushSubscriptions = sqliteTable(
   ],
 );
 
+export const recruitAlerts = sqliteTable(
+  "recruit_alerts",
+  {
+    userId: text("user_id").primaryKey(),
+    enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [index("idx_recruit_alerts_enabled").on(table.enabled)],
+);
+
 export const presence = sqliteTable("presence", {
   userId: text("user_id").primaryKey(),
   connectionId: integer("connection_id"),

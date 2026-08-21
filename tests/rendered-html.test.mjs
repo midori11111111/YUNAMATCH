@@ -79,6 +79,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     adminSessionApi,
     playInviteMigration,
     playInviteIndexMigration,
+    recruitAlertsApi,
+    recruitAlertsMigration,
   ] = await Promise.all([
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/match-app.tsx", root), "utf8"),
@@ -126,6 +128,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     readFile(new URL("app/api/admin/session/route.ts", root), "utf8"),
     readFile(new URL("drizzle/0019_lovely_lenny_balinger.sql", root), "utf8"),
     readFile(new URL("drizzle/0020_parched_frightful_four.sql", root), "utf8"),
+    readFile(new URL("app/api/recruit-alerts/route.ts", root), "utf8"),
+    readFile(new URL("drizzle/0021_breezy_silk_fever.sql", root), "utf8"),
   ]);
   assert.match(page, /getChatGPTUser/);
   assert.match(page, /initialProfile/);
@@ -180,7 +184,9 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /ログインすると続けられます/);
   assert.match(app, /yunamatch-pending-action-v1/);
   assert.match(app, /PokemonLabel/);
-  assert.match(app, /この人にプレイ申請/);
+  assert.match(app, /すぐ参加申請/);
+  assert.match(app, /クイック募集/);
+  assert.match(app, /新しい募集が出たら通知/);
   assert.match(app, /集合ロビー/);
   assert.match(app, /プッシュ通知/);
   assert.match(app, /全員そろったらプレイ開始/);
@@ -199,6 +205,10 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(playInviteMigration, /ADD `kind` text/);
   assert.match(playInviteMigration, /ADD `response` text/);
   assert.match(playInviteIndexMigration, /idx_messages_pending_play_invite/);
+  assert.match(recruitAlertsApi, /onConflictDoUpdate/);
+  assert.match(recruitAlertsMigration, /CREATE TABLE `recruit_alerts`/);
+  assert.match(recruitAlertsMigration, /idx_recruit_alerts_enabled/);
+  assert.match(recruitAlertsMigration, /PRAGMA optimize/);
   assert.match(app, /一緒にプレイしませんか/);
   assert.match(app, /Discordで合流する/);
   assert.match(app, /respondPlayInvite/);

@@ -60,6 +60,7 @@ type ProfileLikeNotice = {
 };
 type Notice = {
   id: number;
+  recruitId?: number;
   applicantName?: string;
   applicantContact?: string;
   trainerName?: string;
@@ -150,7 +151,13 @@ type Lobby = {
 type AppTab = "discover" | "recruit" | "chat" | "lobby" | "profile";
 type DiscoverMode = "recommended" | "received";
 type PendingGuestAction = {
-  type: "like" | "profile-request" | "recruit-apply" | "compose" | "received";
+  type:
+    | "like"
+    | "profile-request"
+    | "recruit-apply"
+    | "compose"
+    | "received"
+    | "recruit-alert";
   label: string;
   targetId?: string;
   recruitId?: number;
@@ -677,6 +684,10 @@ export default function MatchApp({
   const [pushState, setPushState] = useState<"off" | "on" | "unsupported">(
     "off",
   );
+  const [recruitAlertsEnabled, setRecruitAlertsEnabled] = useState(false);
+  const [recruitAlertUpdating, setRecruitAlertUpdating] = useState(false);
+  const [quickRecruiting, setQuickRecruiting] = useState("");
+  const [quickApplyingId, setQuickApplyingId] = useState<number | null>(null);
   const [profileReady, setProfileReady] = useState(
     guestMode || preview || initialProfile !== undefined,
   );
@@ -1019,6 +1030,14 @@ export default function MatchApp({
 
   useEffect(() => {
     if (preview || guestMode) return;
+    fetch("/api/recruit-alerts", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => setRecruitAlertsEnabled(Boolean(data?.enabled)))
+      .catch(() => undefined);
+  }, [preview, guestMode]);
+
+  useEffect(() => {
+    if (preview || guestMode) return;
     const refresh = () => {
       if (document.visibilityState !== "visible") return;
       loadNotices();
@@ -1188,6 +1207,19 @@ export default function MatchApp({
   const visibleRecruits = useMemo(
     () => (recruits.length === 0 && preview ? [previewRecruit] : recruits),
     [recruits, preview],
+  );
+  const appliedRecruitIds = useMemo(
+    () =>
+      new Set(
+        outgoing
+          .filter(
+            (notice) =>
+              notice.recruitId &&
+              (notice.status === "pending" || notice.status === "accepted"),
+          )
+          .map((notice) => notice.recruitId as number),
+      ),
+    [outgoing],
   );
   const normalizedPokemonQuery = pokemonQuery
     .trim()
@@ -1503,6 +1535,12 @@ export default function MatchApp({
       notify("ログインできました");
       return;
     }
+    if (action.type === "recruit-alert") {
+      window.sessionStorage.removeItem(pendingGuestActionKey);
+      setTab("recruit");
+      notify("ログインできました。新着募集の通知をオンにできます");
+      return;
+    }
     if (action.type === "recruit-apply") {
       const recruit = recruits.find((row) => row.id === action?.recruitId);
       if (!recruit) return;
@@ -1636,6 +1674,131 @@ export default function MatchApp({
     notify("募集を公開しました");
     await loadRecruits();
     setTab("recruit");
+  };
+
+  const createQuickRecruit = async (
+    preset: "now-duo" | "later-duo" | "trio",
+  ) => {
+    if (guestMode) {
+      requestLogin({ type: "compose", label: "クイック募集を作る" });
+      return;
+    }
+    if (myRecruit) {
+      notify("すでに募集を公開中です");
+      return;
+    }
+    const settings = {
+      "now-duo": { startsIn: 0, duration: 1, partySize: 2 },
+      "later-duo": { startsIn: "undecided", duration: 2, partySize: 2 },
+      trio: { startsIn: "undecided", duration: 2, partySize: 3 },
+    }[preset];
+    const body = {
+      pokemon: primaryPokemon || "未定",
+      roles: [],
+      matches: 0,
+      winRate: 0,
+      ...settings,
+      desiredPokemon: "すべて",
+      desiredRole: "指定なし",
+      note: "",
+    };
+    setQuickRecruiting(preset);
+    try {
+      if (preview) {
+        const startTimeUndecided = settings.startsIn === "undecided";
+        const startAt = new Date(
+          Date.now() + (startTimeUndecided ? 0 : Number(settings.startsIn)) * 60_000,
+        );
+        const recruit: Recruit = {
+          ...previewRecruit,
+          id: -2,
+          trainerName: profile.trainerName,
+          gender: profile.gender || "女性",
+          pokemon: primaryPokemon,
+          role: "指定なし",
+          matches: 0,
+          winRate: 0,
+          rank: profile.highestRate,
+          playTime: profile.playTime.join("・"),
+          note: "",
+          startAt: startAt.toISOString(),
+          startTimeUndecided,
+          expiresAt: new Date(
+            startAt.getTime() + settings.duration * 3_600_000,
+          ).toISOString(),
+          partySize: settings.partySize,
+          desiredPokemon: "すべて",
+          desiredRole: "指定なし",
+          acceptedCount: 0,
+        };
+        setMyRecruit(recruit);
+        notify("募集を公開しました。あとは申請を待つだけです");
+        return;
+      }
+      const response = await fetch("/api/recruits", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        notify(data.error || "募集を投稿できませんでした");
+        return;
+      }
+      setMyRecruit(data.recruit);
+      if (pushState === "on") setRecruitShare(data.recruit);
+      else setRecruitNotifyPrompt(data.recruit);
+      notify("募集を公開しました。あとは申請を待つだけです");
+      await Promise.all([loadRecruits(), loadLobbies()]);
+    } finally {
+      setQuickRecruiting("");
+    }
+  };
+
+  const quickApplyRecruit = async (recruit: Recruit) => {
+    if (guestMode) {
+      openRecruitApplication(recruit);
+      return;
+    }
+    if (appliedRecruitIds.has(recruit.id)) {
+      notify("この募集には申請済みです");
+      return;
+    }
+    setQuickApplyingId(recruit.id);
+    try {
+      if (preview) {
+        setOutgoing((rows) => [
+          ...rows,
+          {
+            id: -recruit.id,
+            recruitId: recruit.id,
+            trainerName: recruit.trainerName,
+            pokemon: primaryPokemon,
+            status: "pending",
+          },
+        ]);
+        notify("👋 参加申請を送りました");
+        return;
+      }
+      const response = await fetch("/api/applications", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          recruitId: recruit.id,
+          pokemon: primaryPokemon,
+          message: `${primaryPokemon}で参加したいです！`,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        notify(data.error || "申請できませんでした");
+        return;
+      }
+      notify("👋 参加申請を送りました");
+      await loadNotices();
+    } finally {
+      setQuickApplyingId(null);
+    }
   };
 
   const finishRecruitNotifyPrompt = async (enable: boolean) => {
@@ -2156,22 +2319,22 @@ export default function MatchApp({
           : "ロビーを更新しました",
     );
   };
-  const enablePush = async () => {
+  const enablePush = async (): Promise<boolean> => {
     if (pushState === "unsupported") {
       notify("このブラウザはプッシュ通知に対応していません");
-      return;
+      return false;
     }
     try {
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
         notify("通知が許可されませんでした");
-        return;
+        return false;
       }
       const keyResponse = await fetch("/api/push");
       const { publicKey } = await keyResponse.json();
       if (!publicKey) {
         notify("通知の公開設定を準備中です");
-        return;
+        return false;
       }
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.subscribe({
@@ -2186,8 +2349,44 @@ export default function MatchApp({
       if (!response.ok) throw new Error("push");
       setPushState("on");
       notify("プッシュ通知をオンにしました");
+      return true;
     } catch {
       notify("通知を設定できませんでした");
+      return false;
+    }
+  };
+  const toggleRecruitAlerts = async () => {
+    if (guestMode) {
+      requestLogin({
+        type: "recruit-alert",
+        label: "新しい募集の通知を受け取る",
+      });
+      return;
+    }
+    if (recruitAlertUpdating) return;
+    const enabled = !recruitAlertsEnabled;
+    if (enabled && pushState !== "on" && !(await enablePush())) return;
+    if (preview) {
+      setRecruitAlertsEnabled(enabled);
+      notify(enabled ? "新しい募集の通知をオンにしました" : "募集通知をオフにしました");
+      return;
+    }
+    setRecruitAlertUpdating(true);
+    try {
+      const response = await fetch("/api/recruit-alerts", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ enabled }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        notify(data.error || "募集通知を変更できませんでした");
+        return;
+      }
+      setRecruitAlertsEnabled(Boolean(data.enabled));
+      notify(data.enabled ? "新しい募集の通知をオンにしました" : "募集通知をオフにしました");
+    } finally {
+      setRecruitAlertUpdating(false);
     }
   };
   const submitSafety = async (event: FormEvent<HTMLFormElement>) => {
@@ -2782,14 +2981,68 @@ export default function MatchApp({
                   <small>LIVE RECRUITING</small>
                   <h1>募集中のメイト</h1>
                 </div>
-                <button onClick={openRecruitComposer}>＋ 募集する</button>
+                <button onClick={openRecruitComposer}>＋ 条件を決めて募集</button>
               </div>
+              <section className="recruitEntryHub">
+                <div className="recruitEntryCopy">
+                  <div>
+                    <small>QUICK START</small>
+                    <h2>{myRecruit ? "申請を待っています" : "どう遊ぶ？"}</h2>
+                  </div>
+                  <p>
+                    {myRecruit
+                      ? "募集は公開中です。申請が来たら通知とチャットで確認できます。"
+                      : "細かい条件はマッチ後に相談。1タップで募集できます。"}
+                  </p>
+                </div>
+                {!myRecruit && (
+                  <div className="quickRecruitGrid">
+                    <button
+                      onClick={() => createQuickRecruit("now-duo")}
+                      disabled={Boolean(quickRecruiting)}
+                    >
+                      <span>⚡</span>
+                      <strong>今からデュオ</strong>
+                      <small>1時間募集</small>
+                    </button>
+                    <button
+                      onClick={() => createQuickRecruit("later-duo")}
+                      disabled={Boolean(quickRecruiting)}
+                    >
+                      <span>◷</span>
+                      <strong>時間は相談</strong>
+                      <small>デュオ</small>
+                    </button>
+                    <button
+                      onClick={() => createQuickRecruit("trio")}
+                      disabled={Boolean(quickRecruiting)}
+                    >
+                      <span>◉</span>
+                      <strong>トリオ募集</strong>
+                      <small>時間は相談</small>
+                    </button>
+                  </div>
+                )}
+                <button
+                  className={`recruitAlertToggle ${recruitAlertsEnabled ? "active" : ""}`}
+                  onClick={toggleRecruitAlerts}
+                  disabled={recruitAlertUpdating}
+                >
+                  <span>{recruitAlertsEnabled ? "✓" : "♢"}</span>
+                  <strong>
+                    {recruitAlertsEnabled
+                      ? "新しい募集を通知中"
+                      : "新しい募集が出たら通知"}
+                  </strong>
+                  <small>{recruitAlertsEnabled ? "タップでオフ" : "募集ゼロでも見逃しません"}</small>
+                </button>
+              </section>
               <div className="recruitSummary">
                 <div>
                   <strong>{visibleRecruits.length}</strong>
-                  <span>人が募集中</span>
+                  <span>件の募集</span>
                 </div>
-                <p>ポケモン・実力・時間帯を見比べて選べます</p>
+                <p>参加したい募集へ、その場ですぐ申請できます</p>
               </div>
               {myRecruit && (
                 <article className="myRecruitCard">
@@ -2865,26 +3118,55 @@ export default function MatchApp({
                         </div>
                         <div>
                           <small>本人の試合数</small>
-                          <strong>{recruit.matches.toLocaleString()}戦</strong>
+                          <strong>
+                            {recruit.matches > 0
+                              ? `${recruit.matches.toLocaleString()}戦`
+                              : "未設定"}
+                          </strong>
                         </div>
                         <div>
                           <small>本人の勝率</small>
-                          <strong>{recruit.winRate}%</strong>
+                          <strong>
+                            {recruit.winRate > 0 ? `${recruit.winRate}%` : "未設定"}
+                          </strong>
                         </div>
                       </div>
-                      <button
-                        className="recruitApply"
-                        onClick={() => openRecruitApplication(recruit)}
-                      >
-                        この人にプレイ申請 <span>›</span>
-                      </button>
+                      <div className="recruitCardActions">
+                        <button
+                          className="recruitApply"
+                          onClick={() => quickApplyRecruit(recruit)}
+                          disabled={
+                            quickApplyingId === recruit.id ||
+                            appliedRecruitIds.has(recruit.id)
+                          }
+                        >
+                          {appliedRecruitIds.has(recruit.id)
+                            ? "✓ 申請済み"
+                            : quickApplyingId === recruit.id
+                              ? "送信中…"
+                              : "👋 すぐ参加申請"}
+                        </button>
+                        <button
+                          className="recruitApply secondary"
+                          onClick={() => openRecruitApplication(recruit)}
+                        >
+                          ひとこと添える
+                        </button>
+                      </div>
                     </article>
                   ))
                 ) : (
                   <div className="listEmpty">
-                    まだ公開中の募集はありません。
-                    <br />
-                    あなたの募集から始めてみませんか？
+                    <strong>今は公開中の募集がありません</strong>
+                    <p>クイック募集を出すか、通知をオンにして待てます。</p>
+                    <div className="recruitEmptyActions">
+                      <button onClick={() => createQuickRecruit("later-duo")}>
+                        募集を出す
+                      </button>
+                      <button onClick={toggleRecruitAlerts}>
+                        {recruitAlertsEnabled ? "通知オン" : "新着を通知"}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

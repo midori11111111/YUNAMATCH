@@ -76,6 +76,15 @@ try {
   await api("/api/profile", { user: applicant, method: "PUT", body: profile("申請テスター", "ハピナス", "女性", "Discord: applicant-test") });
   await api("/api/profile", { user: cancelTester, method: "PUT", body: profile("取消テスター", "ピカチュウ", "男性", "Discord: cancel-test") });
 
+  const initialRecruitAlerts = await api("/api/recruit-alerts", { user: applicant });
+  assert.equal(initialRecruitAlerts.enabled, false);
+  const enabledRecruitAlerts = await api("/api/recruit-alerts", {
+    user: applicant,
+    method: "PATCH",
+    body: { enabled: true },
+  });
+  assert.equal(enabledRecruitAlerts.enabled, true);
+
   const undecided = await api("/api/recruits", { user: cancelTester, method: "POST", body: { pokemon: "ピカチュウ", roles: ["下レーン"], matches: 800, winRate: 52, startsIn: "undecided", duration: 1, partySize: 2, desiredPokemon: "すべて", desiredRole: "指定なし", note: "時間相談" } });
   assert.equal(undecided.recruit.startTimeUndecided, true);
   await api("/api/recruits", { user: cancelTester, method: "PATCH", body: { recruitId: undecided.recruit.id, action: "cancel" } });
@@ -93,6 +102,7 @@ try {
   const pendingOutgoing = await api("/api/applications", { user: applicant });
   assert.equal(pendingOutgoing.outgoing[0].status, "pending");
   assert.equal(pendingOutgoing.outgoing[0].message, "参加します");
+  assert.equal(pendingOutgoing.outgoing[0].recruitId, created.recruit.id);
   const accepted = await api("/api/applications", { user: owner, method: "PATCH", body: { applicationId: notices.incoming[0].id, action: "accept" } });
   assert.ok(accepted.lobbyId);
   assert.equal(accepted.applicantContact, null);
