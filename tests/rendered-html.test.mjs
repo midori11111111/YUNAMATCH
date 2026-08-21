@@ -109,6 +109,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(applicationsApi, /プロフィールの未入力項目/);
   assert.match(discoverApi, /kind:"profile"/);
   assert.match(discoverApi, /プロフィールから一緒に遊びたい/);
+  assert.match(discoverApi, /me\.gender==="男性"/);
+  assert.match(discoverApi, /b\.gender==="女性"/);
   assert.match(migration, /CREATE TABLE `connections`/);
   assert.match(profileMigration, /CREATE TABLE `profiles`/);
   assert.match(lobbyApi, /lobbyMembers/);

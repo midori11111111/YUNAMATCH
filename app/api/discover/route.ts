@@ -29,7 +29,10 @@ export async function GET(){
   const hidden=new Set<string>([user.userId,...blockedByMe.map(row=>row.id),...blockedMe.map(row=>row.id),...pendingRows.map(row=>row.ownerId)]);
   for(const row of connectionRows)hidden.add(row.userAId===user.userId?row.userBId:row.userAId);
   const visible=profileRows.filter(row=>!row.suspendedAt&&!hidden.has(row.userId)&&row.ageConfirmed&&row.termsAcceptedAt);
-  const result=await Promise.all(visible.map(async row=>({
+  const prioritized=me.gender==="男性"
+    ? [...visible].sort((a,b)=>Number(b.gender==="女性")-Number(a.gender==="女性"))
+    : visible;
+  const result=await Promise.all(prioritized.map(async row=>({
     id:await profilePublicId(row.userId),
     trainerName:row.trainerName,
     mainPokemon:parseList(row.mainPokemon).slice(0,5),
