@@ -71,7 +71,7 @@ try {
   const owner = userHeaders("e2e-owner", "owner@example.test");
   const applicant = userHeaders("e2e-applicant", "applicant@example.test");
   const cancelTester = userHeaders("e2e-cancel", "cancel@example.test");
-  const profile = (trainerName, pokemon, gender, contact) => ({ trainerName, mainPokemon: [pokemon], highestRate: "マスター 1400〜1599", playTime: ["平日 夜（18〜22時）"], gender, contact, avatarUrl: "", ageConfirmed: true, termsAccepted: true });
+  const profile = (trainerName, pokemon, gender, contact) => ({ trainerName, mainPokemon: [pokemon], highestRate: "マスター 1400〜1599", playTime: ["平日 夜（18〜22時）"], gender, contact, avatarUrl: "", age: 24, ageConfirmed: true, termsAccepted: true });
   await api("/api/profile", { user: owner, method: "PUT", body: profile("募集テスター", "ゲッコウガ", "男性", "Discord: owner-test") });
   await api("/api/profile", { user: applicant, method: "PUT", body: profile("申請テスター", "ハピナス", "女性", "Discord: applicant-test") });
   await api("/api/profile", { user: cancelTester, method: "PUT", body: profile("取消テスター", "ピカチュウ", "男性", "Discord: cancel-test") });

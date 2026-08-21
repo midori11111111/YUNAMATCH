@@ -72,6 +72,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     ratingsMigration,
     ranks,
     legendRankMigration,
+    ageMigration,
   ] = await Promise.all([
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/match-app.tsx", root), "utf8"),
@@ -112,6 +113,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     readFile(new URL("drizzle/0016_black_stick.sql", root), "utf8"),
     readFile(new URL("lib/ranks.ts", root), "utf8"),
     readFile(new URL("drizzle/0017_legend_rank.sql", root), "utf8"),
+    readFile(new URL("drizzle/0018_unique_ironclad.sql", root), "utf8"),
   ]);
   assert.match(page, /getChatGPTUser/);
   assert.match(page, /initialProfile/);
@@ -275,4 +277,9 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(legendRankMigration, /UPDATE `profiles`/);
   assert.match(legendRankMigration, /UPDATE `recruits`/);
   assert.match(legendRankMigration, /レジェンド 1400〜/);
+  assert.match(app, /年齢を選択/);
+  assert.match(app, /保護者の同意を得ています/);
+  assert.match(profileApi, /age<13\|\|age>99/);
+  assert.match(ageMigration, /ALTER TABLE `profiles` ADD `age` integer/);
+  assert.match(privacyPage, /遊べる時間帯、年齢、性別/);
 });

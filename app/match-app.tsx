@@ -42,6 +42,7 @@ type ProfileCandidate = {
   highestRate: string;
   playTime: string[];
   gender: string;
+  age: number | null;
   avatarUrl?: string;
   likeCount: number;
   popular: boolean;
@@ -81,6 +82,7 @@ export type Profile = {
   gender: "男性" | "女性" | "";
   contact: string;
   avatarUrl: string;
+  age: number | null;
   ageConfirmed: boolean;
   termsAccepted: boolean;
 };
@@ -244,6 +246,7 @@ const playTimeOptions = [
   "土日 夜・深夜",
   "時間帯はいつでも",
 ];
+const ageOptions = Array.from({ length: 87 }, (_, index) => index + 13);
 const recruitRoleOptions = [
   "上レーン",
   "下レーン",
@@ -311,6 +314,7 @@ const previewProfile: ProfileCandidate = {
   highestRate: "レジェンド 1000〜1199",
   playTime: ["平日 夜（18〜22時）", "土日 夜・深夜"],
   gender: "女性",
+  age: 24,
   avatarUrl: "",
   likeCount: 12,
   popular: true,
@@ -659,6 +663,7 @@ export default function MatchApp({
     gender: "",
     contact: `${providerName}: ${authContact}`,
     avatarUrl: "",
+    age: null,
     ageConfirmed: false,
     termsAccepted: false,
   };
@@ -682,7 +687,11 @@ export default function MatchApp({
     profile.mainPokemon.length === 0 && "メインポケモン",
     profile.playTime.length === 0 && "遊べる時間帯",
     !profile.gender && "性別",
-    !profile.ageConfirmed && "年齢確認",
+    (profile.age === null || profile.age < 13 || profile.age > 99) && "年齢",
+    profile.age !== null &&
+      profile.age < 18 &&
+      !profile.ageConfirmed &&
+      "保護者の同意",
     !profile.termsAccepted && "利用規約への同意",
   ].filter((value): value is string => Boolean(value));
 
@@ -1217,7 +1226,7 @@ export default function MatchApp({
       Boolean(profile.highestRate),
       profile.playTime.length > 0,
       Boolean(profile.gender),
-      true,
+      profile.age !== null,
       Boolean(profile.avatarUrl),
       profile.mainPokemon.length >= 2,
       profile.playTime.length >= 2,
@@ -2559,6 +2568,7 @@ export default function MatchApp({
                         <strong>{current.trainerName}</strong>
                         <small>
                           {current.highestRate} ・ {current.gender}
+                          {current.age !== null && ` ・ ${current.age}歳`}
                         </small>
                       </span>
                       <b>ⓘ</b>
@@ -3371,6 +3381,7 @@ export default function MatchApp({
                 <h1>{profile.trainerName}</h1>
                 <p>
                   {profile.mainPokemon.join("・")} ・ {profile.highestRate}
+                  {profile.age !== null && ` ・ ${profile.age}歳`}
                 </p>
                 <div className="profileCompletionInline">
                   <span>プロフィール {profileCompletion}%</span>
@@ -3469,6 +3480,47 @@ export default function MatchApp({
                   selected={profile.playTime}
                   onChange={(playTime) => setProfile({ ...profile, playTime })}
                 />
+                <label>
+                  年齢
+                  <select
+                    value={profile.age ?? ""}
+                    onChange={(event) => {
+                      const age = event.target.value
+                        ? Number(event.target.value)
+                        : null;
+                      setProfile({
+                        ...profile,
+                        age,
+                        ageConfirmed: age !== null && age >= 18,
+                      });
+                    }}
+                    required
+                  >
+                    <option value="" disabled>
+                      年齢を選択
+                    </option>
+                    {ageOptions.map((age) => (
+                      <option key={age} value={age}>
+                        {age}歳
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {profile.age !== null && profile.age < 18 && (
+                  <label className="termsCheck">
+                    <input
+                      type="checkbox"
+                      checked={profile.ageConfirmed}
+                      onChange={(event) =>
+                        setProfile({
+                          ...profile,
+                          ageConfirmed: event.target.checked,
+                        })
+                      }
+                    />
+                    <span>保護者の同意を得ています。</span>
+                  </label>
+                )}
                 <fieldset className="genderChoice">
                   <legend>性別</legend>
                   <button
@@ -3809,6 +3861,32 @@ export default function MatchApp({
               selected={profile.playTime}
               onChange={(playTime) => setProfile({ ...profile, playTime })}
             />
+            <label>
+              年齢
+              <select
+                value={profile.age ?? ""}
+                onChange={(event) => {
+                  const age = event.target.value
+                    ? Number(event.target.value)
+                    : null;
+                  setProfile({
+                    ...profile,
+                    age,
+                    ageConfirmed: age !== null && age >= 18,
+                  });
+                }}
+                required
+              >
+                <option value="" disabled>
+                  年齢を選択
+                </option>
+                {ageOptions.map((age) => (
+                  <option key={age} value={age}>
+                    {age}歳
+                  </option>
+                ))}
+              </select>
+            </label>
             <fieldset className="genderChoice">
               <legend>性別</legend>
               <button
@@ -3840,18 +3918,21 @@ export default function MatchApp({
               <span>🔒</span>
               ログインアカウントのIDを初期値にしています。マッチ後も自動では表示されず、相手ごとに共有するか選べます。
             </p>
-            <label className="termsCheck">
-              <input
-                type="checkbox"
-                checked={profile.ageConfirmed}
-                onChange={(event) =>
-                  setProfile({ ...profile, ageConfirmed: event.target.checked })
-                }
-              />
-              <span>
-                13歳以上です。18歳未満の場合は保護者の同意を得ています。
-              </span>
-            </label>
+            {profile.age !== null && profile.age < 18 && (
+              <label className="termsCheck">
+                <input
+                  type="checkbox"
+                  checked={profile.ageConfirmed}
+                  onChange={(event) =>
+                    setProfile({
+                      ...profile,
+                      ageConfirmed: event.target.checked,
+                    })
+                  }
+                />
+                <span>保護者の同意を得ています。</span>
+              </label>
+            )}
             <label className="termsCheck">
               <input
                 type="checkbox"
@@ -4205,6 +4286,7 @@ export default function MatchApp({
             <h2>{candidateDetail.trainerName}</h2>
             <p className="candidateDetailRank">
               {candidateDetail.highestRate} ・ {candidateDetail.gender} ・{" "}
+              {candidateDetail.age !== null && `${candidateDetail.age}歳 ・ `}
               {formatActivity(candidateDetail.lastActiveAt)}
             </p>
             <div className="candidatePopularity">

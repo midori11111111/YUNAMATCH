@@ -31,7 +31,7 @@ function publicProfile(row:typeof profiles.$inferSelect){
   let playTime:string[]=[];
   try{const parsed=JSON.parse(row.mainPokemon);if(Array.isArray(parsed))mainPokemon=parsed.filter(value=>typeof value==="string").slice(0,5)}catch{if(row.mainPokemon)mainPokemon=[row.mainPokemon]}
   try{const parsed=JSON.parse(row.playTime);if(Array.isArray(parsed))playTime=parsed.filter(value=>typeof value==="string"&&playTimes.has(value)).slice(0,7)}catch{if(playTimes.has(row.playTime))playTime=[row.playTime]}
-  return {trainerName:row.trainerName,mainPokemon,highestRate:normalizeRank(row.highestRate),playTime,gender:row.gender,contact:row.contact,avatarUrl:row.avatarUrl,ageConfirmed:row.ageConfirmed,termsAccepted:Boolean(row.termsAcceptedAt)};
+  return {trainerName:row.trainerName,mainPokemon,highestRate:normalizeRank(row.highestRate),playTime,gender:row.gender,contact:row.contact,avatarUrl:row.avatarUrl,age:row.age,ageConfirmed:row.ageConfirmed,termsAccepted:Boolean(row.termsAcceptedAt)};
 }
 
 export async function GET(){
@@ -57,14 +57,15 @@ export async function PUT(request:Request){
   const contact=typeof body.contact==="string"?body.contact.trim().replace(/\s+/g," "):"";
   const avatarUrl=typeof body.avatarUrl==="string"?body.avatarUrl:"";
   const validAvatar=!avatarUrl||/^\/api\/media\/avatar\/[a-f0-9]{64}\?v=\d+$/.test(avatarUrl)||(avatarUrl.length<=500_000&&/^data:image\/(?:jpeg|png|webp);base64,[a-zA-Z0-9+/=]+$/.test(avatarUrl));
-  const ageConfirmed=body.ageConfirmed===true;
+  const age=typeof body.age==="number"&&Number.isInteger(body.age)?body.age:null;
+  const ageConfirmed=age!==null&&age>=18?true:body.ageConfirmed===true;
   const termsAccepted=body.termsAccepted===true;
   if(containsProhibitedContent(trainerName))return Response.json({error:prohibitedContentMessage},{status:400});
-  if(!trainerName||trainerName.length>24||mainPokemon.length===0||!rankOptionSet.has(highestRate)||playTime.length===0||!genders.has(gender)||contact.length>120||!validAvatar||!ageConfirmed||!termsAccepted)return Response.json({error:"入力内容と利用条件への同意を確認してください"},{status:400});
+  if(!trainerName||trainerName.length>24||mainPokemon.length===0||!rankOptionSet.has(highestRate)||playTime.length===0||!genders.has(gender)||contact.length>120||!validAvatar||age===null||age<13||age>99||!ageConfirmed||!termsAccepted)return Response.json({error:"年齢を含む入力内容と利用条件への同意を確認してください"},{status:400});
   const now=new Date();
-  const values={userId:user.userId,trainerName,mainPokemon:JSON.stringify(mainPokemon),highestRate,playTime:JSON.stringify(playTime),gender,contact,avatarUrl,ageConfirmed,termsAcceptedAt:now,authProvider:user.provider,createdAt:now,updatedAt:now};
+  const values={userId:user.userId,trainerName,mainPokemon:JSON.stringify(mainPokemon),highestRate,playTime:JSON.stringify(playTime),gender,contact,avatarUrl,age,ageConfirmed,termsAcceptedAt:now,authProvider:user.provider,createdAt:now,updatedAt:now};
   const db=getDb();
-  await db.insert(profiles).values(values).onConflictDoUpdate({target:profiles.userId,set:{trainerName:values.trainerName,mainPokemon:values.mainPokemon,highestRate:values.highestRate,playTime:values.playTime,gender:values.gender,contact:values.contact,avatarUrl:values.avatarUrl,ageConfirmed:true,termsAcceptedAt:now,authProvider:values.authProvider,updatedAt:now}});
+  await db.insert(profiles).values(values).onConflictDoUpdate({target:profiles.userId,set:{trainerName:values.trainerName,mainPokemon:values.mainPokemon,highestRate:values.highestRate,playTime:values.playTime,gender:values.gender,contact:values.contact,avatarUrl:values.avatarUrl,age:values.age,ageConfirmed:values.ageConfirmed,termsAcceptedAt:now,authProvider:values.authProvider,updatedAt:now}});
   const [row]=await db.select().from(profiles).where(eq(profiles.userId,user.userId)).limit(1);
   return Response.json({profile:publicProfile(row)});
 }
