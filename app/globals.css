@@ -551,23 +551,23 @@ button { cursor: pointer; }
 .pendingChatActions button:last-child { color: #fff; border-color: transparent; background: linear-gradient(135deg,var(--purple),#8d75f1); box-shadow: 0 8px 20px #7257e82b; }
 .pendingChatWaiting { min-height: 52px; display: flex; align-items: center; justify-content: center; gap: 7px; margin: 0 -4px; border-top: 1px solid var(--line); color: #81798a; background: #fbfafc; font-size: 9px; font-weight: 900; }
 .pendingChatWaiting span { color: var(--purple); font-size: 13px; }
-.contactConsentBar { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 8px; margin: 10px 0 2px; padding: 11px 12px; border: 1px solid #e7e0ef; border-radius: 14px; background: #faf8fc; }
-.contactConsentBar > div { min-width: 0; display: grid; gap: 3px; }
-.contactConsentBar strong { font-size: 8px; }
-.contactConsentBar small { overflow: hidden; color: #8d8694; font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
-.contactConsentBar button { border: 0; border-radius: 9px; padding: 8px 9px; color: #fff; background: var(--purple); font-size: 7px; font-weight: 900; }
-.contactConsentBar button:last-child { color: var(--purple); background: #ece7ff; }
 .contactPrivateBox { margin: 12px 0; padding: 14px; border-radius: 13px; color: #7d7585; background: #f3f0f5; font-size: 9px; font-weight: 800; text-align: center; }
-@media (max-width: 560px){.contactConsentBar { grid-template-columns: 1fr auto; }.contactConsentBar > div { grid-column: 1 / -1; }.contactConsentBar button { min-height: 34px; }}
-.reconnectBar { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; padding: 12px 0 9px; }
-.reconnectBar button { border: 1px solid #e8e3ed; border-radius: 12px; padding: 10px 8px; color: #81798a; background: #fff; font-size: 8px; font-weight: 900; }
-.reconnectBar button.active { color: var(--pink); border-color: #ffd5e5; background: #fff0f6; }
-.reconnectBar .playedButton.active { color: #168463; border-color: #cdeee3; background: #eaf8f3; }
-.reconnectBar button:disabled { cursor: default; opacity: 1; }
-.reconnectBar .ratingButton { color: #8f6700; border-color: #f1deb1; background: #fff8df; }
-.reconnectBar .rematchButton { color: #fff; border-color: transparent; background: linear-gradient(135deg, var(--purple), #8d75f1); }
-.reconnectBar .vcJoinButton { color: #fff; border-color: transparent; background: #5865f2; }
-.reconnectBar .shareMatchButton { grid-column: 1/-1; color: #fff; border-color: transparent; background: #17131f; }
+.chatActionsSheet { max-height: min(680px, 88dvh); overflow-y: auto; }
+.chatActionsSheet h2 { margin-bottom: 16px; padding-right: 34px; font-size: 20px; }
+.chatActionGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.chatActionGrid button { min-width: 0; min-height: 72px; display: grid; place-items: center; align-content: center; gap: 7px; border: 1px solid #e9e3ee; border-radius: 16px; padding: 10px 5px; color: #6f6878; background: #fff; font-size: 8px; font-weight: 900; }
+.chatActionGrid button b { color: var(--purple); font-size: 17px; line-height: 1; }
+.chatActionGrid button.active { color: #c93671; border-color: #ffd5e5; background: #fff0f6; }
+.chatActionGrid button.played { color: #168463; border-color: #cdeee3; background: #eaf8f3; }
+.chatActionGrid button.rating { color: #8f6700; border-color: #f1deb1; background: #fff8df; }
+.chatActionGrid button:disabled { cursor: default; opacity: 1; }
+.chatContactMenu { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 8px; margin-top: 13px; padding: 13px; border-radius: 15px; background: #f8f5fb; }
+.chatContactMenu > div { min-width: 0; display: grid; gap: 4px; }
+.chatContactMenu strong { font-size: 9px; }
+.chatContactMenu small { overflow: hidden; color: #8d8694; font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
+.chatContactMenu button { border: 0; border-radius: 10px; padding: 9px 10px; color: #fff; background: var(--purple); font-size: 7px; font-weight: 900; }
+.chatContactMenu button:last-child { color: var(--purple); background: #eae4ff; }
+.chatReportButton { width: 100%; margin-top: 11px; border: 0; padding: 9px; color: #a04c62; background: transparent; font-size: 8px; font-weight: 850; }
 .heartNotice { margin-bottom: 8px; padding: 9px 11px; border-radius: 11px; color: #c93671; background: #fff0f6; font-size: 7px; font-weight: 850; text-align: center; }
 .messageThread { min-height: 0; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 9px 2px 14px; }
 .messageBubble { max-width: 82%; align-self: flex-start; }
@@ -926,6 +926,9 @@ button { cursor: pointer; }
   .notificationSheet, .shareModal, .recruitShareModal { width: 100%; max-height: 91dvh; border-radius: 28px 28px 0 0; padding-bottom: max(28px, env(safe-area-inset-bottom)); }
   .chatTutorialBackdrop { padding: 0; }
   .chatTutorialSheet { width: 100%; min-height: min(610px,88dvh); border-radius: 30px 30px 0 0; padding-bottom: max(24px,env(safe-area-inset-bottom)); }
+  .chatActionsSheet { width: 100%; border-radius: 28px 28px 0 0; padding-bottom: max(24px,env(safe-area-inset-bottom)); }
+  .chatContactMenu { grid-template-columns: 1fr auto; }
+  .chatContactMenu > div { grid-column: 1 / -1; }
   .sheetHandle { display: block; width: 42px; height: 4px; margin: -16px auto 16px; border-radius: 99px; background: #ddd7e2; }
   .matchModal { margin: auto 18px; }
   .loginCard { border: 0; background: transparent; box-shadow: none; }

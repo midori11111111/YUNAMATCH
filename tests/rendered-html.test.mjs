@@ -264,6 +264,10 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(publicSupportApi, /sha256/);
   assert.match(app, /共有せずチャットへ/);
   assert.match(app, /連絡先を共有/);
+  assert.match(app, /チャットのメニューを開く/);
+  assert.match(app, /chatActionsOpen && selectedConnection/);
+  assert.doesNotMatch(app, /className="reconnectBar"/);
+  assert.doesNotMatch(app, /className="contactConsentBar"/);
   assert.match(privacyPage, /初期状態は非公開/);
   assert.match(privacyPage, /ログイン前のプロフィール表示/);
   assert.match(privacyPage, /試合後評価とおすすめ順/);

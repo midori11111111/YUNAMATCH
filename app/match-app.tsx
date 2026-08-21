@@ -625,6 +625,7 @@ export default function MatchApp({
   const [recruitNotifyPrompt, setRecruitNotifyPrompt] =
     useState<Recruit | null>(null);
   const [safetyTarget, setSafetyTarget] = useState<SafetyTarget | null>(null);
+  const [chatActionsOpen, setChatActionsOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const [supportMode, setSupportMode] = useState<"support" | "feedback">(
     "support",
@@ -2860,6 +2861,7 @@ export default function MatchApp({
                   <div className="chatHeader">
                     <button
                       onClick={() => {
+                        setChatActionsOpen(false);
                         setSelectedConnection(null);
                         setMessages([]);
                       }}
@@ -2891,103 +2893,11 @@ export default function MatchApp({
                     </div>
                     <button
                       className="chatSafety"
-                      onClick={() =>
-                        setSafetyTarget({
-                          name: selectedConnection.mateName,
-                          connectionId: selectedConnection.id,
-                        })
-                      }
+                      onClick={() => setChatActionsOpen(true)}
+                      aria-label="チャットのメニューを開く"
                     >
                       •••
                     </button>
-                  </div>
-                  <div className="reconnectBar">
-                    <button
-                      className={
-                        selectedConnection.playedByMe
-                          ? "playedButton active"
-                          : "playedButton"
-                      }
-                      onClick={() => markPlayed(selectedConnection)}
-                      disabled={selectedConnection.playedByMe}
-                    >
-                      ✓{" "}
-                      {selectedConnection.playedByMe
-                        ? "プレイ済み"
-                        : "一緒に遊んだ"}
-                    </button>
-                    {selectedConnection.playedByMe && (
-                      <button
-                        className="ratingButton"
-                        onClick={() => openMateRating(selectedConnection)}
-                      >
-                        ☆{" "}
-                        {selectedConnection.myRatingScore
-                          ? "評価を編集"
-                          : "この人を評価"}
-                      </button>
-                    )}
-                    <button
-                      className={selectedConnection.againByMe ? "active" : ""}
-                      onClick={() => toggleAgain(selectedConnection)}
-                    >
-                      ♡{" "}
-                      {selectedConnection.againByMe
-                        ? "送信済み"
-                        : "また遊びたい"}
-                    </button>
-                    <button
-                      className="rematchButton"
-                      onClick={() => rematch(selectedConnection)}
-                    >
-                      ↻ 再マッチ
-                    </button>
-                    <button className="vcJoinButton" onClick={openDiscord}>
-                      🎧 VCで合流
-                    </button>
-                    <button
-                      className="shareMatchButton"
-                      onClick={() =>
-                        shareMatchToX(selectedConnection.matePokemon)
-                      }
-                    >
-                      𝕏 マッチをシェア
-                    </button>
-                  </div>
-                  <div className="contactConsentBar">
-                    <div>
-                      <strong>
-                        {selectedConnection.myContactShared
-                          ? "あなたの連絡先を共有中"
-                          : "あなたの連絡先は非公開"}
-                      </strong>
-                      <small>
-                        {selectedConnection.mateContact
-                          ? `相手の連絡先：${selectedConnection.mateContact}`
-                          : "相手の連絡先はまだ共有されていません"}
-                      </small>
-                    </div>
-                    <button
-                      onClick={() =>
-                        toggleContactSharing(selectedConnection.id)
-                      }
-                    >
-                      {selectedConnection.myContactShared
-                        ? "共有をやめる"
-                        : "連絡先を共有"}
-                    </button>
-                    {selectedConnection.mateContact && (
-                      <button
-                        onClick={() => {
-                          navigator.clipboard?.writeText(
-                            selectedConnection.mateContact || "",
-                          );
-                          notify("相手の連絡先をコピーしました");
-                        }}
-                      >
-                        コピー
-                      </button>
-                    )}
                   </div>
                   {selectedConnection.againByMate && (
                     <div className="heartNotice">
@@ -4788,6 +4698,112 @@ export default function MatchApp({
               通報せずブロックのみ
             </button>
           </form>
+        </div>
+      )}
+
+      {chatActionsOpen && selectedConnection && (
+        <div className="modalBackdrop">
+          <button
+            className="backdropDismiss"
+            onClick={() => setChatActionsOpen(false)}
+            aria-label="チャットメニューを閉じる"
+          />
+          <section className="sheetModal chatActionsSheet">
+            <button
+              type="button"
+              className="closeButton"
+              onClick={() => setChatActionsOpen(false)}
+              aria-label="チャットメニューを閉じる"
+            >
+              ×
+            </button>
+            <small className="modalKicker">CHAT MENU</small>
+            <h2>{selectedConnection.mateName}さんとのメニュー</h2>
+            <div className="chatActionGrid">
+              <button
+                className={selectedConnection.playedByMe ? "active played" : ""}
+                onClick={() => markPlayed(selectedConnection)}
+                disabled={selectedConnection.playedByMe}
+              >
+                <b>✓</b>
+                {selectedConnection.playedByMe ? "プレイ済み" : "一緒に遊んだ"}
+              </button>
+              {selectedConnection.playedByMe && (
+                <button
+                  className="rating"
+                  onClick={() => {
+                    setChatActionsOpen(false);
+                    openMateRating(selectedConnection);
+                  }}
+                >
+                  <b>☆</b>
+                  {selectedConnection.myRatingScore ? "評価を編集" : "この人を評価"}
+                </button>
+              )}
+              <button
+                className={selectedConnection.againByMe ? "active again" : ""}
+                onClick={() => toggleAgain(selectedConnection)}
+              >
+                <b>♡</b>
+                {selectedConnection.againByMe ? "送信済み" : "また遊びたい"}
+              </button>
+              <button onClick={() => rematch(selectedConnection)}>
+                <b>↻</b>
+                再マッチ
+              </button>
+              <button onClick={openDiscord}>
+                <b>🎧</b>
+                VCで合流
+              </button>
+              <button
+                onClick={() => shareMatchToX(selectedConnection.matePokemon)}
+              >
+                <b>𝕏</b>
+                マッチをシェア
+              </button>
+            </div>
+            <div className="chatContactMenu">
+              <div>
+                <strong>
+                  {selectedConnection.myContactShared
+                    ? "あなたの連絡先を共有中"
+                    : "あなたの連絡先は非公開"}
+                </strong>
+                <small>
+                  {selectedConnection.mateContact
+                    ? `相手の連絡先：${selectedConnection.mateContact}`
+                    : "相手の連絡先はまだ共有されていません"}
+                </small>
+              </div>
+              <button
+                onClick={() => toggleContactSharing(selectedConnection.id)}
+              >
+                {selectedConnection.myContactShared ? "共有をやめる" : "連絡先を共有"}
+              </button>
+              {selectedConnection.mateContact && (
+                <button
+                  onClick={() => {
+                    navigator.clipboard?.writeText(selectedConnection.mateContact || "");
+                    notify("相手の連絡先をコピーしました");
+                  }}
+                >
+                  コピー
+                </button>
+              )}
+            </div>
+            <button
+              className="chatReportButton"
+              onClick={() => {
+                setChatActionsOpen(false);
+                setSafetyTarget({
+                  name: selectedConnection.mateName,
+                  connectionId: selectedConnection.id,
+                });
+              }}
+            >
+              通報・ブロック
+            </button>
+          </section>
         </div>
       )}
 
