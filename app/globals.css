@@ -564,6 +564,17 @@ button { cursor: pointer; }
 .chatListItem > b { color: #a69fab; font-size: 19px; }
 .chatListItem.pending { border-color: #e4dcff; background: linear-gradient(135deg,#fff 0%,#faf8ff 100%); }
 .chatListItem.pending .chatMateAvatar { background: linear-gradient(145deg,var(--pink),#ff9dbf); }
+.pendingConversationGroup { overflow: hidden; margin-top: 4px; border: 1px solid #e4dff0; border-radius: 18px; background: #f9f7fc; }
+.pendingGroupSummary { width: 100%; display: grid; grid-template-columns: 40px 1fr auto auto; align-items: center; gap: 10px; padding: 12px 13px; text-align: left; border: 0; color: #4a4254; background: transparent; }
+.pendingGroupSummary > span { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 13px; color: var(--purple); background: #ebe6fb; font-size: 17px; font-weight: 950; }
+.pendingGroupSummary > div { min-width: 0; }
+.pendingGroupSummary strong { font-size: 11px; }
+.pendingGroupSummary p { margin: 4px 0 0; overflow: hidden; color: #847c8d; font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
+.pendingGroupSummary i { min-width: 22px; height: 22px; display: grid; place-items: center; border-radius: 99px; color: #fff; background: var(--pink); font-size: 7px; font-style: normal; font-weight: 950; }
+.pendingGroupSummary b { color: #8e8795; font-size: 14px; }
+.pendingGroupList { display: grid; gap: 7px; padding: 0 8px 8px; border-top: 1px solid #ebe6f0; }
+.pendingGroupList .chatListItem { border-radius: 13px; box-shadow: none; }
+.pendingGroupList .chatMateAvatar { width: 40px; height: 40px; border-radius: 12px; }
 .pendingBadge { min-width: 30px; padding: 5px 7px; border-radius: 99px; color: #826aa1; background: #eee8f8; font-size: 6px; font-weight: 950; text-align: center; }
 .heartDot { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; color: var(--pink); background: #ffe9f1; font-size: 14px; font-weight: 900; }
 .chatHeader { display: grid; grid-template-columns: 34px 46px minmax(0,1fr) auto 34px; align-items: center; gap: 7px; margin: -9px -4px 0; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
