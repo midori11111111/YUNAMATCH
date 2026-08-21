@@ -573,9 +573,12 @@ export default function MatchApp({
   const [animation, setAnimation] = useState<"" | "left" | "right">("");
   const [dragStart, setDragStart] = useState<number | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [wanted, setWanted] = useState("すべて");
+  const [pokemonQuery, setPokemonQuery] = useState("");
+  const [trainerQuery, setTrainerQuery] = useState("");
+  const [genderFilter, setGenderFilter] = useState<"すべて" | "男性" | "女性">(
+    "すべて",
+  );
   const [sharedTimeOnly, setSharedTimeOnly] = useState(false);
-  const [womenOnly, setWomenOnly] = useState(false);
   const [compose, setCompose] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [loginAction, setLoginAction] = useState("この機能");
@@ -1182,24 +1185,51 @@ export default function MatchApp({
     () => (recruits.length === 0 && preview ? [previewRecruit] : recruits),
     [recruits, preview],
   );
-  const recommendedCards = useMemo(
+  const normalizedPokemonQuery = pokemonQuery
+    .trim()
+    .toLocaleLowerCase("ja-JP");
+  const normalizedTrainerQuery = trainerQuery
+    .trim()
+    .toLocaleLowerCase("ja-JP");
+  const filteredProfileCandidates = useMemo(
     () =>
-      profileCandidates.filter(
-        (person) =>
-          (wanted === "すべて" || person.mainPokemon.includes(wanted)) &&
-          (!womenOnly || person.gender === "女性") &&
+      profileCandidates.filter((person) => {
+        return (
+          (!normalizedPokemonQuery ||
+            person.mainPokemon.some((name) =>
+              name.toLocaleLowerCase("ja-JP").includes(normalizedPokemonQuery),
+            )) &&
+          (!normalizedTrainerQuery ||
+            person.trainerName
+              .toLocaleLowerCase("ja-JP")
+              .includes(normalizedTrainerQuery)) &&
+          (genderFilter === "すべて" || person.gender === genderFilter) &&
           (!sharedTimeOnly ||
             person.playTime.includes("時間帯はいつでも") ||
             profile.playTime.includes("時間帯はいつでも") ||
-            person.playTime.some((time) => profile.playTime.includes(time))),
-      ),
-    [profileCandidates, wanted, womenOnly, sharedTimeOnly, profile.playTime],
+            person.playTime.some((time) => profile.playTime.includes(time)))
+        );
+      }),
+    [
+      profileCandidates,
+      normalizedPokemonQuery,
+      normalizedTrainerQuery,
+      genderFilter,
+      sharedTimeOnly,
+      profile.playTime,
+    ],
   );
+  const recommendedCards = filteredProfileCandidates;
   const receivedCards = useMemo(() => {
     const senderIds = new Set(profileLikes.map((like) => like.senderId));
-    return profileCandidates.filter((person) => senderIds.has(person.id));
-  }, [profileCandidates, profileLikes]);
+    return filteredProfileCandidates.filter((person) => senderIds.has(person.id));
+  }, [filteredProfileCandidates, profileLikes]);
   const cards = discoverMode === "received" ? receivedCards : recommendedCards;
+  const activeFilterCount =
+    Number(Boolean(pokemonQuery.trim())) +
+    Number(Boolean(trainerQuery.trim())) +
+    Number(genderFilter !== "すべて") +
+    Number(sharedTimeOnly);
   const current = cards.length
     ? cards[((index % cards.length) + cards.length) % cards.length]
     : null;
@@ -2482,11 +2512,12 @@ export default function MatchApp({
                   <span>?</span>使い方
                 </button>
                 <button
-                  className="discoverFilter"
+                  className={`discoverFilter ${activeFilterCount ? "active" : ""}`}
                   onClick={() => setFilterOpen(true)}
-                  aria-label="条件を絞る"
+                  aria-label={`条件を絞る${activeFilterCount ? `、${activeFilterCount}件設定中` : ""}`}
                 >
                   ☷
+                  {activeFilterCount > 0 && <i>{activeFilterCount}</i>}
                 </button>
               </div>
               {loading ? (
@@ -4102,7 +4133,7 @@ export default function MatchApp({
             onClick={() => setFilterOpen(false)}
             aria-label="絞り込みを閉じる"
           />
-          <section className="sheetModal">
+          <section className="sheetModal discoverFilterSheet">
             <div className="sheetHandle" />
             <button
               className="closeButton"
@@ -4113,18 +4144,47 @@ export default function MatchApp({
             <small className="modalKicker">SEARCH FILTER</small>
             <h2>希望のメイト</h2>
             <label>
-              使ってほしいポケモン
-              <select
-                value={wanted}
+              ポケモン名
+              <input
+                type="search"
+                value={pokemonQuery}
+                list="discover-pokemon-options"
+                placeholder="例：ゲッコウガ"
                 onChange={(e) => {
-                  setWanted(e.target.value);
+                  setPokemonQuery(e.target.value);
+                  setIndex(0);
+                }}
+              />
+              <datalist id="discover-pokemon-options">
+                {pokemon.map((name) => (
+                  <option key={name} value={name} />
+                ))}
+              </datalist>
+            </label>
+            <label>
+              プレイヤーネーム
+              <input
+                type="search"
+                value={trainerQuery}
+                placeholder="名前の一部でも検索できます"
+                onChange={(e) => {
+                  setTrainerQuery(e.target.value);
+                  setIndex(0);
+                }}
+              />
+            </label>
+            <label>
+              性別
+              <select
+                value={genderFilter}
+                onChange={(e) => {
+                  setGenderFilter(e.target.value as "すべて" | "男性" | "女性");
                   setIndex(0);
                 }}
               >
-                <option>すべて</option>
-                {pokemon.map((name) => (
-                  <option key={name}>{name}</option>
-                ))}
+                <option value="すべて">すべて</option>
+                <option value="男性">男性</option>
+                <option value="女性">女性</option>
               </select>
             </label>
             <label className="toggleRow">
@@ -4138,23 +4198,27 @@ export default function MatchApp({
               />
               <span>自分と遊べる時間帯が合う人だけ</span>
             </label>
-            <label className="toggleRow">
-              <input
-                type="checkbox"
-                checked={womenOnly}
-                onChange={(e) => {
-                  setWomenOnly(e.target.checked);
+            <div className="filterActionRow">
+              <button
+                className="filterResetButton"
+                onClick={() => {
+                  setPokemonQuery("");
+                  setTrainerQuery("");
+                  setGenderFilter("すべて");
+                  setSharedTimeOnly(false);
                   setIndex(0);
                 }}
-              />
-              <span>女性プレイヤーのみ</span>
-            </label>
-            <button
-              className="primaryButton"
-              onClick={() => setFilterOpen(false)}
-            >
-              この条件で探す
-            </button>
+                disabled={!activeFilterCount}
+              >
+                条件をリセット
+              </button>
+              <button
+                className="primaryButton"
+                onClick={() => setFilterOpen(false)}
+              >
+                {cards.length}人から探す
+              </button>
+            </div>
           </section>
         </div>
       )}

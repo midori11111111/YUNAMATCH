@@ -268,6 +268,11 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /chatActionsOpen && selectedConnection/);
   assert.doesNotMatch(app, /className="reconnectBar"/);
   assert.doesNotMatch(app, /className="contactConsentBar"/);
+  assert.match(app, /ポケモン名/);
+  assert.match(app, /プレイヤーネーム/);
+  assert.match(app, /genderFilter/);
+  assert.match(app, /名前の一部でも検索できます/);
+  assert.match(app, /条件をリセット/);
   assert.match(privacyPage, /初期状態は非公開/);
   assert.match(privacyPage, /ログイン前のプロフィール表示/);
   assert.match(privacyPage, /試合後評価とおすすめ順/);

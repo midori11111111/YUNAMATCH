@@ -194,7 +194,9 @@ button { cursor: pointer; }
 .discoverHelp, .discoverFilter { height: 44px; flex: none; border: 1px solid #ece7f1; border-radius: 15px; color: #777080; background: #fff; box-shadow: 0 5px 15px #3c315c0c; }
 .discoverHelp { width: 49px; display: grid; place-items: center; align-content: center; gap: 1px; font-size: 6px; font-weight: 900; }
 .discoverHelp span { font-size: 13px; line-height: 1; }
-.discoverFilter { width: 44px; color: var(--pink); font-size: 18px; font-weight: 950; }
+.discoverFilter { width: 44px; position: relative; color: var(--pink); font-size: 18px; font-weight: 950; }
+.discoverFilter.active { color: #fff; border-color: var(--pink); background: var(--pink); }
+.discoverFilter i { min-width: 16px; height: 16px; position: absolute; right: -5px; top: -5px; display: grid; place-items: center; padding: 0 4px; border: 2px solid #fff; border-radius: 99px; color: #fff; background: var(--purple); font-size: 7px; font-style: normal; }
 .fullDiscoverCard { height: calc(100% - 60px); min-height: 0; position: relative; overflow: hidden; border-radius: 28px; color: #fff; background: linear-gradient(145deg, #5134ca, #9268ef 58%, #e6599b); box-shadow: 0 20px 42px #37275929; touch-action: pan-y; transform-origin: 50% 100%; }
 .fullDiscoverCard.left { animation: swipeLeft .22s ease forwards; }
 .fullDiscoverCard.right { animation: swipeRight .22s ease forwards; }
@@ -834,6 +836,12 @@ button { cursor: pointer; }
 .sheetHandle { display: none; }
 .closeButton { position: absolute; right: 15px; top: 13px; width: 34px; height: 34px; border: 0; border-radius: 50%; background: #f5f2f7; color: #87818f; font-size: 18px; }
 .sheetModal > h2 { margin: 6px 0 22px; font-size: 23px; letter-spacing: -1px; }
+.discoverFilterSheet { display: grid; gap: 13px; }
+.discoverFilterSheet > h2 { margin-bottom: 2px; }
+.filterActionRow { display: grid; grid-template-columns: .8fr 1.2fr; gap: 8px; margin-top: 3px; }
+.filterActionRow button { min-height: 46px; margin: 0; border-radius: 14px; font-size: 9px; font-weight: 900; }
+.filterResetButton { border: 1px solid #e2dce7; color: #777080; background: #fff; }
+.filterResetButton:disabled { color: #bbb5bf; background: #f6f4f7; }
 .toggleRow { display: flex !important; align-items: center; gap: 9px !important; padding: 12px; border-radius: 11px; background: #f7f5fa; }
 .toggleRow input { width: auto !important; accent-color: var(--purple); }
 .privacyText { margin: 0; color: #9a94a2; font-size: 7px; }
