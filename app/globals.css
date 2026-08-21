@@ -336,10 +336,11 @@ button { cursor: pointer; }
 .profileHero p { margin: 0; color: #958e9e; font-size: 9px; }
 .shareCardButton { margin-top: 13px; padding: 10px 14px; border: 0; border-radius: 12px; color: #fff; background: #17131f; font-size: 8px; font-weight: 900; box-shadow: 0 8px 18px #17131f22; }
 .profileDashboardHero { padding-top: 15px; }
-.profileCompletionRing { width: 132px; height: 132px; position: relative; display: grid; place-items: center; margin: 0 auto 17px; border: 5px solid #ece8f0; border-bottom-color: #ffbe5c; border-left-color: #ff7da7; border-radius: 50%; background: #fff; box-shadow: 0 13px 30px #352a4d12; }
-.profileDashboardHero .profileHeroAvatar { width: 116px; height: 116px; border: 0; border-radius: 50%; box-shadow: none; }
-.profileCompletionRing > button { width: 43px; height: 43px; position: absolute; right: -7px; top: -1px; border: 3px solid #fff; border-radius: 50%; color: #fff; background: var(--pink); font-size: 18px; font-weight: 900; box-shadow: 0 8px 18px #ff4f9140; }
-.profileCompletionRing > span { position: absolute; left: 50%; bottom: -14px; transform: translateX(-50%); padding: 6px 11px; border-radius: 99px; color: #fff; background: linear-gradient(145deg, var(--pink), #ff7da9); font-size: 8px; font-weight: 950; white-space: nowrap; box-shadow: 0 5px 12px #ff4f9130; }
+.profileCompletionRing { width: 136px; height: 136px; position: relative; margin: 0 auto 20px; border-radius: 50%; background: conic-gradient(from 0deg, var(--pink) 0 var(--profile-progress), #ebe7ef var(--profile-progress) 360deg); box-shadow: 0 13px 30px #352a4d12; }
+.profileCompletionRing:before { content: ""; position: absolute; inset: 6px; z-index: 0; border-radius: 50%; background: #fff; }
+.profileDashboardHero .profileHeroAvatar { width: auto; height: auto; position: absolute; z-index: 1; inset: 10px; overflow: hidden; margin: 0; border: 0; border-radius: 50%; box-shadow: none; }
+.profileCompletionRing > button { width: 43px; height: 43px; position: absolute; z-index: 3; right: -7px; top: -1px; border: 3px solid #fff; border-radius: 50%; color: #fff; background: var(--pink); font-size: 18px; font-weight: 900; box-shadow: 0 8px 18px #ff4f9140; }
+.profileCompletionRing > span { position: absolute; z-index: 3; left: 50%; bottom: -12px; transform: translateX(-50%); padding: 6px 11px; border-radius: 99px; color: #fff; background: linear-gradient(145deg, var(--pink), #ff7da9); font-size: 8px; font-weight: 950; white-space: nowrap; box-shadow: 0 5px 12px #ff4f9130; }
 .profileQuickStats { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin: 4px 0 24px; }
 .profileQuickStats button { min-width: 0; height: 82px; display: grid; place-items: center; align-content: center; gap: 2px; padding: 6px 3px; border: 0; border-radius: 19px; color: #302747; background: #f3f1f5; }
 .profileQuickStats span { color: var(--pink); font-size: 17px; font-weight: 950; }
