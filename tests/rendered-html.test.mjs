@@ -10,7 +10,9 @@ async function render() {
   const { default: worker } = await import(workerUrl.href);
   return worker.fetch(
     new Request("http://localhost/", { headers: { accept: "text/html" } }),
-    { ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) } },
+    {
+      ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) },
+    },
     { waitUntil() {}, passThroughOnException() {} },
   );
 }
@@ -28,7 +30,35 @@ test("renders the login-only entrance for anonymous visitors", async () => {
 });
 
 test("ships the matching app, onboarding, lobby, safety, analytics, and notifications", async () => {
-  const [page, app, css, authGateway, loginPage, connectionsApi, messagesApi, safetyApi, profileApi, applicationsApi, discoverApi, migration, profileMigration, lobbyApi, pushApi, discordApi, expansionMigration, analyticsApi, statsApi, analyticsMigration, adminPanel, safetyMigration, supportApi, exportApi, likesApi, likesMigration, pokemonArt] = await Promise.all([
+  const [
+    page,
+    app,
+    css,
+    authGateway,
+    loginPage,
+    connectionsApi,
+    messagesApi,
+    safetyApi,
+    profileApi,
+    applicationsApi,
+    discoverApi,
+    migration,
+    profileMigration,
+    lobbyApi,
+    pushApi,
+    discordApi,
+    expansionMigration,
+    analyticsApi,
+    statsApi,
+    analyticsMigration,
+    adminPanel,
+    safetyMigration,
+    supportApi,
+    exportApi,
+    likesApi,
+    likesMigration,
+    pokemonArt,
+  ] = await Promise.all([
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/match-app.tsx", root), "utf8"),
     readFile(new URL("app/globals.css", root), "utf8"),
@@ -62,7 +92,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(page, /initialProfile/);
   assert.match(page, /getDb\(\)\.select\(\)\.from\(profiles\)/);
   assert.match(app, /moveCard/);
-  assert.match(app, /preview\|\|initialProfile!==undefined/);
+  assert.match(app, /preview\s*\|\|\s*initialProfile\s*!==\s*undefined/);
   assert.match(app, /AbortController/);
   assert.match(app, /プレイ申請を送る/);
   assert.match(app, /マッチ成立/);
@@ -88,6 +118,13 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /yunamatch-chat-tutorial-v1/);
   assert.match(app, /次のプレイまで/);
   assert.match(app, /profileCompletion/);
+  assert.match(app, /profileCompletionInline/);
+  assert.doesNotMatch(app, /profileCompletionCard/);
+  assert.doesNotMatch(app, /getSynergy/);
+  assert.match(app, /今日ログイン/);
+  assert.match(app, /ランク行きませんか？/);
+  assert.match(app, /一緒に遊んだ/);
+  assert.match(app, /プレイ完了/);
   assert.match(app, /もらったいいね/);
   assert.match(app, /yunamatch-push-intro-v1/);
   assert.match(app, /通知をオンにする/);
@@ -101,16 +138,19 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /全員そろったらプレイ開始/);
   assert.match(css, /bottomNav/);
   assert.match(connectionsApi, /mutualAgain/);
+  assert.match(connectionsApi, /userAPlayed/);
   assert.match(messagesApi, /connectionId/);
   assert.match(safetyApi, /allowedReasons/);
   assert.match(profileApi, /mainPokemon/);
   assert.match(profileApi, /contactFor/);
   assert.match(profileApi, /!genders\.has\(gender\)/);
   assert.match(applicationsApi, /プロフィールの未入力項目/);
-  assert.match(discoverApi, /kind:"profile"/);
+  assert.match(discoverApi, /kind:\s*"profile"/);
   assert.match(discoverApi, /プロフィールから一緒に遊びたい/);
-  assert.match(discoverApi, /me\.gender==="男性"/);
-  assert.match(discoverApi, /b\.gender==="女性"/);
+  assert.match(discoverApi, /me\.gender\s*===\s*"男性"/);
+  assert.match(discoverApi, /b\.gender\s*===\s*"女性"/);
+  assert.match(discoverApi, /activeCutoff/);
+  assert.match(discoverApi, /lastActiveAt/);
   assert.match(migration, /CREATE TABLE `connections`/);
   assert.match(profileMigration, /CREATE TABLE `profiles`/);
   assert.match(lobbyApi, /lobbyMembers/);

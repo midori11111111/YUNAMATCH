@@ -96,6 +96,11 @@ try {
   const thread = await api(`/api/messages?connectionId=${connectionId}`, { user: owner });
   assert.equal(thread.messages.at(-1).body, "よろしくお願いします");
 
+  const played = await api("/api/connections", { user: owner, method: "PATCH", body: { connectionId, action: "played" } });
+  assert.equal(played.playedByMe, true);
+  const applicantAfterPlay = await api("/api/connections", { user: applicant });
+  assert.equal(applicantAfterPlay.connections[0].playedByMate, true);
+
   await api("/api/safety", { user: owner, method: "POST", body: { action: "block", connectionId } });
   const hiddenConnections = await api("/api/connections", { user: owner });
   assert.equal(hiddenConnections.connections.length, 0);
@@ -110,7 +115,7 @@ try {
   const connectionsAfterDeletion = await api("/api/connections", { user: applicant });
   assert.equal(connectionsAfterDeletion.connections.length, 0);
 
-  console.log("✓ 登録→募集→申請→承認→チャット→NGワード→ブロック→問い合わせ→退会を確認しました");
+  console.log("✓ 登録→募集→申請→承認→チャット→プレイ完了→NGワード→ブロック→問い合わせ→退会を確認しました");
 } finally {
   if (server) server.kill("SIGTERM");
   await rm(temporary, { recursive: true, force: true });

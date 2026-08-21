@@ -193,10 +193,9 @@ button { cursor: pointer; }
 .fullCardPokemon .pokemonVisualFallback { color: #ffffffcc; font-size: 82px; }
 .fullCardWatermark { position: absolute; z-index: 1; left: -10px; right: -10px; top: 44%; overflow: hidden; color: #fff; opacity: .1; font-size: 70px; font-weight: 950; line-height: .9; letter-spacing: -5px; text-align: center; white-space: nowrap; }
 .fullCardTopline { position: absolute; z-index: 5; top: 17px; left: 17px; right: 17px; display: flex; align-items: center; justify-content: space-between; pointer-events: none; }
-.fullCardTopline > span, .fullCardTopline > strong { border: 1px solid #ffffff45; border-radius: 99px; background: #281b4a45; backdrop-filter: blur(9px); }
+.fullCardTopline > span { border: 1px solid #ffffff45; border-radius: 99px; background: #281b4a45; backdrop-filter: blur(9px); }
 .fullCardTopline > span { padding: 7px 10px; font-size: 8px; font-weight: 900; }
-.fullCardTopline > strong { padding: 6px 9px; font-size: 13px; }
-.fullCardTopline small { margin-left: 1px; font-size: 8px; }
+.fullCardTopline > span.active { border-color: #9bffcf80; color: #fff; background: #17875eaa; }
 .cardTapZone { width: 50%; height: 54%; position: absolute; z-index: 4; top: 54px; border: 0; background: transparent; }
 .cardTapZone.previous { left: 0; }
 .cardTapZone.next { right: 0; }
@@ -327,7 +326,6 @@ button { cursor: pointer; }
 .profileDashboardTop { height: 46px; display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; }
 .profileDashboardTop > span { text-align: center; color: #31264b; font-size: 13px; font-weight: 950; }
 .profileDashboardTop > button { width: 40px; height: 40px; position: relative; border: 1px solid #eee9f2; border-radius: 15px; color: #3f3651; background: #fff; font-size: 16px; box-shadow: 0 7px 18px #352a4b10; }
-.profileDashboardTop > button:last-child { color: var(--pink); }
 .profileDashboardTop b { width: 17px; height: 17px; position: absolute; right: -4px; top: -5px; display: grid; place-items: center; border: 2px solid #fff; border-radius: 50%; color: #fff; background: var(--pink); font-size: 7px; }
 .profileHero { text-align: center; padding: 12px 0 23px; }
 .profileHeroAvatar { width: 76px; height: 76px; overflow: hidden; margin: auto; display: grid; place-items: center; border: 4px solid #fff; border-radius: 24px; color: #fff; background: linear-gradient(145deg, #ff689e, #ffabc9); font-size: 27px; font-weight: 900; box-shadow: 0 0 0 1px #eadfea, 0 10px 25px #bb789b25; }
@@ -339,15 +337,12 @@ button { cursor: pointer; }
 .profileAvatarFrame { width: 128px; height: 128px; position: relative; margin: 0 auto 16px; }
 .profileDashboardHero .profileAvatarFrame .profileHeroAvatar { width: 128px; height: 128px; position: static; display: grid; overflow: hidden; margin: 0; border: 5px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px #e7e1ec, 0 14px 30px #352a4d18; }
 .profileAvatarFrame > button { width: 43px; height: 43px; position: absolute; z-index: 2; right: -7px; top: 3px; border: 3px solid #fff; border-radius: 50%; color: #fff; background: var(--pink); font-size: 18px; font-weight: 900; box-shadow: 0 8px 18px #ff4f9140; }
-.profileCompletionCard { width: min(310px, 100%); margin: 14px auto 0; padding: 12px 14px; border: 1px solid #ebe5f0; border-radius: 16px; background: #faf8fc; text-align: left; }
-.profileCompletionCard > div { display: flex; align-items: center; justify-content: space-between; }
-.profileCompletionCard strong { color: #302741; font-size: 8px; }
-.profileCompletionCard span { color: var(--pink); font-size: 9px; font-weight: 950; }
-.profileCompletionCard progress { width: 100%; height: 7px; display: block; overflow: hidden; margin: 8px 0 6px; appearance: none; border: 0; border-radius: 99px; background: #e9e4ee; }
-.profileCompletionCard progress::-webkit-progress-bar { border-radius: 99px; background: #e9e4ee; }
-.profileCompletionCard progress::-webkit-progress-value { border-radius: 99px; background: linear-gradient(90deg, var(--purple), var(--pink)); }
-.profileCompletionCard progress::-moz-progress-bar { border-radius: 99px; background: linear-gradient(90deg, var(--purple), var(--pink)); }
-.profileCompletionCard > small { display: block; margin: 0; color: #847d8c; font-size: 7px; font-weight: 700; line-height: 1.55; letter-spacing: 0; }
+.profileCompletionInline { width: 178px; display: flex; align-items: center; gap: 8px; margin: 10px auto 0; }
+.profileCompletionInline span { color: #8b8393; font-size: 7px; font-weight: 850; white-space: nowrap; }
+.profileCompletionInline progress { width: 78px; height: 5px; overflow: hidden; appearance: none; border: 0; border-radius: 99px; background: #e9e4ee; }
+.profileCompletionInline progress::-webkit-progress-bar { border-radius: 99px; background: #e9e4ee; }
+.profileCompletionInline progress::-webkit-progress-value { border-radius: 99px; background: linear-gradient(90deg, var(--purple), var(--pink)); }
+.profileCompletionInline progress::-moz-progress-bar { border-radius: 99px; background: linear-gradient(90deg, var(--purple), var(--pink)); }
 .profileQuickStats { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin: 4px 0 24px; }
 .profileQuickStats button { min-width: 0; height: 82px; display: grid; place-items: center; align-content: center; gap: 2px; padding: 6px 3px; border: 0; border-radius: 19px; color: #302747; background: #f3f1f5; }
 .profileQuickStats span { color: var(--pink); font-size: 17px; font-weight: 950; }
@@ -377,6 +372,8 @@ button { cursor: pointer; }
 .termsCheck input { width: auto !important; margin-top: 1px; accent-color: var(--purple); }
 .termsCheck a { color: var(--purple); font-weight: 900; }
 .sheetModal textarea { min-height: 70px; resize: vertical; }
+.requestMessagePresets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: -5px; }
+.requestMessagePresets button { border: 1px solid #ddd5ff; border-radius: 99px; padding: 7px 9px; color: #6958d6; background: #f5f2ff; font-size: 7px; font-weight: 900; }
 .primaryButton { width: 100%; border: 0; border-radius: 14px; padding: 14px; color: #fff; background: linear-gradient(135deg, var(--purple), #8d75f1); font-size: 10px; font-weight: 900; box-shadow: 0 9px 20px #7257e82b; }
 .primaryButton:disabled { opacity: .55; cursor: wait; }
 .linkedAccountSettings { margin-top: 18px; padding: 18px; border: 1px solid var(--line); border-radius: 20px; background: #fff; box-shadow: 0 8px 24px #322b4a0b; }
@@ -511,9 +508,11 @@ button { cursor: pointer; }
 .chatHeader h1 { margin: 0; font-size: 15px; }
 .chatHeader p { margin: 3px 0 0; color: #958e9e; font-size: 7px; }
 .chatHeader .chatSafety { font-size: 9px; letter-spacing: 1px; }
-.reconnectBar { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; padding: 12px 0 9px; }
+.reconnectBar { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; padding: 12px 0 9px; }
 .reconnectBar button { border: 1px solid #e8e3ed; border-radius: 12px; padding: 10px 8px; color: #81798a; background: #fff; font-size: 8px; font-weight: 900; }
 .reconnectBar button.active { color: var(--pink); border-color: #ffd5e5; background: #fff0f6; }
+.reconnectBar .playedButton.active { color: #168463; border-color: #cdeee3; background: #eaf8f3; }
+.reconnectBar button:disabled { cursor: default; opacity: 1; }
 .reconnectBar .rematchButton { color: #fff; border-color: transparent; background: linear-gradient(135deg, var(--purple), #8d75f1); }
 .reconnectBar .vcJoinButton { color: #fff; border-color: transparent; background: #5865f2; }
 .heartNotice { margin-bottom: 8px; padding: 9px 11px; border-radius: 11px; color: #c93671; background: #fff0f6; font-size: 7px; font-weight: 850; text-align: center; }
