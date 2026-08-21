@@ -21,7 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const base = new URL(`${protocol}://${host}`);
   const title = "ユナマッチ｜相性でつながるユナイト仲間";
   const description = "使用ポケモンと実力からメイトを探し、プレイ申請・承認で一緒にユナイトできるファンメイドサービス。";
-  const socialImage = new URL("/og.png", base).toString();
+  const socialImage = new URL("/og-comfey-zoroark.png", base).toString();
 
   return {
     metadataBase: base,
