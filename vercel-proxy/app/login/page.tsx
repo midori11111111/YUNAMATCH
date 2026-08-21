@@ -14,7 +14,7 @@ export default function LoginPage() {
           <form
             action={async () => {
               "use server";
-              await signIn("google", { redirectTo: "/" }, { prompt: "select_account" });
+              await signIn("google", { redirectTo: "/" });
             }}
           >
             <button className="googleButton" type="submit">
@@ -25,7 +25,7 @@ export default function LoginPage() {
           <form
             action={async () => {
               "use server";
-              await signIn("line", { redirectTo: "/" }, { prompt: "consent" });
+              await signIn("line", { redirectTo: "/" });
             }}
           >
             <button className="lineButton" type="submit">
@@ -36,7 +36,7 @@ export default function LoginPage() {
           <form
             action={async () => {
               "use server";
-              await signIn("discord", { redirectTo: "/" }, { prompt: "consent" });
+              await signIn("discord", { redirectTo: "/" });
             }}
           >
             <button className="discordButton" type="submit">
@@ -47,7 +47,7 @@ export default function LoginPage() {
           <form
             action={async () => {
               "use server";
-              await signIn("twitter", { redirectTo: "/" }, { force_login: "true" });
+              await signIn("twitter", { redirectTo: "/" });
             }}
           >
             <button className="xButton" type="submit">

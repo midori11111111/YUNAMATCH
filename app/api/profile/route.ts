@@ -37,7 +37,7 @@ function contactFor(provider:string, contactId:string){
 function publicProfile(row:typeof profiles.$inferSelect){
   let mainPokemon:string[]=[];
   let playTime:string[]=[];
-  try{const parsed=JSON.parse(row.mainPokemon);if(Array.isArray(parsed))mainPokemon=parsed.filter(value=>typeof value==="string").slice(0,5)}catch{/* 不正な旧データは空として扱う */}
+  try{const parsed=JSON.parse(row.mainPokemon);if(Array.isArray(parsed))mainPokemon=parsed.filter(value=>typeof value==="string").slice(0,5)}catch{if(row.mainPokemon)mainPokemon=[row.mainPokemon]}
   try{const parsed=JSON.parse(row.playTime);if(Array.isArray(parsed))playTime=parsed.filter(value=>typeof value==="string"&&playTimes.has(value)).slice(0,7)}catch{if(playTimes.has(row.playTime))playTime=[row.playTime]}
   return {trainerName:row.trainerName,mainPokemon,highestRate:row.highestRate,playTime,gender:row.gender,contact:row.contact,avatarUrl:row.avatarUrl,ageConfirmed:row.ageConfirmed,termsAccepted:Boolean(row.termsAcceptedAt)};
 }

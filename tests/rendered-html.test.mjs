@@ -21,13 +21,14 @@ test("renders the login-only entrance for anonymous visitors", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
   const html = await response.text();
   assert.match(html, /YUNA<span>MATCH/);
-  assert.match(html, /Googleでログイン/);
+  assert.match(html, /ログイン \/ 新規登録/);
+  assert.match(html, /\/api\/login\/google/);
   assert.match(html, /相性でつながるユナイト仲間/);
   assert.doesNotMatch(html, /Your site is taking shape|codex-preview/i);
 });
 
 test("ships the matching app, onboarding, lobby, safety, analytics, and notifications", async () => {
-  const [page, app, css, authGateway, loginPage, connectionsApi, messagesApi, safetyApi, profileApi, applicationsApi, migration, profileMigration, lobbyApi, pushApi, discordApi, expansionMigration, analyticsApi, statsApi, analyticsMigration, adminPanel, safetyMigration, supportApi, exportApi] = await Promise.all([
+  const [page, app, css, authGateway, loginPage, connectionsApi, messagesApi, safetyApi, profileApi, applicationsApi, discoverApi, migration, profileMigration, lobbyApi, pushApi, discordApi, expansionMigration, analyticsApi, statsApi, analyticsMigration, adminPanel, safetyMigration, supportApi, exportApi] = await Promise.all([
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/match-app.tsx", root), "utf8"),
     readFile(new URL("app/globals.css", root), "utf8"),
@@ -38,6 +39,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     readFile(new URL("app/api/safety/route.ts", root), "utf8"),
     readFile(new URL("app/api/profile/route.ts", root), "utf8"),
     readFile(new URL("app/api/applications/route.ts", root), "utf8"),
+    readFile(new URL("app/api/discover/route.ts", root), "utf8"),
     readFile(new URL("drizzle/0003_nifty_spyke.sql", root), "utf8"),
     readFile(new URL("drizzle/0004_omniscient_juggernaut.sql", root), "utf8"),
     readFile(new URL("app/api/lobbies/route.ts", root), "utf8"),
@@ -69,8 +71,9 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /登録してメイトを探す/);
   assert.match(app, /未入力の項目/);
   assert.match(app, /onboardingMissing/);
-  assert.match(app, /isProfileComplete/);
   assert.match(app, /募集中のメイト/);
+  assert.match(app, /登録中のメイトを探す/);
+  assert.match(app, /メイト申請を送る/);
   assert.match(app, /この人にプレイ申請/);
   assert.match(app, /集合ロビー/);
   assert.match(app, /プッシュ通知/);
@@ -83,6 +86,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(profileApi, /contactFor/);
   assert.match(profileApi, /!genders\.has\(gender\)/);
   assert.match(applicationsApi, /プロフィールの未入力項目/);
+  assert.match(discoverApi, /kind:"profile"/);
+  assert.match(discoverApi, /プロフィールから一緒に遊びたい/);
   assert.match(migration, /CREATE TABLE `connections`/);
   assert.match(profileMigration, /CREATE TABLE `profiles`/);
   assert.match(lobbyApi, /lobbyMembers/);

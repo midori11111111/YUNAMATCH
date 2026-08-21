@@ -33,6 +33,7 @@ export const accountLinks = sqliteTable("account_links", {
 
 export const recruits = sqliteTable("recruits", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  kind: text("kind").notNull().default("timed"),
   ownerId: text("owner_id").notNull(),
   trainerName: text("trainer_name").notNull(),
   gender: text("gender").notNull(),
@@ -53,6 +54,7 @@ export const recruits = sqliteTable("recruits", {
   acceptedCount: integer("accepted_count").notNull().default(0),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
 }, (table) => [
+  index("idx_recruits_kind_status_created").on(table.kind, table.status, table.createdAt),
   index("idx_recruits_status_created").on(table.status, table.createdAt),
   index("idx_recruits_status_expires").on(table.status, table.expiresAt),
 ]);

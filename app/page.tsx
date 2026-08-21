@@ -1,5 +1,5 @@
 import MatchApp, { type Profile } from "./match-app";
-import { chatGPTSignInPath, getChatGPTUser } from "./chatgpt-auth";
+import { getChatGPTUser } from "./chatgpt-auth";
 import { isAdminUser } from "../lib/admin";
 
 export const dynamic = "force-dynamic";
@@ -21,8 +21,14 @@ export default async function Home({
           <p className="loginEyebrow">POKÉMON UNITE MATCHING</p>
           <h1>相性でつながる、<br /><span>ユナマッチ。</span></h1>
           <p>使用ポケモンとプレイスタイルから、<br />今夜一緒に戦うメイトを見つけよう。</p>
-          <a className="loginButton" href={chatGPTSignInPath("/")}>Googleでログイン</a>
-          <small>ログイン後すぐにメイト探しを始められます</small>
+          <div className="directLoginHeading"><strong>ログイン / 新規登録</strong><span>使うアカウントをここで選べます</span></div>
+          <div className="directLoginGrid">
+            <a className="directLoginButton google" href="/api/login/google"><span>G</span>Google</a>
+            <a className="directLoginButton line" href="/api/login/line"><span>LINE</span>LINE</a>
+            <a className="directLoginButton discord" href="/api/login/discord"><span>D</span>Discord</a>
+            <a className="directLoginButton twitter" href="/api/login/twitter"><span>𝕏</span>X</a>
+          </div>
+          <small>選んだサービスの認証画面へ直接進みます</small>
         </section>
       </main>
     );
@@ -42,7 +48,7 @@ export default async function Home({
     else {
       let mainPokemon:string[]=[];
       let playTime:string[]=[];
-      try{const values=JSON.parse(row.mainPokemon);if(Array.isArray(values))mainPokemon=values.filter((value):value is string=>typeof value==="string").slice(0,5)}catch{/* 旧形式はプロフィール編集で更新する */}
+      try{const values=JSON.parse(row.mainPokemon);if(Array.isArray(values))mainPokemon=values.filter((value):value is string=>typeof value==="string").slice(0,5)}catch{if(row.mainPokemon)mainPokemon=[row.mainPokemon]}
       try{const values=JSON.parse(row.playTime);if(Array.isArray(values))playTime=values.filter((value):value is string=>typeof value==="string").slice(0,7)}catch{if(row.playTime)playTime=[row.playTime]}
       initialProfile={trainerName:row.trainerName,mainPokemon,highestRate:row.highestRate,playTime,gender:row.gender==="男性"||row.gender==="女性"?row.gender:"",contact:row.contact,avatarUrl:row.avatarUrl||"",ageConfirmed:Boolean(row.ageConfirmed),termsAccepted:Boolean(row.termsAcceptedAt)};
     }

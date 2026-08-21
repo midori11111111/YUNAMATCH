@@ -27,8 +27,19 @@ button { cursor: pointer; }
 .loginCard h1 { margin: 0; font-size: 40px; line-height: 1.23; letter-spacing: -2.4px; }
 .loginCard h1 span { color: var(--purple); }
 .loginCard > p:not(.loginEyebrow) { margin: 18px 0 0; color: #706a7e; font-size: 13px; line-height: 1.85; }
-.loginButton { display: block; margin: 32px 0 14px; padding: 17px; border-radius: 15px; color: #fff; background: linear-gradient(135deg, var(--purple), #927af5); font-size: 13px; font-weight: 900; text-decoration: none; box-shadow: 0 13px 27px #6e55df35; transition: .2s; }
-.loginButton:hover { transform: translateY(-2px); box-shadow: 0 16px 34px #6e55df44; }
+.directLoginHeading { display: grid; gap: 3px; margin: 28px 0 12px; text-align: left; }
+.directLoginHeading strong { color: var(--ink); font-size: 12px; }
+.directLoginHeading span { color: #9b94a4; font-size: 8px; }
+.directLoginGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 14px; }
+.directLoginButton { min-height: 50px; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 14px; color: #fff; font-size: 10px; font-weight: 900; text-decoration: none; box-shadow: 0 10px 24px #34285f1c; transition: .2s; }
+.directLoginButton:hover { transform: translateY(-2px); }
+.directLoginButton span { min-width: 22px; font-size: 12px; font-weight: 950; }
+.directLoginButton.google { border: 1px solid #e1dce7; color: #302b36; background: #fff; }
+.directLoginButton.google span { color: #4285f4; }
+.directLoginButton.line { background: #06c755; }
+.directLoginButton.line span { font-size: 6px; }
+.directLoginButton.discord { background: #5865f2; }
+.directLoginButton.twitter { background: #17131f; }
 .loginCard small { color: #aaa4b3; font-size: 9px; }
 
 .appStage { min-height: 100dvh; display: grid; place-items: center; padding: 20px; background: radial-gradient(circle at 12% 14%, #ffd9e7 0, transparent 25%), radial-gradient(circle at 88% 80%, #d8ceff 0, transparent 32%), linear-gradient(135deg, #f4efff, #fff8fb); }
@@ -88,6 +99,8 @@ button { cursor: pointer; }
 .cardArtwork.speed:before, .pokemonTile.speed:before, .applyPokemon.speed { background: radial-gradient(circle at 70% 25%, #ffffff35, transparent 27%), linear-gradient(145deg, #178aa9, #5bcaca); }
 .cardArtwork.defense:before, .pokemonTile.defense:before, .applyPokemon.defense { background: radial-gradient(circle at 70% 25%, #ffffff35, transparent 27%), linear-gradient(145deg, #c1871c, #f4c75d); }
 .cardArtwork.support:before, .pokemonTile.support:before, .applyPokemon.support { background: radial-gradient(circle at 70% 25%, #ffffff35, transparent 27%), linear-gradient(145deg, #ec5794, #ff9fc4); }
+.cardArtwork.profileMatchArtwork:before { background: radial-gradient(circle at 72% 22%, #ffffff3d, transparent 28%), radial-gradient(circle at 20% 82%, #ffc7e03b, transparent 30%), linear-gradient(145deg, #4e34c8, #8c67f2 62%, #e65798); }
+.applyPokemon.profileMatchArtwork { background: radial-gradient(circle at 70% 25%, #ffffff35, transparent 27%), linear-gradient(145deg, #4e34c8, #b458ca); }
 .artDots { position: absolute; inset: -30px; opacity: .16; background-image: radial-gradient(#fff 1.4px, transparent 1.4px); background-size: 20px 20px; transform: rotate(9deg); }
 .artWatermark { position: absolute; left: -12px; right: -12px; bottom: -6px; overflow: hidden; opacity: .11; font-size: clamp(50px, 13vw, 68px); font-weight: 950; letter-spacing: -4px; line-height: 1; text-align: center; white-space: nowrap; }
 .cardTopline { position: absolute; z-index: 2; top: 16px; left: 17px; right: 17px; display: flex; align-items: center; justify-content: space-between; }
@@ -103,6 +116,7 @@ button { cursor: pointer; }
 .pokemonTitle strong { font-size: 25px; line-height: 1; letter-spacing: -1px; }
 .cardSafetyButton { width: 34px; height: 30px; position: absolute; z-index: 4; top: 10px; right: 10px; border: 1px solid #ffffff42; border-radius: 11px; color: #fff; background: #261a4333; font-size: 10px; font-weight: 900; letter-spacing: 1px; backdrop-filter: blur(8px); }
 .instantCards .cardTopline { right: 52px; }
+.instantCards .profileMatchArtwork .cardTopline { right: 17px; }
 .cardDetails { padding: 16px 17px 15px; }
 .identityLine { display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 10px; }
 .mateAvatar { width: 40px; height: 40px; overflow: hidden; display: grid; place-items: center; border-radius: 13px; color: #fff; background: linear-gradient(145deg, #6c4df6, #a68fff); font-size: 14px; font-weight: 950; box-shadow: 0 6px 14px #6c4df629; }
@@ -120,6 +134,10 @@ button { cursor: pointer; }
 .statGrid strong { overflow: hidden; font-size: 16px; line-height: 1; text-overflow: ellipsis; white-space: nowrap; }
 .statGrid strong small { font-size: 9px; }
 .statGrid span { color: #7d7685; font-size: 8px; }
+.profilePokemonList { display: grid; gap: 6px; padding: 10px 11px; border: 1px solid var(--line); border-radius: 13px; }
+.profilePokemonList > small { color: #8d8694; font-size: 7px; font-weight: 900; letter-spacing: .5px; }
+.profilePokemonList > div { display: flex; flex-wrap: wrap; gap: 5px; }
+.profilePokemonList span { padding: 5px 8px; border-radius: 99px; color: var(--purple-dark); background: #f1edff; font-size: 8px; font-weight: 900; }
 .timeChip { display: flex; align-items: center; gap: 8px; margin-top: 10px; color: #746d7c; }
 .timeChip > span { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 9px; color: var(--purple); background: #eee9ff; font-size: 12px; }
 .timeChip div { display: grid; gap: 1px; }

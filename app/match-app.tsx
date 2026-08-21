@@ -5,6 +5,7 @@
 import { ChangeEvent, FormEvent, PointerEvent, useEffect, useMemo, useState } from "react";
 
 type Recruit = { id:number; trainerName:string; gender:string; pokemon:string; role:string; matches:number; winRate:number; rank:string; playTime:string; note:string; avatarUrl?:string; startAt:string; expiresAt:string; partySize:number; desiredPokemon:string; desiredRole:string; acceptedCount:number };
+type ProfileCandidate = { id:string; trainerName:string; mainPokemon:string[]; highestRate:string; playTime:string[]; gender:string; avatarUrl?:string; registeredAt:string };
 type Notice = { id:number; applicantName?:string; applicantContact?:string; trainerName?:string; pokemon:string; message?:string; status:string; recruitPokemon?:string; ownerContact?:string|null };
 export type Profile = { trainerName:string; mainPokemon:string[]; highestRate:string; playTime:string[]; gender:"男性"|"女性"|""; contact:string; avatarUrl:string; ageConfirmed:boolean; termsAccepted:boolean };
 type Connection = { id:number; mateName:string; mateAvatarUrl?:string; matePokemon:string; mateContact:string; myPokemon:string; againByMe:boolean; againByMate:boolean; mutualAgain:boolean; latestMessage:string; latestAt:string; unreadCount:number };
@@ -24,6 +25,7 @@ const discordInviteUrl="https://discord.gg/sRxr8fD8Z6";
 const loginProviders=[{id:"google",label:"Google",mark:"G"},{id:"line",label:"LINE",mark:"LINE"},{id:"discord",label:"Discord",mark:"D"},{id:"twitter",label:"X",mark:"X"}];
 
 const previewRecruit: Recruit = { id:-1, trainerName:"momo", gender:"女性", pokemon:"ハピナス", role:"サポート型", matches:1842, winRate:58.7, rank:"マスター 1600〜", playTime:"平日 夜（18〜22時）", note:"中央キャリーを支えるのが好きです。楽しく連携しながら勝ちたい！",startAt:new Date().toISOString(),expiresAt:new Date(Date.now()+7_200_000).toISOString(),partySize:2,desiredPokemon:"ゲッコウガ",desiredRole:"指定なし",acceptedCount:0 };
+const previewProfile: ProfileCandidate = {id:"preview-momo",trainerName:"momo",mainPokemon:["ハピナス","キュワワー"],highestRate:"マスター 1600〜1799",playTime:["平日 夜（18〜22時）","土日 夜・深夜"],gender:"女性",avatarUrl:"",registeredAt:new Date().toISOString()};
 const roleClass: Record<string,string> = { "アタック型":"attack", "バランス型":"balance", "スピード型":"speed", "ディフェンス型":"defense", "サポート型":"support" };
 const strongPairs: Record<string,{score:number;copy:string}> = {
   "ゲッコウガ|ハピナス":{score:96,copy:"中央キャリーを回復と強化で支える王道コンビ"},
@@ -46,10 +48,6 @@ function decodePushKey(value:string){const padding="=".repeat((4-value.length%4)
 function PokemonImage({name}:{name:string}){
   const mark=name.replace(/^(?:アローラ|ガラル)/,"").slice(0,2);
   return <span className="pokemonVisualFallback" aria-hidden="true">{mark}</span>;
-}
-
-function isProfileComplete(value:Profile|null|undefined){
-  return Boolean(value&&value.trainerName.trim()&&value.mainPokemon.length&&value.playTime.length&&value.gender&&value.contact.trim()&&value.ageConfirmed&&value.termsAccepted);
 }
 
 function UserAvatar({name,src,className}:{name:string;src?:string;className:string}){
@@ -78,21 +76,22 @@ function PlayTimePicker({selected,onChange}:{selected:string[];onChange:(times:s
 export default function MatchApp({displayName,authProvider,authContact,preview=false,initialProfile,initialSuspended=false,isAdmin=false}:{displayName:string;authProvider:string;authContact:string;preview?:boolean;initialProfile?:Profile|null;initialSuspended?:boolean;isAdmin?:boolean}){
   const shortName=displayName.includes("@")?displayName.split("@")[0]:displayName;
   const providerName=authProvider==="twitter"?"X":authProvider==="discord"?"Discord":authProvider==="line"?"LINE":authProvider==="google"?"Google":"ログインアカウント";
-  const [tab,setTab]=useState<AppTab>("discover");
+  const [sharedRecruitId]=useState<number|null>(()=>{if(typeof window==="undefined")return null;const value=Number(new URLSearchParams(window.location.search).get("recruit"));return Number.isInteger(value)&&value>0?value:null});
+  const [tab,setTab]=useState<AppTab>(()=>sharedRecruitId?"recruit":"discover");
+  const [profileCandidates,setProfileCandidates]=useState<ProfileCandidate[]>(preview?[previewProfile]:[]);
   const [recruits,setRecruits]=useState<Recruit[]>([]);
   const [myRecruit,setMyRecruit]=useState<Recruit|null>(null);
-  const [sharedRecruitId]=useState<number|null>(()=>{if(typeof window==="undefined")return null;const value=Number(new URLSearchParams(window.location.search).get("recruit"));return Number.isInteger(value)&&value>0?value:null});
   const [loading,setLoading]=useState(true);
   const [index,setIndex]=useState(0);
   const [animation,setAnimation]=useState<""|"left"|"right">("");
   const [dragStart,setDragStart]=useState<number|null>(null);
   const [filterOpen,setFilterOpen]=useState(false);
   const [wanted,setWanted]=useState("すべて");
-  const [minRate,setMinRate]=useState(0);
-  const [minMatches,setMinMatches]=useState(0);
+  const [sharedTimeOnly,setSharedTimeOnly]=useState(false);
   const [womenOnly,setWomenOnly]=useState(false);
   const [compose,setCompose]=useState(false);
   const [applyTo,setApplyTo]=useState<Recruit|null>(null);
+  const [profileApplyTo,setProfileApplyTo]=useState<ProfileCandidate|null>(null);
   const [sending,setSending]=useState(false);
   const [toast,setToast]=useState("");
   const [incoming,setIncoming]=useState<Notice[]>([]);
@@ -118,7 +117,7 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
   const [pushState,setPushState]=useState<"off"|"on"|"unsupported">("off");
   const [profileReady,setProfileReady]=useState(preview||initialProfile!==undefined);
   const [suspended,setSuspended]=useState(initialSuspended);
-  const [onboardingOpen,setOnboardingOpen]=useState(preview||(initialProfile!==undefined&&!isProfileComplete(initialProfile)));
+  const [onboardingOpen,setOnboardingOpen]=useState(preview||initialProfile===null);
   const primaryPokemon=profile.mainPokemon[0]||"ゲッコウガ";
   const onboardingMissing=[!profile.trainerName.trim()&&"トレーナー名",profile.mainPokemon.length===0&&"メインポケモン",profile.playTime.length===0&&"遊べる時間帯",!profile.gender&&"性別",!profile.contact.trim()&&"連絡先",!profile.ageConfirmed&&"年齢確認",!profile.termsAccepted&&"利用規約への同意"].filter((value):value is string=>Boolean(value));
 
@@ -149,6 +148,11 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
     try{const response=await fetch("/api/recruits");const data=await response.json();setRecruits(data.recruits||[]);setMyRecruit(data.myRecruit||null)}
     catch{notify("募集を読み込めませんでした")}finally{setLoading(false)}
   };
+  const loadDiscover=async()=>{
+    if(preview){setProfileCandidates([previewProfile]);return}
+    try{const response=await fetch("/api/discover",{cache:"no-store"});if(!response.ok)return;const data=await response.json();setProfileCandidates(data.profiles||[])}
+    catch{/* 募集やチャット画面は利用を続ける */}
+  };
   const loadNotices=async()=>{
     try{const response=await fetch("/api/applications");if(!response.ok)return;const data=await response.json();setIncoming(data.incoming||[]);setOutgoing(data.outgoing||[])}catch{/* カード表示は続ける */}
   };
@@ -164,13 +168,15 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
     let active=true;
     Promise.all([
       fetch("/api/recruits").then(r=>r.json()),
+      fetch("/api/discover",{cache:"no-store"}).then(r=>r.ok?r.json():null),
       fetch("/api/applications").then(r=>r.ok?r.json():null),
       fetch("/api/connections").then(r=>r.ok?r.json():null),
       fetch("/api/lobbies").then(r=>r.ok?r.json():null),
-    ]).then(([recruitData,noticeData,connectionData,lobbyData])=>{
+    ]).then(([recruitData,discoverData,noticeData,connectionData,lobbyData])=>{
       if(!active)return;
       setRecruits(recruitData.recruits||[]);
       setMyRecruit(recruitData.myRecruit||null);
+      if(discoverData)setProfileCandidates(discoverData.profiles||[]);
       if(noticeData){setIncoming(noticeData.incoming||[]);setOutgoing(noticeData.outgoing||[])}
       if(connectionData)setConnections(connectionData.connections||[]);
       if(lobbyData)setLobbies(lobbyData.lobbies||[]);
@@ -181,7 +187,7 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
       if(!active)return;
       if(response.status===401){location.href=data.signIn||"/login";return}
       if(data.suspended){setSuspended(true);setOnboardingOpen(false)}
-      else if(data.profile){setProfile(data.profile);setOnboardingOpen(!isProfileComplete(data.profile))}
+      else if(data.profile){setProfile(data.profile);setOnboardingOpen(false)}
       else{setProfile(value=>({...value,trainerName:data.suggested?.trainerName||value.trainerName,contact:data.suggested?.contact||value.contact}));setOnboardingOpen(true)}
     }).catch(()=>{if(active)notify("プロフィールを確認できませんでした。再読み込みしてください")}).finally(()=>{window.clearTimeout(timeout);if(active)setProfileReady(true)});
     return()=>{active=false;window.clearTimeout(timeout);controller.abort()};
@@ -201,12 +207,10 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
   },[preview]);
 
   const visibleRecruits=useMemo(()=>recruits.length===0&&preview?[previewRecruit]:recruits,[recruits,preview]);
-  const cards=useMemo(()=>{
-    const filtered=visibleRecruits.filter(person=>(wanted==="すべて"||person.pokemon===wanted)&&person.winRate>=minRate&&person.matches>=minMatches&&(!womenOnly||person.gender==="女性"));
-    if(!sharedRecruitId)return filtered;const shared=filtered.find(person=>person.id===sharedRecruitId);return shared?[shared,...filtered.filter(person=>person.id!==sharedRecruitId)]:filtered;
-  },[visibleRecruits,wanted,minRate,minMatches,womenOnly,sharedRecruitId]);
+  const cards=useMemo(()=>profileCandidates.filter(person=>(wanted==="すべて"||person.mainPokemon.includes(wanted))&&(!womenOnly||person.gender==="女性")&&(!sharedTimeOnly||person.playTime.includes("時間帯はいつでも")||profile.playTime.includes("時間帯はいつでも")||person.playTime.some(time=>profile.playTime.includes(time)))),[profileCandidates,wanted,womenOnly,sharedTimeOnly,profile.playTime]);
   const current=cards.length?cards[index%cards.length]:null;
-  const synergy=current?getSynergy(primaryPokemon,current.pokemon,current.role):null;
+  const currentPokemon=current?.mainPokemon[0]||"未設定";
+  const synergy=current?getSynergy(primaryPokemon,currentPokemon,""):null;
   const pendingCount=incoming.filter(n=>n.status==="pending").length;
   const heartCount=connections.filter(c=>c.againByMate&&!c.againByMe).length;
   const unreadCount=connections.reduce((sum,connection)=>sum+(connection.unreadCount||0),0);
@@ -215,8 +219,7 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
   const moveNext=(direction:"left"|"right")=>{
     if(!current||animation)return;
     if(direction==="right"){
-      if(current.id===-1){notify("公開版では実際の募集にプレイ申請できます");return}
-      setApplyTo(current);return;
+      setProfileApplyTo(current);return;
     }
     setAnimation(direction);window.setTimeout(()=>{setIndex(v=>v+1);setAnimation("")},260);
   };
@@ -229,6 +232,15 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
     const data=await response.json();setSending(false);
     if(response.status===401){location.href=data.signIn;return}if(!response.ok){notify(data.error||"申請できませんでした");return}
     setApplyTo(null);notify("プレイ申請を送りました");setIndex(v=>v+1);loadNotices();
+  };
+  const submitProfileApplication=async(event:FormEvent<HTMLFormElement>)=>{
+    event.preventDefault();if(!profileApplyTo)return;setSending(true);
+    const body=Object.fromEntries(new FormData(event.currentTarget));
+    if(preview){setSending(false);setProfileApplyTo(null);notify("メイト申請を送りました");setIndex(value=>value+1);return}
+    const response=await fetch("/api/discover",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({...body,targetId:profileApplyTo.id})});
+    const data=await response.json();setSending(false);
+    if(response.status===401){location.href=data.signIn||"/login";return}if(!response.ok){notify(data.error||"メイト申請を送れませんでした");return}
+    setProfileApplyTo(null);notify("メイト申請を送りました");setIndex(value=>value+1);await Promise.all([loadDiscover(),loadNotices()]);
   };
   const submitRecruit=async(event:FormEvent<HTMLFormElement>)=>{
     event.preventDefault();const body=Object.fromEntries(new FormData(event.currentTarget));
@@ -250,7 +262,7 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
   const decide=async(applicationId:number,action:"accept"|"decline")=>{
     const response=await fetch("/api/applications",{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({applicationId,action})});const data=await response.json();
     if(!response.ok){notify(data.error||"処理できませんでした");return}if(action==="accept")setMatchedContact(data.applicantContact);
-    notify(action==="accept"?"マッチ成立！チャットが開通しました":"今回は見送りました");await Promise.all([loadNotices(),loadConnections(),loadRecruits()]);
+    notify(action==="accept"?"マッチ成立！チャットが開通しました":"今回は見送りました");await Promise.all([loadNotices(),loadConnections(),loadRecruits(),loadDiscover()]);
   };
   const openChat=async(connection:Connection)=>{setSelectedConnection(connection);setTab("chat");setNotificationOpen(false);await loadMessages(connection)};
   const sendMessage=async(event:FormEvent<HTMLFormElement>)=>{
@@ -284,7 +296,7 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
   };
   const blockTarget=async()=>{
     if(!safetyTarget)return;const response=await fetch("/api/safety",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({...safetyTarget,action:"block"})});const data=await response.json();
-    if(!response.ok){notify(data.error||"ブロックできませんでした");return}setSafetyTarget(null);setSelectedConnection(null);notify("このユーザーをブロックしました");await Promise.all([loadRecruits(),loadConnections()]);
+    if(!response.ok){notify(data.error||"ブロックできませんでした");return}setSafetyTarget(null);setSelectedConnection(null);notify("このユーザーをブロックしました");await Promise.all([loadRecruits(),loadConnections(),loadDiscover()]);
   };
   const submitSupport=async(event:FormEvent<HTMLFormElement>)=>{
     event.preventDefault();setSending(true);const body=Object.fromEntries(new FormData(event.currentTarget));
@@ -302,7 +314,7 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
     if(onboardingMissing.length){notify(`未入力の項目：${onboardingMissing.join("・")}`);return}
     if(preview){setOnboardingOpen(false);notify("プロフィールを登録しました");return}
     setSending(true);const response=await fetch("/api/profile",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(profile)});const data=await response.json();setSending(false);
-    if(!response.ok){notify(data.error||"プロフィールを保存できませんでした");return}setProfile(data.profile);setOnboardingOpen(false);notify("プロフィールを保存しました");
+    if(!response.ok){notify(data.error||"プロフィールを保存できませんでした");return}setProfile(data.profile);setOnboardingOpen(false);notify("プロフィールを保存しました");await loadDiscover();
   };
 
   const shareTrainerCard=async()=>{
@@ -342,24 +354,23 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
 
     <div className="appViewport">
       {tab==="discover"&&<section className="discoverView instantCards">
-        <div className="searchStrip"><div><strong>相性でメイトを探す</strong><small>{cards.length}人が募集中</small></div><button onClick={()=>setFilterOpen(true)}><span>☷</span>{wanted==="すべて"?"条件を絞る":wanted}</button></div>
+        <div className="searchStrip"><div><strong>登録中のメイトを探す</strong><small>{cards.length}人といつでもマッチ可能</small></div><button onClick={()=>setFilterOpen(true)}><span>☷</span>{wanted==="すべて"?"条件を絞る":wanted}</button></div>
         {loading?<div className="stateCard"><div className="loadingBall"/><h2>メイトを探しています</h2></div>:current?<>
           <article className={`discoverCard ${animation}`} onPointerDown={event=>setDragStart(event.clientX)} onPointerUp={handlePointerUp}>
-            <div className={`cardArtwork ${roleClass[current.role]||"support"}`}>
-              <div className="artDots"/><div className="artWatermark">{current.pokemon}</div>
-              <div className="cardTopline"><span>● {formatStart(current.startAt)}・{current.acceptedCount+1}/{current.partySize}人</span><strong>相性 {synergy?.score}<small>%</small></strong></div>
-              {current.id!==-1&&<button className="cardSafetyButton" onClick={()=>setSafetyTarget({name:current.trainerName,recruitId:current.id})} aria-label={`${current.trainerName}さんを通報またはブロック`}>•••</button>}
-              <div className="pokemonMonogram"><PokemonImage name={current.pokemon}/></div><div className="pokemonTitle"><small>{current.role}</small><strong>{current.pokemon}</strong></div>
+            <div className="cardArtwork profileMatchArtwork">
+              <div className="artDots"/><div className="artWatermark">{currentPokemon}</div>
+              <div className="cardTopline"><span>● プロフィール公開中</span><strong>相性 {synergy?.score}<small>%</small></strong></div>
+              <div className="pokemonMonogram"><PokemonImage name={currentPokemon}/></div><div className="pokemonTitle"><small>MAIN POKÉMON</small><strong>{currentPokemon}</strong></div>
             </div>
             <div className="cardDetails">
-              <div className="identityLine"><UserAvatar name={current.trainerName} src={current.avatarUrl} className="mateAvatar"/><div><h1>{current.trainerName}</h1><p className="rankText">{current.rank} ・ {current.gender}</p></div><span>受付中</span></div>
-              <div className="pairingLine"><div><small>あなた</small><span>{primaryPokemon}</span></div><b>×</b><div><small>相手</small><span>{current.pokemon}</span></div></div>
-              <div className="statGrid"><div><strong>{current.matches.toLocaleString()}</strong><span>試合数</span></div><div><strong>{current.winRate}<small>%</small></strong><span>勝率</span></div><div><strong>{current.role.replace("型","")}</strong><span>得意ロール</span></div></div>
-              <div className="timeChip"><span>◷</span><div><small>開始予定・希望条件</small><strong>{formatStart(current.startAt)} ・ {current.desiredPokemon!=="すべて"?current.desiredPokemon:"ポケモン指定なし"}</strong></div></div>{current.note&&<p className="profileNote"><strong>ひとこと</strong>“{current.note}”</p>}
+              <div className="identityLine"><UserAvatar name={current.trainerName} src={current.avatarUrl} className="mateAvatar"/><div><h1>{current.trainerName}</h1><p className="rankText">{current.highestRate} ・ {current.gender}</p></div><span>登録済み</span></div>
+              <div className="pairingLine"><div><small>あなた</small><span>{primaryPokemon}</span></div><b>×</b><div><small>相手</small><span>{currentPokemon}</span></div></div>
+              <div className="profilePokemonList"><small>使うポケモン</small><div>{current.mainPokemon.map(name=><span key={name}>{name}</span>)}</div></div>
+              <div className="timeChip"><span>◷</span><div><small>遊べる時間帯</small><strong>{current.playTime.join("・")}</strong></div></div>
             </div>
           </article>
-          <div className="choiceArea"><button className="passButton" onClick={()=>moveNext("left")}><span>×</span><small>スキップ</small></button><button className="likeButton" onClick={()=>moveNext("right")}><span>⚡</span><small>一緒に遊びたい</small></button></div>
-        </>:<div className="stateCard emptyState"><div className="emptyOrb">Y</div><h2>新しいメイトを待っています</h2><p>今は条件に合う募集がありません。あなたの募集から始めてみませんか？</p><button onClick={()=>setCompose(true)}>募集を作る</button></div>}
+          <div className="choiceArea"><button className="passButton" onClick={()=>moveNext("left")}><span>×</span><small>次の人</small></button><button className="likeButton" onClick={()=>moveNext("right")}><span>⚡</span><small>メイト申請</small></button></div>
+        </>:<div className="stateCard emptyState"><div className="emptyOrb">Y</div><h2>新しいメイトを待っています</h2><p>条件に合う登録者はまだいません。時間を決めて今すぐ遊ぶなら募集を使えます。</p><button onClick={()=>setCompose(true)}>今遊ぶ人を募集</button></div>}
       </section>}
 
       {tab==="recruit"&&<section className="panelView recruitView">
@@ -399,13 +410,15 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
     {!heartCount&&!pendingCount&&!outgoing.some(n=>n.status==="accepted")&&<div className="noticeEmpty">新しい通知はありません</div>}
   </div></section></div>}
 
-  {filterOpen&&<div className="modalBackdrop"><button className="backdropDismiss" onClick={()=>setFilterOpen(false)} aria-label="絞り込みを閉じる"/><section className="sheetModal"><div className="sheetHandle"/><button className="closeButton" onClick={()=>setFilterOpen(false)}>×</button><small className="modalKicker">SEARCH FILTER</small><h2>希望のメイト</h2><label>使ってほしいポケモン<select value={wanted} onChange={e=>{setWanted(e.target.value);setIndex(0)}}><option>すべて</option>{pokemon.map(name=><option key={name}>{name}</option>)}</select></label><div className="twoFields"><label>最低勝率<select value={minRate} onChange={e=>{setMinRate(Number(e.target.value));setIndex(0)}}><option value="0">指定なし</option><option value="50">50%以上</option><option value="55">55%以上</option><option value="60">60%以上</option></select></label><label>最低試合数<select value={minMatches} onChange={e=>{setMinMatches(Number(e.target.value));setIndex(0)}}><option value="0">指定なし</option><option value="500">500試合〜</option><option value="1000">1,000試合〜</option><option value="1500">1,500試合〜</option></select></label></div><label className="toggleRow"><input type="checkbox" checked={womenOnly} onChange={e=>{setWomenOnly(e.target.checked);setIndex(0)}}/><span>女性プレイヤーのみ</span></label><button className="primaryButton" onClick={()=>setFilterOpen(false)}>この条件で探す</button></section></div>}
+  {filterOpen&&<div className="modalBackdrop"><button className="backdropDismiss" onClick={()=>setFilterOpen(false)} aria-label="絞り込みを閉じる"/><section className="sheetModal"><div className="sheetHandle"/><button className="closeButton" onClick={()=>setFilterOpen(false)}>×</button><small className="modalKicker">SEARCH FILTER</small><h2>希望のメイト</h2><label>使ってほしいポケモン<select value={wanted} onChange={e=>{setWanted(e.target.value);setIndex(0)}}><option>すべて</option>{pokemon.map(name=><option key={name}>{name}</option>)}</select></label><label className="toggleRow"><input type="checkbox" checked={sharedTimeOnly} onChange={e=>{setSharedTimeOnly(e.target.checked);setIndex(0)}}/><span>自分と遊べる時間帯が合う人だけ</span></label><label className="toggleRow"><input type="checkbox" checked={womenOnly} onChange={e=>{setWomenOnly(e.target.checked);setIndex(0)}}/><span>女性プレイヤーのみ</span></label><button className="primaryButton" onClick={()=>setFilterOpen(false)}>この条件で探す</button></section></div>}
 
   {compose&&<div className="modalBackdrop"><form className="sheetModal formSheet" onSubmit={submitRecruit}><button type="button" className="closeButton" onClick={()=>setCompose(false)}>×</button><small className="modalKicker">CREATE RECRUIT</small><h2>メイトを募集</h2><div className="twoFields"><label>使用ポケモン<select name="pokemon" defaultValue={primaryPokemon}>{profile.mainPokemon.map(name=><option key={name}>{name}</option>)}</select></label><label>型<select name="role"><option>アタック型</option><option>バランス型</option><option>スピード型</option><option>ディフェンス型</option><option>サポート型</option></select></label></div><div className="threeFields"><label>開始<select name="startsIn" defaultValue="0"><option value="0">今から</option><option value="30">30分後</option><option value="60">1時間後</option><option value="120">2時間後</option></select></label><label>募集時間<select name="duration" defaultValue="2"><option value="1">1時間</option><option value="2">2時間</option><option value="3">3時間</option></select></label><label>人数<select name="partySize" defaultValue="2"><option value="2">デュオ</option><option value="3">トリオ</option><option value="5">フルパ</option></select></label></div><div className="twoFields"><label>希望ポケモン<select name="desiredPokemon" defaultValue="すべて"><option>すべて</option>{pokemon.map(name=><option key={name}>{name}</option>)}</select></label><label>希望ロール<select name="desiredRole"><option>指定なし</option><option>アタック型</option><option>バランス型</option><option>スピード型</option><option>ディフェンス型</option><option>サポート型</option></select></label></div><div className="twoFields"><label>試合数<input name="matches" type="number" min="0" max="99999" defaultValue="1000" required/></label><label>勝率<input name="winRate" type="number" min="0" max="100" step="0.1" defaultValue="50" required/></label></div><label>ひとこと <small>任意</small><textarea name="note" maxLength={180} placeholder="未入力でも募集できます"/></label><p className="privacyText">期限が来るか満員になると自動で受付を終了します。連絡先は承認した相手にだけ表示されます。</p><button className="primaryButton" disabled={sending}>{sending?"公開中…":"募集を公開する"}</button></form></div>}
 
   {recruitShare&&<div className="modalBackdrop"><section className="recruitShareModal"><button className="closeButton" onClick={()=>setRecruitShare(null)}>×</button><small className="modalKicker">SHARE RECRUIT</small><h2>募集を広めよう</h2><div className={`recruitSharePreview ${roleClass[recruitShare.role]||"support"}`}><div className="sharePokemon"><PokemonImage name={recruitShare.pokemon}/></div><div><small>POKÉMON UNITE</small><strong>{recruitShare.pokemon}で募集中</strong><span>{recruitShare.rank} ・ 勝率{recruitShare.winRate}%</span><p>{recruitShare.playTime}</p></div></div><div className="socialShareGrid"><button className="shareX" onClick={()=>shareRecruitToX(recruitShare)}><b>𝕏</b><span>Xに投稿</span></button><button className="shareDiscord" onClick={()=>shareRecruitToDiscord(recruitShare)}><b>D</b><span>Discord</span></button><button className="shareLine" onClick={()=>shareRecruitToLine(recruitShare)}><b>LINE</b><span>LINE・オプチャ</span></button></div><button className="nativeShareButton" onClick={()=>shareRecruitNatively(recruitShare)}>共有メニューを開く / リンクをコピー</button><p className="shareHelp">Discordは募集文をコピーして開きます。LINEでオープンチャットが共有先に出ない場合は、コピーした文を貼り付けてください。</p></section></div>}
 
   {applyTo&&<div className="modalBackdrop"><form className="sheetModal formSheet" onSubmit={submitApplication}><button type="button" className="closeButton" onClick={()=>setApplyTo(null)}>×</button><div className={`applyPokemon ${roleClass[applyTo.role]||"support"}`}><PokemonImage name={applyTo.pokemon}/></div><small className="modalKicker">PLAY REQUEST</small><h2>{applyTo.trainerName}さんと<br/>一緒に遊ぶ</h2><label>使用ポケモン<select name="pokemon" defaultValue={primaryPokemon}>{profile.mainPokemon.map(name=><option key={name}>{name}</option>)}</select></label><label>メッセージ<textarea name="message" maxLength={180} defaultValue={`${applyTo.pokemon}と一緒にランクへ行きたいです！`} required/></label><p className="privacyText">申請時はトレーナー名だけを送り、連絡先は承認後に表示します。</p><button className="primaryButton" disabled={sending}>{sending?"送信中…":"プレイ申請を送る"}</button></form></div>}
+
+  {profileApplyTo&&<div className="modalBackdrop"><form className="sheetModal formSheet" onSubmit={submitProfileApplication}><button type="button" className="closeButton" onClick={()=>setProfileApplyTo(null)}>×</button><div className="applyPokemon profileMatchArtwork"><PokemonImage name={profileApplyTo.mainPokemon[0]||"メイト"}/></div><small className="modalKicker">MATE REQUEST</small><h2>{profileApplyTo.trainerName}さんに<br/>メイト申請</h2><label>自分が使うポケモン<select name="pokemon" defaultValue={primaryPokemon}>{profile.mainPokemon.map(name=><option key={name}>{name}</option>)}</select></label><label>メッセージ<textarea name="message" maxLength={180} defaultValue={`${profileApplyTo.mainPokemon[0]||"メインポケモン"}と相性のいいピックで一緒に遊びたいです！`} required/></label><p className="privacyText">時間を今決めなくても申請できます。承認後にチャットで相談してください。連絡先は承認後だけ表示されます。</p><button className="primaryButton" disabled={sending}>{sending?"送信中…":"メイト申請を送る"}</button></form></div>}
 
   {safetyTarget&&<div className="modalBackdrop"><form className="sheetModal safetySheet" onSubmit={submitSafety}><button type="button" className="closeButton" onClick={()=>setSafetyTarget(null)}>×</button><small className="modalKicker">SAFETY</small><h2>{safetyTarget.name}さんを報告</h2><p>内容は相手に通知されません。危険を感じた場合はブロックも利用してください。</p><label>通報理由<select name="reason" required defaultValue=""><option value="" disabled>選択してください</option><option>出会い目的</option><option>迷惑行為</option><option>暴言・嫌がらせ</option><option>なりすまし</option><option>不正なプロフィール</option><option>不適切なプロフィール画像</option><option>その他</option></select></label><label>詳細<textarea name="details" maxLength={500} placeholder="状況をできる範囲で教えてください"/></label><label className="toggleRow"><input type="checkbox" name="alsoBlock"/><span>通報と同時にブロックする</span></label><button className="dangerButton">この内容で通報</button><button type="button" className="blockButton" onClick={blockTarget}>通報せずブロックのみ</button></form></div>}
 
