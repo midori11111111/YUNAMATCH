@@ -272,7 +272,9 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
     if(!preview)fetch("/api/likes",{method:"PATCH"}).catch(()=>undefined);
   };
   const showLikedProfile=(senderId:string)=>{
-    setWanted("すべて");setWomenOnly(false);setSharedTimeOnly(false);setIndex(Math.max(0,profileCandidates.findIndex(person=>person.id===senderId)));setTab("discover");setNotificationOpen(false);
+    const senderIndex=profileCandidates.findIndex(person=>person.id===senderId);
+    if(senderIndex<0){notify("このプロフィールは現在表示できません");return}
+    setWanted("すべて");setWomenOnly(false);setSharedTimeOnly(false);setIndex(senderIndex);setTab("discover");setNotificationOpen(false);
   };
   const submitRecruit=async(event:FormEvent<HTMLFormElement>)=>{
     event.preventDefault();const body=Object.fromEntries(new FormData(event.currentTarget));
@@ -459,7 +461,7 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
 
   {matchedContact&&<div className="modalBackdrop"><section className="matchModal"><div className="matchBurst">⚡</div><small>MATCH!</small><h2>マッチ成立！</h2><p>チャットが開通しました。外部で合流するときだけ連絡先を使えます。</p><div className="contactBox">{matchedContact}</div><button className="primaryButton" onClick={()=>{navigator.clipboard?.writeText(matchedContact);notify("連絡先をコピーしました")}}>連絡先をコピー</button><button className="discordMatchButton" onClick={openDiscord}>🎧 DiscordのVCで合流</button><button className="textButton" onClick={()=>{setMatchedContact(null);setTab("chat")}}>チャットを見る</button></section></div>}
   {supportOpen&&<div className="modalBackdrop"><form className="sheetModal formSheet" onSubmit={submitSupport}><button type="button" className="closeButton" onClick={()=>setSupportOpen(false)}>×</button><small className="modalKicker">SUPPORT</small><h2>運営へお問い合わせ</h2><p className="supportSla">不具合・安全上の問題・アカウントの相談を送れます。原則24時間以内に運営が確認します。</p><label>お問い合わせの種類<select name="category" defaultValue="不具合"><option>アカウント・ログイン</option><option>募集・マッチ</option><option>安全・通報</option><option>不具合</option><option>その他</option></select></label><label>内容<textarea name="message" minLength={5} maxLength={1000} placeholder="困っていることをできるだけ具体的に入力してください" required/></label><button className="primaryButton" disabled={sending}>{sending?"送信中…":"運営へ送信"}</button></form></div>}
-  {deletionOpen&&<div className="modalBackdrop"><section className="sheetModal deleteAccountModal"><button type="button" className="closeButton" onClick={()=>{setDeletionOpen(false);setDeletionText("")}}>×</button><small className="modalKicker">DELETE ACCOUNT</small><h2>アカウントを削除</h2><p>プロフィール、募集、申請、マッチ、チャット、通報、連携情報とプロフィール画像を削除します。この操作は取り消せません。</p><label>確認のため「退会する」と入力<input value={deletionText} onChange={event=>setDeletionText(event.target.value)} autoComplete="off"/></label><button className="dangerButton" disabled={deletionText!=="退会する"||sending} onClick={deleteAccount}>{sending?"削除しています…":"完全に削除して退会"}</button></section></div>}
+  {deletionOpen&&<div className="modalBackdrop"><section className="sheetModal deleteAccountModal"><button type="button" className="closeButton" onClick={()=>{setDeletionOpen(false);setDeletionText("")}}>×</button><small className="modalKicker">DELETE ACCOUNT</small><h2>アカウントを削除</h2><p>プロフィール、いいね、募集、申請、マッチ、チャット、通報、連携情報とプロフィール画像を削除します。この操作は取り消せません。</p><label>確認のため「退会する」と入力<input value={deletionText} onChange={event=>setDeletionText(event.target.value)} autoComplete="off"/></label><button className="dangerButton" disabled={deletionText!=="退会する"||sending} onClick={deleteAccount}>{sending?"削除しています…":"完全に削除して退会"}</button></section></div>}
   {toast&&<div className="toast">✓ {toast}</div>}
   </main>;
 }
