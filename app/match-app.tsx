@@ -3456,33 +3456,6 @@ export default function MatchApp({
                         マッチしたメイトとのチャットです。承認待ちはまとめて確認できます。
                       </p>
                       <div className="chatList">
-                        {connections.map((connection) => (
-                          <button
-                            key={connection.id}
-                            className="chatListItem"
-                            onClick={() => openChat(connection)}
-                          >
-                            <UserAvatar
-                              name={connection.mateName}
-                              src={connection.mateAvatarUrl}
-                              className="chatMateAvatar"
-                            />
-                            <div>
-                              <strong>{connection.mateName}</strong>
-                              <p>{connection.latestMessage}</p>
-                              <small>{connection.matePokemon}</small>
-                            </div>
-                            {connection.unreadCount > 0 && (
-                              <span className="unreadBadge">
-                                {connection.unreadCount}
-                              </span>
-                            )}
-                            {connection.againByMate && (
-                              <span className="heartDot">♡</span>
-                            )}
-                            <b>›</b>
-                          </button>
-                        ))}
                         {pendingConversationCount > 0 && (
                           <section className="pendingConversationGroup">
                             <button
@@ -3555,6 +3528,33 @@ export default function MatchApp({
                             )}
                           </section>
                         )}
+                        {connections.map((connection) => (
+                          <button
+                            key={connection.id}
+                            className="chatListItem"
+                            onClick={() => openChat(connection)}
+                          >
+                            <UserAvatar
+                              name={connection.mateName}
+                              src={connection.mateAvatarUrl}
+                              className="chatMateAvatar"
+                            />
+                            <div>
+                              <strong>{connection.mateName}</strong>
+                              <p>{connection.latestMessage}</p>
+                              <small>{connection.matePokemon}</small>
+                            </div>
+                            {connection.unreadCount > 0 && (
+                              <span className="unreadBadge">
+                                {connection.unreadCount}
+                              </span>
+                            )}
+                            {connection.againByMate && (
+                              <span className="heartDot">♡</span>
+                            )}
+                            <b>›</b>
+                          </button>
+                        ))}
                       </div>
                     </>
                   ) : (

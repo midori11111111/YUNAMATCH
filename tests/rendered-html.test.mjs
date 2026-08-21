@@ -163,9 +163,9 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /承認待ちはまとめて確認できます/);
   assert.match(app, /pendingConversationGroup/);
   assert.ok(
-    app.indexOf("{connections.map") <
-      app.indexOf("{pendingConversationCount > 0"),
-    "既存チャットを承認待ちより先に表示する",
+    app.indexOf("{pendingConversationCount > 0") <
+      app.indexOf("{connections.map"),
+    "承認待ちのまとめをチャット一覧の先頭に表示する",
   );
   assert.match(app, /yunamatch-chat-tutorial-v1/);
   assert.match(app, /次のプレイまで/);
