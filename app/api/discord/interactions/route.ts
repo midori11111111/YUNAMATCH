@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { accountLinks, lobbies, lobbyMembers, profiles, recruits } from "../../../../db/schema";
 import { checkRateLimit } from "../../../../lib/rate-limit";
+import { normalizeRank } from "../../../../lib/ranks";
 
 const json=(data:unknown,status=200)=>Response.json(data,{status});
 const bytes=(hex:string)=>Uint8Array.from(hex.match(/.{2}/g)?.map(value=>parseInt(value,16))||[]);
@@ -26,7 +27,7 @@ export async function POST(request:Request){
   const rateLimit=await checkRateLimit(profile.userId,{action:"discord-recruit",limit:5,windowMs:60*60_000});if(!rateLimit.allowed)return json({type:4,data:{content:"短時間の募集回数が多すぎます。少し待ってからもう一度お試しください。",flags:64}});
   const options=Object.fromEntries((interaction.data?.options||[]).map(option=>[option.name,option.value]));
   const pokemon="未定";
-  const selectedRole=[options.lane,options.play_style].filter(value=>typeof value==="string"&&value).join("・"),role=selectedRole||String(options.role||"指定なし"),currentRank=String(options.current_rank||"").trim(),partyChoice=String(options.party_size||"up_to_3"),partySize=partyChoice==="up_to_3"?3:Number(partyChoice),partyLabel=partyChoice==="up_to_3"?"3人以下":`${partySize}人`,startsIn=Number(options.starts_in||0),duration=Number(options.duration||2),matches=Number(options.matches||0),winRate=Number(options.win_rate||50);
+  const selectedRole=[options.lane,options.play_style].filter(value=>typeof value==="string"&&value).join("・"),role=selectedRole||String(options.role||"指定なし"),currentRank=normalizeRank(String(options.current_rank||"").trim()),partyChoice=String(options.party_size||"up_to_3"),partySize=partyChoice==="up_to_3"?3:Number(partyChoice),partyLabel=partyChoice==="up_to_3"?"3人以下":`${partySize}人`,startsIn=Number(options.starts_in||0),duration=Number(options.duration||2),matches=Number(options.matches||0),winRate=Number(options.win_rate||50);
   if(!currentRank||![2,3,5].includes(partySize)||!["up_to_3","2","3","5"].includes(partyChoice)||![0,30,60,120].includes(startsIn)||![1,2,3].includes(duration))return json({type:4,data:{content:"募集条件を確認してください。",flags:64}});
   const now=new Date(),startAt=new Date(now.getTime()+startsIn*60_000),expiresAt=new Date(startAt.getTime()+duration*3_600_000);let playTime="";try{playTime=(JSON.parse(profile.playTime) as string[]).join("・")}catch{playTime=profile.playTime}
   await db.update(recruits).set({status:"closed"}).where(and(eq(recruits.ownerId,profile.userId),eq(recruits.status,"open")));

@@ -13,6 +13,7 @@ import {
   useState,
 } from "react";
 import { pokemonArtUrl } from "../lib/pokemon-art";
+import { rankOptions } from "../lib/ranks";
 
 type Recruit = {
   id: number;
@@ -229,15 +230,6 @@ const pokemon = [
   "ルカリオ",
   "ワタシラガ",
 ];
-const rateOptions = [
-  "エキスパート未満",
-  "エキスパート",
-  "マスター 1200〜1399",
-  "マスター 1400〜1599",
-  "マスター 1600〜1799",
-  "マスター 1800〜1999",
-  "マスター 2000〜",
-];
 const playTimeOptions = [
   "平日 朝（6〜12時）",
   "平日 昼（12〜18時）",
@@ -296,7 +288,7 @@ const previewRecruit: Recruit = {
   role: "サポート型",
   matches: 1842,
   winRate: 58.7,
-  rank: "マスター 1600〜",
+  rank: "レジェンド 1000〜",
   playTime: "平日 夜（18〜22時）",
   note: "中央キャリーを支えるのが好きです。楽しく連携しながら勝ちたい！",
   startAt: new Date().toISOString(),
@@ -311,7 +303,7 @@ const previewProfile: ProfileCandidate = {
   id: "preview-momo",
   trainerName: "momo",
   mainPokemon: ["ハピナス", "キュワワー"],
-  highestRate: "マスター 1600〜1799",
+  highestRate: "レジェンド 1000〜1199",
   playTime: ["平日 夜（18〜22時）", "土日 夜・深夜"],
   gender: "女性",
   avatarUrl: "",
@@ -3291,7 +3283,7 @@ export default function MatchApp({
                       setProfile({ ...profile, highestRate: e.target.value })
                     }
                   >
-                    {rateOptions.map((rate) => (
+                    {rankOptions.map((rate) => (
                       <option key={rate}>{rate}</option>
                     ))}
                   </select>
@@ -3631,7 +3623,7 @@ export default function MatchApp({
                   setProfile({ ...profile, highestRate: event.target.value })
                 }
               >
-                {rateOptions.map((rate) => (
+                {rankOptions.map((rate) => (
                   <option key={rate}>{rate}</option>
                 ))}
               </select>

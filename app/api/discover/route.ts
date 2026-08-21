@@ -18,6 +18,7 @@ import {
 } from "../../../lib/content-policy";
 import { sendPush } from "../../../lib/push";
 import { profilePublicId } from "../../../lib/profile-id";
+import { normalizeRank } from "../../../lib/ranks";
 
 function parseList(value: string) {
   try {
@@ -114,7 +115,7 @@ export async function GET() {
         id: await profilePublicId(row.userId),
         trainerName: `${row.trainerName.slice(0, 1) || "メ"}••`,
         mainPokemon: parseList(row.mainPokemon).slice(0, 5),
-        highestRate: row.highestRate,
+        highestRate: normalizeRank(row.highestRate),
         playTime: parseList(row.playTime).slice(0, 7),
         gender: row.gender,
         avatarUrl: "",
@@ -212,7 +213,7 @@ export async function GET() {
       id: await profilePublicId(row.userId),
       trainerName: row.trainerName,
       mainPokemon: parseList(row.mainPokemon).slice(0, 5),
-      highestRate: row.highestRate,
+      highestRate: normalizeRank(row.highestRate),
       playTime: parseList(row.playTime).slice(0, 7),
       gender: row.gender,
       avatarUrl: row.avatarUrl || "",
@@ -351,7 +352,7 @@ export async function POST(request: Request) {
       role: "プロフィール",
       matches: 0,
       winRate: 0,
-      rank: target.highestRate,
+      rank: normalizeRank(target.highestRate),
       playTime: parseList(target.playTime).join("・"),
       note: "",
       contact: "",

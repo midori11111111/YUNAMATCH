@@ -70,6 +70,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     loginButton,
     ratingsApi,
     ratingsMigration,
+    ranks,
+    legendRankMigration,
   ] = await Promise.all([
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/match-app.tsx", root), "utf8"),
@@ -108,6 +110,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     readFile(new URL("vercel-proxy/app/login/login-button.tsx", root), "utf8"),
     readFile(new URL("app/api/ratings/route.ts", root), "utf8"),
     readFile(new URL("drizzle/0016_black_stick.sql", root), "utf8"),
+    readFile(new URL("lib/ranks.ts", root), "utf8"),
+    readFile(new URL("drizzle/0017_legend_rank.sql", root), "utf8"),
   ]);
   assert.match(page, /getChatGPTUser/);
   assert.match(page, /initialProfile/);
@@ -255,4 +259,10 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(ratingsMigration, /CREATE TABLE `connection_ratings`/);
   assert.match(ratingsMigration, /idx_connection_ratings_rated_user/);
   assert.match(ratingsMigration, /PRAGMA optimize/);
+  assert.match(ranks, /レジェンド 1000〜1199/);
+  assert.match(ranks, /マスター 1600〜1799.*レジェンド 1000〜1199/s);
+  assert.doesNotMatch(app, /マスター 1600〜1799/);
+  assert.match(legendRankMigration, /UPDATE `profiles`/);
+  assert.match(legendRankMigration, /UPDATE `recruits`/);
+  assert.match(legendRankMigration, /レジェンド 1400〜/);
 });

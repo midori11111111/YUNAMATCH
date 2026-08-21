@@ -120,6 +120,13 @@
       "when": 1787340497164,
       "tag": "0016_black_stick",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1787341294078,
+      "tag": "0017_legend_rank",
+      "breakpoints": true
     }
   ]
 }

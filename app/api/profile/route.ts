@@ -5,17 +5,9 @@ import { profiles } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { checkRateLimit, rateLimitResponse } from "../../../lib/rate-limit";
 import { containsProhibitedContent, prohibitedContentMessage } from "../../../lib/content-policy";
+import { normalizeRank, rankOptionSet } from "../../../lib/ranks";
 
 const genders = new Set(["男性", "女性"]);
-const rates = new Set([
-  "エキスパート未満",
-  "エキスパート",
-  "マスター 1200〜1399",
-  "マスター 1400〜1599",
-  "マスター 1600〜1799",
-  "マスター 1800〜1999",
-  "マスター 2000〜",
-]);
 const playTimes = new Set([
   "平日 朝（6〜12時）",
   "平日 昼（12〜18時）",
@@ -39,7 +31,7 @@ function publicProfile(row:typeof profiles.$inferSelect){
   let playTime:string[]=[];
   try{const parsed=JSON.parse(row.mainPokemon);if(Array.isArray(parsed))mainPokemon=parsed.filter(value=>typeof value==="string").slice(0,5)}catch{if(row.mainPokemon)mainPokemon=[row.mainPokemon]}
   try{const parsed=JSON.parse(row.playTime);if(Array.isArray(parsed))playTime=parsed.filter(value=>typeof value==="string"&&playTimes.has(value)).slice(0,7)}catch{if(playTimes.has(row.playTime))playTime=[row.playTime]}
-  return {trainerName:row.trainerName,mainPokemon,highestRate:row.highestRate,playTime,gender:row.gender,contact:row.contact,avatarUrl:row.avatarUrl,ageConfirmed:row.ageConfirmed,termsAccepted:Boolean(row.termsAcceptedAt)};
+  return {trainerName:row.trainerName,mainPokemon,highestRate:normalizeRank(row.highestRate),playTime,gender:row.gender,contact:row.contact,avatarUrl:row.avatarUrl,ageConfirmed:row.ageConfirmed,termsAccepted:Boolean(row.termsAcceptedAt)};
 }
 
 export async function GET(){
@@ -59,7 +51,7 @@ export async function PUT(request:Request){
   const body=await request.json() as Record<string,unknown>;
   const trainerName=typeof body.trainerName==="string"?body.trainerName.trim():"";
   const mainPokemon=Array.isArray(body.mainPokemon)?[...new Set(body.mainPokemon.filter((value):value is string=>typeof value==="string"&&Boolean(value.trim())).map(value=>value.trim()))].slice(0,5):[];
-  const highestRate=typeof body.highestRate==="string"?body.highestRate:"";
+  const highestRate=typeof body.highestRate==="string"?normalizeRank(body.highestRate):"";
   const playTime=Array.isArray(body.playTime)?[...new Set(body.playTime.filter((value):value is string=>typeof value==="string"&&playTimes.has(value)))].slice(0,7):typeof body.playTime==="string"&&playTimes.has(body.playTime)?[body.playTime]:[];
   const gender=typeof body.gender==="string"?body.gender:"";
   const contact=typeof body.contact==="string"?body.contact.trim().replace(/\s+/g," "):"";
@@ -68,7 +60,7 @@ export async function PUT(request:Request){
   const ageConfirmed=body.ageConfirmed===true;
   const termsAccepted=body.termsAccepted===true;
   if(containsProhibitedContent(trainerName))return Response.json({error:prohibitedContentMessage},{status:400});
-  if(!trainerName||trainerName.length>24||mainPokemon.length===0||!rates.has(highestRate)||playTime.length===0||!genders.has(gender)||contact.length>120||!validAvatar||!ageConfirmed||!termsAccepted)return Response.json({error:"入力内容と利用条件への同意を確認してください"},{status:400});
+  if(!trainerName||trainerName.length>24||mainPokemon.length===0||!rankOptionSet.has(highestRate)||playTime.length===0||!genders.has(gender)||contact.length>120||!validAvatar||!ageConfirmed||!termsAccepted)return Response.json({error:"入力内容と利用条件への同意を確認してください"},{status:400});
   const now=new Date();
   const values={userId:user.userId,trainerName,mainPokemon:JSON.stringify(mainPokemon),highestRate,playTime:JSON.stringify(playTime),gender,contact,avatarUrl,ageConfirmed,termsAcceptedAt:now,authProvider:user.provider,createdAt:now,updatedAt:now};
   const db=getDb();
