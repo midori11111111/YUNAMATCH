@@ -377,8 +377,8 @@ export async function POST(request: Request) {
     });
   await sendPush(
     target.userId,
-    "メイト申請が届きました",
-    `${applicant.trainerName}さんがプロフィールから一緒に遊びたいと送っています`,
+    "👋 手を振っています",
+    `${applicant.trainerName}さんが一緒に遊びたいと送っています`,
     "/",
   );
   return Response.json({ ok: true }, { status: 201 });

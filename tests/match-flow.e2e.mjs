@@ -89,6 +89,10 @@ try {
   await api("/api/applications", { user: applicant, method: "POST", body: { recruitId: created.recruit.id, pokemon: "ハピナス", message: "参加します" } });
   const notices = await api("/api/applications", { user: owner });
   assert.equal(notices.incoming.length, 1);
+  assert.equal(notices.incoming[0].message, "参加します");
+  const pendingOutgoing = await api("/api/applications", { user: applicant });
+  assert.equal(pendingOutgoing.outgoing[0].status, "pending");
+  assert.equal(pendingOutgoing.outgoing[0].message, "参加します");
   const accepted = await api("/api/applications", { user: owner, method: "PATCH", body: { applicationId: notices.incoming[0].id, action: "accept" } });
   assert.ok(accepted.lobbyId);
   assert.equal(accepted.applicantContact, null);
@@ -97,9 +101,14 @@ try {
   let applicantConnections = await api("/api/connections", { user: applicant });
   assert.equal(ownerConnections.connections.length, 1);
   assert.equal(applicantConnections.connections.length, 1);
+  assert.equal(ownerConnections.connections[0].latestMessage, "👋 参加します");
+  assert.equal(applicantConnections.connections[0].latestMessage, "👋 参加します");
   assert.equal(ownerConnections.connections[0].mateContact, null);
   assert.equal(applicantConnections.connections[0].mateContact, null);
   const connectionId = ownerConnections.connections[0].id;
+  const greetingThread = await api(`/api/messages?connectionId=${connectionId}`, { user: owner });
+  assert.equal(greetingThread.messages[0].body, "👋 参加します");
+  assert.equal(greetingThread.messages[0].sender, "mate");
 
   await api("/api/connections", { user: owner, method: "PATCH", body: { connectionId, action: "share_contact" } });
   applicantConnections = await api("/api/connections", { user: applicant });

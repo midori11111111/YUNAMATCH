@@ -67,6 +67,11 @@ type Notice = {
   status: string;
   recruitPokemon?: string;
   ownerContact?: string | null;
+  createdAt?: string;
+};
+type PendingConversation = {
+  notice: Notice;
+  direction: "incoming" | "outgoing";
 };
 export type Profile = {
   trainerName: string;
@@ -600,6 +605,8 @@ export default function MatchApp({
   const [lobbies, setLobbies] = useState<Lobby[]>([]);
   const [selectedConnection, setSelectedConnection] =
     useState<Connection | null>(null);
+  const [selectedPending, setSelectedPending] =
+    useState<PendingConversation | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [messageText, setMessageText] = useState("");
   const [messageSending, setMessageSending] = useState(false);
@@ -1011,6 +1018,16 @@ export default function MatchApp({
   }, [preview, guestMode, selectedConnection, loadLikes]);
 
   useEffect(() => {
+    if (!selectedPending) return;
+    const notices =
+      selectedPending.direction === "incoming" ? incoming : outgoing;
+    const current = notices.find(
+      (notice) => notice.id === selectedPending.notice.id,
+    );
+    if (!current || current.status !== "pending") setSelectedPending(null);
+  }, [incoming, outgoing, selectedPending]);
+
+  useEffect(() => {
     if (preview || guestMode || !profileReady || onboardingOpen || selectedConnection)
       return;
     const heartbeat = () => {
@@ -1332,9 +1349,9 @@ export default function MatchApp({
       return;
     }
     setApplyTo(null);
-    notify("プレイ申請を送りました");
+    notify("👋 手を振りました。承認前からやりとりで確認できます");
     setIndex((v) => v + 1);
-    loadNotices();
+    await loadNotices();
   };
   const submitProfileApplication = async (
     event: FormEvent<HTMLFormElement>,
@@ -1366,7 +1383,7 @@ export default function MatchApp({
       return;
     }
     setProfileApplyTo(null);
-    notify("メイト申請を送りました");
+    notify("👋 手を振りました。承認前からやりとりで確認できます");
     setIndex((value) => value + 1);
     await Promise.all([loadDiscover(), loadNotices()]);
   };
@@ -1719,6 +1736,8 @@ export default function MatchApp({
         connectionId: data.connectionId,
         mateContact: data.applicantContact || null,
       });
+    if (selectedPending?.notice.id === applicationId)
+      setSelectedPending(null);
     notify(
       action === "accept"
         ? "マッチ成立！チャットが開通しました"
@@ -1732,10 +1751,21 @@ export default function MatchApp({
     ]);
   };
   const openChat = async (connection: Connection) => {
+    setSelectedPending(null);
     setSelectedConnection(connection);
     setTab("chat");
     setNotificationOpen(false);
     await loadMessages(connection);
+  };
+  const openPendingConversation = (
+    notice: Notice,
+    direction: "incoming" | "outgoing",
+  ) => {
+    setSelectedConnection(null);
+    setMessages([]);
+    setSelectedPending({ notice, direction });
+    setTab("chat");
+    setNotificationOpen(false);
   };
   const sendMessage = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -2746,7 +2776,86 @@ export default function MatchApp({
 
           {tab === "chat" && (
             <section className="panelView chatView">
-              {selectedConnection ? (
+              {selectedPending ? (
+                <>
+                  <div className="chatHeader pendingChatHeader">
+                    <button
+                      onClick={() => setSelectedPending(null)}
+                      aria-label="やりとり一覧へ戻る"
+                    >
+                      ←
+                    </button>
+                    <UserAvatar
+                      name={
+                        selectedPending.direction === "incoming"
+                          ? selectedPending.notice.applicantName || "メイト"
+                          : selectedPending.notice.trainerName || "メイト"
+                      }
+                      className="chatMateAvatar"
+                    />
+                    <div>
+                      <h1>
+                        {selectedPending.direction === "incoming"
+                          ? selectedPending.notice.applicantName || "メイト"
+                          : selectedPending.notice.trainerName || "メイト"}
+                      </h1>
+                      <p>承認前のあいさつ</p>
+                    </div>
+                    <span />
+                  </div>
+                  <div className="pendingChatNotice">
+                    {selectedPending.direction === "incoming"
+                      ? "申請を承認すると、自由にメッセージを送れます"
+                      : "相手が承認すると、自由にメッセージを送れます"}
+                  </div>
+                  <div className="messageThread">
+                    <div
+                      className={`messageBubble ${
+                        selectedPending.direction === "outgoing" ? "me" : "mate"
+                      }`}
+                    >
+                      <p>
+                        👋 {selectedPending.notice.message || "一緒に遊びたいです！"}
+                      </p>
+                      <small>
+                        {selectedPending.notice.createdAt
+                          ? new Date(
+                              selectedPending.notice.createdAt,
+                            ).toLocaleString("ja-JP", {
+                              month: "numeric",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "申請を送信済み"}
+                      </small>
+                    </div>
+                  </div>
+                  {selectedPending.direction === "incoming" ? (
+                    <div className="pendingChatActions">
+                      <button
+                        onClick={() =>
+                          decide(selectedPending.notice.id, "decline")
+                        }
+                      >
+                        見送る
+                      </button>
+                      <button
+                        onClick={() =>
+                          decide(selectedPending.notice.id, "accept")
+                        }
+                      >
+                        承認してチャット
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="pendingChatWaiting">
+                      <span>◷</span>
+                      相手の承認を待っています
+                    </div>
+                  )}
+                </>
+              ) : selectedConnection ? (
                 <>
                   <div className="chatHeader">
                     <button
@@ -2955,12 +3064,60 @@ export default function MatchApp({
                       </button>
                     </div>
                   </div>
-                  {connections.length ? (
+                  {connections.length ||
+                  incoming.some((notice) => notice.status === "pending") ||
+                  outgoing.some((notice) => notice.status === "pending") ? (
                     <>
                       <p className="chatOverviewLead">
-                        マッチしたメイトと、プレイ時間や編成を相談できます。
+                        承認前のあいさつと、マッチしたメイトとのチャットです。
                       </p>
                       <div className="chatList">
+                        {incoming
+                          .filter((notice) => notice.status === "pending")
+                          .map((notice) => (
+                            <button
+                              key={`pending-incoming-${notice.id}`}
+                              className="chatListItem pending"
+                              onClick={() =>
+                                openPendingConversation(notice, "incoming")
+                              }
+                            >
+                              <UserAvatar
+                                name={notice.applicantName || "メイト"}
+                                className="chatMateAvatar"
+                              />
+                              <div>
+                                <strong>{notice.applicantName}</strong>
+                                <p>👋 あなたに手を振っています</p>
+                                <small>承認前・タップして確認</small>
+                              </div>
+                              <span className="unreadBadge">1</span>
+                              <b>›</b>
+                            </button>
+                          ))}
+                        {outgoing
+                          .filter((notice) => notice.status === "pending")
+                          .map((notice) => (
+                            <button
+                              key={`pending-outgoing-${notice.id}`}
+                              className="chatListItem pending outgoing"
+                              onClick={() =>
+                                openPendingConversation(notice, "outgoing")
+                              }
+                            >
+                              <UserAvatar
+                                name={notice.trainerName || "メイト"}
+                                className="chatMateAvatar"
+                              />
+                              <div>
+                                <strong>{notice.trainerName}</strong>
+                                <p>👋 手を振りました</p>
+                                <small>承認待ち</small>
+                              </div>
+                              <span className="pendingBadge">待ち</span>
+                              <b>›</b>
+                            </button>
+                          ))}
                         {connections.map((connection) => (
                           <button
                             key={connection.id}

@@ -185,8 +185,13 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(profileApi, /contactFor/);
   assert.match(profileApi, /!genders\.has\(gender\)/);
   assert.match(applicationsApi, /プロフィールの未入力項目/);
+  assert.match(applicationsApi, /match-wave-/);
+  assert.match(applicationsApi, /body:`👋 \$\{row\.applicationMessage\}`/);
+  assert.match(app, /承認前のあいさつ/);
+  assert.match(app, /あなたに手を振っています/);
+  assert.match(app, /相手の承認を待っています/);
   assert.match(discoverApi, /kind:\s*"profile"/);
-  assert.match(discoverApi, /プロフィールから一緒に遊びたい/);
+  assert.match(discoverApi, /👋 手を振っています/);
   assert.match(discoverApi, /me\.gender\s*===\s*"男性"/);
   assert.match(discoverApi, /b\.gender\s*===\s*"女性"/);
   assert.match(discoverApi, /activeCutoff/);
