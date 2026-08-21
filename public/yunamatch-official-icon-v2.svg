@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="violet" x1="280" y1="230" x2="650" y2="720" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5D4DFF"/>
+      <stop offset="0.52" stop-color="#8D59F3"/>
+      <stop offset="1" stop-color="#C26FDD"/>
+    </linearGradient>
+    <linearGradient id="pink" x1="425" y1="330" x2="770" y2="790" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF4D99"/>
+      <stop offset="0.52" stop-color="#FF718B"/>
+      <stop offset="1" stop-color="#FFB15C"/>
+    </linearGradient>
+    <linearGradient id="overlap" x1="430" y1="400" x2="635" y2="655" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B45CE4"/>
+      <stop offset="1" stop-color="#EE609F"/>
+    </linearGradient>
+    <filter id="shadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="28" stdDeviation="28" flood-color="#5B3AC0" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" rx="250" fill="#FCFBFF"/>
+
+  <g filter="url(#shadow)">
+    <rect x="276" y="220" width="350" height="500" rx="175" fill="url(#violet)" transform="rotate(-27 451 470)"/>
+    <rect x="410" y="310" width="350" height="500" rx="175" fill="url(#pink)" transform="rotate(27 585 560)"/>
+    <path d="M430 382C476 354 532 354 579 377C628 401 660 446 668 497C675 546 656 596 619 629C580 664 526 677 477 662C427 647 386 611 368 563C350 516 357 463 387 422C399 405 413 392 430 382Z" fill="url(#overlap)" opacity="0.9"/>
+  </g>
+
+  <path d="M548 350L432 530H515L469 690L600 481H520L548 350Z" fill="white"/>
+</svg>
