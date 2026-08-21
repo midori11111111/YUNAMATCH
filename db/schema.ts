@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   index,
   integer,
@@ -190,6 +191,9 @@ export const messages = sqliteTable(
     senderId: text("sender_id").notNull(),
     clientId: text("client_id"),
     body: text("body").notNull(),
+    kind: text("kind").notNull().default("text"),
+    response: text("response"),
+    respondedAt: integer("responded_at", { mode: "timestamp_ms" }),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   },
   (table) => [
@@ -201,6 +205,9 @@ export const messages = sqliteTable(
       table.senderId,
       table.clientId,
     ),
+    uniqueIndex("idx_messages_pending_play_invite")
+      .on(table.connectionId)
+      .where(sql`${table.kind} = 'play_invite' and ${table.response} is null`),
   ],
 );
 

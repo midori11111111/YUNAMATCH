@@ -110,6 +110,9 @@ type ChatMessage = {
   id: number;
   body: string;
   sender: "me" | "mate";
+  kind?: "text" | "play_invite";
+  response?: "accepted" | "declined" | null;
+  canRespond?: boolean;
   createdAt: string;
   read?: boolean;
 };
@@ -612,6 +615,10 @@ export default function MatchApp({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [messageText, setMessageText] = useState("");
   const [messageSending, setMessageSending] = useState(false);
+  const [playInviteSending, setPlayInviteSending] = useState(false);
+  const [respondingInviteId, setRespondingInviteId] = useState<number | null>(
+    null,
+  );
   const messageSendingRef = useRef(false);
   const [requestMessage, setRequestMessage] = useState("");
   const [ratingTarget, setRatingTarget] = useState<Connection | null>(null);
@@ -1833,6 +1840,90 @@ export default function MatchApp({
       setMessageSending(false);
     }
   };
+  const sendPlayInvite = async () => {
+    const connectionId = selectedConnection?.id;
+    if (!connectionId || playInviteSending) return;
+    const clientId =
+      typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `play-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    if (preview) {
+      setMessages((rows) => [
+        ...rows,
+        {
+          id: -Date.now(),
+          body: "一緒にプレイしませんか？",
+          sender: "me",
+          kind: "play_invite",
+          response: null,
+          canRespond: false,
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+      notify("プレイのお誘いを送りました");
+      return;
+    }
+    setPlayInviteSending(true);
+    try {
+      const response = await fetch("/api/messages", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          connectionId,
+          kind: "play_invite",
+          clientId,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        notify(data.error || "プレイのお誘いを送れませんでした");
+        return;
+      }
+      setMessages((rows) =>
+        rows.some((message) => message.id === data.message.id)
+          ? rows
+          : [...rows, data.message],
+      );
+      notify("プレイのお誘いを送りました");
+    } catch {
+      notify("通信が不安定です。もう一度お試しください");
+    } finally {
+      setPlayInviteSending(false);
+    }
+  };
+  const respondPlayInvite = async (
+    messageId: number,
+    responseValue: "accepted" | "declined",
+  ) => {
+    if (respondingInviteId) return;
+    setRespondingInviteId(messageId);
+    try {
+      const response = await fetch("/api/messages", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ messageId, response: responseValue }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        notify(data.error || "回答を送れませんでした");
+        return;
+      }
+      setMessages((rows) =>
+        rows.map((message) =>
+          message.id === messageId ? data.message : message,
+        ),
+      );
+      notify(
+        responseValue === "accepted"
+          ? "一緒にプレイすることになりました！"
+          : "今回は見送りました",
+      );
+    } catch {
+      notify("通信が不安定です。もう一度お試しください");
+    } finally {
+      setRespondingInviteId(null);
+    }
+  };
   const toggleAgain = async (connection: Connection) => {
     const response = await fetch("/api/connections", {
       method: "PATCH",
@@ -2923,6 +3014,14 @@ export default function MatchApp({
                       </p>
                     </div>
                     <button
+                      className="chatPlayInvite"
+                      onClick={sendPlayInvite}
+                      disabled={playInviteSending}
+                    >
+                      <span>🎮</span>
+                      {playInviteSending ? "送信中" : "一緒にプレイ"}
+                    </button>
+                    <button
                       className="chatSafety"
                       onClick={() => setChatActionsOpen(true)}
                       aria-label="チャットのメニューを開く"
@@ -2938,28 +3037,90 @@ export default function MatchApp({
                   )}
                   <div className="messageThread">
                     {messages.length ? (
-                      messages.map((message) => (
-                        <div
-                          key={message.id}
-                          className={`messageBubble ${message.sender}`}
-                        >
-                          <p>{message.body}</p>
-                          <small>
-                            {new Date(message.createdAt).toLocaleString(
-                              "ja-JP",
-                              {
-                                month: "numeric",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              },
+                      messages.map((message) =>
+                        message.kind === "play_invite" ? (
+                          <div
+                            key={message.id}
+                            className={`playInviteMessage ${message.sender}`}
+                          >
+                            <div className="playInviteHeading">
+                              <span>🎮</span>
+                              <div>
+                                <small>PLAY INVITE</small>
+                                <strong>一緒にプレイしませんか？</strong>
+                              </div>
+                            </div>
+                            {!message.response && message.canRespond && (
+                              <div className="playInviteAnswers">
+                                <button
+                                  onClick={() =>
+                                    respondPlayInvite(message.id, "declined")
+                                  }
+                                  disabled={respondingInviteId === message.id}
+                                >
+                                  いいえ
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    respondPlayInvite(message.id, "accepted")
+                                  }
+                                  disabled={respondingInviteId === message.id}
+                                >
+                                  はい
+                                </button>
+                              </div>
                             )}
-                            {message.sender === "me" && message.read
-                              ? " ・ 既読"
-                              : ""}
-                          </small>
-                        </div>
-                      ))
+                            {!message.response && !message.canRespond && (
+                              <p className="playInviteStatus">相手の返事を待っています</p>
+                            )}
+                            {message.response === "accepted" && (
+                              <div className="playInviteAccepted">
+                                <p>✓ 一緒にプレイすることになりました</p>
+                                <button onClick={openDiscord}>
+                                  Discordで合流する
+                                </button>
+                              </div>
+                            )}
+                            {message.response === "declined" && (
+                              <p className="playInviteStatus declined">
+                                今回は見送りになりました
+                              </p>
+                            )}
+                            <small className="playInviteTime">
+                              {new Date(message.createdAt).toLocaleString(
+                                "ja-JP",
+                                {
+                                  month: "numeric",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                },
+                              )}
+                            </small>
+                          </div>
+                        ) : (
+                          <div
+                            key={message.id}
+                            className={`messageBubble ${message.sender}`}
+                          >
+                            <p>{message.body}</p>
+                            <small>
+                              {new Date(message.createdAt).toLocaleString(
+                                "ja-JP",
+                                {
+                                  month: "numeric",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                },
+                              )}
+                              {message.sender === "me" && message.read
+                                ? " ・ 既読"
+                                : ""}
+                            </small>
+                          </div>
+                        ),
+                      )
                     ) : (
                       <div className="chatEmpty">
                         <span>👋</span>

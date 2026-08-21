@@ -128,6 +128,33 @@ try {
   const thread = await api(`/api/messages?connectionId=${connectionId}`, { user: owner });
   assert.equal(thread.messages.at(-1).body, "よろしくお願いします");
 
+  const playInvite = await api("/api/messages", {
+    user: applicant,
+    method: "POST",
+    body: { connectionId, kind: "play_invite", clientId: "play-invite-e2e-1" },
+  });
+  assert.equal(playInvite.message.kind, "play_invite");
+  assert.equal(playInvite.message.response, null);
+  const duplicateInvite = await fetch(`${base}/api/messages`, {
+    method: "POST",
+    headers: { ...owner, "content-type": "application/json" },
+    body: JSON.stringify({ connectionId, kind: "play_invite", clientId: "play-invite-e2e-2" }),
+  });
+  assert.equal(duplicateInvite.status, 409);
+  const ownerInviteThread = await api(`/api/messages?connectionId=${connectionId}`, { user: owner });
+  const incomingInvite = ownerInviteThread.messages.at(-1);
+  assert.equal(incomingInvite.kind, "play_invite");
+  assert.equal(incomingInvite.canRespond, true);
+  const acceptedInvite = await api("/api/messages", {
+    user: owner,
+    method: "PATCH",
+    body: { messageId: incomingInvite.id, response: "accepted" },
+  });
+  assert.equal(acceptedInvite.message.response, "accepted");
+  const applicantInviteThread = await api(`/api/messages?connectionId=${connectionId}`, { user: applicant });
+  assert.equal(applicantInviteThread.messages.at(-1).response, "accepted");
+  assert.equal(applicantInviteThread.messages.at(-1).canRespond, false);
+
   const played = await api("/api/connections", { user: owner, method: "PATCH", body: { connectionId, action: "played" } });
   assert.equal(played.playedByMe, true);
   const applicantAfterPlay = await api("/api/connections", { user: applicant });
@@ -147,7 +174,7 @@ try {
   const connectionsAfterDeletion = await api("/api/connections", { user: applicant });
   assert.equal(connectionsAfterDeletion.connections.length, 0);
 
-  console.log("✓ 登録→時間相談募集→募集キャンセル→申請→承認→チャット→プレイ完了→NGワード→ブロック→問い合わせ→退会を確認しました");
+  console.log("✓ 登録→募集→申請→承認→チャット→プレイ招待→回答→プレイ完了→ブロック→退会を確認しました");
 } finally {
   if (server) server.kill("SIGTERM");
   await rm(temporary, { recursive: true, force: true });

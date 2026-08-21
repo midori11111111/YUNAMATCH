@@ -77,6 +77,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     adminLogin,
     adminAuth,
     adminSessionApi,
+    playInviteMigration,
+    playInviteIndexMigration,
   ] = await Promise.all([
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/match-app.tsx", root), "utf8"),
@@ -122,6 +124,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     readFile(new URL("app/admin/admin-login.tsx", root), "utf8"),
     readFile(new URL("lib/admin.ts", root), "utf8"),
     readFile(new URL("app/api/admin/session/route.ts", root), "utf8"),
+    readFile(new URL("drizzle/0019_lovely_lenny_balinger.sql", root), "utf8"),
+    readFile(new URL("drizzle/0020_parched_frightful_four.sql", root), "utf8"),
   ]);
   assert.match(page, /getChatGPTUser/);
   assert.match(page, /initialProfile/);
@@ -189,6 +193,17 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(messagesApi, /connectionId/);
   assert.match(messagesApi, /clientId/);
   assert.match(messagesApi, /onConflictDoNothing/);
+  assert.match(messagesApi, /play_invite/);
+  assert.match(messagesApi, /export async function PATCH/);
+  assert.match(messagesApi, /送信者は回答できません/);
+  assert.match(playInviteMigration, /ADD `kind` text/);
+  assert.match(playInviteMigration, /ADD `response` text/);
+  assert.match(playInviteIndexMigration, /idx_messages_pending_play_invite/);
+  assert.match(app, /一緒にプレイしませんか/);
+  assert.match(app, /Discordで合流する/);
+  assert.match(app, /respondPlayInvite/);
+  assert.match(app, /className="chatPlayInvite"/);
+  assert.doesNotMatch(app, /playInviteComposerButton/);
   assert.match(safetyApi, /allowedReasons/);
   assert.match(profileApi, /mainPokemon/);
   assert.match(profileApi, /contactFor/);

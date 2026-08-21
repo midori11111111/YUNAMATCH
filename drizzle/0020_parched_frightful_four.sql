@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `idx_messages_pending_play_invite` ON `messages` (`connection_id`) WHERE "messages"."kind" = 'play_invite' and "messages"."response" is null;
