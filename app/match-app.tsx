@@ -257,6 +257,11 @@ const requestMessagePresets = [
   "編成を相談したいです",
 ];
 const discordInviteUrl = "https://discord.gg/sRxr8fD8Z6";
+const pokemonUniteIosUrl =
+  "https://apps.apple.com/jp/app/pokemon-unite/id1512321575";
+const pokemonUniteAndroidUrl =
+  "https://play.google.com/store/apps/details?id=jp.pokemon.pokemonunite";
+const pokemonUniteOfficialUrl = "https://www.pokemonunite.jp/ja/";
 const loginProviders = [
   { id: "google", label: "Google", mark: "G" },
   { id: "line", label: "LINE", mark: "LINE" },
@@ -1636,6 +1641,23 @@ export default function MatchApp({
   };
   const openDiscord = () =>
     window.open(discordInviteUrl, "_blank", "noopener,noreferrer");
+  const openPokemonUnite = () => {
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isAndroid = userAgent.includes("android");
+    const isAppleMobile = /iphone|ipad|ipod/.test(userAgent);
+    const destination = isAndroid
+      ? pokemonUniteAndroidUrl
+      : isAppleMobile
+        ? pokemonUniteIosUrl
+        : pokemonUniteOfficialUrl;
+
+    window.open(destination, "_blank", "noopener,noreferrer");
+    notify(
+      isAndroid || isAppleMobile
+        ? "Pokémon UNITEの画面を開きました。インストール済みなら「開く」を押してください"
+        : "Pokémon UNITE公式サイトを開きました",
+    );
+  };
   const shareRecruitToLine = (recruit: Recruit) =>
     window.open(
       `https://line.me/R/share?text=${encodeURIComponent(`${recruitShareText(recruit)}\n${recruitUrl(recruit)}`)}`,
@@ -2660,6 +2682,12 @@ export default function MatchApp({
                     </button>
                   </div>
                   <div className="reconnectBar">
+                    <button
+                      className="unitePlayButton"
+                      onClick={openPokemonUnite}
+                    >
+                      🎮 ユナイトをプレイする
+                    </button>
                     <button
                       className={
                         selectedConnection.playedByMe

@@ -130,6 +130,9 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /まだやりとりがありません/);
   assert.match(app, /yunamatch-chat-tutorial-v1/);
   assert.match(app, /次のプレイまで/);
+  assert.match(app, /ユナイトをプレイする/);
+  assert.match(app, /apps\.apple\.com\/jp\/app\/pokemon-unite/);
+  assert.match(app, /play\.google\.com\/store\/apps\/details\?id=jp\.pokemon\.pokemonunite/);
   assert.match(app, /profileCompletion/);
   assert.match(app, /profileCompletionInline/);
   assert.doesNotMatch(app, /profileCompletionCard/);
