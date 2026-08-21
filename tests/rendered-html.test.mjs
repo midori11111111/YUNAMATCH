@@ -66,6 +66,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     publicSupportApi,
     connectionsSchema,
     connectionsApiSource,
+    messageIdempotencyMigration,
+    loginButton,
   ] = await Promise.all([
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/match-app.tsx", root), "utf8"),
@@ -100,6 +102,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     readFile(new URL("app/api/public-support/route.ts", root), "utf8"),
     readFile(new URL("db/schema.ts", root), "utf8"),
     readFile(new URL("app/api/connections/route.ts", root), "utf8"),
+    readFile(new URL("drizzle/0015_special_harpoon.sql", root), "utf8"),
+    readFile(new URL("vercel-proxy/app/login/login-button.tsx", root), "utf8"),
   ]);
   assert.match(page, /getChatGPTUser/);
   assert.match(page, /initialProfile/);
@@ -163,6 +167,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(connectionsApi, /mutualAgain/);
   assert.match(connectionsApi, /userAPlayed/);
   assert.match(messagesApi, /connectionId/);
+  assert.match(messagesApi, /clientId/);
+  assert.match(messagesApi, /onConflictDoNothing/);
   assert.match(safetyApi, /allowedReasons/);
   assert.match(profileApi, /mainPokemon/);
   assert.match(profileApi, /contactFor/);
@@ -212,6 +218,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.doesNotMatch(app, /getPokemonImagePath|pokemonVisualImage/);
   assert.match(authGateway, /scope: "tweet\.read users\.read"/);
   assert.match(authGateway, /providers: \[Google, Line, Discord, xProvider\]/);
+  assert.match(authGateway, /AbortSignal\.timeout\(5000\)/);
   assert.match(loginPage, /LINEでログイン/);
   assert.match(loginPage, /Discordでログイン/);
   assert.match(loginPage, /Xでログイン/);
@@ -228,4 +235,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(connectionsSchema, /userAShareContact/);
   assert.match(connectionsSchema, /userBShareContact/);
   assert.match(connectionsApiSource, /action === "share_contact"/);
+  assert.match(messageIdempotencyMigration, /idx_messages_sender_client/);
+  assert.match(loginButton, /useFormStatus/);
+  assert.match(loginButton, /disabled=\{pending\}/);
 });

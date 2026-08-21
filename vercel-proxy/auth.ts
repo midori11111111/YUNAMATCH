@@ -11,9 +11,18 @@ const accountLinkEndpoint=`${process.env.YUNAMATCH_UPSTREAM_URL||"https://unite-
 async function resolveIdentity(input:{provider:string;providerAccountId:string;canonicalUserId?:string;contactId:string;displayName:string|null;email:string|null}){
   const secret=process.env.AUTH_SECRET;
   if(!secret)throw new Error("AUTH_SECRET is required for account linking");
-  const response=await fetch(accountLinkEndpoint,{method:"POST",headers:{"content-type":"application/json","x-yunamatch-auth-secret":secret},body:JSON.stringify(input),cache:"no-store"});
-  if(!response.ok)throw new Error(`Account link failed: ${response.status}`);
-  return await response.json() as {userId:string};
+  let lastError:unknown;
+  for(let attempt=0;attempt<3;attempt++){
+    try{
+      const response=await fetch(accountLinkEndpoint,{method:"POST",headers:{"content-type":"application/json","x-yunamatch-auth-secret":secret},body:JSON.stringify(input),cache:"no-store",signal:AbortSignal.timeout(5000)});
+      if(response.ok)return await response.json() as {userId:string};
+      const error=new Error(`Account link failed: ${response.status}`);
+      if(response.status>=400&&response.status<500)throw error;
+      lastError=error;
+    }catch(error){lastError=error}
+    if(attempt<2)await new Promise(resolve=>setTimeout(resolve,250*(attempt+1)));
+  }
+  throw lastError instanceof Error?lastError:new Error("Account link failed");
 }
 
 const xProvider = Twitter({
@@ -44,11 +53,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         try{
           const cookieStore=await cookies();
           canonicalUserId=readLinkCookie(cookieStore.get(linkCookieName)?.value,secret)||undefined;
-          if(canonicalUserId)cookieStore.delete(linkCookieName);
         }catch{/* Cookie is only present while adding another login account. */}
         try{
           const identity=await resolveIdentity({provider:account.provider,providerAccountId:account.providerAccountId,canonicalUserId,contactId:typeof contactId==="string"?contactId:account.providerAccountId,displayName:typeof token.name==="string"?token.name:null,email:typeof token.email==="string"?token.email:null});
           token.userId=identity.userId;
+          if(canonicalUserId)(await cookies()).delete(linkCookieName);
         }catch(error){
           if(canonicalUserId)throw error;
           token.userId=`oauth:${account.provider}:${account.providerAccountId}`;

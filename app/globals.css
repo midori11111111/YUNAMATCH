@@ -770,6 +770,8 @@ button { cursor: pointer; }
 .guestLoginProviders a.line { color: #087e3a; background: #effcf5; border-color: #ccf0dc; }
 .guestLoginProviders a.discord { color: #4e59da; background: #f0f1ff; border-color: #dfe1ff; }
 .guestLoginProviders a.twitter { color: #fff; background: #17131f; border-color: #17131f; }
+.guestLoginProviders a.isLoading { pointer-events: none; opacity: .48; }
+.guestLoginProviders a.isLoading[aria-disabled="true"] { cursor: wait; }
 .guestLoginNote { padding: 9px 11px; border-radius: 11px; background: #f7f4ff; font-size: 7px !important; }
 .guestLoginCard > nav { display: flex; justify-content: center; gap: 13px; }
 .guestLoginCard > nav a { color: #8c8495; font-size: 7px; text-underline-offset: 3px; }

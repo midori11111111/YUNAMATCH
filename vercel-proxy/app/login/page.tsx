@@ -1,4 +1,5 @@
 import { signIn } from "@/auth";
+import LoginButton from "./login-button";
 
 export default function LoginPage() {
   return (
@@ -17,10 +18,7 @@ export default function LoginPage() {
               await signIn("google", { redirectTo: "/" });
             }}
           >
-            <button className="googleButton" type="submit">
-              <span className="googleMark" aria-hidden="true">G</span>
-              Googleでログイン
-            </button>
+            <LoginButton className="googleButton" markClassName="googleMark" mark="G" label="Googleでログイン" />
           </form>
           <form
             action={async () => {
@@ -28,10 +26,7 @@ export default function LoginPage() {
               await signIn("line", { redirectTo: "/" });
             }}
           >
-            <button className="lineButton" type="submit">
-              <span className="lineMark" aria-hidden="true">LINE</span>
-              LINEでログイン
-            </button>
+            <LoginButton className="lineButton" markClassName="lineMark" mark="LINE" label="LINEでログイン" />
           </form>
           <form
             action={async () => {
@@ -39,10 +34,7 @@ export default function LoginPage() {
               await signIn("discord", { redirectTo: "/" });
             }}
           >
-            <button className="discordButton" type="submit">
-              <span className="discordMark" aria-hidden="true">D</span>
-              Discordでログイン
-            </button>
+            <LoginButton className="discordButton" markClassName="discordMark" mark="D" label="Discordでログイン" />
           </form>
           <form
             action={async () => {
@@ -50,10 +42,7 @@ export default function LoginPage() {
               await signIn("twitter", { redirectTo: "/" });
             }}
           >
-            <button className="xButton" type="submit">
-              <span className="xMark" aria-hidden="true">X</span>
-              Xでログイン
-            </button>
+            <LoginButton className="xButton" markClassName="xMark" mark="X" label="Xでログイン" />
           </form>
         </div>
         <p className="loginNote">ログイン後すぐにメイト探しを始められます</p>

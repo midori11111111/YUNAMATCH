@@ -187,6 +187,7 @@ export const messages = sqliteTable(
       .notNull()
       .references(() => connections.id),
     senderId: text("sender_id").notNull(),
+    clientId: text("client_id"),
     body: text("body").notNull(),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   },
@@ -194,6 +195,10 @@ export const messages = sqliteTable(
     index("idx_messages_connection_created").on(
       table.connectionId,
       table.createdAt,
+    ),
+    uniqueIndex("idx_messages_sender_client").on(
+      table.senderId,
+      table.clientId,
     ),
   ],
 );

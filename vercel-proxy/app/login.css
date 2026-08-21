@@ -75,6 +75,7 @@ h1 span { color: #ff6c91; }
 .lineButton { background: #06c755; color: #fff; }
 .discordButton { background: #5865f2; color: #fff; }
 .xButton { background: #000; color: #fff; border: 1px solid #333; }
+.loginActions button:disabled { cursor: wait; opacity: .64; transform: none; }
 .googleButton:hover,
 .lineButton:hover,
 .discordButton:hover,

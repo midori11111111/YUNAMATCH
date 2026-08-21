@@ -9,6 +9,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { pokemonArtUrl } from "../lib/pokemon-art";
@@ -562,6 +563,7 @@ export default function MatchApp({
   const [compose, setCompose] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [loginAction, setLoginAction] = useState("この機能");
+  const [loginProvider, setLoginProvider] = useState("");
   const [applyTo, setApplyTo] = useState<Recruit | null>(null);
   const [profileApplyTo, setProfileApplyTo] = useState<ProfileCandidate | null>(
     null,
@@ -588,6 +590,8 @@ export default function MatchApp({
     useState<Connection | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [messageText, setMessageText] = useState("");
+  const [messageSending, setMessageSending] = useState(false);
+  const messageSendingRef = useRef(false);
   const [requestMessage, setRequestMessage] = useState("");
   const [matePresence, setMatePresence] = useState({
     online: false,
@@ -672,6 +676,7 @@ export default function MatchApp({
       /* ログイン後の自動復帰ができない場合も、認証は続けられる */
     }
     setLoginAction(action.label);
+    setLoginProvider("");
     setLoginOpen(true);
   };
 
@@ -681,6 +686,7 @@ export default function MatchApp({
     } catch {
       /* 閉じる操作は続ける */
     }
+    setLoginProvider("");
     setLoginOpen(false);
   };
 
@@ -1717,23 +1723,39 @@ export default function MatchApp({
   };
   const sendMessage = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!selectedConnection || !messageText.trim()) return;
-    const response = await fetch("/api/messages", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        connectionId: selectedConnection.id,
-        body: messageText,
-      }),
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      notify(data.error || "送信できませんでした");
-      return;
+    const connectionId = selectedConnection?.id;
+    const body = messageText.trim();
+    if (!connectionId || !body || messageSendingRef.current) return;
+    messageSendingRef.current = true;
+    setMessageSending(true);
+    const clientId =
+      typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `message-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    try {
+      const response = await fetch("/api/messages", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ connectionId, body, clientId }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        notify(data.error || "送信できませんでした");
+        return;
+      }
+      setMessages((rows) =>
+        rows.some((message) => message.id === data.message.id)
+          ? rows
+          : [...rows, data.message],
+      );
+      setMessageText((value) => (value.trim() === body ? "" : value));
+      void loadConnections();
+    } catch {
+      notify("通信が不安定です。メッセージは送信されていません");
+    } finally {
+      messageSendingRef.current = false;
+      setMessageSending(false);
     }
-    setMessages((rows) => [...rows, data.message]);
-    setMessageText("");
-    loadConnections();
   };
   const toggleAgain = async (connection: Connection) => {
     const response = await fetch("/api/connections", {
@@ -2802,8 +2824,11 @@ export default function MatchApp({
                       placeholder="メッセージを入力"
                       aria-label="メッセージ"
                     />
-                    <button disabled={!messageText.trim()} aria-label="送信">
-                      ➤
+                    <button
+                      disabled={!messageText.trim() || messageSending}
+                      aria-label="送信"
+                    >
+                      {messageSending ? "…" : "➤"}
                     </button>
                   </form>
                 </>
@@ -3419,11 +3444,21 @@ export default function MatchApp({
               {loginProviders.map((provider) => (
                 <a
                   key={provider.id}
-                  className={provider.id}
+                  className={`${provider.id}${loginProvider ? " isLoading" : ""}`}
                   href={`/api/login/${provider.id}?returnTo=${encodeURIComponent("/?resume=1")}`}
+                  aria-disabled={Boolean(loginProvider)}
+                  onClick={(event) => {
+                    if (loginProvider) {
+                      event.preventDefault();
+                      return;
+                    }
+                    setLoginProvider(provider.id);
+                  }}
                 >
                   <span>{provider.mark}</span>
-                  {provider.label}で続ける
+                  {loginProvider === provider.id
+                    ? "開いています…"
+                    : `${provider.label}で続ける`}
                 </a>
               ))}
             </div>

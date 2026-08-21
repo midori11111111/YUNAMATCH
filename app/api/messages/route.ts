@@ -42,8 +42,9 @@ export async function POST(request: Request) {
   if(await isSuspended(user.userId))return Response.json({error:"このアカウントは現在利用できません"},{status:403});
   const rateLimit=await checkRateLimit(user.userId,{action:"message",limit:30,windowMs:60_000});
   if(!rateLimit.allowed)return rateLimitResponse(rateLimit.retryAfter);
-  const payload = await request.json() as { connectionId?: number; body?: string };
+  const payload = await request.json() as { connectionId?: number; body?: string; clientId?: string };
   const body = payload.body?.trim();
+  const clientId = typeof payload.clientId === "string" && /^[a-zA-Z0-9_-]{8,80}$/.test(payload.clientId) ? payload.clientId : null;
   if (!payload.connectionId || !body) return Response.json({ error: "メッセージを入力してください" }, { status: 400 });
   if (body.length > 300) return Response.json({ error: "メッセージは300文字以内です" }, { status: 400 });
   if (containsProhibitedContent(body)) return Response.json({ error: prohibitedContentMessage }, { status: 400 });
@@ -55,12 +56,20 @@ export async function POST(request: Request) {
     and(eq(blocks.blockerId, mateId), eq(blocks.blockedId, user.userId)),
   )).limit(1);
   if (blocked) return Response.json({ error: "この相手にはメッセージを送れません" }, { status: 403 });
-  const [message] = await getDb().insert(messages).values({
+  const [createdMessage] = await getDb().insert(messages).values({
     connectionId: payload.connectionId,
     senderId: user.userId,
+    clientId,
     body,
     createdAt: new Date(),
-  }).returning();
+  }).onConflictDoNothing().returning();
+  const [message] = createdMessage
+    ? [createdMessage]
+    : clientId
+      ? await getDb().select().from(messages).where(and(eq(messages.senderId,user.userId),eq(messages.clientId,clientId))).limit(1)
+      : [];
+  if(!message)return Response.json({error:"送信結果を確認できませんでした"},{status:500});
+  if(!createdMessage)return Response.json({ message: { id: message.id, body: message.body, sender: "me", createdAt: message.createdAt } });
   const senderName=connection.userAId===user.userId?connection.userAName:connection.userBName;
   await sendPush(mateId,`${senderName}さんからメッセージ`,body.slice(0,80),`/?chat=${connection.id}`);
   return Response.json({ message: { id: message.id, body: message.body, sender: "me", createdAt: message.createdAt } }, { status: 201 });
