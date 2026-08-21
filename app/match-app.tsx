@@ -581,6 +581,9 @@ export default function MatchApp({
     useState<Recruit | null>(null);
   const [safetyTarget, setSafetyTarget] = useState<SafetyTarget | null>(null);
   const [supportOpen, setSupportOpen] = useState(false);
+  const [supportMode, setSupportMode] = useState<"support" | "feedback">(
+    "support",
+  );
   const [deletionOpen, setDeletionOpen] = useState(false);
   const [deletionText, setDeletionText] = useState("");
   const [matchedContact, setMatchedContact] = useState<string | null>(null);
@@ -1777,7 +1780,11 @@ export default function MatchApp({
       return;
     }
     setSupportOpen(false);
-    notify("お問い合わせを受け付けました。原則24時間以内に確認します");
+    notify(
+      supportMode === "feedback"
+        ? "フィードバックを送信しました。ありがとうございます"
+        : "お問い合わせを受け付けました。原則24時間以内に確認します",
+    );
   };
   const deleteAccount = async () => {
     if (deletionText !== "退会する") return;
@@ -2536,7 +2543,10 @@ export default function MatchApp({
                         ?
                       </button>
                       <button
-                        onClick={() => setSupportOpen(true)}
+                        onClick={() => {
+                          setSupportMode("support");
+                          setSupportOpen(true);
+                        }}
                         aria-label="運営へ問い合わせ"
                       >
                         •••
@@ -3017,11 +3027,25 @@ export default function MatchApp({
                 <a href="/community">参加方法を見る</a>
               </section>
               <div className="accountOperations">
-                <button onClick={() => setSupportOpen(true)}>
+                <button onClick={() => {
+                  setSupportMode("support");
+                  setSupportOpen(true);
+                }}>
                   <span>?</span>
                   <div>
                     <strong>運営へお問い合わせ</strong>
                     <small>不具合やアカウントの相談を送る</small>
+                  </div>
+                  <b>›</b>
+                </button>
+                <button onClick={() => {
+                  setSupportMode("feedback");
+                  setSupportOpen(true);
+                }}>
+                  <span>✦</span>
+                  <div>
+                    <strong>フィードバックを送る</strong>
+                    <small>改善案・使いにくい点・良かった点を伝える</small>
                   </div>
                   <b>›</b>
                 </button>
@@ -4055,20 +4079,37 @@ export default function MatchApp({
             >
               ×
             </button>
-            <small className="modalKicker">SUPPORT</small>
-            <h2>運営へお問い合わせ</h2>
+            <small className="modalKicker">
+              {supportMode === "feedback" ? "FEEDBACK" : "SUPPORT"}
+            </small>
+            <h2>
+              {supportMode === "feedback"
+                ? "フィードバックを送る"
+                : "運営へお問い合わせ"}
+            </h2>
             <p className="supportSla">
-              不具合・安全上の問題・アカウントの相談を送れます。原則24時間以内に運営が確認します。
+              {supportMode === "feedback"
+                ? "YUNAMATCHをもっと使いやすくするための意見を送れます。送信先のメールアドレスは表示されません。"
+                : "不具合・安全上の問題・アカウントの相談を送れます。原則24時間以内に運営が確認します。"}
             </p>
             <label>
-              お問い合わせの種類
-              <select name="category" defaultValue="不具合">
-                <option>アカウント・ログイン</option>
-                <option>募集・マッチ</option>
-                <option>安全・通報</option>
-                <option>不具合</option>
-                <option>その他</option>
-              </select>
+              {supportMode === "feedback" ? "フィードバックの種類" : "お問い合わせの種類"}
+              {supportMode === "feedback" ? (
+                <select name="category" defaultValue="フィードバック・改善案">
+                  <option>フィードバック・改善案</option>
+                  <option>フィードバック・使いにくい</option>
+                  <option>フィードバック・良かった</option>
+                  <option>フィードバック・その他</option>
+                </select>
+              ) : (
+                <select name="category" defaultValue="不具合">
+                  <option>アカウント・ログイン</option>
+                  <option>募集・マッチ</option>
+                  <option>安全・通報</option>
+                  <option>不具合</option>
+                  <option>その他</option>
+                </select>
+              )}
             </label>
             <label>
               内容
@@ -4076,12 +4117,18 @@ export default function MatchApp({
                 name="message"
                 minLength={5}
                 maxLength={1000}
-                placeholder="困っていることをできるだけ具体的に入力してください"
+                placeholder={supportMode === "feedback"
+                  ? "こうなったら使いやすい、ここが良かった、など自由に入力してください"
+                  : "困っていることをできるだけ具体的に入力してください"}
                 required
               />
             </label>
             <button className="primaryButton" disabled={sending}>
-              {sending ? "送信中…" : "運営へ送信"}
+              {sending
+                ? "送信中…"
+                : supportMode === "feedback"
+                  ? "フィードバックを送信"
+                  : "運営へ送信"}
             </button>
           </form>
         </div>

@@ -194,6 +194,10 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /アカウントを削除して退会/);
   assert.match(app, /Discordで募集・VCに参加/);
   assert.match(app, /運営ダッシュボード/);
+  assert.match(app, /フィードバックを送る/);
+  assert.match(supportApi, /フィードバック・改善案/);
+  assert.match(supportApi, /FEEDBACK_TO_EMAIL/);
+  assert.doesNotMatch(supportApi, /serizawatomoki0589/);
   assert.doesNotMatch(app, /getPokemonImagePath|pokemonVisualImage/);
   assert.match(authGateway, /scope: "tweet\.read users\.read"/);
   assert.match(authGateway, /providers: \[Google, Line, Discord, xProvider\]/);
