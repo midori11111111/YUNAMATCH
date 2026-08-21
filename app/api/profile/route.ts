@@ -98,6 +98,7 @@ export async function DELETE(request:Request){
     d1.prepare("DELETE FROM applications WHERE applicant_id = ? OR recruit_id IN (SELECT id FROM recruits WHERE owner_id = ?)").bind(id,id),
     d1.prepare("DELETE FROM reports WHERE reporter_id = ? OR target_id = ?").bind(id,id),
     d1.prepare("DELETE FROM blocks WHERE blocker_id = ? OR blocked_id = ?").bind(id,id),
+    d1.prepare("DELETE FROM profile_likes WHERE sender_id = ? OR recipient_id = ?").bind(id,id),
     d1.prepare("DELETE FROM support_tickets WHERE user_id = ?").bind(id),
     d1.prepare("DELETE FROM push_subscriptions WHERE user_id = ?").bind(id),
     d1.prepare("DELETE FROM recruits WHERE owner_id = ?").bind(id),

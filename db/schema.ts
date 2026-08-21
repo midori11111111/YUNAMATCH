@@ -31,6 +31,17 @@ export const accountLinks = sqliteTable("account_links", {
   index("idx_account_links_canonical_user").on(table.canonicalUserId),
 ]);
 
+export const profileLikes = sqliteTable("profile_likes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  senderId: text("sender_id").notNull(),
+  recipientId: text("recipient_id").notNull(),
+  readAt: integer("read_at", { mode: "timestamp_ms" }),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+}, (table) => [
+  uniqueIndex("idx_profile_likes_sender_recipient").on(table.senderId, table.recipientId),
+  index("idx_profile_likes_recipient_created").on(table.recipientId, table.createdAt),
+]);
+
 export const recruits = sqliteTable("recruits", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   kind: text("kind").notNull().default("timed"),

@@ -28,7 +28,7 @@ test("renders the login-only entrance for anonymous visitors", async () => {
 });
 
 test("ships the matching app, onboarding, lobby, safety, analytics, and notifications", async () => {
-  const [page, app, css, authGateway, loginPage, connectionsApi, messagesApi, safetyApi, profileApi, applicationsApi, discoverApi, migration, profileMigration, lobbyApi, pushApi, discordApi, expansionMigration, analyticsApi, statsApi, analyticsMigration, adminPanel, safetyMigration, supportApi, exportApi] = await Promise.all([
+  const [page, app, css, authGateway, loginPage, connectionsApi, messagesApi, safetyApi, profileApi, applicationsApi, discoverApi, migration, profileMigration, lobbyApi, pushApi, discordApi, expansionMigration, analyticsApi, statsApi, analyticsMigration, adminPanel, safetyMigration, supportApi, exportApi, likesApi, likesMigration, pokemonArt] = await Promise.all([
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/match-app.tsx", root), "utf8"),
     readFile(new URL("app/globals.css", root), "utf8"),
@@ -53,6 +53,9 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     readFile(new URL("drizzle/0009_flat_thanos.sql", root), "utf8"),
     readFile(new URL("app/api/support/route.ts", root), "utf8"),
     readFile(new URL("app/api/admin/export/route.ts", root), "utf8"),
+    readFile(new URL("app/api/likes/route.ts", root), "utf8"),
+    readFile(new URL("drizzle/0011_tearful_karma.sql", root), "utf8"),
+    readFile(new URL("lib/pokemon-art.ts", root), "utf8"),
     access(new URL("public/og.png", root)),
   ]);
   assert.match(page, /getChatGPTUser/);
@@ -74,6 +77,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /募集中のメイト/);
   assert.match(app, /登録中のメイトを探す/);
   assert.match(app, /メイト申請を送る/);
+  assert.match(app, /いいね済み/);
+  assert.match(app, /PokemonLabel/);
   assert.match(app, /この人にプレイ申請/);
   assert.match(app, /集合ロビー/);
   assert.match(app, /プッシュ通知/);
@@ -106,6 +111,10 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(safetyMigration, /support_tickets/);
   assert.match(supportApi, /24\*60\*60_000/);
   assert.match(exportApi, /content-disposition/);
+  assert.match(likesApi, /いいねが届きました/);
+  assert.match(likesApi, /onConflictDoNothing/);
+  assert.match(likesMigration, /CREATE TABLE `profile_likes`/);
+  assert.match(pokemonArt, /official-artwork/);
   assert.match(app, /アカウントを削除して退会/);
   assert.match(app, /Discordで募集・VCに参加/);
   assert.match(app, /運営ダッシュボード/);

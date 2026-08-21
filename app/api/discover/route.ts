@@ -5,11 +5,7 @@ import { getChatGPTUser } from "../../chatgpt-auth";
 import { checkRateLimit, rateLimitResponse } from "../../../lib/rate-limit";
 import { containsProhibitedContent, prohibitedContentMessage } from "../../../lib/content-policy";
 import { sendPush } from "../../../lib/push";
-
-async function publicId(userId:string){
-  const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(`yunamatch-profile:${userId}`));
-  return [...new Uint8Array(digest)].map(value=>value.toString(16).padStart(2,"0")).join("").slice(0,32);
-}
+import { profilePublicId } from "../../../lib/profile-id";
 
 function parseList(value:string){
   try{const parsed=JSON.parse(value);if(Array.isArray(parsed))return parsed.filter((item):item is string=>typeof item==="string"&&Boolean(item.trim()))}
@@ -34,7 +30,7 @@ export async function GET(){
   for(const row of connectionRows)hidden.add(row.userAId===user.userId?row.userBId:row.userAId);
   const visible=profileRows.filter(row=>!row.suspendedAt&&!hidden.has(row.userId)&&row.ageConfirmed&&row.termsAcceptedAt);
   const result=await Promise.all(visible.map(async row=>({
-    id:await publicId(row.userId),
+    id:await profilePublicId(row.userId),
     trainerName:row.trainerName,
     mainPokemon:parseList(row.mainPokemon).slice(0,5),
     highestRate:row.highestRate,
@@ -60,7 +56,7 @@ export async function POST(request:Request){
   const db=getDb();
   const [profileRows,[applicant]]=await Promise.all([db.select().from(profiles).limit(300),db.select().from(profiles).where(eq(profiles.userId,user.userId)).limit(1)]);
   if(!applicant)return Response.json({error:"先にプロフィールを登録してください"},{status:409});
-  const pairs=await Promise.all(profileRows.map(async row=>({row,id:await publicId(row.userId)})));
+  const pairs=await Promise.all(profileRows.map(async row=>({row,id:await profilePublicId(row.userId)})));
   const target=pairs.find(item=>item.id===targetId)?.row;
   if(!target||target.suspendedAt||target.userId===user.userId)return Response.json({error:"このプロフィールは現在表示できません"},{status:404});
   const [blocked,connected,pending]=await Promise.all([
