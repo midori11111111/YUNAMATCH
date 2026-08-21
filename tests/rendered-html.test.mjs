@@ -27,7 +27,7 @@ test("renders the login-only entrance for anonymous visitors", async () => {
 });
 
 test("ships the matching app, onboarding, lobby, safety, analytics, and notifications", async () => {
-  const [page, app, css, authGateway, loginPage, connectionsApi, messagesApi, safetyApi, profileApi, applicationsApi, migration, profileMigration, lobbyApi, pushApi, discordApi, expansionMigration, analyticsApi, statsApi, analyticsMigration, adminPanel] = await Promise.all([
+  const [page, app, css, authGateway, loginPage, connectionsApi, messagesApi, safetyApi, profileApi, applicationsApi, migration, profileMigration, lobbyApi, pushApi, discordApi, expansionMigration, analyticsApi, statsApi, analyticsMigration, adminPanel, safetyMigration, supportApi, exportApi] = await Promise.all([
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/match-app.tsx", root), "utf8"),
     readFile(new URL("app/globals.css", root), "utf8"),
@@ -48,6 +48,9 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     readFile(new URL("app/api/admin/stats/route.ts", root), "utf8"),
     readFile(new URL("drizzle/0008_certain_swarm.sql", root), "utf8"),
     readFile(new URL("app/admin/admin-panel.tsx", root), "utf8"),
+    readFile(new URL("drizzle/0009_flat_thanos.sql", root), "utf8"),
+    readFile(new URL("app/api/support/route.ts", root), "utf8"),
+    readFile(new URL("app/api/admin/export/route.ts", root), "utf8"),
     access(new URL("public/og.png", root)),
   ]);
   assert.match(page, /getChatGPTUser/);
@@ -92,6 +95,14 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(analyticsMigration, /CREATE TABLE `daily_visitors`/);
   assert.match(analyticsMigration, /CREATE TABLE `site_visitors`/);
   assert.match(adminPanel, /今日の訪問者/);
+  assert.match(adminPanel, /募集 → 申請あり/);
+  assert.match(adminPanel, /バックアップをダウンロード/);
+  assert.match(safetyMigration, /rate_limit_buckets/);
+  assert.match(safetyMigration, /support_tickets/);
+  assert.match(supportApi, /24\*60\*60_000/);
+  assert.match(exportApi, /content-disposition/);
+  assert.match(app, /アカウントを削除して退会/);
+  assert.match(app, /Discordで募集・VCに参加/);
   assert.match(app, /運営ダッシュボード/);
   assert.doesNotMatch(app, /getPokemonImagePath|pokemonVisualImage/);
   assert.match(authGateway, /scope: "tweet\.read users\.read"/);

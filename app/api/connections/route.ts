@@ -4,6 +4,7 @@ import { applications, blocks, connections, messages, profiles, recruits } from 
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { sendPush } from "../../../lib/push";
 import { isSuspended } from "../../../lib/safety";
+import { checkRateLimit, rateLimitResponse } from "../../../lib/rate-limit";
 
 const signIn = "/login";
 
@@ -111,6 +112,7 @@ export async function PATCH(request: Request) {
   const user = await getChatGPTUser();
   if (!user) return Response.json({ error: "ログインが必要です", signIn }, { status: 401 });
   if(await isSuspended(user.userId))return Response.json({error:"このアカウントは現在利用できません"},{status:403});
+  const rateLimit=await checkRateLimit(user.userId,{action:"connection",limit:20,windowMs:10*60_000});if(!rateLimit.allowed)return rateLimitResponse(rateLimit.retryAfter);
   const payload = await request.json() as { connectionId?: number; action?: "again" };
   if (!payload.connectionId || payload.action !== "again") {
     return Response.json({ error: "操作を確認してください" }, { status: 400 });

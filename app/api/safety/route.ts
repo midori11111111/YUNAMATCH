@@ -2,6 +2,7 @@ import { and, eq, or } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { blocks, connections, recruits, reports } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
+import { checkRateLimit, rateLimitResponse } from "../../../lib/rate-limit";
 
 const allowedReasons = new Set(["出会い目的", "迷惑行為", "暴言・嫌がらせ", "なりすまし", "不正なプロフィール", "不適切なプロフィール画像", "その他"]);
 
@@ -25,6 +26,8 @@ async function resolveTarget(userId: string, recruitId?: number, connectionId?: 
 export async function POST(request: Request) {
   const user = await getChatGPTUser();
   if (!user) return Response.json({ error: "ログインが必要です", signIn: "/login" }, { status: 401 });
+  const rateLimit=await checkRateLimit(user.userId,{action:"safety",limit:8,windowMs:60*60_000});
+  if(!rateLimit.allowed)return rateLimitResponse(rateLimit.retryAfter);
   const payload = await request.json() as {
     action?: "block" | "report";
     recruitId?: number;
@@ -52,6 +55,7 @@ export async function POST(request: Request) {
       reason: payload.reason,
       details: payload.details?.trim().slice(0, 500) ?? "",
       createdAt: new Date(),
+      updatedAt: new Date(),
     });
     if (payload.alsoBlock) {
       await db.insert(blocks).values({ blockerId: user.userId, blockedId: targetId, createdAt: new Date() }).onConflictDoNothing();

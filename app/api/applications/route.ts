@@ -3,6 +3,8 @@ import { getDb } from "../../../db";
 import { applications, connections, lobbies, lobbyMembers, profiles, recruits } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { sendPush } from "../../../lib/push";
+import { checkRateLimit, rateLimitResponse } from "../../../lib/rate-limit";
+import { containsProhibitedContent, prohibitedContentMessage } from "../../../lib/content-policy";
 
 const signIn = "/login";
 
@@ -18,8 +20,10 @@ export async function GET(){
 
 export async function POST(request:Request){
  const user=await getChatGPTUser();if(!user)return Response.json({error:"ログインが必要です",signIn},{status:401});
+ const rateLimit=await checkRateLimit(user.userId,{action:"application",limit:15,windowMs:10*60_000});if(!rateLimit.allowed)return rateLimitResponse(rateLimit.retryAfter);
  const p=await request.json() as {recruitId?:number;pokemon?:string;message?:string};
  if(!p.recruitId||!p.pokemon?.trim()||!p.message?.trim())return Response.json({error:"申請内容を入力してください"},{status:400});
+ if(containsProhibitedContent(p.message))return Response.json({error:prohibitedContentMessage},{status:400});
  const db=getDb();const [[recruit],[profile]]=await Promise.all([db.select().from(recruits).where(and(eq(recruits.id,p.recruitId),eq(recruits.status,"open"),gt(recruits.expiresAt,new Date()))).limit(1),db.select().from(profiles).where(eq(profiles.userId,user.userId)).limit(1)]);
  if(!recruit)return Response.json({error:"この募集は終了しています"},{status:404});
  if(!profile)return Response.json({error:"先にプロフィールを登録してください"},{status:409});

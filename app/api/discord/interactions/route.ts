@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { accountLinks, lobbies, lobbyMembers, profiles, recruits } from "../../../../db/schema";
+import { checkRateLimit } from "../../../../lib/rate-limit";
 
 const json=(data:unknown,status=200)=>Response.json(data,{status});
 const bytes=(hex:string)=>Uint8Array.from(hex.match(/.{2}/g)?.map(value=>parseInt(value,16))||[]);
@@ -13,13 +14,16 @@ async function verify(request:Request,body:string){
 
 export async function POST(request:Request){
   const raw=await request.text();if(!await verify(request,raw))return new Response("invalid request signature",{status:401});
-  const interaction=JSON.parse(raw) as {type:number;member?:{user?:{id?:string}};user?:{id?:string};data?:{options?:Array<{name:string;value:string|number}>}};
+  const interaction=JSON.parse(raw) as {type:number;member?:{user?:{id?:string}};user?:{id?:string};data?:{name?:string;options?:Array<{name:string;value:string|number}>}};
   if(interaction.type===1)return json({type:1});
   if(interaction.type!==2)return json({type:4,data:{content:"対応していない操作です",flags:64}});
+  if(interaction.data?.name==="はじめ方")return json({type:4,data:{content:"⚡ **YUNAMATCHの使い方**\n1. プロフィールでDiscordアカウントを連携\n2. このサーバーで `/募集` を入力\n3. 届いた申請をYUNAMATCHで承認\n4. 集合ロビーからVCへ合流\n\n詳しくはこちら：https://yunamatch.vercel.app/community",flags:64}});
+  if(interaction.data?.name!=="募集")return json({type:4,data:{content:"対応していないコマンドです",flags:64}});
   const discordId=interaction.member?.user?.id||interaction.user?.id;if(!discordId)return json({type:4,data:{content:"Discordアカウントを確認できませんでした",flags:64}});
   const db=getDb();const [linked]=await db.select().from(accountLinks).where(and(eq(accountLinks.provider,"discord"),eq(accountLinks.providerAccountId,discordId))).limit(1);
   if(!linked)return json({type:4,data:{content:"先にYUNAMATCHのマイページで、このDiscordアカウントを連携してください。",flags:64}});
   const [profile]=await db.select().from(profiles).where(eq(profiles.userId,linked.canonicalUserId)).limit(1);if(!profile||profile.suspendedAt)return json({type:4,data:{content:"利用できるYUNAMATCHプロフィールが見つかりません。",flags:64}});
+  const rateLimit=await checkRateLimit(profile.userId,{action:"discord-recruit",limit:5,windowMs:60*60_000});if(!rateLimit.allowed)return json({type:4,data:{content:"短時間の募集回数が多すぎます。少し待ってからもう一度お試しください。",flags:64}});
   const options=Object.fromEntries((interaction.data?.options||[]).map(option=>[option.name,option.value]));
   let pokemon=profile.mainPokemon;
   try{const mainPokemon=JSON.parse(profile.mainPokemon) as string[];pokemon=mainPokemon.find(Boolean)||"メインポケモン未設定"}catch{pokemon=profile.mainPokemon.split(/[、,]/)[0]?.trim()||"メインポケモン未設定"}

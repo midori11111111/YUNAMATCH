@@ -4,6 +4,8 @@ import { blocks, connections, messages } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { sendPush } from "../../../lib/push";
 import { isSuspended } from "../../../lib/safety";
+import { checkRateLimit, rateLimitResponse } from "../../../lib/rate-limit";
+import { containsProhibitedContent, prohibitedContentMessage } from "../../../lib/content-policy";
 
 const signIn = "/login";
 
@@ -38,10 +40,13 @@ export async function POST(request: Request) {
   const user = await getChatGPTUser();
   if (!user) return Response.json({ error: "ログインが必要です", signIn }, { status: 401 });
   if(await isSuspended(user.userId))return Response.json({error:"このアカウントは現在利用できません"},{status:403});
+  const rateLimit=await checkRateLimit(user.userId,{action:"message",limit:30,windowMs:60_000});
+  if(!rateLimit.allowed)return rateLimitResponse(rateLimit.retryAfter);
   const payload = await request.json() as { connectionId?: number; body?: string };
   const body = payload.body?.trim();
   if (!payload.connectionId || !body) return Response.json({ error: "メッセージを入力してください" }, { status: 400 });
   if (body.length > 300) return Response.json({ error: "メッセージは300文字以内です" }, { status: 400 });
+  if (containsProhibitedContent(body)) return Response.json({ error: prohibitedContentMessage }, { status: 400 });
   const connection = await getMembership(payload.connectionId, user.userId);
   if (!connection) return Response.json({ error: "マッチが見つかりません" }, { status: 404 });
   const mateId = connection.userAId === user.userId ? connection.userBId : connection.userAId;

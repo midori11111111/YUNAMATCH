@@ -90,6 +90,8 @@ try {
   assert.equal(applicantConnections.connections.length, 1);
   const connectionId = ownerConnections.connections[0].id;
 
+  const prohibitedMessage = await fetch(`${base}/api/messages`, { method: "POST", headers: { ...applicant, "content-type": "application/json" }, body: JSON.stringify({ connectionId, body: "リアルで会おう" }) });
+  assert.equal(prohibitedMessage.status, 400);
   await api("/api/messages", { user: applicant, method: "POST", body: { connectionId, body: "よろしくお願いします" } });
   const thread = await api(`/api/messages?connectionId=${connectionId}`, { user: owner });
   assert.equal(thread.messages.at(-1).body, "よろしくお願いします");
@@ -100,7 +102,15 @@ try {
   const blockedMessage = await fetch(`${base}/api/messages`, { method: "POST", headers: { ...applicant, "content-type": "application/json" }, body: JSON.stringify({ connectionId, body: "届かないメッセージ" }) });
   assert.equal(blockedMessage.status, 403);
 
-  console.log("✓ 2ユーザーの登録→募集→申請→承認→チャット→ブロックを確認しました");
+  const support = await api("/api/support", { user: owner, method: "POST", body: { category: "不具合", message: "通しテストのお問い合わせです" } });
+  assert.ok(support.ticketId);
+  await api("/api/profile", { user: owner, method: "DELETE", body: { confirmation: "退会する" } });
+  const deletedProfile = await api("/api/profile", { user: owner });
+  assert.equal(deletedProfile.profile, null);
+  const connectionsAfterDeletion = await api("/api/connections", { user: applicant });
+  assert.equal(connectionsAfterDeletion.connections.length, 0);
+
+  console.log("✓ 登録→募集→申請→承認→チャット→NGワード→ブロック→問い合わせ→退会を確認しました");
 } finally {
   if (server) server.kill("SIGTERM");
   await rm(temporary, { recursive: true, force: true });

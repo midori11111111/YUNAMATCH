@@ -2,6 +2,8 @@ import { and, desc, eq, lt } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { blocks, lobbies, lobbyMembers, profiles, recruits } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
+import { checkRateLimit, rateLimitResponse } from "../../../lib/rate-limit";
+import { containsProhibitedContent, prohibitedContentMessage } from "../../../lib/content-policy";
 
 export async function GET() {
   const db = getDb();
@@ -22,6 +24,8 @@ export async function GET() {
 export async function POST(request:Request) {
   const user=await getChatGPTUser();
   if(!user) return Response.json({error:"ログインが必要です",signIn:"/login"},{status:401});
+  const rateLimit=await checkRateLimit(user.userId,{action:"recruit",limit:5,windowMs:60*60_000});
+  if(!rateLimit.allowed)return rateLimitResponse(rateLimit.retryAfter);
   const p=await request.json() as Record<string,unknown>;
   const required=["pokemon","role"];
   if(required.some(k=>typeof p[k]!=="string"||!(p[k] as string).trim())) return Response.json({error:"すべての項目を入力してください"},{status:400});
@@ -38,6 +42,7 @@ export async function POST(request:Request) {
   try{const parsed=JSON.parse(profile.playTime);if(Array.isArray(parsed))profilePlayTimes=parsed.filter(value=>typeof value==="string")}catch{profilePlayTimes=[profile.playTime]}
   await db.update(recruits).set({status:"closed"}).where(and(eq(recruits.ownerId,user.userId),eq(recruits.status,"open")));
   const note=typeof p.note==="string"?p.note.trim().slice(0,180):"";
+  if(containsProhibitedContent(note))return Response.json({error:prohibitedContentMessage},{status:400});
   const now=new Date(),startAt=new Date(now.getTime()+startsIn*60_000),expiresAt=new Date(startAt.getTime()+duration*3_600_000);
   const desiredPokemon=typeof p.desiredPokemon==="string"&&p.desiredPokemon.trim()?p.desiredPokemon.trim().slice(0,30):"すべて";
   const desiredRole=typeof p.desiredRole==="string"&&p.desiredRole.trim()?p.desiredRole.trim().slice(0,30):"指定なし";

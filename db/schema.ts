@@ -120,10 +120,34 @@ export const reports = sqliteTable("reports", {
   details: text("details").notNull().default(""),
   status: text("status").notNull().default("open"),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }),
+  resolvedAt: integer("resolved_at", { mode: "timestamp_ms" }),
 }, (table) => [
   index("idx_reports_status_created").on(table.status, table.createdAt),
   index("idx_reports_reporter_created").on(table.reporterId, table.createdAt),
 ]);
+
+export const supportTickets = sqliteTable("support_tickets", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: text("user_id").notNull(),
+  trainerName: text("trainer_name").notNull(),
+  category: text("category").notNull(),
+  message: text("message").notNull(),
+  status: text("status").notNull().default("open"),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+  resolvedAt: integer("resolved_at", { mode: "timestamp_ms" }),
+}, (table) => [
+  index("idx_support_tickets_status_created").on(table.status, table.createdAt),
+  index("idx_support_tickets_user_created").on(table.userId, table.createdAt),
+]);
+
+export const rateLimitBuckets = sqliteTable("rate_limit_buckets", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull().default(1),
+  resetAt: integer("reset_at", { mode: "timestamp_ms" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+}, (table) => [index("idx_rate_limit_buckets_reset").on(table.resetAt)]);
 
 export const lobbies = sqliteTable("lobbies", {
   id: integer("id").primaryKey({ autoIncrement: true }),

@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { getChatGPTUser } from "../../../chatgpt-auth";
+import { checkRateLimit, rateLimitResponse } from "../../../../lib/rate-limit";
 
 type MediaEnv = { MEDIA?: R2Bucket };
 
@@ -11,6 +12,8 @@ async function avatarId(userId:string){
 export async function POST(request:Request){
   const user=await getChatGPTUser();
   if(!user)return Response.json({error:"ログインが必要です"},{status:401});
+  const rateLimit=await checkRateLimit(user.userId,{action:"avatar",limit:10,windowMs:60*60_000});
+  if(!rateLimit.allowed)return rateLimitResponse(rateLimit.retryAfter);
   const media=(env as unknown as MediaEnv).MEDIA;
   if(!media)return Response.json({error:"画像保存を準備中です"},{status:503});
   const contentType=request.headers.get("content-type")?.split(";")[0]||"";
