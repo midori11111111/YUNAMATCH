@@ -75,6 +75,10 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /未入力の項目/);
   assert.match(app, /onboardingMissing/);
   assert.match(app, /募集中のメイト/);
+  assert.match(app, /未定（役割から募集）/);
+  assert.match(app, /任意・複数選択できます/);
+  assert.match(app, /上レーン/);
+  assert.match(app, /キャリー/);
   assert.match(app, /登録中のメイトを探す/);
   assert.match(app, /メイト申請を送る/);
   assert.match(app, /いいね済み/);
@@ -98,6 +102,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(lobbyApi, /lobbyMembers/);
   assert.match(pushApi, /pushSubscriptions/);
   assert.match(discordApi, /x-signature-ed25519/);
+  assert.match(discordApi, /options\.lane/);
+  assert.match(discordApi, /options\.play_style/);
   assert.match(expansionMigration, /CREATE TABLE `lobbies`/);
   assert.match(analyticsApi, /yunamatch_visitor/);
   assert.match(analyticsApi, /siteVisitors/);

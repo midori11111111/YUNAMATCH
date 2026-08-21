@@ -5,6 +5,8 @@ import { getChatGPTUser } from "../../chatgpt-auth";
 import { checkRateLimit, rateLimitResponse } from "../../../lib/rate-limit";
 import { containsProhibitedContent, prohibitedContentMessage } from "../../../lib/content-policy";
 
+const recruitRoles=new Set(["上レーン","下レーン","中央","キャリー","タンク","サポート","アタック型","バランス型","スピード型","ディフェンス型","サポート型"]);
+
 export async function GET() {
   const db = getDb();
   const user = await getChatGPTUser();
@@ -27,8 +29,10 @@ export async function POST(request:Request) {
   const rateLimit=await checkRateLimit(user.userId,{action:"recruit",limit:5,windowMs:60*60_000});
   if(!rateLimit.allowed)return rateLimitResponse(rateLimit.retryAfter);
   const p=await request.json() as Record<string,unknown>;
-  const required=["pokemon","role"];
-  if(required.some(k=>typeof p[k]!=="string"||!(p[k] as string).trim())) return Response.json({error:"すべての項目を入力してください"},{status:400});
+  const pokemon=typeof p.pokemon==="string"&&p.pokemon.trim()?p.pokemon.trim().slice(0,30):"未定";
+  const submittedRoles=Array.isArray(p.roles)?p.roles:typeof p.role==="string"?[p.role]:[];
+  const roles=[...new Set(submittedRoles.filter((value):value is string=>typeof value==="string"&&recruitRoles.has(value)))].slice(0,6);
+  const role=roles.join("・")||"指定なし";
   const matches=Number(p.matches),winRate=Number(p.winRate);
   if(!Number.isFinite(matches)||matches<0||!Number.isFinite(winRate)||winRate<0||winRate>100) return Response.json({error:"試合数・勝率を確認してください"},{status:400});
   const startsIn=Number(p.startsIn),duration=Number(p.duration),partySize=Number(p.partySize);
@@ -46,7 +50,7 @@ export async function POST(request:Request) {
   const now=new Date(),startAt=new Date(now.getTime()+startsIn*60_000),expiresAt=new Date(startAt.getTime()+duration*3_600_000);
   const desiredPokemon=typeof p.desiredPokemon==="string"&&p.desiredPokemon.trim()?p.desiredPokemon.trim().slice(0,30):"すべて";
   const desiredRole=typeof p.desiredRole==="string"&&p.desiredRole.trim()?p.desiredRole.trim().slice(0,30):"指定なし";
-  const [row]=await db.insert(recruits).values({ownerId:user.userId,trainerName:profile.trainerName,gender:profile.gender,pokemon:String(p.pokemon),role:String(p.role),matches:Math.round(matches),winRate,rank:profile.highestRate,playTime:profilePlayTimes.filter(Boolean).join("・")||profile.playTime,note,contact:profile.contact,startAt,expiresAt,partySize,desiredPokemon,desiredRole,createdAt:now}).returning();
+  const [row]=await db.insert(recruits).values({ownerId:user.userId,trainerName:profile.trainerName,gender:profile.gender,pokemon,role,matches:Math.round(matches),winRate,rank:profile.highestRate,playTime:profilePlayTimes.filter(Boolean).join("・")||profile.playTime,note,contact:profile.contact,startAt,expiresAt,partySize,desiredPokemon,desiredRole,createdAt:now}).returning();
   const [lobby]=await db.insert(lobbies).values({recruitId:row.id,ownerId:user.userId,status:"forming",scheduledAt:startAt,createdAt:now}).returning();
   await db.insert(lobbyMembers).values({lobbyId:lobby.id,userId:user.userId,trainerName:profile.trainerName,pokemon:row.pokemon,contact:profile.contact,joinedAt:now});
   return Response.json({recruit:{...row,avatarUrl:profile.avatarUrl}},{status:201});
