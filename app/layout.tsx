@@ -27,7 +27,11 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: base,
     title,
     description,
-    icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
+    icons: {
+      icon: "/favicon.svg",
+      shortcut: "/favicon.svg",
+      apple: "/yunamatch-official-icon-v2.png",
+    },
     manifest:"/manifest.webmanifest",
     appleWebApp:{capable:true,statusBarStyle:"default",title:"ユナマッチ"},
     openGraph: { title, description, type: "website", images: [{ url: socialImage, width: 1200, height: 630 }] },

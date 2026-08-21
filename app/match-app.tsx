@@ -682,9 +682,10 @@ export default function MatchApp({
     initialProfile || defaultProfile,
   );
   const [avatarProcessing, setAvatarProcessing] = useState(false);
-  const [pushState, setPushState] = useState<"off" | "on" | "unsupported">(
-    "off",
-  );
+  const [pushState, setPushState] = useState<
+    "off" | "on" | "install-required" | "denied" | "unsupported"
+  >("off");
+  const [pushHelpOpen, setPushHelpOpen] = useState(false);
   const [recruitAlertsEnabled, setRecruitAlertsEnabled] = useState(false);
   const [recruitAlertUpdating, setRecruitAlertUpdating] = useState(false);
   const [quickRecruiting, setQuickRecruiting] = useState("");
@@ -1016,8 +1017,22 @@ export default function MatchApp({
 
   useEffect(() => {
     if (preview || guestMode) return;
+    const isAppleMobile =
+      /iPad|iPhone|iPod/i.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
+    if (isAppleMobile && !isStandalone) {
+      Promise.resolve().then(() => setPushState("install-required"));
+      return;
+    }
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
       Promise.resolve().then(() => setPushState("unsupported"));
+      return;
+    }
+    if ("Notification" in window && Notification.permission === "denied") {
+      Promise.resolve().then(() => setPushState("denied"));
       return;
     }
     navigator.serviceWorker
@@ -2324,14 +2339,29 @@ export default function MatchApp({
     );
   };
   const enablePush = async (): Promise<boolean> => {
-    if (pushState === "unsupported") {
-      notify("このブラウザはプッシュ通知に対応していません");
+    if (
+      pushState === "install-required" ||
+      pushState === "denied" ||
+      pushState === "unsupported"
+    ) {
+      setPushHelpOpen(true);
+      return false;
+    }
+    if (
+      !("Notification" in window) ||
+      !("serviceWorker" in navigator) ||
+      !("PushManager" in window)
+    ) {
+      setPushState("unsupported");
+      setPushHelpOpen(true);
       return false;
     }
     try {
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
-        notify("通知が許可されませんでした");
+        setPushState(permission === "denied" ? "denied" : "off");
+        if (permission === "denied") setPushHelpOpen(true);
+        else notify("通知の許可が完了しませんでした");
         return false;
       }
       const keyResponse = await fetch("/api/push");
@@ -2355,8 +2385,16 @@ export default function MatchApp({
       notify("プッシュ通知をオンにしました");
       return true;
     } catch {
-      notify("通知を設定できませんでした");
+      setPushHelpOpen(true);
       return false;
+    }
+  };
+  const copyNotificationLink = async () => {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/`);
+      notify("YUNAMATCHのリンクをコピーしました");
+    } catch {
+      notify("ブラウザの共有ボタンからSafariで開いてください");
     }
   };
   const toggleRecruitAlerts = async () => {
@@ -3976,7 +4014,11 @@ export default function MatchApp({
                   onClick={enablePush}
                   disabled={pushState === "on"}
                 >
-                  {pushState === "on" ? "通知オン" : "オンにする"}
+                  {pushState === "on"
+                    ? "通知オン"
+                    : pushState === "off"
+                      ? "オンにする"
+                      : "設定方法"}
                 </button>
               </section>
               <section className="linkedAccountSettings">
@@ -4409,6 +4451,49 @@ export default function MatchApp({
             </button>
             <button className="pushPromptLater" onClick={dismissPushPrompt}>
               あとで
+            </button>
+          </section>
+        </div>
+      )}
+
+      {pushHelpOpen && (
+        <div className="pushPromptBackdrop">
+          <section
+            className="pushPromptCard pushHelpCard"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="push-help-title"
+          >
+            <div className="pushPromptIcon">
+              <span className="bellGlyph" aria-hidden="true" />
+            </div>
+            <small>NOTIFICATION SETUP</small>
+            <h2 id="push-help-title">
+              {pushState === "denied"
+                ? "通知の許可をオンにしてください"
+                : "ホーム画面から開くと通知できます"}
+            </h2>
+            {pushState === "denied" ? (
+              <p>
+                端末の「設定」→「通知」→「YUNAMATCH」から通知を許可し、アプリを開き直してください。
+              </p>
+            ) : (
+              <>
+                <p>
+                  アプリ内ブラウザやiPhoneの通常タブでは、プッシュ通知を使えない場合があります。
+                </p>
+                <ol className="pushHelpSteps">
+                  <li><b>1</b><span>Safariなどの通常ブラウザでYUNAMATCHを開く</span></li>
+                  <li><b>2</b><span>共有ボタンから「ホーム画面に追加」を選ぶ</span></li>
+                  <li><b>3</b><span>追加したYUNAMATCHを開き「通知をオン」にする</span></li>
+                </ol>
+                <button className="pushPromptEnable" onClick={copyNotificationLink}>
+                  YUNAMATCHのリンクをコピー
+                </button>
+              </>
+            )}
+            <button className="pushPromptLater" onClick={() => setPushHelpOpen(false)}>
+              閉じる
             </button>
           </section>
         </div>

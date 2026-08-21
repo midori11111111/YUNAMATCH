@@ -184,6 +184,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /自分の勝率/);
   assert.match(app, /もらったいいね/);
   assert.match(app, /yunamatch-push-intro-v1/);
+  assert.match(app, /ホーム画面から開くと通知できます/);
+  assert.match(app, /install-required/);
   assert.match(app, /通知をオンにする/);
   assert.match(app, /navPersonIcon/);
   assert.match(app, /メイト申請を送る/);
