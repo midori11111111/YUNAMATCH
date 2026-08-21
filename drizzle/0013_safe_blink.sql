@@ -1,0 +1,1 @@
+ALTER TABLE `recruits` ADD `start_time_undecided` integer DEFAULT false NOT NULL;

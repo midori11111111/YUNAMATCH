@@ -86,6 +86,9 @@ export const recruits = sqliteTable(
     contact: text("contact").notNull(),
     status: text("status").notNull().default("open"),
     startAt: integer("start_at", { mode: "timestamp_ms" }).notNull().default(0),
+    startTimeUndecided: integer("start_time_undecided", { mode: "boolean" })
+      .notNull()
+      .default(false),
     expiresAt: integer("expires_at", { mode: "timestamp_ms" })
       .notNull()
       .default(0),

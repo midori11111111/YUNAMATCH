@@ -70,9 +70,17 @@ try {
 
   const owner = userHeaders("e2e-owner", "owner@example.test");
   const applicant = userHeaders("e2e-applicant", "applicant@example.test");
+  const cancelTester = userHeaders("e2e-cancel", "cancel@example.test");
   const profile = (trainerName, pokemon, gender, contact) => ({ trainerName, mainPokemon: [pokemon], highestRate: "マスター 1400〜1599", playTime: ["平日 夜（18〜22時）"], gender, contact, avatarUrl: "", ageConfirmed: true, termsAccepted: true });
   await api("/api/profile", { user: owner, method: "PUT", body: profile("募集テスター", "ゲッコウガ", "男性", "Discord: owner-test") });
   await api("/api/profile", { user: applicant, method: "PUT", body: profile("申請テスター", "ハピナス", "女性", "Discord: applicant-test") });
+  await api("/api/profile", { user: cancelTester, method: "PUT", body: profile("取消テスター", "ピカチュウ", "男性", "Discord: cancel-test") });
+
+  const undecided = await api("/api/recruits", { user: cancelTester, method: "POST", body: { pokemon: "ピカチュウ", roles: ["下レーン"], matches: 800, winRate: 52, startsIn: "undecided", duration: 1, partySize: 2, desiredPokemon: "すべて", desiredRole: "指定なし", note: "時間相談" } });
+  assert.equal(undecided.recruit.startTimeUndecided, true);
+  await api("/api/recruits", { user: cancelTester, method: "PATCH", body: { recruitId: undecided.recruit.id, action: "cancel" } });
+  const afterCancel = await api("/api/recruits", { user: applicant });
+  assert.equal(afterCancel.recruits.some((row) => row.id === undecided.recruit.id), false);
 
   const created = await api("/api/recruits", { user: owner, method: "POST", body: { pokemon: "ゲッコウガ", role: "スピード型", matches: 1200, winRate: 54.5, startsIn: 0, duration: 1, partySize: 2, desiredPokemon: "ハピナス", desiredRole: "サポート型", note: "通しテスト" } });
   const listed = await api("/api/recruits", { user: applicant });
@@ -115,7 +123,7 @@ try {
   const connectionsAfterDeletion = await api("/api/connections", { user: applicant });
   assert.equal(connectionsAfterDeletion.connections.length, 0);
 
-  console.log("✓ 登録→募集→申請→承認→チャット→プレイ完了→NGワード→ブロック→問い合わせ→退会を確認しました");
+  console.log("✓ 登録→時間相談募集→募集キャンセル→申請→承認→チャット→プレイ完了→NGワード→ブロック→問い合わせ→退会を確認しました");
 } finally {
   if (server) server.kill("SIGTERM");
   await rm(temporary, { recursive: true, force: true });

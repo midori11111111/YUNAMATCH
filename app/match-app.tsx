@@ -26,6 +26,7 @@ type Recruit = {
   note: string;
   avatarUrl?: string;
   startAt: string;
+  startTimeUndecided: boolean;
   expiresAt: string;
   partySize: number;
   desiredPokemon: string;
@@ -119,6 +120,7 @@ type Lobby = {
   ownerId: string;
   status: string;
   scheduledAt: string;
+  startTimeUndecided: boolean;
   partySize: number;
   pokemon: string;
   desiredPokemon: string;
@@ -265,6 +267,7 @@ const previewRecruit: Recruit = {
   playTime: "平日 夜（18〜22時）",
   note: "中央キャリーを支えるのが好きです。楽しく連携しながら勝ちたい！",
   startAt: new Date().toISOString(),
+  startTimeUndecided: false,
   expiresAt: new Date(Date.now() + 7_200_000).toISOString(),
   partySize: 2,
   desiredPokemon: "ゲッコウガ",
@@ -310,6 +313,9 @@ function formatStart(value: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+function formatRecruitStart(recruit: Recruit) {
+  return recruit.startTimeUndecided ? "時間は相談" : `${formatStart(recruit.startAt)}開始`;
 }
 function formatActivity(value: string) {
   const date = new Date(value);
@@ -571,6 +577,8 @@ export default function MatchApp({
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [recruitShare, setRecruitShare] = useState<Recruit | null>(null);
+  const [recruitNotifyPrompt, setRecruitNotifyPrompt] =
+    useState<Recruit | null>(null);
   const [safetyTarget, setSafetyTarget] = useState<SafetyTarget | null>(null);
   const [supportOpen, setSupportOpen] = useState(false);
   const [deletionOpen, setDeletionOpen] = useState(false);
@@ -1314,7 +1322,8 @@ export default function MatchApp({
     const roles = formData.getAll("roles").map(String);
     const body = { ...Object.fromEntries(formData), roles };
     if (preview) {
-      const startsIn = Number(body.startsIn),
+      const startTimeUndecided = body.startsIn === "undecided",
+        startsIn = startTimeUndecided ? 0 : Number(body.startsIn),
         duration = Number(body.duration),
         startAt = new Date(Date.now() + startsIn * 60_000);
       const recruit = {
@@ -1330,6 +1339,7 @@ export default function MatchApp({
         playTime: profile.playTime.join("・"),
         note: typeof body.note === "string" ? body.note.trim() : "",
         startAt: startAt.toISOString(),
+        startTimeUndecided,
         expiresAt: new Date(
           startAt.getTime() + duration * 3_600_000,
         ).toISOString(),
@@ -1338,7 +1348,8 @@ export default function MatchApp({
         desiredRole: String(body.desiredRole),
       };
       setMyRecruit(recruit);
-      setRecruitShare(recruit);
+      if (pushState === "on") setRecruitShare(recruit);
+      else setRecruitNotifyPrompt(recruit);
       setLobbies([
         {
           id: -1,
@@ -1346,6 +1357,7 @@ export default function MatchApp({
           ownerId: "preview",
           status: "forming",
           scheduledAt: recruit.startAt,
+          startTimeUndecided: recruit.startTimeUndecided,
           partySize: recruit.partySize,
           pokemon: recruit.pokemon,
           desiredPokemon: recruit.desiredPokemon,
@@ -1386,11 +1398,41 @@ export default function MatchApp({
       return;
     }
     setMyRecruit(data.recruit);
-    setRecruitShare(data.recruit);
+    if (pushState === "on") setRecruitShare(data.recruit);
+    else setRecruitNotifyPrompt(data.recruit);
     setCompose(false);
     notify("募集を公開しました");
     await loadRecruits();
     setTab("recruit");
+  };
+
+  const finishRecruitNotifyPrompt = async (enable: boolean) => {
+    const recruit = recruitNotifyPrompt;
+    setRecruitNotifyPrompt(null);
+    if (enable) await enablePush();
+    if (recruit) setRecruitShare(recruit);
+  };
+  const cancelRecruit = async (recruit: Recruit) => {
+    if (!window.confirm("この募集をキャンセルしますか？届いている未承認の申請も終了します。")) return;
+    if (preview) {
+      setMyRecruit(null);
+      setLobbies([]);
+      notify("募集をキャンセルしました");
+      return;
+    }
+    const response = await fetch("/api/recruits", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ recruitId: recruit.id, action: "cancel" }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      notify(data.error || "募集をキャンセルできませんでした");
+      return;
+    }
+    setMyRecruit(null);
+    await Promise.all([loadRecruits(), loadLobbies(), loadNotices()]);
+    notify("募集をキャンセルしました");
   };
 
   const recruitUrl = (recruit: Recruit) =>
@@ -1401,7 +1443,7 @@ export default function MatchApp({
     [
       `【ポケモンユナイト仲間募集】`,
       `${recruit.pokemon} / ${recruit.role}`,
-      `${recruit.acceptedCount + 1}/${recruit.partySize}人・${formatStart(recruit.startAt)}開始`,
+      `${recruit.acceptedCount + 1}/${recruit.partySize}人・${formatRecruitStart(recruit)}`,
       recruit.desiredPokemon !== "すべて"
         ? `希望ポケモン: ${recruit.desiredPokemon}`
         : "",
@@ -2266,9 +2308,10 @@ export default function MatchApp({
                         : myRecruit.playTime}
                     </span>
                   </div>
-                  <button onClick={() => setRecruitShare(myRecruit)}>
-                    共有
-                  </button>
+                  <div className="myRecruitActions">
+                    <button onClick={() => setRecruitShare(myRecruit)}>共有</button>
+                    <button onClick={() => cancelRecruit(myRecruit)}>キャンセル</button>
+                  </div>
                 </article>
               )}
               <div className="recruitList">
@@ -2302,7 +2345,7 @@ export default function MatchApp({
                         </div>
                       </header>
                       <div className="recruitBadges">
-                        <span>{formatStart(recruit.startAt)}開始</span>
+                        <span>{formatRecruitStart(recruit)}</span>
                         <span>
                           {recruit.desiredPokemon === "すべて"
                             ? "相方指定なし"
@@ -2320,11 +2363,11 @@ export default function MatchApp({
                           <strong>{recruit.playTime}</strong>
                         </div>
                         <div>
-                          <small>試合数</small>
+                          <small>本人の試合数</small>
                           <strong>{recruit.matches.toLocaleString()}戦</strong>
                         </div>
                         <div>
-                          <small>勝率</small>
+                          <small>本人の勝率</small>
                           <strong>{recruit.winRate}%</strong>
                         </div>
                       </div>
@@ -2583,7 +2626,9 @@ export default function MatchApp({
                         <header>
                           <div>
                             <small>
-                              {formatStart(lobby.scheduledAt)} START
+                              {lobby.startTimeUndecided
+                                ? "時間は相談"
+                                : `${formatStart(lobby.scheduledAt)} START`}
                             </small>
                             <h2>{lobby.pokemon}チーム</h2>
                             <p>
@@ -3582,8 +3627,9 @@ export default function MatchApp({
             </fieldset>
             <div className="threeFields">
               <label>
-                開始
-                <select name="startsIn" defaultValue="0">
+                開始時間 <small>任意</small>
+                <select name="startsIn" defaultValue="undecided">
+                  <option value="undecided">相談して決める</option>
                   <option value="0">今から</option>
                   <option value="30">30分後</option>
                   <option value="60">1時間後</option>
@@ -3629,7 +3675,7 @@ export default function MatchApp({
             </div>
             <div className="twoFields">
               <label>
-                試合数
+                自分の試合数
                 <input
                   name="matches"
                   type="number"
@@ -3640,7 +3686,7 @@ export default function MatchApp({
                 />
               </label>
               <label>
-                勝率
+                自分の勝率
                 <input
                   name="winRate"
                   type="number"
@@ -3667,6 +3713,19 @@ export default function MatchApp({
               {sending ? "公開中…" : "募集を公開する"}
             </button>
           </form>
+        </div>
+      )}
+
+      {recruitNotifyPrompt && (
+        <div className="modalBackdrop">
+          <section className="recruitNotifyCard" role="dialog" aria-modal="true" aria-labelledby="recruit-notify-title">
+            <div className="recruitNotifyIcon"><span className="bellGlyph" aria-hidden="true" /></div>
+            <small>募集を公開しました</small>
+            <h2 id="recruit-notify-title">参加申請を<br />見逃さないようにしよう</h2>
+            <p>通知をオンにすると、サイトを閉じていても申請やマッチ成立がすぐ分かります。</p>
+            <button className="pushPromptEnable" onClick={() => finishRecruitNotifyPrompt(true)}>通知をオンにして続ける</button>
+            <button className="pushPromptLater" onClick={() => finishRecruitNotifyPrompt(false)}>今はしない</button>
+          </section>
         </div>
       )}
 
@@ -3699,7 +3758,7 @@ export default function MatchApp({
                     ? recruitShare.role
                     : recruitShare.rank}
                 </span>
-                <p>{recruitShare.playTime}</p>
+                <p>{formatRecruitStart(recruitShare)} ・ {recruitShare.playTime}</p>
               </div>
             </div>
             <div className="socialShareGrid">

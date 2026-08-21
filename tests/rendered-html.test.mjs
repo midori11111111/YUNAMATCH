@@ -125,6 +125,11 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /ランク行きませんか？/);
   assert.match(app, /一緒に遊んだ/);
   assert.match(app, /プレイ完了/);
+  assert.match(app, /相談して決める/);
+  assert.match(app, /募集をキャンセル/);
+  assert.match(app, /通知をオンにして続ける/);
+  assert.match(app, /自分の試合数/);
+  assert.match(app, /自分の勝率/);
   assert.match(app, /もらったいいね/);
   assert.match(app, /yunamatch-push-intro-v1/);
   assert.match(app, /通知をオンにする/);
@@ -154,6 +159,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(migration, /CREATE TABLE `connections`/);
   assert.match(profileMigration, /CREATE TABLE `profiles`/);
   assert.match(lobbyApi, /lobbyMembers/);
+  assert.match(lobbyApi, /startTimeUndecided/);
   assert.match(pushApi, /pushSubscriptions/);
   assert.match(discordApi, /x-signature-ed25519/);
   assert.match(discordApi, /options\.lane/);
