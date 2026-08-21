@@ -42,6 +42,8 @@ type ProfileCandidate = {
   playTime: string[];
   gender: string;
   avatarUrl?: string;
+  likeCount: number;
+  popular: boolean;
   registeredAt: string;
   lastActiveAt: string;
 };
@@ -90,6 +92,8 @@ type Connection = {
   mutualAgain: boolean;
   playedByMe: boolean;
   playedByMate: boolean;
+  myRatingScore: number;
+  myRatingTags: string[];
   latestMessage: string;
   latestAt: string;
   unreadCount: number;
@@ -257,6 +261,20 @@ const requestMessagePresets = [
   "楽しく遊びたいです！",
   "編成を相談したいです",
 ];
+const mateRatingTags = [
+  "マナーが良い",
+  "連携しやすい",
+  "雰囲気が良い",
+  "VCしやすい",
+];
+const mateRatingLabels = [
+  "",
+  "いまひとつ",
+  "少し気になった",
+  "ふつう",
+  "良かった",
+  "最高だった",
+];
 const discordInviteUrl = "https://discord.gg/sRxr8fD8Z6";
 const pokemonUniteIosUrl =
   "https://apps.apple.com/jp/app/pokemon-unite/id1512321575";
@@ -297,6 +315,8 @@ const previewProfile: ProfileCandidate = {
   playTime: ["平日 夜（18〜22時）", "土日 夜・深夜"],
   gender: "女性",
   avatarUrl: "",
+  likeCount: 12,
+  popular: true,
   registeredAt: new Date().toISOString(),
   lastActiveAt: new Date().toISOString(),
 };
@@ -593,6 +613,10 @@ export default function MatchApp({
   const [messageSending, setMessageSending] = useState(false);
   const messageSendingRef = useRef(false);
   const [requestMessage, setRequestMessage] = useState("");
+  const [ratingTarget, setRatingTarget] = useState<Connection | null>(null);
+  const [ratingScore, setRatingScore] = useState(0);
+  const [ratingTags, setRatingTags] = useState<string[]>([]);
+  const [ratingSending, setRatingSending] = useState(false);
   const [matePresence, setMatePresence] = useState({
     online: false,
     typing: false,
@@ -1823,6 +1847,73 @@ export default function MatchApp({
     );
     return true;
   };
+  const openMateRating = (connection: Connection) => {
+    setRatingTarget(connection);
+    setRatingScore(connection.myRatingScore || 0);
+    setRatingTags(connection.myRatingTags || []);
+  };
+  const toggleRatingTag = (tag: string) =>
+    setRatingTags((current) =>
+      current.includes(tag)
+        ? current.filter((value) => value !== tag)
+        : [...current, tag],
+    );
+  const submitMateRating = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!ratingTarget || !ratingScore || ratingSending) return;
+    if (preview) {
+      const update = {
+        myRatingScore: ratingScore,
+        myRatingTags: ratingTags,
+      };
+      setConnections((rows) =>
+        rows.map((row) =>
+          row.id === ratingTarget.id ? { ...row, ...update } : row,
+        ),
+      );
+      setSelectedConnection((value) =>
+        value?.id === ratingTarget.id ? { ...value, ...update } : value,
+      );
+      setRatingTarget(null);
+      notify("評価を保存しました");
+      return;
+    }
+    setRatingSending(true);
+    try {
+      const response = await fetch("/api/ratings", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          connectionId: ratingTarget.id,
+          score: ratingScore,
+          tags: ratingTags,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        notify(data.error || "評価を保存できませんでした");
+        return;
+      }
+      const update = {
+        myRatingScore: data.score,
+        myRatingTags: data.tags || [],
+      };
+      setConnections((rows) =>
+        rows.map((row) =>
+          row.id === ratingTarget.id ? { ...row, ...update } : row,
+        ),
+      );
+      setSelectedConnection((value) =>
+        value?.id === ratingTarget.id ? { ...value, ...update } : value,
+      );
+      setRatingTarget(null);
+      notify("評価を保存しました。今後のおすすめに反映されます");
+    } catch {
+      notify("通信が不安定です。もう一度お試しください");
+    } finally {
+      setRatingSending(false);
+    }
+  };
   const markPlayed = async (connection: Connection) => {
     if (connection.playedByMe) return;
     if (preview) {
@@ -1836,6 +1927,7 @@ export default function MatchApp({
         value?.id === connection.id ? { ...value, ...data } : value,
       );
       notify("一緒に遊んだことを記録しました");
+      openMateRating({ ...connection, ...data });
       return;
     }
     const response = await fetch("/api/connections", {
@@ -1855,6 +1947,7 @@ export default function MatchApp({
       value?.id === connection.id ? { ...value, ...data } : value,
     );
     notify("一緒に遊んだことを記録しました");
+    openMateRating({ ...connection, ...data });
   };
   const rematch = async (connection: Connection) => {
     const response = await fetch("/api/connections", {
@@ -2441,6 +2534,10 @@ export default function MatchApp({
                         <PokemonLabel key={name} name={name} />
                       ))}
                     </span>
+                    <span className="fullCardPopularity">
+                      {current.popular && <b>人気のメイト</b>}
+                      <small>♥ {current.likeCount}人からいいね</small>
+                    </span>
                     <span className="fullCardTime">
                       ◷ {current.playTime.join("・")}
                     </span>
@@ -2724,6 +2821,17 @@ export default function MatchApp({
                         ? "プレイ済み"
                         : "一緒に遊んだ"}
                     </button>
+                    {selectedConnection.playedByMe && (
+                      <button
+                        className="ratingButton"
+                        onClick={() => openMateRating(selectedConnection)}
+                      >
+                        ☆{" "}
+                        {selectedConnection.myRatingScore
+                          ? "評価を編集"
+                          : "この人を評価"}
+                      </button>
+                    )}
                     <button
                       className={selectedConnection.againByMe ? "active" : ""}
                       onClick={() => toggleAgain(selectedConnection)}
@@ -3930,6 +4038,10 @@ export default function MatchApp({
               {candidateDetail.highestRate} ・ {candidateDetail.gender} ・{" "}
               {formatActivity(candidateDetail.lastActiveAt)}
             </p>
+            <div className="candidatePopularity">
+              {candidateDetail.popular && <b>人気のメイト</b>}
+              <span>♥ {candidateDetail.likeCount}人からいいねされています</span>
+            </div>
             <div className="pairingLine">
               <div>
                 <small>あなた</small>
@@ -3981,6 +4093,81 @@ export default function MatchApp({
               </button>
             </div>
           </section>
+        </div>
+      )}
+
+      {ratingTarget && (
+        <div className="modalBackdrop">
+          <button
+            className="backdropDismiss"
+            onClick={() => setRatingTarget(null)}
+            aria-label="評価を閉じる"
+          />
+          <form className="sheetModal ratingSheet" onSubmit={submitMateRating}>
+            <button
+              type="button"
+              className="closeButton"
+              onClick={() => setRatingTarget(null)}
+              aria-label="評価を閉じる"
+            >
+              ×
+            </button>
+            <UserAvatar
+              name={ratingTarget.mateName}
+              src={ratingTarget.mateAvatarUrl}
+              className="ratingAvatar"
+            />
+            <small className="modalKicker">AFTER PLAY</small>
+            <h2>{ratingTarget.mateName}さんとのプレイは？</h2>
+            <p className="ratingLead">
+              評価者と点数は相手に表示されません。おすすめ順の改善に使います。
+            </p>
+            <div className="ratingStars" aria-label="5段階評価">
+              {[1, 2, 3, 4, 5].map((score) => (
+                <button
+                  type="button"
+                  key={score}
+                  className={ratingScore >= score ? "active" : ""}
+                  onClick={() => setRatingScore(score)}
+                  aria-label={`${score}点`}
+                  aria-pressed={ratingScore === score}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+            <strong className="ratingLabel">
+              {ratingScore
+                ? mateRatingLabels[ratingScore]
+                : "星を選んでください"}
+            </strong>
+            <fieldset className="ratingTags">
+              <legend>良かったところ（任意）</legend>
+              <div>
+                {mateRatingTags.map((tag) => (
+                  <button
+                    type="button"
+                    key={tag}
+                    className={ratingTags.includes(tag) ? "active" : ""}
+                    onClick={() => toggleRatingTag(tag)}
+                    aria-pressed={ratingTags.includes(tag)}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+            <button
+              className="primaryButton"
+              disabled={!ratingScore || ratingSending}
+            >
+              {ratingSending
+                ? "保存しています…"
+                : ratingTarget.myRatingScore
+                  ? "評価を更新する"
+                  : "評価を送る"}
+            </button>
+          </form>
         </div>
       )}
 

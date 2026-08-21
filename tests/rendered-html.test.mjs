@@ -68,6 +68,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     connectionsApiSource,
     messageIdempotencyMigration,
     loginButton,
+    ratingsApi,
+    ratingsMigration,
   ] = await Promise.all([
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/match-app.tsx", root), "utf8"),
@@ -104,6 +106,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     readFile(new URL("app/api/connections/route.ts", root), "utf8"),
     readFile(new URL("drizzle/0015_special_harpoon.sql", root), "utf8"),
     readFile(new URL("vercel-proxy/app/login/login-button.tsx", root), "utf8"),
+    readFile(new URL("app/api/ratings/route.ts", root), "utf8"),
+    readFile(new URL("drizzle/0016_black_stick.sql", root), "utf8"),
   ]);
   assert.match(page, /getChatGPTUser/);
   assert.match(page, /initialProfile/);
@@ -163,6 +167,9 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /集合ロビー/);
   assert.match(app, /プッシュ通知/);
   assert.match(app, /全員そろったらプレイ開始/);
+  assert.match(app, /この人を評価/);
+  assert.match(app, /人気のメイト/);
+  assert.match(app, /人からいいねされています/);
   assert.match(css, /bottomNav/);
   assert.match(connectionsApi, /mutualAgain/);
   assert.match(connectionsApi, /userAPlayed/);
@@ -182,6 +189,9 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(discoverApi, /lastActiveAt/);
   assert.match(discoverApi, /limited:\s*true/);
   assert.match(discoverApi, /avatarUrl:\s*""/);
+  assert.match(discoverApi, /internalScore/);
+  assert.match(discoverApi, /likeCount/);
+  assert.doesNotMatch(discoverApi, /averageScore:/);
   assert.match(migration, /CREATE TABLE `connections`/);
   assert.match(profileMigration, /CREATE TABLE `profiles`/);
   assert.match(lobbyApi, /lobbyMembers/);
@@ -203,6 +213,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(safetyMigration, /support_tickets/);
   assert.match(supportApi, /24\*60\*60_000/);
   assert.match(exportApi, /content-disposition/);
+  assert.match(exportApi, /connectionRatings/);
   assert.match(likesApi, /いいねが届きました/);
   assert.match(likesApi, /onConflictDoNothing/);
   assert.match(likesMigration, /CREATE TABLE `profile_likes`/);
@@ -232,10 +243,16 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /連絡先を共有/);
   assert.match(privacyPage, /初期状態は非公開/);
   assert.match(privacyPage, /ログイン前のプロフィール表示/);
+  assert.match(privacyPage, /試合後評価とおすすめ順/);
   assert.match(connectionsSchema, /userAShareContact/);
   assert.match(connectionsSchema, /userBShareContact/);
   assert.match(connectionsApiSource, /action === "share_contact"/);
   assert.match(messageIdempotencyMigration, /idx_messages_sender_client/);
   assert.match(loginButton, /useFormStatus/);
   assert.match(loginButton, /disabled=\{pending\}/);
+  assert.match(ratingsApi, /先に「一緒に遊んだ」を記録してください/);
+  assert.match(ratingsApi, /onConflictDoUpdate/);
+  assert.match(ratingsMigration, /CREATE TABLE `connection_ratings`/);
+  assert.match(ratingsMigration, /idx_connection_ratings_rated_user/);
+  assert.match(ratingsMigration, /PRAGMA optimize/);
 });

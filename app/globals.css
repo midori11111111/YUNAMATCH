@@ -59,7 +59,7 @@ button { cursor: pointer; }
 .miniAvatar { overflow: hidden; padding: 0; color: #fff; border: 3px solid #fff; border-radius: 50%; background: linear-gradient(145deg, #ff689e, #ffabc9); box-shadow: 0 0 0 1px #eadfea; }
 .guestHeaderLogin { min-width: 56px; height: 32px; margin-left: -7px; border: 0; border-radius: 99px; color: #fff; background: linear-gradient(135deg, var(--purple), #9a70ef); font-size: 8px; font-weight: 950; box-shadow: 0 7px 18px #7257e82b; }
 .miniAvatarImage { width: 100%; height: 100%; display: grid; place-items: center; }
-.miniAvatarImage img, .mateAvatar img, .chatMateAvatar img, .profileHeroAvatar img, .avatarEditorPreview img, .shareTrainerAvatar img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.miniAvatarImage img, .mateAvatar img, .chatMateAvatar img, .profileHeroAvatar img, .avatarEditorPreview img, .shareTrainerAvatar img, .ratingAvatar img { width: 100%; height: 100%; display: block; object-fit: cover; }
 .headerIcon { justify-self: end; background: #f7f4fa; font-size: 15px; }
 .headerIcon i, .bottomNav i { position: absolute; display: grid; place-items: center; border-radius: 99px; color: #fff; background: var(--pink); font-size: 7px; font-style: normal; }
 .headerIcon i { width: 16px; height: 16px; right: -4px; top: -5px; }
@@ -223,6 +223,9 @@ button { cursor: pointer; }
 .fullCardPokemonList .pokemonLabel { min-width: 0; padding: 3px 9px 3px 4px; border-radius: 99px; color: #fff; background: #ffffff20; backdrop-filter: blur(7px); }
 .fullCardPokemonList .pokemonLabel > .pokemonVisual { width: 26px; height: 26px; border-radius: 50%; background: #ffffffdd; }
 .fullCardPokemonList .pokemonLabel > strong { max-width: 75px; color: #fff; font-size: 8px; }
+.fullCardPopularity { display: flex; align-items: center; gap: 7px; margin-top: 1px; }
+.fullCardPopularity b,.candidatePopularity b { padding: 5px 8px; border-radius: 99px; color: #7c5600; background: #fff0b7; font-size: 7px; font-weight: 950; }
+.fullCardPopularity small { color: #ffd7e6; font-size: 8px; font-weight: 900; }
 .fullCardTime { overflow: hidden; color: #ffffffdc; font-size: 9px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
 .profileTapHint { color: #ffffffa8; font-size: 7px; font-weight: 800; }
 .fullCardActions { height: 64px; position: absolute; z-index: 7; left: 16px; right: 16px; bottom: 14px; display: grid; grid-template-columns: .9fr 1.25fr; gap: 10px; }
@@ -257,10 +260,25 @@ button { cursor: pointer; }
 .candidateDetailAvatar { width: 62px; height: 62px; position: absolute; z-index: 2; left: 22px; bottom: 18px; overflow: hidden; display: grid; place-items: center; border: 3px solid #fff; border-radius: 50%; color: #fff; background: linear-gradient(145deg, #ff689e, #ffabc9); font-size: 23px; font-weight: 950; box-shadow: 0 9px 22px #2c17413d; }
 .candidateDetailSheet h2 { margin: 4px 0 3px; }
 .candidateDetailRank { margin: 0 0 4px; color: #817a89; font-size: 10px; }
+.candidatePopularity { display: flex; align-items: center; gap: 7px; margin: 9px 0 2px; }
+.candidatePopularity span { color: #d14177; font-size: 8px; font-weight: 850; }
 .candidateDetailActions { display: grid; grid-template-columns: .9fr 1.2fr; gap: 8px; margin-top: 15px; }
 .candidateDetailActions button { padding: 13px 8px; border: 0; border-radius: 14px; color: var(--pink); background: #fff2f7; font-size: 9px; font-weight: 950; }
 .candidateDetailActions button.liked { color: #fff; background: linear-gradient(145deg, #ff4f91, #ff82ad); }
 .candidateDetailActions button:last-child { color: #fff; background: linear-gradient(145deg, var(--purple), #9278f3); }
+.ratingSheet { text-align: center; }
+.ratingAvatar { width: 68px; height: 68px; display: grid; place-items: center; overflow: hidden; margin: 1px auto 13px; border: 3px solid #fff; border-radius: 50%; color: #fff; background: linear-gradient(145deg,var(--purple),var(--pink)); font-size: 23px; font-weight: 950; box-shadow: 0 9px 25px #6046bd32; }
+.ratingSheet h2 { margin: 5px 0 7px; font-size: 22px; }
+.ratingLead { margin: 0 auto 15px; color: #8a8490; font-size: 8px; line-height: 1.65; }
+.ratingStars { display: flex; justify-content: center; gap: 5px; }
+.ratingStars button { border: 0; padding: 2px; color: #ddd7df; background: none; font-size: 30px; line-height: 1; }
+.ratingStars button.active { color: #ffc32e; filter: drop-shadow(0 4px 7px #f4b51e3d); }
+.ratingLabel { min-height: 18px; display: block; margin-top: 7px; color: #6f4a00; font-size: 10px; }
+.ratingTags { margin: 14px 0 16px; padding: 0; border: 0; text-align: left; }
+.ratingTags legend { margin-bottom: 8px; color: #837d88; font-size: 8px; font-weight: 900; }
+.ratingTags > div { display: flex; flex-wrap: wrap; gap: 7px; }
+.ratingTags button { border: 1px solid #e5dfe8; border-radius: 99px; padding: 8px 10px; color: #756e7c; background: #fff; font-size: 8px; font-weight: 850; }
+.ratingTags button.active { color: #fff; border-color: transparent; background: linear-gradient(145deg,var(--purple),#9478ef); }
 
 .stateCard { min-height: 430px; margin: 0 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center; border: 1px solid var(--line); border-radius: 26px; background: #fff; box-shadow: 0 14px 38px #33294d12; }
 .stateCard h2 { margin: 18px 0 7px; font-size: 16px; }
@@ -537,6 +555,7 @@ button { cursor: pointer; }
 .reconnectBar .playedButton.active { color: #168463; border-color: #cdeee3; background: #eaf8f3; }
 .reconnectBar button:disabled { cursor: default; opacity: 1; }
 .reconnectBar .unitePlayButton { grid-column: 1/-1; color: #fff; border-color: transparent; background: linear-gradient(135deg,#f6a900 0%,#ffcf3d 47%,#7455e8 48%,#5c3ccf 100%); box-shadow: 0 8px 20px #6d51de2b; font-size: 9px; }
+.reconnectBar .ratingButton { color: #8f6700; border-color: #f1deb1; background: #fff8df; }
 .reconnectBar .rematchButton { color: #fff; border-color: transparent; background: linear-gradient(135deg, var(--purple), #8d75f1); }
 .reconnectBar .vcJoinButton { color: #fff; border-color: transparent; background: #5865f2; }
 .heartNotice { margin-bottom: 8px; padding: 9px 11px; border-radius: 11px; color: #c93671; background: #fff0f6; font-size: 7px; font-weight: 850; text-align: center; }

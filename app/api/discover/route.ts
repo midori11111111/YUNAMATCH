@@ -1,9 +1,11 @@
-import { and, desc, eq, or } from "drizzle-orm";
+import { and, desc, eq, or, sql } from "drizzle-orm";
 import {
   applications,
   blocks,
+  connectionRatings,
   connections,
   presence,
+  profileLikes,
   profiles,
   recruits,
 } from "../../../db/schema";
@@ -31,13 +33,61 @@ function parseList(value: string) {
   return value.trim() ? [value.trim()] : [];
 }
 
+async function loadProfileStats(db: ReturnType<typeof getDb>) {
+  const [likeRows, ratingRows] = await Promise.all([
+    db
+      .select({
+        userId: profileLikes.recipientId,
+        count: sql<number>`count(*)`,
+      })
+      .from(profileLikes)
+      .groupBy(profileLikes.recipientId),
+    db
+      .select({
+        userId: connectionRatings.ratedUserId,
+        count: sql<number>`count(*)`,
+        average: sql<number>`avg(${connectionRatings.score})`,
+      })
+      .from(connectionRatings)
+      .groupBy(connectionRatings.ratedUserId),
+  ]);
+  const likes = new Map(
+    likeRows.map((row) => [row.userId, Number(row.count) || 0]),
+  );
+  const ratings = new Map(
+    ratingRows.map((row) => [
+      row.userId,
+      { count: Number(row.count) || 0, average: Number(row.average) || 0 },
+    ]),
+  );
+  const publicStats = (userId: string) => {
+    const likeCount = likes.get(userId) || 0;
+    const rating = ratings.get(userId) || { count: 0, average: 0 };
+    return {
+      likeCount,
+      popular:
+        likeCount >= 3 ||
+        (rating.count >= 3 && rating.average >= 4.5),
+    };
+  };
+  const internalScore = (userId: string) => {
+    const likeCount = likes.get(userId) || 0;
+    const rating = ratings.get(userId) || { count: 0, average: 0 };
+    const quality =
+      (rating.average * rating.count + 4 * 5) / (rating.count + 5);
+    return quality + Math.min(Math.log1p(likeCount) * 0.08, 0.25);
+  };
+  return { publicStats, internalScore };
+}
+
 export async function GET() {
   const user = await getChatGPTUser();
   const db = getDb();
   if (!user) {
-    const [profileRows, activityRows] = await Promise.all([
+    const [profileRows, activityRows, stats] = await Promise.all([
       db.select().from(profiles).orderBy(desc(profiles.updatedAt)).limit(80),
       db.select().from(presence).limit(200),
+      loadProfileStats(db),
     ]);
     const lastActiveByUser = new Map(
       activityRows.map((row) => [row.userId, row.lastSeenAt]),
@@ -53,7 +103,11 @@ export async function GET() {
           row.termsAcceptedAt &&
           activityAt(row).getTime() >= activeCutoff,
       )
-      .sort((a, b) => activityAt(b).getTime() - activityAt(a).getTime())
+      .sort(
+        (a, b) =>
+          stats.internalScore(b.userId) - stats.internalScore(a.userId) ||
+          activityAt(b).getTime() - activityAt(a).getTime(),
+      )
       .slice(0, 30);
     const result = await Promise.all(
       visible.map(async (row) => ({
@@ -64,6 +118,7 @@ export async function GET() {
         playTime: parseList(row.playTime).slice(0, 7),
         gender: row.gender,
         avatarUrl: "",
+        ...stats.publicStats(row.userId),
         registeredAt: row.createdAt,
         lastActiveAt: activityAt(row),
       })),
@@ -83,6 +138,7 @@ export async function GET() {
     blockedMe,
     connectionRows,
     pendingRows,
+    stats,
   ] = await Promise.all([
     db.select().from(profiles).orderBy(desc(profiles.updatedAt)).limit(150),
     db.select().from(presence).limit(300),
@@ -114,6 +170,7 @@ export async function GET() {
           eq(recruits.kind, "profile"),
         ),
       ),
+    loadProfileStats(db),
   ]);
   const hidden = new Set<string>([
     user.userId,
@@ -142,10 +199,13 @@ export async function GET() {
       ? [...visible].sort(
           (a, b) =>
             Number(b.gender === "女性") - Number(a.gender === "女性") ||
+            stats.internalScore(b.userId) - stats.internalScore(a.userId) ||
             activityAt(b).getTime() - activityAt(a).getTime(),
         )
       : [...visible].sort(
-          (a, b) => activityAt(b).getTime() - activityAt(a).getTime(),
+          (a, b) =>
+            stats.internalScore(b.userId) - stats.internalScore(a.userId) ||
+            activityAt(b).getTime() - activityAt(a).getTime(),
         );
   const result = await Promise.all(
     prioritized.map(async (row) => ({
@@ -156,6 +216,7 @@ export async function GET() {
       playTime: parseList(row.playTime).slice(0, 7),
       gender: row.gender,
       avatarUrl: row.avatarUrl || "",
+      ...stats.publicStats(row.userId),
       registeredAt: row.createdAt,
       lastActiveAt: activityAt(row),
     })),

@@ -90,6 +90,7 @@ export async function DELETE(request:Request){
   const d1=env.DB;
   const id=user.userId;
   await d1.batch([
+    d1.prepare("DELETE FROM connection_ratings WHERE rater_id = ? OR rated_user_id = ?").bind(id,id),
     d1.prepare("DELETE FROM messages WHERE connection_id IN (SELECT id FROM connections WHERE user_a_id = ? OR user_b_id = ?)").bind(id,id),
     d1.prepare("DELETE FROM presence WHERE user_id = ?").bind(id),
     d1.prepare("DELETE FROM lobby_members WHERE user_id = ? OR lobby_id IN (SELECT id FROM lobbies WHERE owner_id = ?)").bind(id,id),

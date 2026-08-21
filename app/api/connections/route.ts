@@ -3,6 +3,7 @@ import { getDb } from "../../../db";
 import {
   applications,
   blocks,
+  connectionRatings,
   connections,
   messages,
   profiles,
@@ -118,21 +119,35 @@ export async function GET() {
       ),
     ),
   ];
-  const mateProfiles = mateIds.length
-    ? await db
-        .select({
-          userId: profiles.userId,
-          avatarUrl: profiles.avatarUrl,
-          contact: profiles.contact,
-        })
-        .from(profiles)
-        .where(inArray(profiles.userId, mateIds))
-    : [];
+  const [mateProfiles, ownRatings] = await Promise.all([
+    mateIds.length
+      ? db
+          .select({
+            userId: profiles.userId,
+            avatarUrl: profiles.avatarUrl,
+            contact: profiles.contact,
+          })
+          .from(profiles)
+          .where(inArray(profiles.userId, mateIds))
+      : Promise.resolve([]),
+    db
+      .select({
+        connectionId: connectionRatings.connectionId,
+        score: connectionRatings.score,
+        tags: connectionRatings.tags,
+      })
+      .from(connectionRatings)
+      .where(eq(connectionRatings.raterId, user.userId))
+      .limit(100),
+  ]);
   const mateAvatars = new Map(
     mateProfiles.map((profile) => [profile.userId, profile.avatarUrl]),
   );
   const mateContacts = new Map(
     mateProfiles.map((profile) => [profile.userId, profile.contact]),
+  );
+  const ownRatingByConnection = new Map(
+    ownRatings.map((rating) => [rating.connectionId, rating]),
   );
   const result = await Promise.all(
     visible.map(async (row) => {
@@ -145,6 +160,17 @@ export async function GET() {
         .orderBy(desc(messages.createdAt))
         .limit(1);
       const myLastRead = isA ? row.userALastReadAt : row.userBLastReadAt;
+      const myRating = ownRatingByConnection.get(row.id);
+      let myRatingTags: string[] = [];
+      try {
+        const parsed = myRating ? JSON.parse(myRating.tags) : [];
+        if (Array.isArray(parsed))
+          myRatingTags = parsed.filter(
+            (value): value is string => typeof value === "string",
+          );
+      } catch {
+        /* 古い評価のタグは空として扱う */
+      }
       const unreadRows = await db
         .select({ id: messages.id })
         .from(messages)
@@ -176,6 +202,8 @@ export async function GET() {
         mutualAgain: row.userAAgain && row.userBAgain,
         playedByMe: isA ? row.userAPlayed : row.userBPlayed,
         playedByMate: isA ? row.userBPlayed : row.userAPlayed,
+        myRatingScore: myRating?.score || 0,
+        myRatingTags,
         latestMessage:
           latest?.body ?? "マッチ成立！最初のメッセージを送りましょう",
         latestAt: latest?.createdAt ?? row.createdAt,

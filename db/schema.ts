@@ -203,6 +203,29 @@ export const messages = sqliteTable(
   ],
 );
 
+export const connectionRatings = sqliteTable(
+  "connection_ratings",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    connectionId: integer("connection_id")
+      .notNull()
+      .references(() => connections.id),
+    raterId: text("rater_id").notNull(),
+    ratedUserId: text("rated_user_id").notNull(),
+    score: integer("score").notNull(),
+    tags: text("tags").notNull().default("[]"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("idx_connection_ratings_connection_rater").on(
+      table.connectionId,
+      table.raterId,
+    ),
+    index("idx_connection_ratings_rated_user").on(table.ratedUserId),
+  ],
+);
+
 export const blocks = sqliteTable(
   "blocks",
   {
