@@ -27,7 +27,7 @@ test("renders the login-only entrance for anonymous visitors", async () => {
 });
 
 test("ships the matching app, onboarding, lobby, safety, analytics, and notifications", async () => {
-  const [page, app, css, authGateway, loginPage, connectionsApi, messagesApi, safetyApi, profileApi, migration, profileMigration, lobbyApi, pushApi, discordApi, expansionMigration, analyticsApi, statsApi, analyticsMigration, adminPanel] = await Promise.all([
+  const [page, app, css, authGateway, loginPage, connectionsApi, messagesApi, safetyApi, profileApi, applicationsApi, migration, profileMigration, lobbyApi, pushApi, discordApi, expansionMigration, analyticsApi, statsApi, analyticsMigration, adminPanel] = await Promise.all([
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/match-app.tsx", root), "utf8"),
     readFile(new URL("app/globals.css", root), "utf8"),
@@ -37,6 +37,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     readFile(new URL("app/api/messages/route.ts", root), "utf8"),
     readFile(new URL("app/api/safety/route.ts", root), "utf8"),
     readFile(new URL("app/api/profile/route.ts", root), "utf8"),
+    readFile(new URL("app/api/applications/route.ts", root), "utf8"),
     readFile(new URL("drizzle/0003_nifty_spyke.sql", root), "utf8"),
     readFile(new URL("drizzle/0004_omniscient_juggernaut.sql", root), "utf8"),
     readFile(new URL("app/api/lobbies/route.ts", root), "utf8"),
@@ -65,6 +66,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /登録してメイトを探す/);
   assert.match(app, /未入力の項目/);
   assert.match(app, /onboardingMissing/);
+  assert.match(app, /isProfileComplete/);
   assert.match(app, /募集中のメイト/);
   assert.match(app, /この人にプレイ申請/);
   assert.match(app, /集合ロビー/);
@@ -76,6 +78,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(safetyApi, /allowedReasons/);
   assert.match(profileApi, /mainPokemon/);
   assert.match(profileApi, /contactFor/);
+  assert.match(profileApi, /!genders\.has\(gender\)/);
+  assert.match(applicationsApi, /プロフィールの未入力項目/);
   assert.match(migration, /CREATE TABLE `connections`/);
   assert.match(profileMigration, /CREATE TABLE `profiles`/);
   assert.match(lobbyApi, /lobbyMembers/);
@@ -89,6 +93,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(analyticsMigration, /CREATE TABLE `site_visitors`/);
   assert.match(adminPanel, /今日の訪問者/);
   assert.match(app, /運営ダッシュボード/);
+  assert.doesNotMatch(app, /getPokemonImagePath|pokemonVisualImage/);
   assert.match(authGateway, /scope: "tweet\.read users\.read"/);
   assert.match(authGateway, /providers: \[Google, Line, Discord, xProvider\]/);
   assert.match(loginPage, /LINEでログイン/);

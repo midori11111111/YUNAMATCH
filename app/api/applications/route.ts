@@ -24,6 +24,7 @@ export async function POST(request:Request){
  if(!recruit)return Response.json({error:"この募集は終了しています"},{status:404});
  if(!profile)return Response.json({error:"先にプロフィールを登録してください"},{status:409});
  if(profile.suspendedAt)return Response.json({error:"このアカウントは現在利用できません"},{status:403});
+ if(!profile.ageConfirmed||!profile.termsAcceptedAt||!profile.contact.trim()||!["男性","女性"].includes(profile.gender))return Response.json({error:"プロフィールの未入力項目を登録してください"},{status:409});
  if(recruit.acceptedCount>=recruit.partySize-1)return Response.json({error:"この募集は満員です"},{status:409});
  if(recruit.ownerId===user.userId)return Response.json({error:"自分の募集には申請できません"},{status:400});
  const exists=await db.select().from(applications).where(and(eq(applications.recruitId,p.recruitId),eq(applications.applicantId,user.userId))).limit(1);

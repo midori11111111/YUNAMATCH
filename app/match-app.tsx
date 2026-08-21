@@ -1,9 +1,8 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element -- local transparent artwork needs direct, predictable sizing in the card UI */
+/* eslint-disable @next/next/no-img-element -- user-uploaded profile images are served by the app */
 
 import { ChangeEvent, FormEvent, PointerEvent, useEffect, useMemo, useState } from "react";
-import { getPokemonImagePath } from "./pokemon-images";
 
 type Recruit = { id:number; trainerName:string; gender:string; pokemon:string; role:string; matches:number; winRate:number; rank:string; playTime:string; note:string; avatarUrl?:string; startAt:string; expiresAt:string; partySize:number; desiredPokemon:string; desiredRole:string; acceptedCount:number };
 type Notice = { id:number; applicantName?:string; applicantContact?:string; trainerName?:string; pokemon:string; message?:string; status:string; recruitPokemon?:string; ownerContact?:string|null };
@@ -45,8 +44,12 @@ function formatStart(value:string){const date=new Date(value);if(Number.isNaN(da
 function decodePushKey(value:string){const padding="=".repeat((4-value.length%4)%4);const raw=atob((value+padding).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from([...raw].map(char=>char.charCodeAt(0)))}
 
 function PokemonImage({name}:{name:string}){
-  const src=getPokemonImagePath(name);
-  return <><span className="pokemonVisualFallback" aria-hidden="true">{name.slice(0,1)}</span>{src&&<img className="pokemonVisualImage" src={src} alt="" decoding="async"/>}</>;
+  const mark=name.replace(/^(?:アローラ|ガラル)/,"").slice(0,2);
+  return <span className="pokemonVisualFallback" aria-hidden="true">{mark}</span>;
+}
+
+function isProfileComplete(value:Profile|null|undefined){
+  return Boolean(value&&value.trainerName.trim()&&value.mainPokemon.length&&value.playTime.length&&value.gender&&value.contact.trim()&&value.ageConfirmed&&value.termsAccepted);
 }
 
 function UserAvatar({name,src,className}:{name:string;src?:string;className:string}){
@@ -112,7 +115,7 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
   const [pushState,setPushState]=useState<"off"|"on"|"unsupported">("off");
   const [profileReady,setProfileReady]=useState(preview||initialProfile!==undefined);
   const [suspended,setSuspended]=useState(initialSuspended);
-  const [onboardingOpen,setOnboardingOpen]=useState(preview||(initialProfile!==undefined&&(!initialProfile||!initialProfile.ageConfirmed||!initialProfile.termsAccepted)));
+  const [onboardingOpen,setOnboardingOpen]=useState(preview||(initialProfile!==undefined&&!isProfileComplete(initialProfile)));
   const primaryPokemon=profile.mainPokemon[0]||"ゲッコウガ";
   const onboardingMissing=[!profile.trainerName.trim()&&"トレーナー名",profile.mainPokemon.length===0&&"メインポケモン",profile.playTime.length===0&&"遊べる時間帯",!profile.gender&&"性別",!profile.contact.trim()&&"連絡先",!profile.ageConfirmed&&"年齢確認",!profile.termsAccepted&&"利用規約への同意"].filter((value):value is string=>Boolean(value));
 
@@ -175,7 +178,7 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
       if(!active)return;
       if(response.status===401){location.href=data.signIn||"/login";return}
       if(data.suspended){setSuspended(true);setOnboardingOpen(false)}
-      else if(data.profile){setProfile(data.profile);setOnboardingOpen(!data.profile.ageConfirmed||!data.profile.termsAccepted)}
+      else if(data.profile){setProfile(data.profile);setOnboardingOpen(!isProfileComplete(data.profile))}
       else{setProfile(value=>({...value,trainerName:data.suggested?.trainerName||value.trainerName,contact:data.suggested?.contact||value.contact}));setOnboardingOpen(true)}
     }).catch(()=>{if(active)notify("プロフィールを確認できませんでした。再読み込みしてください")}).finally(()=>{window.clearTimeout(timeout);if(active)setProfileReady(true)});
     return()=>{active=false;window.clearTimeout(timeout);controller.abort()};
@@ -305,9 +308,7 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
     ctx.fillStyle="#fff";drawFitted(profile.trainerName||"TRAINER",110,245,610,72,42);ctx.font="800 28px sans-serif";ctx.fillText(profile.highestRate,112,292);
     ctx.fillStyle="#ffdfeb";ctx.font="900 24px sans-serif";ctx.fillText("MAIN POKÉMON",112,372);ctx.fillStyle="#fff";drawFitted(profile.mainPokemon.join(" / "),110,430,620,48,28);
     ctx.fillStyle="#ffffffdd";ctx.font="700 22px sans-serif";drawFitted(profile.playTime.join(" / "),112,565,650,24,18);
-    const pokemonImagePath=getPokemonImagePath(primaryPokemon);let imagePainted=false;
-    if(pokemonImagePath){try{const image=await loadImage(pokemonImagePath);const scale=Math.min(350/image.naturalWidth,405/image.naturalHeight);const width=image.naturalWidth*scale;const height=image.naturalHeight*scale;ctx.save();ctx.shadowColor="#24164e88";ctx.shadowBlur=28;ctx.shadowOffsetY=18;ctx.drawImage(image,760+(350-width)/2,170+(405-height)/2,width,height);ctx.restore();imagePainted=true}catch{/* 画像の読み込み失敗時は文字を表示 */}}
-    if(!imagePainted){ctx.textAlign="center";ctx.font="900 172px sans-serif";ctx.fillText(primaryPokemon.slice(0,1),930,455);ctx.textAlign="left"}
+    ctx.save();ctx.translate(930,370);ctx.fillStyle="#ffffff20";ctx.beginPath();ctx.arc(0,0,178,0,Math.PI*2);ctx.fill();ctx.strokeStyle="#ffffff50";ctx.lineWidth=3;ctx.stroke();ctx.fillStyle="#fff";ctx.textAlign="center";ctx.textBaseline="middle";ctx.font="900 118px sans-serif";ctx.fillText(primaryPokemon.replace(/^(?:アローラ|ガラル)/,"").slice(0,2),0,-16);ctx.font="800 25px sans-serif";ctx.fillStyle="#ffffffcc";ctx.fillText(primaryPokemon,0,92);ctx.restore();ctx.textAlign="left";ctx.textBaseline="alphabetic";
     const blob=await new Promise<Blob|null>(resolve=>canvas.toBlob(resolve,"image/png"));if(!blob)return;const file=new File([blob],"yunamatch-trainer-card.png",{type:"image/png"});
     const text=`${profile.mainPokemon.join("・")}を使っています！相性のいいメイトを探しています。 #YUNAMATCH`;
     try{if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}))){await navigator.share({title:"YUNAMATCH トレーナーカード",text,url:"https://yunamatch.vercel.app/",files:[file]});setShareOpen(false);return}}catch(error){if((error as Error).name==="AbortError")return}
