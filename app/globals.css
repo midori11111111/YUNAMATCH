@@ -163,6 +163,83 @@ button { cursor: pointer; }
 .profileLikeButton.liked { color: #fff; border: 0 !important; background: linear-gradient(145deg, #ff4f91, #ff82ad) !important; box-shadow: 0 10px 22px #ff5f9f35 !important; }
 .requestButton { color: #fff; border: 0 !important; background: linear-gradient(145deg, var(--purple), #9278f3) !important; box-shadow: 0 11px 25px #7257e835 !important; }
 
+.fullDiscoverView { height: 100%; min-height: 0; position: relative; overflow: hidden; padding: 0 12px 10px; background: linear-gradient(180deg, #fff 0, #f8f5fb 100%); }
+.discoverModeBar { height: 60px; display: flex; align-items: center; gap: 7px; padding: 6px 2px 8px; }
+.discoverModeTabs { min-width: 0; height: 46px; display: grid; grid-template-columns: 1fr 1fr; flex: 1; padding: 4px; border-radius: 18px; background: #f4f1f7; }
+.discoverModeTabs button { position: relative; border: 0; border-radius: 14px; color: #aaa4af; background: transparent; font-size: 11px; font-weight: 950; }
+.discoverModeTabs button.active { color: var(--ink); background: #fff; box-shadow: 0 6px 17px #34294c12; }
+.discoverModeTabs b { min-width: 17px; height: 17px; margin-left: 5px; display: inline-grid; place-items: center; padding: 0 4px; border-radius: 99px; color: #fff; background: var(--pink); font-size: 7px; }
+.discoverHelp, .discoverFilter { height: 44px; flex: none; border: 1px solid #ece7f1; border-radius: 15px; color: #777080; background: #fff; box-shadow: 0 5px 15px #3c315c0c; }
+.discoverHelp { width: 49px; display: grid; place-items: center; align-content: center; gap: 1px; font-size: 6px; font-weight: 900; }
+.discoverHelp span { font-size: 13px; line-height: 1; }
+.discoverFilter { width: 44px; color: var(--pink); font-size: 18px; font-weight: 950; }
+.fullDiscoverCard { height: calc(100% - 60px); min-height: 0; position: relative; overflow: hidden; border-radius: 28px; color: #fff; background: linear-gradient(145deg, #5134ca, #9268ef 58%, #e6599b); box-shadow: 0 20px 42px #37275929; touch-action: pan-y; transform-origin: 50% 100%; }
+.fullDiscoverCard.left { animation: swipeLeft .22s ease forwards; }
+.fullDiscoverCard.right { animation: swipeRight .22s ease forwards; }
+.fullCardBackdrop { position: absolute; inset: 0; overflow: hidden; background: radial-gradient(circle at 68% 20%, #ffffff42, transparent 25%), radial-gradient(circle at 18% 75%, #fbd3ea35, transparent 27%), linear-gradient(145deg, #4f35c8 0, #8c66ef 58%, #d85099 100%); }
+.fullCardBackdrop:after { content: ""; position: absolute; inset: 35% 0 0; z-index: 3; background: linear-gradient(180deg, transparent 0, #2619404d 31%, #171020dc 78%, #120c1bf2 100%); }
+.fullCardPokemon { width: 92%; height: 65%; position: absolute; z-index: 2; left: 50%; top: 4%; transform: translateX(-50%); }
+.fullCardPokemon .pokemonVisual > img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 24px 25px #24123e52); }
+.fullCardPokemon .pokemonVisualFallback { color: #ffffffcc; font-size: 82px; }
+.fullCardWatermark { position: absolute; z-index: 1; left: -10px; right: -10px; top: 44%; overflow: hidden; color: #fff; opacity: .1; font-size: 70px; font-weight: 950; line-height: .9; letter-spacing: -5px; text-align: center; white-space: nowrap; }
+.fullCardTopline { position: absolute; z-index: 5; top: 17px; left: 17px; right: 17px; display: flex; align-items: center; justify-content: space-between; pointer-events: none; }
+.fullCardTopline > span, .fullCardTopline > strong { border: 1px solid #ffffff45; border-radius: 99px; background: #281b4a45; backdrop-filter: blur(9px); }
+.fullCardTopline > span { padding: 7px 10px; font-size: 8px; font-weight: 900; }
+.fullCardTopline > strong { padding: 6px 9px; font-size: 13px; }
+.fullCardTopline small { margin-left: 1px; font-size: 8px; }
+.cardTapZone { width: 50%; height: 54%; position: absolute; z-index: 4; top: 54px; border: 0; background: transparent; }
+.cardTapZone.previous { left: 0; }
+.cardTapZone.next { right: 0; }
+.fullCardInfo { width: calc(100% - 32px); min-height: 150px; position: absolute; z-index: 5; left: 16px; bottom: 87px; display: grid; gap: 8px; padding: 12px 11px 8px; border: 0; color: #fff; background: transparent; text-align: left; }
+.fullCardIdentity { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 10px; }
+.fullCardIdentity .mateAvatar { width: 44px; height: 44px; border: 2px solid #ffffffd9; border-radius: 50%; box-shadow: 0 7px 18px #0003; }
+.fullCardIdentity > span { min-width: 0; display: grid; gap: 3px; }
+.fullCardIdentity > span strong { overflow: hidden; font-size: 21px; line-height: 1; text-overflow: ellipsis; white-space: nowrap; }
+.fullCardIdentity > span small { overflow: hidden; color: #ffffffcf; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.fullCardIdentity > b { font-size: 22px; font-weight: 500; }
+.fullCardPokemonList { min-width: 0; display: flex; gap: 6px; overflow: hidden; }
+.fullCardPokemonList .pokemonLabel { min-width: 0; padding: 3px 9px 3px 4px; border-radius: 99px; color: #fff; background: #ffffff20; backdrop-filter: blur(7px); }
+.fullCardPokemonList .pokemonLabel > .pokemonVisual { width: 26px; height: 26px; border-radius: 50%; background: #ffffffdd; }
+.fullCardPokemonList .pokemonLabel > strong { max-width: 75px; color: #fff; font-size: 8px; }
+.fullCardTime { overflow: hidden; color: #ffffffdc; font-size: 9px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.profileTapHint { color: #ffffffa8; font-size: 7px; font-weight: 800; }
+.fullCardActions { height: 64px; position: absolute; z-index: 7; left: 16px; right: 16px; bottom: 14px; display: grid; grid-template-columns: .9fr 1.25fr; gap: 10px; }
+.fullCardActions button { display: flex; align-items: center; justify-content: center; gap: 7px; border: 0; border-radius: 22px; font-weight: 950; box-shadow: 0 10px 24px #120b223d; backdrop-filter: blur(12px); }
+.fullCardActions button span { font-size: 23px; line-height: 1; }
+.fullCardActions button small { font-size: 10px; font-weight: 950; }
+.fullLikeAction { color: var(--pink); background: #fffffff0; }
+.fullLikeAction.liked { color: #fff; background: linear-gradient(145deg, #ff4f91, #ff82ad); }
+.fullRequestAction { color: #fff; background: linear-gradient(145deg, #6c4df6, #9c83ff); }
+.fullDiscoverState { min-height: 0; height: calc(100% - 60px); margin: 0; }
+
+.discoverTutorial { position: absolute; z-index: 20; inset: 60px 12px 10px; overflow: hidden; border-radius: 28px; color: #fff; background: #17151cce; box-shadow: 0 20px 46px #160c2b42; backdrop-filter: blur(12px); }
+.tutorialTop { height: 58px; position: absolute; z-index: 3; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: linear-gradient(180deg, #0005, transparent); }
+.tutorialTop strong { font-size: 13px; }
+.tutorialTop button { width: 34px; height: 34px; border: 1px solid #ffffff42; border-radius: 50%; color: #fff; background: #ffffff12; font-size: 18px; }
+.tutorialZones { position: absolute; inset: 0 0 112px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 32%; padding-top: 54px; }
+.tutorialZones > div { display: grid; place-items: center; align-content: center; gap: 5px; text-align: center; }
+.tutorialZones > div:first-child { border-right: 2px dashed #ffffffd6; border-bottom: 2px dashed #ffffffd6; }
+.tutorialZones > div:nth-child(2) { border-bottom: 2px dashed #ffffffd6; }
+.tutorialZones > div:last-child { grid-column: 1/-1; }
+.tutorialZones span { font-size: 28px; transform: rotate(-20deg); }
+.tutorialZones strong { font-size: 13px; }
+.tutorialZones small { color: #ffffffcf; font-size: 10px; }
+.tutorialActionGuide { position: absolute; z-index: 3; left: 18px; right: 18px; bottom: 62px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tutorialActionGuide span { padding: 10px; border: 1px solid #ffffff3d; border-radius: 15px; background: #ffffff15; font-size: 9px; font-weight: 900; text-align: center; }
+.tutorialStart { height: 42px; position: absolute; z-index: 3; left: 18px; right: 18px; bottom: 13px; border: 0; border-radius: 14px; color: #fff; background: linear-gradient(145deg, var(--pink), #ff7cac); font-size: 10px; font-weight: 950; }
+
+.candidateDetailSheet { overflow: hidden; }
+.candidateDetailHero { height: 150px; position: relative; overflow: hidden; margin: -22px -22px 19px; background: radial-gradient(circle at 68% 25%, #ffffff46, transparent 27%), linear-gradient(145deg, #5438ca, #a16def 58%, #df559c); }
+.candidateDetailPokemon { width: 190px; height: 150px; position: absolute; right: 18px; bottom: -3px; }
+.candidateDetailPokemon .pokemonVisual > img { width: 100%; height: 100%; object-fit: contain; }
+.candidateDetailAvatar { width: 62px; height: 62px; position: absolute; z-index: 2; left: 22px; bottom: 18px; overflow: hidden; display: grid; place-items: center; border: 3px solid #fff; border-radius: 50%; color: #fff; background: linear-gradient(145deg, #ff689e, #ffabc9); font-size: 23px; font-weight: 950; box-shadow: 0 9px 22px #2c17413d; }
+.candidateDetailSheet h2 { margin: 4px 0 3px; }
+.candidateDetailRank { margin: 0 0 4px; color: #817a89; font-size: 10px; }
+.candidateDetailActions { display: grid; grid-template-columns: .9fr 1.2fr; gap: 8px; margin-top: 15px; }
+.candidateDetailActions button { padding: 13px 8px; border: 0; border-radius: 14px; color: var(--pink); background: #fff2f7; font-size: 9px; font-weight: 950; }
+.candidateDetailActions button.liked { color: #fff; background: linear-gradient(145deg, #ff4f91, #ff82ad); }
+.candidateDetailActions button:last-child { color: #fff; background: linear-gradient(145deg, var(--purple), #9278f3); }
+
 .stateCard { min-height: 430px; margin: 0 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center; border: 1px solid var(--line); border-radius: 26px; background: #fff; box-shadow: 0 14px 38px #33294d12; }
 .stateCard h2 { margin: 18px 0 7px; font-size: 16px; }
 .stateCard p { color: #8d8798; font-size: 10px; line-height: 1.7; }
@@ -692,9 +769,15 @@ button { cursor: pointer; }
   .profileNote { max-height: 29px; overflow: hidden; margin-top: 7px; }
   .choiceArea { height: 72px; }
   .choiceArea button { height: 50px; }
+  .discoverModeBar { height: 54px; padding-top: 3px; padding-bottom: 5px; }
+  .fullDiscoverCard, .fullDiscoverState { height: calc(100% - 54px); }
+  .discoverTutorial { top: 54px; }
+  .fullCardInfo { min-height: 128px; bottom: 79px; gap: 5px; }
+  .fullCardActions { height: 56px; bottom: 12px; }
+  .fullCardPokemon { height: 61%; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; }
-  .discoverCard.left, .discoverCard.right, .loadingBall, .toast { animation: none; }
+  .discoverCard.left, .discoverCard.right, .fullDiscoverCard.left, .fullDiscoverCard.right, .loadingBall, .toast { animation: none; }
 }

@@ -17,6 +17,7 @@ type LinkedAccount = { provider:string; label:string; contactId:string; displayN
 type LobbyMember = { userId:string;trainerName:string;pokemon:string;ready:boolean;avatarUrl:string;isMe:boolean };
 type Lobby = { id:number;recruitId:number;ownerId:string;status:string;scheduledAt:string;partySize:number;pokemon:string;desiredPokemon:string;desiredRole:string;isOwner:boolean;active:boolean;members:LobbyMember[] };
 type AppTab = "discover" | "recruit" | "chat" | "lobby" | "profile";
+type DiscoverMode = "recommended" | "received";
 
 const pokemon = [
   "アブソル","アマージョ","アローラキュウコン","アローラライチュウ","イワパレス","インテレオン","ウーラオス","ウッウ","エースバーン","エーフィ","エンペルト","オーロット","カイリキー","カイリュー","カビゴン","カメックス","ガブリアス","ガラルギャロップ","キュワワー","ギャラドス","ギルガルド","グレイシア","グレンアルマ","ゲッコウガ","ゲンガー","コダック","サーナイト","ザシアン","シャンデラ","ジュナイパー","ジュラルドン","シャワーズ","スイクン","ストライク","ゼラオラ","ソウブレイズ","ゾロアーク","タイレーツ","ダークライ","ダダリン","デカヌチャン","ドードリオ","ドラパルト","ニンフィア","ヌメルゴン","ハッサム","ハピナス","バシャーモ","バリヤード","バンギラス","パーモット","ピカチュウ","ピクシー","ファイアロー","フーパ","フシギバナ","ブラッキー","プクリン","ホウオウ","マスカーニャ","マッシブーン","マフォクシー","マホイップ","マリルリ","マンムー","ミミッキュ","ミュウ","ミュウツーX","ミュウツーY","ミライドン","メタグロス","ヤドラン","ヤミラミ","ヨクバリス","ラティアス","ラティオス","ラプラス","リーフィア","リザードン","ルカリオ","ワタシラガ"
@@ -109,6 +110,10 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
   const [compose,setCompose]=useState(false);
   const [applyTo,setApplyTo]=useState<Recruit|null>(null);
   const [profileApplyTo,setProfileApplyTo]=useState<ProfileCandidate|null>(null);
+  const [candidateDetail,setCandidateDetail]=useState<ProfileCandidate|null>(null);
+  const [discoverMode,setDiscoverMode]=useState<DiscoverMode>("recommended");
+  const [tutorialOpen,setTutorialOpen]=useState(false);
+  const [tutorialChecked,setTutorialChecked]=useState(false);
   const [sending,setSending]=useState(false);
   const [toast,setToast]=useState("");
   const [incoming,setIncoming]=useState<Notice[]>([]);
@@ -222,6 +227,17 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
 
   useEffect(()=>{if(preview)return;const refresh=()=>{if(document.visibilityState!=="visible")return;loadNotices();loadLikes();loadConnections();loadLobbies();if(selectedConnection)loadMessages(selectedConnection)};const timer=window.setInterval(refresh,5000);return()=>window.clearInterval(timer)},[preview,selectedConnection,loadLikes]);
 
+  useEffect(()=>{
+    if(!profileReady||onboardingOpen||tutorialChecked)return;
+    const timer=window.setTimeout(()=>{
+      let seen=false;
+      try{seen=window.localStorage.getItem("yunamatch-discover-tutorial-v1")==="seen"}catch{/* 保存できない環境では初回表示を優先 */}
+      setTutorialChecked(true);
+      if(!seen)setTutorialOpen(true);
+    },0);
+    return()=>window.clearTimeout(timer);
+  },[profileReady,onboardingOpen,tutorialChecked]);
+
   useEffect(()=>{if(preview||!selectedConnection)return;let active=true;const ping=async()=>{await fetch("/api/presence",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({connectionId:selectedConnection.id,typing:Boolean(messageText.trim())})});const response=await fetch(`/api/presence?connectionId=${selectedConnection.id}`);if(active&&response.ok)setMatePresence(await response.json())};ping();const timer=window.setInterval(ping,4000);return()=>{active=false;window.clearInterval(timer);fetch("/api/presence",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({connectionId:selectedConnection.id,typing:false})}).catch(()=>undefined)}},[preview,selectedConnection,messageText]);
 
   useEffect(()=>{
@@ -232,8 +248,10 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
   },[preview]);
 
   const visibleRecruits=useMemo(()=>recruits.length===0&&preview?[previewRecruit]:recruits,[recruits,preview]);
-  const cards=useMemo(()=>profileCandidates.filter(person=>(wanted==="すべて"||person.mainPokemon.includes(wanted))&&(!womenOnly||person.gender==="女性")&&(!sharedTimeOnly||person.playTime.includes("時間帯はいつでも")||profile.playTime.includes("時間帯はいつでも")||person.playTime.some(time=>profile.playTime.includes(time)))),[profileCandidates,wanted,womenOnly,sharedTimeOnly,profile.playTime]);
-  const current=cards.length?cards[index%cards.length]:null;
+  const recommendedCards=useMemo(()=>profileCandidates.filter(person=>(wanted==="すべて"||person.mainPokemon.includes(wanted))&&(!womenOnly||person.gender==="女性")&&(!sharedTimeOnly||person.playTime.includes("時間帯はいつでも")||profile.playTime.includes("時間帯はいつでも")||person.playTime.some(time=>profile.playTime.includes(time)))),[profileCandidates,wanted,womenOnly,sharedTimeOnly,profile.playTime]);
+  const receivedCards=useMemo(()=>{const senderIds=new Set(profileLikes.map(like=>like.senderId));return profileCandidates.filter(person=>senderIds.has(person.id))},[profileCandidates,profileLikes]);
+  const cards=discoverMode==="received"?receivedCards:recommendedCards;
+  const current=cards.length?cards[((index%cards.length)+cards.length)%cards.length]:null;
   const currentPokemon=current?.mainPokemon[0]||"未設定";
   const synergy=current?getSynergy(primaryPokemon,currentPokemon,""):null;
   const pendingCount=incoming.filter(n=>n.status==="pending").length;
@@ -242,14 +260,13 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
   const unreadCount=connections.reduce((sum,connection)=>sum+(connection.unreadCount||0),0);
   const notificationCount=pendingCount+heartCount+profileLikeCount+unreadCount;
 
-  const moveNext=(direction:"left"|"right")=>{
+  const moveCard=(step:-1|1)=>{
     if(!current||animation)return;
-    if(direction==="right"){
-      setProfileApplyTo(current);return;
-    }
-    setAnimation(direction);window.setTimeout(()=>{setIndex(v=>v+1);setAnimation("")},260);
+    setAnimation(step>0?"left":"right");window.setTimeout(()=>{setIndex(value=>value+step);setAnimation("")},220);
   };
-  const handlePointerUp=(event:PointerEvent<HTMLElement>)=>{if(dragStart===null)return;const distance=event.clientX-dragStart;setDragStart(null);if(Math.abs(distance)>=65)moveNext(distance>0?"right":"left")};
+  const handlePointerUp=(event:PointerEvent<HTMLElement>)=>{if(dragStart===null)return;const distance=event.clientX-dragStart;setDragStart(null);if(Math.abs(distance)>=65)moveCard(distance>0?-1:1)};
+  const changeDiscoverMode=(mode:DiscoverMode)=>{setDiscoverMode(mode);setIndex(0)};
+  const closeTutorial=()=>{try{window.localStorage.setItem("yunamatch-discover-tutorial-v1","seen")}catch{/* 次回も表示されるだけなので利用は続ける */}setTutorialOpen(false)};
 
   const submitApplication=async(event:FormEvent<HTMLFormElement>)=>{
     event.preventDefault();if(!applyTo)return;setSending(true);
@@ -282,9 +299,11 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
     if(!preview)fetch("/api/likes",{method:"PATCH"}).catch(()=>undefined);
   };
   const showLikedProfile=(senderId:string)=>{
-    const senderIndex=profileCandidates.findIndex(person=>person.id===senderId);
+    const senderIds=new Set(profileLikes.map(like=>like.senderId));
+    const likedCandidates=profileCandidates.filter(person=>senderIds.has(person.id));
+    const senderIndex=likedCandidates.findIndex(person=>person.id===senderId);
     if(senderIndex<0){notify("このプロフィールは現在表示できません");return}
-    setWanted("すべて");setWomenOnly(false);setSharedTimeOnly(false);setIndex(senderIndex);setTab("discover");setNotificationOpen(false);
+    setDiscoverMode("received");setIndex(senderIndex);setTab("discover");setNotificationOpen(false);
   };
   const submitRecruit=async(event:FormEvent<HTMLFormElement>)=>{
     event.preventDefault();const formData=new FormData(event.currentTarget);const roles=formData.getAll("roles").map(String);const body={...Object.fromEntries(formData),roles};
@@ -397,24 +416,21 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
     </header>
 
     <div className="appViewport">
-      {tab==="discover"&&<section className="discoverView instantCards">
-        <div className="searchStrip"><div><strong>登録中のメイトを探す</strong><small>{cards.length}人といつでもマッチ可能</small></div><button onClick={()=>setFilterOpen(true)}><span>☷</span>{wanted==="すべて"?"条件を絞る":wanted}</button></div>
-        {loading?<div className="stateCard"><div className="loadingBall"/><h2>メイトを探しています</h2></div>:current?<>
-          <article className={`discoverCard ${animation}`} onPointerDown={event=>setDragStart(event.clientX)} onPointerUp={handlePointerUp}>
-            <div className="cardArtwork profileMatchArtwork">
-              <div className="artDots"/><div className="artWatermark">{currentPokemon}</div>
-              <div className="cardTopline"><span>● プロフィール公開中</span><strong>相性 {synergy?.score}<small>%</small></strong></div>
-              <div className="pokemonMonogram"><PokemonImage name={currentPokemon}/></div><div className="pokemonTitle"><small>MAIN POKÉMON</small><strong>{currentPokemon}</strong></div>
-            </div>
-            <div className="cardDetails">
-              <div className="identityLine"><UserAvatar name={current.trainerName} src={current.avatarUrl} className="mateAvatar"/><div><h1>{current.trainerName}</h1><p className="rankText">{current.highestRate} ・ {current.gender}</p></div><span>登録済み</span></div>
-              <div className="pairingLine"><div><small>あなた</small><PokemonLabel name={primaryPokemon}/></div><b>×</b><div><small>相手</small><PokemonLabel name={currentPokemon}/></div></div>
-              <div className="profilePokemonList"><small>使うポケモン</small><div>{current.mainPokemon.map(name=><PokemonLabel key={name} name={name}/>)}</div></div>
-              <div className="timeChip"><span>◷</span><div><small>遊べる時間帯</small><strong>{current.playTime.join("・")}</strong></div></div>
-            </div>
-          </article>
-          <div className="choiceArea"><button className="passButton" onClick={()=>moveNext("left")}><span>×</span><small>次の人</small></button><button className={`profileLikeButton ${likedProfileIds.includes(current.id)?"liked":""}`} onClick={sendProfileLike} aria-pressed={likedProfileIds.includes(current.id)}><span>{likedProfileIds.includes(current.id)?"♥":"♡"}</span><small>{likedProfileIds.includes(current.id)?"いいね済み":"いいね"}</small></button><button className="requestButton" onClick={()=>moveNext("right")}><span>⚡</span><small>メイト申請</small></button></div>
-        </>:<div className="stateCard emptyState"><div className="emptyOrb">Y</div><h2>新しいメイトを待っています</h2><p>条件に合う登録者はまだいません。時間を決めて今すぐ遊ぶなら募集を使えます。</p><button onClick={()=>setCompose(true)}>今遊ぶ人を募集</button></div>}
+      {tab==="discover"&&<section className="discoverView fullDiscoverView">
+        <div className="discoverModeBar"><div className="discoverModeTabs"><button className={discoverMode==="recommended"?"active":""} onClick={()=>changeDiscoverMode("recommended")}>おすすめ</button><button className={discoverMode==="received"?"active":""} onClick={()=>changeDiscoverMode("received")}>相手から{profileLikes.length>0&&<b>{profileLikes.length}</b>}</button></div><button className="discoverHelp" onClick={()=>setTutorialOpen(true)} aria-label="使い方を見る"><span>?</span>使い方</button><button className="discoverFilter" onClick={()=>setFilterOpen(true)} aria-label="条件を絞る">☷</button></div>
+        {loading?<div className="stateCard fullDiscoverState"><div className="loadingBall"/><h2>メイトを探しています</h2></div>:current?<article className={`fullDiscoverCard ${animation}`} onPointerDown={event=>setDragStart(event.clientX)} onPointerUp={handlePointerUp}>
+          <div className="fullCardBackdrop"><div className="artDots"/><div className="fullCardPokemon"><PokemonImage name={currentPokemon}/></div><div className="fullCardWatermark">{currentPokemon}</div></div>
+          <div className="fullCardTopline"><span>{discoverMode==="received"?"♥ あなたにいいね":"● プロフィール公開中"}</span><strong>相性 {synergy?.score}<small>%</small></strong></div>
+          <button className="cardTapZone previous" onClick={()=>moveCard(-1)} aria-label="前のメイトを見る"/><button className="cardTapZone next" onClick={()=>moveCard(1)} aria-label="次のメイトを見る"/>
+          <button className="fullCardInfo" onClick={()=>setCandidateDetail(current)} aria-label={`${current.trainerName}さんのプロフィールを見る`}>
+            <span className="fullCardIdentity"><UserAvatar name={current.trainerName} src={current.avatarUrl} className="mateAvatar"/><span><strong>{current.trainerName}</strong><small>{current.highestRate} ・ {current.gender}</small></span><b>ⓘ</b></span>
+            <span className="fullCardPokemonList">{current.mainPokemon.slice(0,3).map(name=><PokemonLabel key={name} name={name}/>)}</span>
+            <span className="fullCardTime">◷ {current.playTime.join("・")}</span>
+            <span className="profileTapHint">タップでプロフィールを見る</span>
+          </button>
+          <div className="fullCardActions"><button className={`fullLikeAction ${likedProfileIds.includes(current.id)?"liked":""}`} onClick={sendProfileLike} aria-pressed={likedProfileIds.includes(current.id)}><span>{likedProfileIds.includes(current.id)?"♥":"♡"}</span><small>{likedProfileIds.includes(current.id)?"いいね済み":"いいね"}</small></button><button className="fullRequestAction" onClick={()=>setProfileApplyTo(current)}><span>⚡</span><small>メイト申請</small></button></div>
+        </article>:<div className="stateCard emptyState fullDiscoverState"><div className="emptyOrb">{discoverMode==="received"?"♡":"Y"}</div><h2>{discoverMode==="received"?"まだいいねは届いていません":"新しいメイトを待っています"}</h2><p>{discoverMode==="received"?"相手からいいねされると、ここでプロフィールを見られます。":"条件に合う登録者はまだいません。時間を決めて今すぐ遊ぶなら募集を使えます。"}</p>{discoverMode==="recommended"&&<button onClick={()=>setCompose(true)}>今遊ぶ人を募集</button>}</div>}
+        {tutorialOpen&&<div className="discoverTutorial" role="dialog" aria-modal="true" aria-label="探す画面の使い方"><div className="tutorialTop"><strong>カードの使い方</strong><button onClick={closeTutorial} aria-label="チュートリアルを閉じる">×</button></div><div className="tutorialZones"><div><span>☝</span><strong>左をタップ</strong><small>前のメイト</small></div><div><span>☝</span><strong>右をタップ</strong><small>次のメイト</small></div><div><span>☝</span><strong>下をタップ</strong><small>プロフィールを見る</small></div></div><div className="tutorialActionGuide"><span>♡ いいね</span><span>⚡ メイト申請</span></div><button className="tutorialStart" onClick={closeTutorial}>使ってみる</button></div>}
       </section>}
 
       {tab==="recruit"&&<section className="panelView recruitView">
@@ -456,6 +472,8 @@ export default function MatchApp({displayName,authProvider,authContact,preview=f
   </div></section></div>}
 
   {filterOpen&&<div className="modalBackdrop"><button className="backdropDismiss" onClick={()=>setFilterOpen(false)} aria-label="絞り込みを閉じる"/><section className="sheetModal"><div className="sheetHandle"/><button className="closeButton" onClick={()=>setFilterOpen(false)}>×</button><small className="modalKicker">SEARCH FILTER</small><h2>希望のメイト</h2><label>使ってほしいポケモン<select value={wanted} onChange={e=>{setWanted(e.target.value);setIndex(0)}}><option>すべて</option>{pokemon.map(name=><option key={name}>{name}</option>)}</select></label><label className="toggleRow"><input type="checkbox" checked={sharedTimeOnly} onChange={e=>{setSharedTimeOnly(e.target.checked);setIndex(0)}}/><span>自分と遊べる時間帯が合う人だけ</span></label><label className="toggleRow"><input type="checkbox" checked={womenOnly} onChange={e=>{setWomenOnly(e.target.checked);setIndex(0)}}/><span>女性プレイヤーのみ</span></label><button className="primaryButton" onClick={()=>setFilterOpen(false)}>この条件で探す</button></section></div>}
+
+  {candidateDetail&&<div className="modalBackdrop"><button className="backdropDismiss" onClick={()=>setCandidateDetail(null)} aria-label="プロフィールを閉じる"/><section className="sheetModal candidateDetailSheet"><div className="sheetHandle"/><button className="closeButton" onClick={()=>setCandidateDetail(null)}>×</button><div className="candidateDetailHero"><div className="candidateDetailPokemon"><PokemonImage name={candidateDetail.mainPokemon[0]||"未設定"}/></div><UserAvatar name={candidateDetail.trainerName} src={candidateDetail.avatarUrl} className="candidateDetailAvatar"/></div><small className="modalKicker">MATE PROFILE</small><h2>{candidateDetail.trainerName}</h2><p className="candidateDetailRank">{candidateDetail.highestRate} ・ {candidateDetail.gender}</p><div className="pairingLine"><div><small>あなた</small><PokemonLabel name={primaryPokemon}/></div><b>×</b><div><small>相手</small><PokemonLabel name={candidateDetail.mainPokemon[0]||"未設定"}/></div></div><div className="profilePokemonList"><small>使うポケモン</small><div>{candidateDetail.mainPokemon.map(name=><PokemonLabel key={name} name={name}/>)}</div></div><div className="timeChip"><span>◷</span><div><small>遊べる時間帯</small><strong>{candidateDetail.playTime.join("・")}</strong></div></div><div className="candidateDetailActions"><button className={likedProfileIds.includes(candidateDetail.id)?"liked":""} onClick={()=>{if(current?.id===candidateDetail.id)sendProfileLike()}}>{likedProfileIds.includes(candidateDetail.id)?"♥ いいね済み":"♡ いいね"}</button><button onClick={()=>{setCandidateDetail(null);setProfileApplyTo(candidateDetail)}}>⚡ メイト申請</button></div></section></div>}
 
   {compose&&<div className="modalBackdrop"><form className="sheetModal formSheet" onSubmit={submitRecruit}><button type="button" className="closeButton" onClick={()=>setCompose(false)}>×</button><small className="modalKicker">CREATE RECRUIT</small><h2>メイトを募集</h2><label>使用ポケモン <small>任意</small><select name="pokemon" defaultValue="未定"><option value="未定">未定（役割から募集）</option>{profile.mainPokemon.map(name=><option key={name}>{name}</option>)}</select></label><fieldset className="recruitRolePicker"><legend>自分の役割 <small>任意・複数選択できます</small></legend><div>{recruitRoleOptions.map(role=><label key={role}><input type="checkbox" name="roles" value={role}/><span>{role}</span></label>)}</div></fieldset><div className="threeFields"><label>開始<select name="startsIn" defaultValue="0"><option value="0">今から</option><option value="30">30分後</option><option value="60">1時間後</option><option value="120">2時間後</option></select></label><label>募集時間<select name="duration" defaultValue="2"><option value="1">1時間</option><option value="2">2時間</option><option value="3">3時間</option></select></label><label>人数<select name="partySize" defaultValue="2"><option value="2">デュオ</option><option value="3">トリオ</option><option value="5">フルパ</option></select></label></div><div className="twoFields"><label>希望ポケモン<select name="desiredPokemon" defaultValue="すべて"><option>すべて</option>{pokemon.map(name=><option key={name}>{name}</option>)}</select></label><label>希望ロール<select name="desiredRole"><option>指定なし</option>{recruitRoleOptions.map(role=><option key={role}>{role}</option>)}</select></label></div><div className="twoFields"><label>試合数<input name="matches" type="number" min="0" max="99999" defaultValue="1000" required/></label><label>勝率<input name="winRate" type="number" min="0" max="100" step="0.1" defaultValue="50" required/></label></div><label>ひとこと <small>任意</small><textarea name="note" maxLength={180} placeholder="未入力でも募集できます"/></label><p className="privacyText">ポケモンも役割も未定のまま募集できます。期限が来るか満員になると自動で受付を終了します。</p><button className="primaryButton" disabled={sending}>{sending?"公開中…":"募集を公開する"}</button></form></div>}
 

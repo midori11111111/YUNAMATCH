@@ -61,7 +61,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(page, /getChatGPTUser/);
   assert.match(page, /initialProfile/);
   assert.match(page, /getDb\(\)\.select\(\)\.from\(profiles\)/);
-  assert.match(app, /moveNext/);
+  assert.match(app, /moveCard/);
   assert.match(app, /preview\|\|initialProfile!==undefined/);
   assert.match(app, /AbortController/);
   assert.match(app, /プレイ申請を送る/);
@@ -79,7 +79,11 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /任意・複数選択できます/);
   assert.match(app, /上レーン/);
   assert.match(app, /キャリー/);
-  assert.match(app, /登録中のメイトを探す/);
+  assert.match(app, /おすすめ/);
+  assert.match(app, /相手から/);
+  assert.match(app, /カードの使い方/);
+  assert.match(app, /yunamatch-discover-tutorial-v1/);
+  assert.doesNotMatch(app, /次の人/);
   assert.match(app, /メイト申請を送る/);
   assert.match(app, /いいね済み/);
   assert.match(app, /PokemonLabel/);
