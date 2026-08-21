@@ -57,6 +57,13 @@
       "when": 1787254982125,
       "tag": "0007_wooden_beyonder",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1787290029011,
+      "tag": "0008_certain_swarm",
+      "breakpoints": true
     }
   ]
 }

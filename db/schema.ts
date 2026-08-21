@@ -173,3 +173,26 @@ export const presence = sqliteTable("presence", {
   typing: integer("typing", { mode: "boolean" }).notNull().default(false),
   lastSeenAt: integer("last_seen_at", { mode: "timestamp_ms" }).notNull(),
 });
+
+export const siteVisitors = sqliteTable("site_visitors", {
+  visitorKey: text("visitor_key").primaryKey(),
+  userId: text("user_id"),
+  firstSeenAt: integer("first_seen_at", { mode: "timestamp_ms" }).notNull(),
+  lastSeenAt: integer("last_seen_at", { mode: "timestamp_ms" }).notNull(),
+  visitCount: integer("visit_count").notNull().default(1),
+}, (table) => [
+  index("idx_site_visitors_last_seen").on(table.lastSeenAt),
+  index("idx_site_visitors_user").on(table.userId),
+]);
+
+export const dailyVisitors = sqliteTable("daily_visitors", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  day: text("day").notNull(),
+  visitorKey: text("visitor_key").notNull(),
+  pageViews: integer("page_views").notNull().default(1),
+  firstSeenAt: integer("first_seen_at", { mode: "timestamp_ms" }).notNull(),
+  lastSeenAt: integer("last_seen_at", { mode: "timestamp_ms" }).notNull(),
+}, (table) => [
+  uniqueIndex("idx_daily_visitors_day_visitor").on(table.day, table.visitorKey),
+  index("idx_daily_visitors_day").on(table.day),
+]);

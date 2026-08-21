@@ -1,5 +1,6 @@
 import MatchApp, { type Profile } from "./match-app";
 import { chatGPTSignInPath, getChatGPTUser } from "./chatgpt-auth";
+import { isAdminUser } from "../lib/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -47,5 +48,5 @@ export default async function Home({
     }
   }
 
-  return <MatchApp displayName={user?.displayName ?? "preview_trainer"} authProvider={user?.provider ?? "discord"} authContact={user?.contactId ?? "preview_trainer"} preview={preview} initialProfile={initialProfile} initialSuspended={initialSuspended} />;
+  return <MatchApp displayName={user?.displayName ?? "preview_trainer"} authProvider={user?.provider ?? "discord"} authContact={user?.contactId ?? "preview_trainer"} preview={preview} initialProfile={initialProfile} initialSuspended={initialSuspended} isAdmin={Boolean(user&&isAdminUser(user))} />;
 }
