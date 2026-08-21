@@ -123,6 +123,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /AbortController/);
   assert.match(app, /プレイ申請を送る/);
   assert.match(app, /マッチ成立/);
+  assert.doesNotMatch(app, /ユナイトをプレイする/);
   assert.match(app, /また遊びたい/);
   assert.match(app, /トレーナーカードを共有/);
   assert.match(app, /通報せずブロックのみ/);
@@ -144,9 +145,6 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /まだやりとりがありません/);
   assert.match(app, /yunamatch-chat-tutorial-v1/);
   assert.match(app, /次のプレイまで/);
-  assert.match(app, /ユナイトをプレイする/);
-  assert.match(app, /apps\.apple\.com\/jp\/app\/pokemon-unite/);
-  assert.match(app, /play\.google\.com\/store\/apps\/details\?id=jp\.pokemon\.pokemonunite/);
   assert.match(app, /profileCompletion/);
   assert.match(app, /profileCompletionInline/);
   assert.doesNotMatch(app, /profileCompletionCard/);
