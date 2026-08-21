@@ -33,12 +33,43 @@ function parseList(value: string) {
 
 export async function GET() {
   const user = await getChatGPTUser();
-  if (!user)
-    return Response.json(
-      { error: "ログインが必要です", signIn: "/login" },
-      { status: 401 },
-    );
   const db = getDb();
+  if (!user) {
+    const [profileRows, activityRows] = await Promise.all([
+      db.select().from(profiles).orderBy(desc(profiles.updatedAt)).limit(80),
+      db.select().from(presence).limit(200),
+    ]);
+    const lastActiveByUser = new Map(
+      activityRows.map((row) => [row.userId, row.lastSeenAt]),
+    );
+    const activeCutoff = Date.now() - 30 * 24 * 60 * 60_000;
+    const activityAt = (row: (typeof profileRows)[number]) =>
+      lastActiveByUser.get(row.userId) || row.updatedAt;
+    const visible = profileRows
+      .filter(
+        (row) =>
+          !row.suspendedAt &&
+          row.ageConfirmed &&
+          row.termsAcceptedAt &&
+          activityAt(row).getTime() >= activeCutoff,
+      )
+      .sort((a, b) => activityAt(b).getTime() - activityAt(a).getTime())
+      .slice(0, 30);
+    const result = await Promise.all(
+      visible.map(async (row) => ({
+        id: await profilePublicId(row.userId),
+        trainerName: `${row.trainerName.slice(0, 1) || "メ"}••`,
+        mainPokemon: parseList(row.mainPokemon).slice(0, 5),
+        highestRate: row.highestRate,
+        playTime: parseList(row.playTime).slice(0, 7),
+        gender: row.gender,
+        avatarUrl: "",
+        registeredAt: row.createdAt,
+        lastActiveAt: activityAt(row),
+      })),
+    );
+    return Response.json({ profiles: result, limited: true });
+  }
   const [me] = await db
     .select()
     .from(profiles)

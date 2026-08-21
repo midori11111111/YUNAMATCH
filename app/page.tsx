@@ -1,7 +1,6 @@
 import MatchApp, { type Profile } from "./match-app";
 import { getChatGPTUser } from "./chatgpt-auth";
 import { isAdminUser } from "../lib/admin";
-import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -12,37 +11,6 @@ export default async function Home({
 }) {
   const user = await getChatGPTUser();
   const preview = process.env.NODE_ENV !== "production" && (await searchParams).preview === "1";
-
-  if (!user && !preview) {
-    return (
-      <main className="loginPage">
-        <section className="loginCard">
-          <div className="loginLogo">Y</div>
-          <div className="loginWordmark">YUNA<span>MATCH</span></div>
-          <p className="loginEyebrow">POKÉMON UNITE MATCHING</p>
-          <h1>相性でつながる、<br /><span>ユナマッチ。</span></h1>
-          <p>使用ポケモンとプレイスタイルから、<br />今夜一緒に戦うメイトを見つけよう。</p>
-          <div className="directLoginHeading"><strong>ログイン / 新規登録</strong><span>使うアカウントをここで選べます</span></div>
-          <div className="directLoginGrid">
-            <a className="directLoginButton google" href="/api/login/google"><span>G</span>Google</a>
-            <a className="directLoginButton line" href="/api/login/line"><span>LINE</span>LINE</a>
-            <a className="directLoginButton discord" href="/api/login/discord"><span>D</span>Discord</a>
-            <a className="directLoginButton twitter" href="/api/login/twitter"><span>𝕏</span>X</a>
-          </div>
-          <small>選んだサービスの認証画面へ直接進みます</small>
-          <div className="loginLegal">
-            <strong>ログイン前にご確認ください</strong>
-            <p>認証時に取得する情報と利用目的を公開しています。</p>
-            <nav aria-label="サービス情報">
-              <Link href="/privacy">プライバシーポリシー</Link>
-              <Link href="/terms">利用規約</Link>
-              <Link href="/contact">お問い合わせ</Link>
-            </nav>
-          </div>
-        </section>
-      </main>
-    );
-  }
 
   let initialProfile: Profile | null | undefined;
   let initialSuspended = false;
@@ -64,5 +32,5 @@ export default async function Home({
     }
   }
 
-  return <MatchApp displayName={user?.displayName ?? "preview_trainer"} authProvider={user?.provider ?? "discord"} authContact={user?.contactId ?? "preview_trainer"} preview={preview} initialProfile={initialProfile} initialSuspended={initialSuspended} isAdmin={Boolean(user&&isAdminUser(user))} />;
+  return <MatchApp displayName={user?.displayName ?? "ゲスト"} authProvider={user?.provider ?? "guest"} authContact={user?.contactId ?? ""} authenticated={Boolean(user)} preview={preview} initialProfile={initialProfile} initialSuspended={initialSuspended} isAdmin={Boolean(user&&isAdminUser(user))} />;
 }

@@ -17,16 +17,16 @@ async function render() {
   );
 }
 
-test("renders the login-only entrance for anonymous visitors", async () => {
+test("renders public browsing before login for anonymous visitors", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
   const html = await response.text();
-  assert.match(html, /YUNA<span>MATCH/);
-  assert.match(html, /ログイン \/ 新規登録/);
-  assert.match(html, /\/api\/login\/google/);
-  assert.match(html, /プライバシーポリシー/);
-  assert.match(html, /\/contact/);
+  assert.match(html, /YUNAMATCH/);
+  assert.match(html, /見るだけなら登録不要/);
+  assert.match(html, /いいね・申請・募集はログイン後/);
+  assert.match(html, /メイトを探しています/);
+  assert.doesNotMatch(html, /ログイン \/ 新規登録/);
   assert.match(html, /相性でつながるユナイト仲間/);
   assert.doesNotMatch(html, /Your site is taking shape|codex-preview/i);
 });
@@ -105,7 +105,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(page, /initialProfile/);
   assert.match(page, /getDb\(\)\.select\(\)\.from\(profiles\)/);
   assert.match(app, /moveCard/);
-  assert.match(app, /preview\s*\|\|\s*initialProfile\s*!==\s*undefined/);
+  assert.match(app, /guestMode\s*\|\|\s*preview\s*\|\|\s*initialProfile\s*!==\s*undefined/);
   assert.match(app, /AbortController/);
   assert.match(app, /プレイ申請を送る/);
   assert.match(app, /マッチ成立/);
@@ -149,6 +149,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /navPersonIcon/);
   assert.match(app, /メイト申請を送る/);
   assert.match(app, /いいね済み/);
+  assert.match(app, /ログインすると続けられます/);
+  assert.match(app, /yunamatch-pending-action-v1/);
   assert.match(app, /PokemonLabel/);
   assert.match(app, /この人にプレイ申請/);
   assert.match(app, /集合ロビー/);
@@ -169,6 +171,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(discoverApi, /b\.gender\s*===\s*"女性"/);
   assert.match(discoverApi, /activeCutoff/);
   assert.match(discoverApi, /lastActiveAt/);
+  assert.match(discoverApi, /limited:\s*true/);
+  assert.match(discoverApi, /avatarUrl:\s*""/);
   assert.match(migration, /CREATE TABLE `connections`/);
   assert.match(profileMigration, /CREATE TABLE `profiles`/);
   assert.match(lobbyApi, /lobbyMembers/);
@@ -217,6 +221,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /共有せずチャットへ/);
   assert.match(app, /連絡先を共有/);
   assert.match(privacyPage, /初期状態は非公開/);
+  assert.match(privacyPage, /ログイン前のプロフィール表示/);
   assert.match(connectionsSchema, /userAShareContact/);
   assert.match(connectionsSchema, /userBShareContact/);
   assert.match(connectionsApiSource, /action === "share_contact"/);

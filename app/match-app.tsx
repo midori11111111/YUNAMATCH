@@ -133,6 +133,13 @@ type Lobby = {
 };
 type AppTab = "discover" | "recruit" | "chat" | "lobby" | "profile";
 type DiscoverMode = "recommended" | "received";
+type PendingGuestAction = {
+  type: "like" | "profile-request" | "recruit-apply" | "compose" | "received";
+  label: string;
+  targetId?: string;
+  recruitId?: number;
+};
+const pendingGuestActionKey = "yunamatch-pending-action-v1";
 
 const pokemon = [
   "アブソル",
@@ -495,6 +502,7 @@ export default function MatchApp({
   displayName,
   authProvider,
   authContact,
+  authenticated = false,
   preview = false,
   initialProfile,
   initialSuspended = false,
@@ -503,11 +511,13 @@ export default function MatchApp({
   displayName: string;
   authProvider: string;
   authContact: string;
+  authenticated?: boolean;
   preview?: boolean;
   initialProfile?: Profile | null;
   initialSuspended?: boolean;
   isAdmin?: boolean;
 }) {
+  const guestMode = !authenticated && !preview;
   const shortName = displayName.includes("@")
     ? displayName.split("@")[0]
     : displayName;
@@ -545,6 +555,8 @@ export default function MatchApp({
   const [sharedTimeOnly, setSharedTimeOnly] = useState(false);
   const [womenOnly, setWomenOnly] = useState(false);
   const [compose, setCompose] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [loginAction, setLoginAction] = useState("この機能");
   const [applyTo, setApplyTo] = useState<Recruit | null>(null);
   const [profileApplyTo, setProfileApplyTo] = useState<ProfileCandidate | null>(
     null,
@@ -624,11 +636,11 @@ export default function MatchApp({
     "off",
   );
   const [profileReady, setProfileReady] = useState(
-    preview || initialProfile !== undefined,
+    guestMode || preview || initialProfile !== undefined,
   );
   const [suspended, setSuspended] = useState(initialSuspended);
   const [onboardingOpen, setOnboardingOpen] = useState(
-    preview || initialProfile === null,
+    !guestMode && (preview || initialProfile === null),
   );
   const primaryPokemon = profile.mainPokemon[0] || "ゲッコウガ";
   const onboardingMissing = [
@@ -643,6 +655,28 @@ export default function MatchApp({
   const notify = (message: string) => {
     setToast(message);
     window.setTimeout(() => setToast(""), 2600);
+  };
+
+  const requestLogin = (action: PendingGuestAction) => {
+    try {
+      window.sessionStorage.setItem(
+        pendingGuestActionKey,
+        JSON.stringify(action),
+      );
+    } catch {
+      /* ログイン後の自動復帰ができない場合も、認証は続けられる */
+    }
+    setLoginAction(action.label);
+    setLoginOpen(true);
+  };
+
+  const closeLogin = () => {
+    try {
+      window.sessionStorage.removeItem(pendingGuestActionKey);
+    } catch {
+      /* 閉じる操作は続ける */
+    }
+    setLoginOpen(false);
   };
 
   const selectAvatar = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -787,7 +821,7 @@ export default function MatchApp({
     }
   };
   const loadLikes = useCallback(async () => {
-    if (preview) return;
+    if (preview || guestMode) return;
     try {
       const response = await fetch("/api/likes", { cache: "no-store" });
       if (!response.ok) return;
@@ -797,7 +831,7 @@ export default function MatchApp({
     } catch {
       /* 検索画面は利用を続ける */
     }
-  }, [preview]);
+  }, [preview, guestMode]);
   const loadConnections = async () => {
     try {
       const response = await fetch("/api/connections");
@@ -832,12 +866,20 @@ export default function MatchApp({
       fetch("/api/discover", { cache: "no-store" }).then((r) =>
         r.ok ? r.json() : null,
       ),
-      fetch("/api/applications").then((r) => (r.ok ? r.json() : null)),
-      fetch("/api/connections").then((r) => (r.ok ? r.json() : null)),
-      fetch("/api/lobbies").then((r) => (r.ok ? r.json() : null)),
-      fetch("/api/likes", { cache: "no-store" }).then((r) =>
-        r.ok ? r.json() : null,
-      ),
+      authenticated
+        ? fetch("/api/applications").then((r) => (r.ok ? r.json() : null))
+        : Promise.resolve(null),
+      authenticated
+        ? fetch("/api/connections").then((r) => (r.ok ? r.json() : null))
+        : Promise.resolve(null),
+      authenticated
+        ? fetch("/api/lobbies").then((r) => (r.ok ? r.json() : null))
+        : Promise.resolve(null),
+      authenticated
+        ? fetch("/api/likes", { cache: "no-store" }).then((r) =>
+            r.ok ? r.json() : null,
+          )
+        : Promise.resolve(null),
     ])
       .then(
         ([
@@ -868,7 +910,7 @@ export default function MatchApp({
       .finally(() => {
         if (active) setLoading(false);
       });
-    if (preview || initialProfile !== undefined)
+    if (guestMode || preview || initialProfile !== undefined)
       return () => {
         active = false;
       };
@@ -910,10 +952,10 @@ export default function MatchApp({
       window.clearTimeout(timeout);
       controller.abort();
     };
-  }, [preview, initialProfile]);
+  }, [authenticated, guestMode, preview, initialProfile]);
 
   useEffect(() => {
-    if (preview) return;
+    if (preview || guestMode) return;
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
       Promise.resolve().then(() => setPushState("unsupported"));
       return;
@@ -925,10 +967,10 @@ export default function MatchApp({
           setPushState("on");
       })
       .catch(() => setPushState("unsupported"));
-  }, [preview]);
+  }, [preview, guestMode]);
 
   useEffect(() => {
-    if (preview) return;
+    if (preview || guestMode) return;
     const refresh = () => {
       if (document.visibilityState !== "visible") return;
       loadNotices();
@@ -939,10 +981,10 @@ export default function MatchApp({
     };
     const timer = window.setInterval(refresh, 5000);
     return () => window.clearInterval(timer);
-  }, [preview, selectedConnection, loadLikes]);
+  }, [preview, guestMode, selectedConnection, loadLikes]);
 
   useEffect(() => {
-    if (preview || !profileReady || onboardingOpen || selectedConnection)
+    if (preview || guestMode || !profileReady || onboardingOpen || selectedConnection)
       return;
     const heartbeat = () => {
       if (document.visibilityState === "visible")
@@ -959,7 +1001,7 @@ export default function MatchApp({
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", heartbeat);
     };
-  }, [preview, profileReady, onboardingOpen, selectedConnection]);
+  }, [preview, guestMode, profileReady, onboardingOpen, selectedConnection]);
 
   useEffect(() => {
     if (!profileReady || onboardingOpen || tutorialChecked) return;
@@ -1000,6 +1042,7 @@ export default function MatchApp({
   useEffect(() => {
     if (
       preview ||
+      guestMode ||
       !profileReady ||
       onboardingOpen ||
       !tutorialChecked ||
@@ -1028,6 +1071,7 @@ export default function MatchApp({
     return () => window.clearTimeout(timer);
   }, [
     preview,
+    guestMode,
     profileReady,
     onboardingOpen,
     tutorialChecked,
@@ -1069,7 +1113,7 @@ export default function MatchApp({
   }, [preview, selectedConnection, messageText]);
 
   useEffect(() => {
-    if (preview) return;
+    if (preview || guestMode) return;
     fetch("/api/account-links")
       .then((response) => (response.ok ? response.json() : null))
       .then((data) => {
@@ -1081,7 +1125,7 @@ export default function MatchApp({
       window.setTimeout(() => notify("アカウントを連携しました"), 350);
       window.history.replaceState({}, "", window.location.pathname);
     }
-  }, [preview]);
+  }, [preview, guestMode]);
 
   const visibleRecruits = useMemo(
     () => (recruits.length === 0 && preview ? [previewRecruit] : recruits),
@@ -1152,8 +1196,22 @@ export default function MatchApp({
     if (Math.abs(distance) >= 65) moveCard(distance > 0 ? -1 : 1);
   };
   const changeDiscoverMode = (mode: DiscoverMode) => {
+    if (guestMode && mode === "received") {
+      requestLogin({
+        type: "received",
+        label: "相手から届いたいいねを見る",
+      });
+      return;
+    }
     setDiscoverMode(mode);
     setIndex(0);
+  };
+  const openRecruitComposer = () => {
+    if (guestMode) {
+      requestLogin({ type: "compose", label: "募集を作る" });
+      return;
+    }
+    setCompose(true);
   };
   const closeTutorial = () => {
     try {
@@ -1196,6 +1254,14 @@ export default function MatchApp({
       current.trim() ? `${current.trim()} ${preset}` : preset,
     );
   const openRecruitApplication = (recruit: Recruit) => {
+    if (guestMode) {
+      requestLogin({
+        type: "recruit-apply",
+        label: "この募集へプレイ申請する",
+        recruitId: recruit.id,
+      });
+      return;
+    }
     setRequestMessage(
       recruit.pokemon === "未定"
         ? `${recruit.role !== "指定なし" ? recruit.role : "役割"}を相談しながら一緒に遊びたいです！`
@@ -1204,6 +1270,14 @@ export default function MatchApp({
     setApplyTo(recruit);
   };
   const openProfileApplication = (candidate: ProfileCandidate) => {
+    if (guestMode) {
+      requestLogin({
+        type: "profile-request",
+        label: "この人へメイト申請する",
+        targetId: candidate.id,
+      });
+      return;
+    }
     setRequestMessage(
       `${candidate.mainPokemon[0] || "メインポケモン"}と一緒に遊びたいです！`,
     );
@@ -1269,17 +1343,25 @@ export default function MatchApp({
     setIndex((value) => value + 1);
     await Promise.all([loadDiscover(), loadNotices()]);
   };
-  const sendProfileLike = async () => {
-    if (!current || likedProfileIds.includes(current.id)) return;
+  const sendProfileLikeTo = async (candidate: ProfileCandidate) => {
+    if (likedProfileIds.includes(candidate.id)) return;
+    if (guestMode) {
+      requestLogin({
+        type: "like",
+        label: "この人へいいねする",
+        targetId: candidate.id,
+      });
+      return;
+    }
     if (preview) {
-      setLikedProfileIds((ids) => [...ids, current.id]);
-      notify(`${current.trainerName}さんにいいねしました`);
+      setLikedProfileIds((ids) => [...ids, candidate.id]);
+      notify(`${candidate.trainerName}さんにいいねしました`);
       return;
     }
     const response = await fetch("/api/likes", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ targetId: current.id }),
+      body: JSON.stringify({ targetId: candidate.id }),
     });
     const data = await response.json();
     if (response.status === 401) {
@@ -1291,21 +1373,82 @@ export default function MatchApp({
       return;
     }
     setLikedProfileIds((ids) =>
-      ids.includes(current.id) ? ids : [...ids, current.id],
+      ids.includes(candidate.id) ? ids : [...ids, candidate.id],
     );
     notify(
       data.created
-        ? `${current.trainerName}さんにいいねしました`
+        ? `${candidate.trainerName}さんにいいねしました`
         : "いいね済みです",
     );
   };
+  const sendProfileLike = async () => {
+    if (!current) return;
+    await sendProfileLikeTo(current);
+  };
   const openNotifications = () => {
+    if (guestMode) {
+      requestLogin({ type: "received", label: "通知を見る" });
+      return;
+    }
     setNotificationOpen(true);
     if (!profileLikeCount) return;
     setProfileLikes((rows) => rows.map((row) => ({ ...row, read: true })));
     if (!preview)
       fetch("/api/likes", { method: "PATCH" }).catch(() => undefined);
   };
+  useEffect(() => {
+    if (!authenticated || !profileReady || onboardingOpen) return;
+    let action: PendingGuestAction | null = null;
+    try {
+      const stored = window.sessionStorage.getItem(pendingGuestActionKey);
+      if (stored) action = JSON.parse(stored) as PendingGuestAction;
+    } catch {
+      return;
+    }
+    if (!action) return;
+    if (action.type === "compose") {
+      window.sessionStorage.removeItem(pendingGuestActionKey);
+      setTab("recruit");
+      setCompose(true);
+      notify("ログインできました。募集内容を入力してください");
+      return;
+    }
+    if (action.type === "received") {
+      window.sessionStorage.removeItem(pendingGuestActionKey);
+      setDiscoverMode("received");
+      setIndex(0);
+      setTab("discover");
+      notify("ログインできました");
+      return;
+    }
+    if (action.type === "recruit-apply") {
+      const recruit = recruits.find((row) => row.id === action?.recruitId);
+      if (!recruit) return;
+      window.sessionStorage.removeItem(pendingGuestActionKey);
+      setTab("recruit");
+      openRecruitApplication(recruit);
+      return;
+    }
+    const candidate = profileCandidates.find(
+      (row) => row.id === action?.targetId,
+    );
+    if (!candidate) return;
+    window.sessionStorage.removeItem(pendingGuestActionKey);
+    setTab("discover");
+    const candidateIndex = recommendedCards.findIndex(
+      (row) => row.id === candidate.id,
+    );
+    if (candidateIndex >= 0) setIndex(candidateIndex);
+    if (action.type === "like") void sendProfileLikeTo(candidate);
+    else openProfileApplication(candidate);
+  }, [
+    authenticated,
+    profileReady,
+    onboardingOpen,
+    recruits,
+    profileCandidates,
+    recommendedCards,
+  ]);
   const showLikedProfile = (senderId: string) => {
     const senderIds = new Set(profileLikes.map((like) => like.senderId));
     const likedCandidates = profileCandidates.filter((person) =>
@@ -2105,15 +2248,23 @@ export default function MatchApp({
       <section className="phoneShell">
         <header className="appHeader">
           <button
-            className="miniAvatar"
-            onClick={() => setTab("profile")}
-            aria-label="マイページを開く"
+            className={guestMode ? "guestHeaderLogin" : "miniAvatar"}
+            onClick={() =>
+              guestMode
+                ? requestLogin({ type: "received", label: "マイページを使う" })
+                : setTab("profile")
+            }
+            aria-label={guestMode ? "ログインする" : "マイページを開く"}
           >
-            <UserAvatar
-              name={profile.trainerName}
-              src={profile.avatarUrl}
-              className="miniAvatarImage"
-            />
+            {guestMode ? (
+              "ログイン"
+            ) : (
+              <UserAvatar
+                name={profile.trainerName}
+                src={profile.avatarUrl}
+                className="miniAvatarImage"
+              />
+            )}
           </button>
           <div className="appBrand">
             <span>Y</span>
@@ -2133,6 +2284,19 @@ export default function MatchApp({
         </header>
 
         <div className="appViewport">
+          {guestMode && (
+            <div className="guestBrowseBanner">
+              <span>見るだけなら登録不要</span>
+              <p>いいね・申請・募集はログイン後に使えます</p>
+              <button
+                onClick={() =>
+                  requestLogin({ type: "received", label: "YUNAMATCHを使う" })
+                }
+              >
+                ログイン
+              </button>
+            </div>
+          )}
           {tab === "discover" && (
             <section className="discoverView fullDiscoverView">
               <div className="discoverModeBar">
@@ -2197,6 +2361,7 @@ export default function MatchApp({
                         ? "♥ あなたにいいね"
                         : `● ${formatActivity(current.lastActiveAt)}`}
                     </span>
+                    {guestMode && <b>ログインでプロフィールをすべて表示</b>}
                   </div>
                   <button
                     className="cardTapZone previous"
@@ -2279,7 +2444,7 @@ export default function MatchApp({
                       : "条件に合う登録者はまだいません。時間を決めて今すぐ遊ぶなら募集を使えます。"}
                   </p>
                   {discoverMode === "recommended" && (
-                    <button onClick={() => setCompose(true)}>
+                    <button onClick={openRecruitComposer}>
                       今遊ぶ人を募集
                     </button>
                   )}
@@ -2337,7 +2502,7 @@ export default function MatchApp({
                   <small>LIVE RECRUITING</small>
                   <h1>募集中のメイト</h1>
                 </div>
-                <button onClick={() => setCompose(true)}>＋ 募集する</button>
+                <button onClick={openRecruitComposer}>＋ 募集する</button>
               </div>
               <div className="recruitSummary">
                 <div>
@@ -2700,7 +2865,7 @@ export default function MatchApp({
                   <small>READY LOBBY</small>
                   <h1>集合ロビー</h1>
                 </div>
-                <button onClick={() => setCompose(true)}>＋ 募集する</button>
+                <button onClick={openRecruitComposer}>＋ 募集する</button>
               </div>
               <p className="viewLead">
                 全員が準備OKになったら、そのままプレイを始められます。
@@ -3159,6 +3324,10 @@ export default function MatchApp({
           <button
             className={tab === "chat" ? "active" : ""}
             onClick={() => {
+              if (guestMode) {
+                requestLogin({ type: "received", label: "やりとりを見る" });
+                return;
+              }
               setTab("chat");
               loadConnections();
             }}
@@ -3169,6 +3338,10 @@ export default function MatchApp({
           <button
             className={tab === "lobby" ? "active" : ""}
             onClick={() => {
+              if (guestMode) {
+                requestLogin({ type: "received", label: "集合ロビーを使う" });
+                return;
+              }
               setTab("lobby");
               loadLobbies();
             }}
@@ -3177,7 +3350,11 @@ export default function MatchApp({
           </button>
           <button
             className={tab === "profile" ? "active" : ""}
-            onClick={() => setTab("profile")}
+            onClick={() =>
+              guestMode
+                ? requestLogin({ type: "received", label: "マイページを使う" })
+                : setTab("profile")
+            }
           >
             <span>
               <span className="navPersonIcon" aria-hidden="true" />
@@ -3186,6 +3363,53 @@ export default function MatchApp({
           </button>
         </nav>
       </section>
+
+      {guestMode && loginOpen && (
+        <div className="guestLoginBackdrop" onClick={closeLogin}>
+          <section
+            className="guestLoginCard"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="guest-login-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              className="guestLoginClose"
+              onClick={closeLogin}
+              aria-label="ログイン画面を閉じる"
+            >
+              ×
+            </button>
+            <div className="guestLoginMark">⚡</div>
+            <small>YUNAMATCH</small>
+            <h2 id="guest-login-title">ログインすると続けられます</h2>
+            <p>
+              <strong>{loginAction}</strong>
+              は、無料ログイン後に利用できます。
+            </p>
+            <div className="guestLoginProviders">
+              {loginProviders.map((provider) => (
+                <a
+                  key={provider.id}
+                  className={provider.id}
+                  href={`/api/login/${provider.id}?returnTo=${encodeURIComponent("/?resume=1")}`}
+                >
+                  <span>{provider.mark}</span>
+                  {provider.label}で続ける
+                </a>
+              ))}
+            </div>
+            <p className="guestLoginNote">
+              初回だけプロフィールを登録します。完了後、この操作へ自動で戻ります。
+            </p>
+            <nav aria-label="ログイン前の確認">
+              <a href="/privacy">プライバシー</a>
+              <a href="/terms">利用規約</a>
+              <a href="/contact">お問い合わせ</a>
+            </nav>
+          </section>
+        </div>
+      )}
 
       {onboardingOpen && (
         <div className="onboardingBackdrop">
