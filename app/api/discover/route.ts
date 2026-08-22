@@ -17,7 +17,7 @@ import {
   prohibitedContentMessage,
 } from "../../../lib/content-policy";
 import { sendPush } from "../../../lib/push";
-import { profilePublicId } from "../../../lib/profile-id";
+import { profilePublicId, resolveProfilePublicId } from "../../../lib/profile-id";
 import { normalizeRank } from "../../../lib/ranks";
 
 function parseList(value: string) {
@@ -265,8 +265,8 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   const db = getDb();
-  const [profileRows, [applicant]] = await Promise.all([
-    db.select().from(profiles).limit(300),
+  const [profileIdRows, [applicant]] = await Promise.all([
+    db.select({ userId: profiles.userId }).from(profiles),
     db.select().from(profiles).where(eq(profiles.userId, user.userId)).limit(1),
   ]);
   if (!applicant)
@@ -274,13 +274,17 @@ export async function POST(request: Request) {
       { error: "先にプロフィールを登録してください" },
       { status: 409 },
     );
-  const pairs = await Promise.all(
-    profileRows.map(async (row) => ({
-      row,
-      id: await profilePublicId(row.userId),
-    })),
+  const targetUserId = await resolveProfilePublicId(
+    profileIdRows.map((row) => row.userId),
+    targetId,
   );
-  const target = pairs.find((item) => item.id === targetId)?.row;
+  const [target] = targetUserId
+    ? await db
+        .select()
+        .from(profiles)
+        .where(eq(profiles.userId, targetUserId))
+        .limit(1)
+    : [];
   if (!target || target.suspendedAt || target.userId === user.userId)
     return Response.json(
       { error: "このプロフィールは現在表示できません" },

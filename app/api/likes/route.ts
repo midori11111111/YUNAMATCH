@@ -3,7 +3,7 @@ import { blocks, profileLikes, profiles } from "../../../db/schema";
 import { getDb } from "../../../db";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { checkRateLimit, rateLimitResponse } from "../../../lib/rate-limit";
-import { profilePublicId } from "../../../lib/profile-id";
+import { profilePublicId, resolveProfilePublicId } from "../../../lib/profile-id";
 import { sendPush } from "../../../lib/push";
 import { normalizeRank } from "../../../lib/ranks";
 
@@ -37,7 +37,7 @@ export async function GET(){
       readAt:profileLikes.readAt,
       createdAt:profileLikes.createdAt,
     }).from(profileLikes).innerJoin(profiles,eq(profileLikes.senderId,profiles.userId)).where(eq(profileLikes.recipientId,user.userId)).orderBy(desc(profileLikes.createdAt)).limit(50),
-    db.select({recipientId:profileLikes.recipientId}).from(profileLikes).where(eq(profileLikes.senderId,user.userId)).limit(300),
+    db.select({recipientId:profileLikes.recipientId}).from(profileLikes).where(eq(profileLikes.senderId,user.userId)),
     db.select({id:blocks.blockedId}).from(blocks).where(eq(blocks.blockerId,user.userId)),
     db.select({id:blocks.blockerId}).from(blocks).where(eq(blocks.blockedId,user.userId)),
     db.select({userId:profileLikes.recipientId,count:sql<number>`count(*)`}).from(profileLikes).groupBy(profileLikes.recipientId),
@@ -90,10 +90,15 @@ export async function POST(request:Request){
   const targetId=typeof body.targetId==="string"?body.targetId:"";
   if(!/^[a-f0-9]{32}$/.test(targetId))return Response.json({error:"プロフィールを確認してください"},{status:400});
   const db=getDb();
-  const [profileRows,[sender]]=await Promise.all([db.select().from(profiles).limit(300),db.select().from(profiles).where(eq(profiles.userId,user.userId)).limit(1)]);
+  const [profileIdRows,[sender]]=await Promise.all([
+    db.select({userId:profiles.userId}).from(profiles),
+    db.select().from(profiles).where(eq(profiles.userId,user.userId)).limit(1),
+  ]);
   if(!sender)return Response.json({error:"先にプロフィールを登録してください"},{status:409});
-  const pairs=await Promise.all(profileRows.map(async row=>({row,id:await profilePublicId(row.userId)})));
-  const target=pairs.find(item=>item.id===targetId)?.row;
+  const targetUserId=await resolveProfilePublicId(profileIdRows.map(row=>row.userId),targetId);
+  const [target]=targetUserId
+    ? await db.select().from(profiles).where(eq(profiles.userId,targetUserId)).limit(1)
+    : [];
   if(!target||target.suspendedAt||!target.ageConfirmed||!target.termsAcceptedAt||target.userId===user.userId)return Response.json({error:"このプロフィールにはいいねできません"},{status:404});
   const blocked=await db.select({id:blocks.id}).from(blocks).where(or(and(eq(blocks.blockerId,user.userId),eq(blocks.blockedId,target.userId)),and(eq(blocks.blockerId,target.userId),eq(blocks.blockedId,user.userId)))).limit(1);
   if(blocked.length)return Response.json({error:"このプロフィールにはいいねできません"},{status:403});

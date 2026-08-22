@@ -65,6 +65,15 @@ test("keeps discover results inside every selected filter", async () => {
   );
 });
 
+test("resolves profiles beyond the former 300-account action limit", async () => {
+  const { profilePublicId, resolveProfilePublicId } = await import(
+    new URL("../lib/profile-id.ts", import.meta.url)
+  );
+  const userIds = Array.from({ length: 350 }, (_, index) => `user-${index}`);
+  const targetId = await profilePublicId(userIds[349]);
+  assert.equal(await resolveProfilePublicId(userIds, targetId), userIds[349]);
+});
+
 test("ships the matching app, onboarding, lobby, safety, analytics, and notifications", async () => {
   const [
     page,
@@ -242,6 +251,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /receivedProfileCandidates/);
   assert.match(app, /const receivedCards = receivedProfileCandidates/);
   assert.match(app, /receivedProfileCandidates\.findIndex/);
+  assert.doesNotMatch(discoverApi, /from\(profiles\)\.limit\(300\)/);
+  assert.doesNotMatch(likesApi, /from\(profiles\)\.limit\(300\)/);
   assert.match(app, /yunamatch-push-intro-v1/);
   assert.match(app, /ホーム画面から開くと通知できます/);
   assert.match(app, /install-required/);
