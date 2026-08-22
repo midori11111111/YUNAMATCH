@@ -83,6 +83,31 @@ test("resolves profiles beyond the former 300-account action limit", async () =>
   assert.equal(await resolveProfilePublicId(userIds, targetId), userIds[349]);
 });
 
+test("supports casual and ranked recruiting on the site and Discord", async () => {
+  const [app, recruitsApi, discordApi, commandScript, adminCommandApi, schema, migration] =
+    await Promise.all([
+      readFile(new URL("app/match-app.tsx", root), "utf8"),
+      readFile(new URL("app/api/recruits/route.ts", root), "utf8"),
+      readFile(new URL("app/api/discord/interactions/route.ts", root), "utf8"),
+      readFile(new URL("scripts/register-discord-command.mjs", root), "utf8"),
+      readFile(new URL("app/api/admin/discord-command/route.ts", root), "utf8"),
+      readFile(new URL("db/schema.ts", root), "utf8"),
+      readFile(new URL("drizzle/0029_many_shadow_king.sql", root), "utf8"),
+    ]);
+  assert.match(app, /遊ぶモード/);
+  assert.match(app, /ランクマッチ/);
+  assert.match(app, /カジュアル/);
+  assert.match(app, /recruit\.matchType/);
+  assert.match(recruitsApi, /matchType:recruits\.matchType/);
+  assert.match(discordApi, /options\.match_type/);
+  assert.match(commandScript, /name: "match_type"/);
+  assert.match(commandScript, /required: true/);
+  assert.match(adminCommandApi, /requireAdmin/);
+  assert.match(adminCommandApi, /method: "PATCH"/);
+  assert.match(schema, /matchType: text\("match_type"\)/);
+  assert.match(migration, /ADD `match_type` text DEFAULT 'ランクマッチ' NOT NULL/);
+});
+
 test("ships the matching app, onboarding, lobby, safety, analytics, and notifications", async () => {
   const [
     page,

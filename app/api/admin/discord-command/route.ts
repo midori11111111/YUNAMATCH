@@ -1,0 +1,78 @@
+import { requireAdmin } from "../../../../lib/admin";
+
+type DiscordCommandOption = {
+  type: number;
+  name: string;
+  description: string;
+  required?: boolean;
+  choices?: Array<{ name: string; value: string | number }>;
+};
+
+type DiscordCommand = {
+  id: string;
+  name: string;
+  options?: DiscordCommandOption[];
+};
+
+const matchTypeOption: DiscordCommandOption = {
+  type: 3,
+  name: "match_type",
+  description: "カジュアルかランクマッチを選択",
+  required: true,
+  choices: [
+    { name: "ランクマッチ", value: "ランクマッチ" },
+    { name: "カジュアル", value: "カジュアル" },
+  ],
+};
+
+export async function POST() {
+  if (!(await requireAdmin()))
+    return Response.json(
+      { error: "管理者権限が必要です" },
+      { status: 403 },
+    );
+  const appId = process.env.DISCORD_APP_ID;
+  const token = process.env.DISCORD_BOT_TOKEN;
+  if (!appId || !token)
+    return Response.json(
+      { error: "Discord設定が不足しています" },
+      { status: 503 },
+    );
+
+  const headers = { authorization: `Bot ${token}` };
+  const commandResponse = await fetch(
+    `https://discord.com/api/v10/applications/${appId}/commands`,
+    { headers },
+  );
+  if (!commandResponse.ok)
+    return Response.json(
+      { error: "Discordのコマンドを取得できませんでした" },
+      { status: 502 },
+    );
+  const commands = (await commandResponse.json()) as DiscordCommand[];
+  const recruitCommand = commands.find((command) => command.name === "募集");
+  if (!recruitCommand)
+    return Response.json(
+      { error: "Discordの募集コマンドが見つかりません" },
+      { status: 404 },
+    );
+  const currentOptions = recruitCommand.options || [];
+  const options = [
+    matchTypeOption,
+    ...currentOptions.filter((option) => option.name !== "match_type"),
+  ];
+  const updateResponse = await fetch(
+    `https://discord.com/api/v10/applications/${appId}/commands/${recruitCommand.id}`,
+    {
+      method: "PATCH",
+      headers: { ...headers, "content-type": "application/json" },
+      body: JSON.stringify({ options }),
+    },
+  );
+  if (!updateResponse.ok)
+    return Response.json(
+      { error: "Discordの募集コマンドを更新できませんでした" },
+      { status: 502 },
+    );
+  return Response.json({ ok: true });
+}

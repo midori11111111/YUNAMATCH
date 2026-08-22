@@ -16,6 +16,7 @@ import { pokemonArtUrl } from "../lib/pokemon-art";
 import { filterDiscoverCandidates } from "../lib/discover-filter";
 import { rankOptions } from "../lib/ranks";
 
+type MatchType = "ランクマッチ" | "カジュアル";
 type Recruit = {
   id: number;
   trainerName: string;
@@ -34,6 +35,7 @@ type Recruit = {
   partySize: number;
   desiredPokemon: string;
   desiredRole: string;
+  matchType: MatchType;
   acceptedCount: number;
 };
 type ProfileCandidate = {
@@ -348,6 +350,7 @@ const previewRecruit: Recruit = {
   partySize: 2,
   desiredPokemon: "ゲッコウガ",
   desiredRole: "指定なし",
+  matchType: "ランクマッチ",
   acceptedCount: 0,
 };
 const previewProfile: ProfileCandidate = {
@@ -757,6 +760,8 @@ export default function MatchApp({
   const [pushHelpOpen, setPushHelpOpen] = useState(false);
   const [recruitAlertsEnabled, setRecruitAlertsEnabled] = useState(false);
   const [recruitAlertUpdating, setRecruitAlertUpdating] = useState(false);
+  const [quickMatchType, setQuickMatchType] =
+    useState<MatchType>("ランクマッチ");
   const [quickRecruiting, setQuickRecruiting] = useState("");
   const [quickApplyingId, setQuickApplyingId] = useState<number | null>(null);
   const [profileReady, setProfileReady] = useState(
@@ -1679,7 +1684,7 @@ export default function MatchApp({
     setRequestMessage(
       recruit.pokemon === "未定"
         ? `${recruit.role !== "指定なし" ? recruit.role : "役割"}を相談しながら一緒に遊びたいです！`
-        : `${recruit.pokemon}と一緒にランクへ行きたいです！`,
+        : `${recruit.pokemon}と一緒に${recruit.matchType}で遊びたいです！`,
     );
     setApplyTo(recruit);
   };
@@ -1945,6 +1950,7 @@ export default function MatchApp({
         partySize: Number(body.partySize),
         desiredPokemon: String(body.desiredPokemon),
         desiredRole: String(body.desiredRole),
+        matchType: String(body.matchType) as MatchType,
       };
       setMyRecruit(recruit);
       if (pushState === "on") setRecruitShare(recruit);
@@ -2029,6 +2035,7 @@ export default function MatchApp({
       ...settings,
       desiredPokemon: "すべて",
       desiredRole: "指定なし",
+      matchType: quickMatchType,
       note: "",
     };
     setQuickRecruiting(preset);
@@ -2058,6 +2065,7 @@ export default function MatchApp({
           partySize: settings.partySize,
           desiredPokemon: "すべて",
           desiredRole: "指定なし",
+          matchType: quickMatchType,
           acceptedCount: 0,
         };
         setMyRecruit(recruit);
@@ -2166,7 +2174,7 @@ export default function MatchApp({
   const recruitShareText = (recruit: Recruit) =>
     [
       `【ポケモンユナイト仲間募集】`,
-      `${recruit.pokemon} / ${recruit.role}`,
+      `${recruit.matchType} / ${recruit.pokemon} / ${recruit.role}`,
       `${recruit.acceptedCount + 1}/${recruit.partySize}人・${formatRecruitStart(recruit)}`,
       recruit.desiredPokemon !== "すべて"
         ? `希望ポケモン: ${recruit.desiredPokemon}`
@@ -3538,6 +3546,28 @@ export default function MatchApp({
                   </p>
                 </div>
                 {!myRecruit && (
+                  <>
+                  <fieldset className="recruitRolePicker quickMatchTypePicker">
+                    <legend>遊ぶモードを選ぶ</legend>
+                    <div>
+                      {(["ランクマッチ", "カジュアル"] as MatchType[]).map(
+                        (matchType) => (
+                          <label key={matchType}>
+                            <input
+                              type="radio"
+                              name="quickMatchType"
+                              checked={quickMatchType === matchType}
+                              onChange={() => setQuickMatchType(matchType)}
+                            />
+                            <span>
+                              {matchType === "ランクマッチ" ? "🏆" : "🎮"}{" "}
+                              {matchType}
+                            </span>
+                          </label>
+                        ),
+                      )}
+                    </div>
+                  </fieldset>
                   <div className="quickRecruitGrid">
                     <button
                       onClick={() => createQuickRecruit("now-duo")}
@@ -3564,6 +3594,7 @@ export default function MatchApp({
                       <small>時間は相談</small>
                     </button>
                   </div>
+                  </>
                 )}
                 <button
                   className={`recruitAlertToggle ${recruitAlertsEnabled ? "active" : ""}`}
@@ -3599,7 +3630,7 @@ export default function MatchApp({
                         : `${myRecruit.pokemon}で募集中`}
                     </strong>
                     <span>
-                      {myRecruit.role !== "指定なし"
+                      {myRecruit.matchType} ・ {myRecruit.role !== "指定なし"
                         ? myRecruit.role
                         : myRecruit.playTime}
                     </span>
@@ -3641,6 +3672,7 @@ export default function MatchApp({
                         </div>
                       </header>
                       <div className="recruitBadges">
+                        <span className="matchTypeBadge">{recruit.matchType}</span>
                         <span>{formatRecruitStart(recruit)}</span>
                         <span>
                           {recruit.desiredPokemon === "すべて"
@@ -4776,7 +4808,7 @@ export default function MatchApp({
                   <small>YUNAMATCH COMMUNITY</small>
                   <strong>Discordで募集・VCに参加</strong>
                   <p>
-                    参加時にランク・希望ロール・VC可否を選び、募集チャンネルでは{" "}
+                    参加時にモード・現在ランク・希望ロール・VC可否を選び、募集チャンネルでは{" "}
                     <b>/募集</b> が使えます。
                   </p>
                 </div>
@@ -5880,6 +5912,28 @@ export default function MatchApp({
             </button>
             <small className="modalKicker">CREATE RECRUIT</small>
             <h2>メイトを募集</h2>
+            <fieldset className="recruitRolePicker matchTypePicker">
+              <legend>遊ぶモード</legend>
+              <div>
+                {(["ランクマッチ", "カジュアル"] as MatchType[]).map(
+                  (matchType) => (
+                    <label key={matchType}>
+                      <input
+                        type="radio"
+                        name="matchType"
+                        value={matchType}
+                        defaultChecked={matchType === "ランクマッチ"}
+                        required
+                      />
+                      <span>
+                        {matchType === "ランクマッチ" ? "🏆" : "🎮"}{" "}
+                        {matchType}
+                      </span>
+                    </label>
+                  ),
+                )}
+              </div>
+            </fieldset>
             <label>
               使用ポケモン <small>任意</small>
               <select name="pokemon" defaultValue="未定">
@@ -6024,7 +6078,7 @@ export default function MatchApp({
                 <PokemonImage name={recruitShare.pokemon} />
               </div>
               <div>
-                <small>POKÉMON UNITE</small>
+                <small>{recruitShare.matchType}</small>
                 <strong>
                   {recruitShare.pokemon === "未定"
                     ? "役割から仲間を募集中"

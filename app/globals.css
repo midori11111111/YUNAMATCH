@@ -348,6 +348,7 @@ button { cursor: pointer; }
 .recruitCardHeader > div:last-child > small { margin-left: 7px; color: #8e8796; font-size: 9px; }
 .recruitBadges { display: flex; flex-wrap: wrap; gap: 7px; }
 .recruitBadges span { padding: 7px 10px; border-radius: 99px; color: #5f5670; background: #f3f0f7; font-size: 9px; font-weight: 800; }
+.recruitBadges .matchTypeBadge { color: #fff; background: linear-gradient(135deg,var(--purple),#8d75f1); }
 .recruitNote { margin: 0; padding: 12px 13px; border-left: 3px solid #d6caff; border-radius: 0 11px 11px 0; color: #554e5e; background: #faf8fd; font-size: 11px; line-height: 1.55; }
 .recruitFacts { display: grid; grid-template-columns: 1.7fr .8fr .7fr; overflow: hidden; border: 1px solid var(--line); border-radius: 14px; }
 .recruitFacts > div { min-width: 0; display: grid; align-content: center; gap: 3px; padding: 10px 11px; }
@@ -501,6 +502,9 @@ button { cursor: pointer; }
 .recruitRolePicker span { min-height: 38px; display: grid; place-items: center; padding: 8px 5px; border: 1px solid #e3dee8; border-radius: 11px; color: #756e7c; background: #fff; font-size: 8px; font-weight: 900; text-align: center; transition: .16s; }
 .recruitRolePicker input:checked + span { color: #fff; border-color: var(--purple); background: linear-gradient(135deg,var(--purple),#8e76f1); box-shadow: 0 7px 15px #7257e825; }
 .recruitRolePicker input:focus-visible + span { outline: 2px solid #2a1d49; outline-offset: 2px; }
+.matchTypePicker > div, .quickMatchTypePicker > div { grid-template-columns: 1fr 1fr; }
+.matchTypePicker span, .quickMatchTypePicker span { min-height: 44px; font-size: 9px; }
+.quickMatchTypePicker { margin-top: 2px; }
 .pokemonPicker { display: grid; gap: 8px; }
 .pickerHeading { display: flex; align-items: center; justify-content: space-between; color: #625c6a; font-size: 8px; font-weight: 900; }
 .pickerHeading small { color: #9a93a2; font-size: 7px; font-weight: 700; }

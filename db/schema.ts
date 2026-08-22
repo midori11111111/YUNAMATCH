@@ -114,6 +114,7 @@ export const recruits = sqliteTable(
     partySize: integer("party_size").notNull().default(2),
     desiredPokemon: text("desired_pokemon").notNull().default("すべて"),
     desiredRole: text("desired_role").notNull().default("指定なし"),
+    matchType: text("match_type").notNull().default("ランクマッチ"),
     acceptedCount: integer("accepted_count").notNull().default(0),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   },

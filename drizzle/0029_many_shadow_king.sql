@@ -1,0 +1,1 @@
+ALTER TABLE `recruits` ADD `match_type` text DEFAULT 'ランクマッチ' NOT NULL;
