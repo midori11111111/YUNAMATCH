@@ -8,7 +8,15 @@ const discordApi = "https://discord.com/api/v10";
 const defaultGuildId = "1540060798297182268";
 const categoryName = "YUNAMATCH PRIVATE VC";
 const roomNames = ["VC1", "VC2", "VC3", "VC4", "VC5"];
-const legacyRoomNames = new Set(["VCロビー", "VC | デュオ", "VC｜デュオ"]);
+const legacyRoomNames = new Set([
+  "VCロビー",
+  "VC | デュオ",
+  "VC｜デュオ",
+  "VC｜ロビー",
+  "VC｜デュオ 1",
+  "VC｜デュオ 2",
+  "VC｜フルパ",
+]);
 const viewChannel = 1 << 10;
 const manageChannels = 1 << 4;
 const stream = 1 << 9;
@@ -268,14 +276,26 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
-  const body = (await request.json().catch(() => ({}))) as { password?: string };
+  const body = (await request.json().catch(() => ({}))) as {
+    password?: string;
+    preserve?: string[];
+  };
   if (!process.env.ADMIN_PASSWORD || body.password !== process.env.ADMIN_PASSWORD)
     return Response.json({ error: "管理者パスワードが違います" }, { status: 401 });
   try {
     const channels = await guildChannels();
     const removed: string[] = [];
+    const preserved = new Set(
+      Array.isArray(body.preserve)
+        ? body.preserve.filter((name): name is string => typeof name === "string")
+        : [],
+    );
     for (const channel of channels) {
-      if (channel.type === 2 && legacyRoomNames.has(channel.name)) {
+      if (
+        channel.type === 2 &&
+        legacyRoomNames.has(channel.name) &&
+        !preserved.has(channel.name)
+      ) {
         await discord<DiscordChannel>("DELETE", `/channels/${channel.id}`);
         removed.push(channel.name);
       }
@@ -285,6 +305,7 @@ export async function PUT(request: Request) {
       ok: true,
       rooms: rooms.map((room) => room.name),
       removed,
+      preserved: [...preserved],
     });
   } catch (error) {
     return Response.json(
