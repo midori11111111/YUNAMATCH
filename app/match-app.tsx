@@ -666,6 +666,12 @@ export default function MatchApp({
     useState<Recruit | null>(null);
   const [safetyTarget, setSafetyTarget] = useState<SafetyTarget | null>(null);
   const [chatActionsOpen, setChatActionsOpen] = useState(false);
+  const [voiceRoomLoading, setVoiceRoomLoading] = useState(false);
+  const [voiceRoom, setVoiceRoom] = useState<{
+    connectionId: number;
+    roomName: string;
+    channelUrl: string;
+  } | null>(null);
   const [supportOpen, setSupportOpen] = useState(false);
   const [supportMode, setSupportMode] = useState<"support" | "feedback">(
     "support",
@@ -1929,6 +1935,64 @@ export default function MatchApp({
   };
   const openDiscord = () =>
     window.open(discordInviteUrl, "_blank", "noopener,noreferrer");
+  const createPrivateVoiceRoom = async (connectionId: number) => {
+    if (voiceRoomLoading) return;
+    if (preview) {
+      notify("VC1を二人だけに公開しました");
+      openDiscord();
+      return;
+    }
+    const discordWindow = window.open("", "_blank");
+    setVoiceRoomLoading(true);
+    try {
+      const response = await fetch("/api/discord/voice-rooms", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ connectionId, action: "open" }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        discordWindow?.close();
+        notify(data.error || "二人だけのVCを作成できませんでした");
+        return;
+      }
+      setVoiceRoom({
+        connectionId,
+        roomName: data.roomName,
+        channelUrl: data.channelUrl,
+      });
+      notify(`${data.roomName}を二人だけに公開しました`);
+      if (discordWindow) discordWindow.location.href = data.channelUrl;
+      else window.location.href = data.channelUrl;
+    } catch {
+      discordWindow?.close();
+      notify("通信が不安定です。VCを作成できませんでした");
+    } finally {
+      setVoiceRoomLoading(false);
+    }
+  };
+  const closePrivateVoiceRoom = async (connectionId: number) => {
+    if (voiceRoomLoading) return;
+    setVoiceRoomLoading(true);
+    try {
+      const response = await fetch("/api/discord/voice-rooms", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ connectionId, action: "close" }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        notify(data.error || "VCを閉じられませんでした");
+        return;
+      }
+      setVoiceRoom(null);
+      notify(data.closed ? `${data.roomName}を閉じました` : data.message);
+    } catch {
+      notify("通信が不安定です。VCを閉じられませんでした");
+    } finally {
+      setVoiceRoomLoading(false);
+    }
+  };
   const shareRecruitToLine = (recruit: Recruit) =>
     window.open(
       `https://line.me/R/share?text=${encodeURIComponent(`${recruitShareText(recruit)}\n${recruitUrl(recruit)}`)}`,
@@ -3437,8 +3501,15 @@ export default function MatchApp({
                             {message.response === "accepted" && (
                               <div className="playInviteAccepted">
                                 <p>✓ 一緒にプレイすることになりました</p>
-                                <button onClick={openDiscord}>
-                                  Discordで合流する
+                                <button
+                                  onClick={() =>
+                                    createPrivateVoiceRoom(selectedConnection.id)
+                                  }
+                                  disabled={voiceRoomLoading}
+                                >
+                                  {voiceRoomLoading
+                                    ? "VCを準備中…"
+                                    : "二人だけのDiscord VCを作る"}
                                 </button>
                               </div>
                             )}
@@ -5444,10 +5515,27 @@ export default function MatchApp({
                 <b>↻</b>
                 再マッチ
               </button>
-              <button onClick={openDiscord}>
+              <button
+                onClick={() => createPrivateVoiceRoom(selectedConnection.id)}
+                disabled={voiceRoomLoading}
+              >
                 <b>🎧</b>
-                VCで合流
+                {voiceRoom?.connectionId === selectedConnection.id
+                  ? `${voiceRoom.roomName}を開く`
+                  : voiceRoomLoading
+                    ? "VCを準備中"
+                    : "二人だけのVCを作る"}
               </button>
+              {voiceRoom?.connectionId === selectedConnection.id && (
+                <button
+                  className="voiceRoomCloseAction"
+                  onClick={() => closePrivateVoiceRoom(selectedConnection.id)}
+                  disabled={voiceRoomLoading}
+                >
+                  <b>×</b>
+                  {voiceRoom.roomName}を閉じる
+                </button>
+              )}
               <button
                 onClick={() => shareMatchToX(selectedConnection.matePokemon)}
               >
@@ -5582,8 +5670,12 @@ export default function MatchApp({
             >
               自分の連絡先を共有してチャットへ
             </button>
-            <button className="discordMatchButton" onClick={openDiscord}>
-              🎧 DiscordのVCで合流
+            <button
+              className="discordMatchButton"
+              onClick={() => createPrivateVoiceRoom(matchResult.connectionId)}
+              disabled={voiceRoomLoading}
+            >
+              🎧 {voiceRoomLoading ? "VCを準備中…" : "二人だけのDiscord VCを作る"}
             </button>
             <button
               className="textButton"

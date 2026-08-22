@@ -607,6 +607,8 @@ button { cursor: pointer; }
 .chatActionGrid button.active { color: #c93671; border-color: #ffd5e5; background: #fff0f6; }
 .chatActionGrid button.played { color: #168463; border-color: #cdeee3; background: #eaf8f3; }
 .chatActionGrid button.rating { color: #8f6700; border-color: #f1deb1; background: #fff8df; }
+.chatActionGrid button.voiceRoomCloseAction { color: #b94059; border-color: #f2cfd6; background: #fff4f6; }
+.chatActionGrid button.voiceRoomCloseAction b { color: #d34c65; }
 .chatActionGrid button:disabled { cursor: default; opacity: 1; }
 .chatContactMenu { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 8px; margin-top: 13px; padding: 13px; border-radius: 15px; background: #f8f5fb; }
 .chatContactMenu > div { min-width: 0; display: grid; gap: 4px; }

@@ -18,7 +18,7 @@ export async function POST(request:Request){
   const interaction=JSON.parse(raw) as {type:number;member?:{user?:{id?:string}};user?:{id?:string};data?:{name?:string;options?:Array<{name:string;value:string|number}>}};
   if(interaction.type===1)return json({type:1});
   if(interaction.type!==2)return json({type:4,data:{content:"対応していない操作です",flags:64}});
-  if(interaction.data?.name==="はじめ方")return json({type:4,data:{content:"⚡ **YUNAMATCHの使い方**\n1. プロフィールでDiscordアカウントを連携\n2. このサーバーで `/募集` を入力\n3. 届いた申請をYUNAMATCHで承認\n4. 集合ロビーからVCへ合流\n\n詳しくはこちら：https://yunamatch.vercel.app/community",flags:64}});
+  if(interaction.data?.name==="はじめ方")return json({type:4,data:{content:"⚡ **YUNAMATCHの使い方**\n1. プロフィールでDiscordアカウントを連携\n2. このサーバーで `/募集` を入力\n3. 届いた申請をYUNAMATCHで承認\n4. チャットから二人だけのVC1〜VC5を作成\n\n詳しくはこちら：https://yunamatch.vercel.app/community",flags:64}});
   if(interaction.data?.name!=="募集")return json({type:4,data:{content:"対応していないコマンドです",flags:64}});
   const discordId=interaction.member?.user?.id||interaction.user?.id;if(!discordId)return json({type:4,data:{content:"Discordアカウントを確認できませんでした",flags:64}});
   const db=getDb();const [linked]=await db.select().from(accountLinks).where(and(eq(accountLinks.provider,"discord"),eq(accountLinks.providerAccountId,discordId))).limit(1);
