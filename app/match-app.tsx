@@ -2586,7 +2586,11 @@ export default function MatchApp({
       return;
     }
     setSafetyTarget(null);
-    notify("通報を受け付けました");
+    notify(
+      data.alreadyReported
+        ? "このユーザーへの通報は受付済みです"
+        : "通報を受け付けました",
+    );
     await Promise.all([loadRecruits(), loadConnections()]);
   };
   const blockTarget = async () => {
@@ -3487,9 +3491,9 @@ export default function MatchApp({
                     <button
                       className="chatSafety"
                       onClick={() => setChatActionsOpen(true)}
-                      aria-label="チャットのメニューを開く"
+                      aria-label="通報などのチャットメニューを開く"
                     >
-                      •••
+                      ⚑
                     </button>
                   </div>
                   {selectedConnection.againByMate && (

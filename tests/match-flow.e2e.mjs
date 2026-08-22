@@ -21,6 +21,7 @@ const configBody = {
   d1_databases: [{ binding: "DB", database_name: "yunamatch-e2e", database_id: "00000000-0000-4000-8000-000000000000" }],
   r2_buckets: [{ binding: "MEDIA", bucket_name: "yunamatch-e2e-media" }],
   assets: { directory: join(root, "dist", "client"), binding: "ASSETS" },
+  vars: { ADMIN_PASSWORD: "unimatch-e2e" },
 };
 
 function run(args) {
@@ -71,10 +72,24 @@ try {
   const owner = userHeaders("e2e-owner", "owner@example.test");
   const applicant = userHeaders("e2e-applicant", "applicant@example.test");
   const cancelTester = userHeaders("e2e-cancel", "cancel@example.test");
+  const reportTesters = [
+    cancelTester,
+    userHeaders("e2e-report-2", "report-2@example.test"),
+    userHeaders("e2e-report-3", "report-3@example.test"),
+    userHeaders("e2e-report-4", "report-4@example.test"),
+    userHeaders("e2e-report-5", "report-5@example.test"),
+  ];
   const profile = (trainerName, pokemon, gender, contact) => ({ trainerName, mainPokemon: [pokemon], highestRate: "マスター 1400〜1599", playTime: ["平日 夜（18〜22時）"], gender, contact, avatarUrl: "", age: 24, ageConfirmed: true, termsAccepted: true });
   await api("/api/profile", { user: owner, method: "PUT", body: profile("募集テスター", "ゲッコウガ", "男性", "Discord: owner-test") });
   await api("/api/profile", { user: applicant, method: "PUT", body: profile("申請テスター", "ハピナス", "女性", "Discord: applicant-test") });
   await api("/api/profile", { user: cancelTester, method: "PUT", body: profile("取消テスター", "ピカチュウ", "男性", "Discord: cancel-test") });
+  for (let index = 1; index < reportTesters.length; index += 1) {
+    await api("/api/profile", {
+      user: reportTesters[index],
+      method: "PUT",
+      body: profile(`通報テスター${index + 1}`, "ピカチュウ", "男性", `Discord: report-${index + 1}`),
+    });
+  }
 
   const discoverBeforeLike = await api("/api/discover", { user: applicant });
   const zeroLikeProfile = discoverBeforeLike.profiles.find((row) => row.trainerName === "募集テスター");
@@ -101,6 +116,35 @@ try {
   assert.equal(afterCancel.recruits.some((row) => row.id === undecided.recruit.id), false);
 
   const created = await api("/api/recruits", { user: owner, method: "POST", body: { pokemon: "ゲッコウガ", role: "スピード型", matches: 1200, winRate: 54.5, startsIn: 0, duration: 1, partySize: 2, desiredPokemon: "ハピナス", desiredRole: "サポート型", note: "通しテスト" } });
+  for (const reporter of reportTesters) {
+    const result = await api("/api/safety", {
+      user: reporter,
+      method: "POST",
+      body: { action: "report", recruitId: created.recruit.id, reason: "迷惑行為", details: "集計テスト" },
+    });
+    assert.equal(result.created, true);
+  }
+  const duplicateThresholdReport = await api("/api/safety", {
+    user: reportTesters[0],
+    method: "POST",
+    body: { action: "report", recruitId: created.recruit.id, reason: "迷惑行為", details: "重複集計テスト" },
+  });
+  assert.equal(duplicateThresholdReport.alreadyReported, true);
+  const adminLoginResponse = await fetch(`${base}/api/admin/session`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ password: "unimatch-e2e" }),
+  });
+  assert.equal(adminLoginResponse.status, 200);
+  const adminCookie = adminLoginResponse.headers.get("set-cookie")?.split(";")[0];
+  assert.ok(adminCookie);
+  const adminReportsResponse = await fetch(`${base}/api/admin/reports`, {
+    headers: { cookie: adminCookie },
+  });
+  assert.equal(adminReportsResponse.status, 200);
+  const adminReports = await adminReportsResponse.json();
+  assert.equal(adminReports.flaggedUsers[0].reportCount, 5);
+  assert.equal(adminReports.flaggedUsers[0].targetName, "募集テスター");
   const listed = await api("/api/recruits", { user: applicant });
   assert.equal(listed.recruits[0].id, created.recruit.id);
 
@@ -178,6 +222,29 @@ try {
   assert.equal(played.playedByMe, true);
   const applicantAfterPlay = await api("/api/connections", { user: applicant });
   assert.equal(applicantAfterPlay.connections[0].playedByMate, true);
+
+  const firstChatReport = await api("/api/safety", {
+    user: applicant,
+    method: "POST",
+    body: {
+      action: "report",
+      connectionId,
+      reason: "迷惑行為",
+      details: "チャットからの通報テスト",
+    },
+  });
+  assert.equal(firstChatReport.created, true);
+  const duplicateChatReport = await api("/api/safety", {
+    user: applicant,
+    method: "POST",
+    body: {
+      action: "report",
+      connectionId,
+      reason: "迷惑行為",
+      details: "重複通報テスト",
+    },
+  });
+  assert.equal(duplicateChatReport.alreadyReported, true);
 
   await api("/api/safety", { user: owner, method: "POST", body: { action: "block", connectionId } });
   const hiddenConnections = await api("/api/connections", { user: owner });

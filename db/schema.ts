@@ -267,6 +267,7 @@ export const reports = sqliteTable(
   (table) => [
     index("idx_reports_status_created").on(table.status, table.createdAt),
     index("idx_reports_reporter_created").on(table.reporterId, table.createdAt),
+    index("idx_reports_target_created").on(table.targetId, table.createdAt),
   ],
 );
 

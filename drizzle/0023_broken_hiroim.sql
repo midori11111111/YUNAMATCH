@@ -1,0 +1,1 @@
+CREATE INDEX `idx_reports_target_created` ON `reports` (`target_id`,`created_at`);

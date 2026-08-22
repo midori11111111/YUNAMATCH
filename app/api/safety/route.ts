@@ -47,6 +47,22 @@ export async function POST(request: Request) {
 
   if (payload.action === "report") {
     if (!payload.reason || !allowedReasons.has(payload.reason)) return Response.json({ error: "通報理由を選択してください" }, { status: 400 });
+    const [existingReport] = await db
+      .select({ id: reports.id })
+      .from(reports)
+      .where(
+        and(
+          eq(reports.reporterId, user.userId),
+          eq(reports.targetId, targetId),
+        ),
+      )
+      .limit(1);
+    if (existingReport) {
+      if (payload.alsoBlock) {
+        await db.insert(blocks).values({ blockerId: user.userId, blockedId: targetId, createdAt: new Date() }).onConflictDoNothing();
+      }
+      return Response.json({ ok: true, created: false, alreadyReported: true });
+    }
     await db.insert(reports).values({
       reporterId: user.userId,
       targetId,
@@ -60,7 +76,7 @@ export async function POST(request: Request) {
     if (payload.alsoBlock) {
       await db.insert(blocks).values({ blockerId: user.userId, blockedId: targetId, createdAt: new Date() }).onConflictDoNothing();
     }
-    return Response.json({ ok: true });
+    return Response.json({ ok: true, created: true, alreadyReported: false });
   }
 
   return Response.json({ error: "操作を確認してください" }, { status: 400 });

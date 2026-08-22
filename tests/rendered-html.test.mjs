@@ -83,6 +83,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     recruitAlertsMigration,
     voiceRoomsApi,
     bioMigration,
+    adminReportsApi,
+    reportsTargetMigration,
   ] = await Promise.all([
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/match-app.tsx", root), "utf8"),
@@ -134,6 +136,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     readFile(new URL("drizzle/0021_breezy_silk_fever.sql", root), "utf8"),
     readFile(new URL("app/api/discord/voice-rooms/route.ts", root), "utf8"),
     readFile(new URL("drizzle/0022_vengeful_prowler.sql", root), "utf8"),
+    readFile(new URL("app/api/admin/reports/route.ts", root), "utf8"),
+    readFile(new URL("drizzle/0023_broken_hiroim.sql", root), "utf8"),
   ]);
   assert.match(page, /getChatGPTUser/);
   assert.match(page, /initialProfile/);
@@ -147,6 +151,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /また遊びたい/);
   assert.match(app, /トレーナーカードを共有/);
   assert.match(app, /通報せずブロックのみ/);
+  assert.match(app, /通報などのチャットメニューを開く/);
+  assert.match(app, /このユーザーへの通報は受付済みです/);
   assert.match(app, /あなたのことを/);
   assert.match(app, /1〜5体・複数選択できます/);
   assert.match(app, /登録してメイトを探す/);
@@ -288,6 +294,13 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(adminPanel, /募集 → 申請あり/);
   assert.match(adminPanel, /バックアップをダウンロード/);
   assert.match(adminPanel, /登録ユーザーの男女比/);
+  assert.match(adminPanel, /5件以上の要確認ユーザー/);
+  assert.match(adminPanel, /チャットから通報/);
+  assert.match(adminReportsApi, /count\(distinct/);
+  assert.match(adminReportsApi, />= 5/);
+  assert.match(adminReportsApi, /flaggedUsers/);
+  assert.match(safetyApi, /alreadyReported/);
+  assert.match(reportsTargetMigration, /idx_reports_target_created/);
   assert.match(statsApi, /demographics/);
   assert.match(connectionsApi, /adoptLegacyConnectionHistory/);
   assert.match(connectionsApi, /leftJoin\(connections/);
@@ -331,7 +344,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(publicSupportApi, /sha256/);
   assert.match(app, /共有せずチャットへ/);
   assert.match(app, /連絡先を共有/);
-  assert.match(app, /チャットのメニューを開く/);
+  assert.match(app, /通報などのチャットメニューを開く/);
   assert.match(app, /chatActionsOpen && selectedConnection/);
   assert.doesNotMatch(app, /className="reconnectBar"/);
   assert.doesNotMatch(app, /className="contactConsentBar"/);
