@@ -416,6 +416,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /filterDiscoverCandidates/);
   assert.match(app, /setAnimation\(""\)/);
   assert.match(app, /条件をリセット/);
+  assert.match(app, /yunamatch-discover-filters-v1/);
+  assert.match(app, /localStorage\.setItem\(\s*discoverFiltersStorageKey/);
   assert.match(privacyPage, /初期状態は非公開/);
   assert.match(privacyPage, /ログイン前のプロフィール表示/);
   assert.match(privacyPage, /試合後評価とおすすめ順/);

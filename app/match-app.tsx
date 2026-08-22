@@ -181,6 +181,7 @@ type PendingGuestAction = {
   recruitId?: number;
 };
 const pendingGuestActionKey = "yunamatch-pending-action-v1";
+const discoverFiltersStorageKey = "yunamatch-discover-filters-v1";
 
 const pokemon = [
   "アブソル",
@@ -624,6 +625,7 @@ export default function MatchApp({
   const [trainerQuery, setTrainerQuery] = useState("");
   const [genderFilter, setGenderFilter] = useState<"" | "男性" | "女性">("");
   const [sharedTimeOnly, setSharedTimeOnly] = useState(false);
+  const [discoverFiltersReady, setDiscoverFiltersReady] = useState(false);
   const [compose, setCompose] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [loginAction, setLoginAction] = useState("この機能");
@@ -984,6 +986,59 @@ export default function MatchApp({
     const data = await response.json();
     setMessages(data.messages || []);
   };
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(discoverFiltersStorageKey);
+      if (stored) {
+        const filters = JSON.parse(stored) as {
+          pokemonQuery?: unknown;
+          trainerQuery?: unknown;
+          genderFilter?: unknown;
+          sharedTimeOnly?: unknown;
+        };
+        if (typeof filters.pokemonQuery === "string")
+          setPokemonQuery(filters.pokemonQuery.slice(0, 40));
+        if (typeof filters.trainerQuery === "string")
+          setTrainerQuery(filters.trainerQuery.slice(0, 40));
+        if (
+          filters.genderFilter === "" ||
+          filters.genderFilter === "男性" ||
+          filters.genderFilter === "女性"
+        )
+          setGenderFilter(filters.genderFilter);
+        if (typeof filters.sharedTimeOnly === "boolean")
+          setSharedTimeOnly(filters.sharedTimeOnly);
+      }
+    } catch {
+      window.localStorage.removeItem(discoverFiltersStorageKey);
+    } finally {
+      setDiscoverFiltersReady(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!discoverFiltersReady) return;
+    try {
+      window.localStorage.setItem(
+        discoverFiltersStorageKey,
+        JSON.stringify({
+          pokemonQuery,
+          trainerQuery,
+          genderFilter,
+          sharedTimeOnly,
+        }),
+      );
+    } catch {
+      /* 保存できないブラウザでも検索は続ける */
+    }
+  }, [
+    discoverFiltersReady,
+    pokemonQuery,
+    trainerQuery,
+    genderFilter,
+    sharedTimeOnly,
+  ]);
 
   useEffect(() => {
     let active = true;
