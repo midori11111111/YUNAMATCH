@@ -36,6 +36,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [Google, Line, Discord, xProvider],
   session: { strategy: "jwt" },
   trustHost: true,
+  pages: { error: "/login" },
   callbacks: {
     async jwt({ token, account, profile }) {
       if (account?.provider) {

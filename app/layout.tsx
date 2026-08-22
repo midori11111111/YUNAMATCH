@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import "./globals.css";
 import VisitTracker from "./visit-tracker";
 
@@ -39,11 +40,22 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const requestHeaders = await headers();
+  const forwardedHost = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "";
+
+  // The original Sites URL is still present in old bookmarks and shared posts.
+  // Authentication lives on the public custom domain, so move legacy visitors
+  // before they can hit a relative /login or /api/auth URL that does not exist
+  // on the Sites origin.
+  if (forwardedHost.endsWith(".chatgpt.site")) {
+    redirect("https://yunamatch.com/");
+  }
+
   return (
     <html lang="ja">
       <body
