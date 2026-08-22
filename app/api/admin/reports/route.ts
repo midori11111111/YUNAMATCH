@@ -16,6 +16,9 @@ export async function GET() {
         reporterId: reports.reporterId,
         recruitId: reports.recruitId,
         connectionId: reports.connectionId,
+        messageId: reports.messageId,
+        reportedContent: reports.reportedContent,
+        conversationContext: reports.conversationContext,
         reason: reports.reason,
         details: reports.details,
         status: reports.status,
@@ -56,7 +59,17 @@ export async function GET() {
     reportCount: Number(row.reportCount) || 0,
     openCount: Number(row.openCount) || 0,
   }));
-  return Response.json({ reports: rows, flaggedUsers });
+  return Response.json({
+    reports: rows.map((row) => {
+      let context: unknown[] = [];
+      try {
+        const parsed = JSON.parse(row.conversationContext || "[]");
+        if (Array.isArray(parsed)) context = parsed;
+      } catch {}
+      return { ...row, conversationContext: context };
+    }),
+    flaggedUsers,
+  });
 }
 
 export async function PATCH(request: Request) {

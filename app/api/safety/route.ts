@@ -1,6 +1,6 @@
-import { and, eq, or } from "drizzle-orm";
+import { and, asc, desc, eq, gt, lte, or } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { blocks, connections, recruits, reports } from "../../../db/schema";
+import { blocks, connections, messages, recruits, reports } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { checkRateLimit, rateLimitResponse } from "../../../lib/rate-limit";
 
@@ -32,6 +32,7 @@ export async function POST(request: Request) {
     action?: "block" | "report";
     recruitId?: number;
     connectionId?: number;
+    messageId?: number;
     reason?: string;
     details?: string;
     alsoBlock?: boolean;
@@ -47,6 +48,43 @@ export async function POST(request: Request) {
 
   if (payload.action === "report") {
     if (!payload.reason || !allowedReasons.has(payload.reason)) return Response.json({ error: "通報理由を選択してください" }, { status: 400 });
+    let reportedContent = "";
+    let conversationContext = "[]";
+    if (payload.messageId !== undefined) {
+      if (!Number.isInteger(payload.messageId) || !payload.connectionId) {
+        return Response.json({ error: "通報する発言を確認してください" }, { status: 400 });
+      }
+      const [reportedMessage] = await db
+        .select()
+        .from(messages)
+        .where(and(eq(messages.id, payload.messageId), eq(messages.connectionId, payload.connectionId)))
+        .limit(1);
+      if (!reportedMessage || reportedMessage.senderId !== targetId) {
+        return Response.json({ error: "相手の発言を確認できませんでした" }, { status: 400 });
+      }
+      const [connection, previous, following] = await Promise.all([
+        db.select().from(connections).where(eq(connections.id, payload.connectionId)).limit(1),
+        db.select().from(messages).where(and(
+          eq(messages.connectionId, payload.connectionId),
+          lte(messages.id, reportedMessage.id),
+        )).orderBy(desc(messages.id)).limit(3),
+        db.select().from(messages).where(and(
+          eq(messages.connectionId, payload.connectionId),
+          gt(messages.id, reportedMessage.id),
+        )).orderBy(asc(messages.id)).limit(2),
+      ]);
+      const match = connection[0];
+      if (!match) return Response.json({ error: "チャットを確認できませんでした" }, { status: 400 });
+      reportedContent = reportedMessage.body;
+      conversationContext = JSON.stringify([...previous.reverse(), ...following].map((message) => ({
+        id: message.id,
+        senderName: message.senderId === match.userAId ? match.userAName : match.userBName,
+        body: message.body,
+        kind: message.kind,
+        createdAt: message.createdAt.getTime(),
+        isReported: message.id === reportedMessage.id,
+      })));
+    }
     const [existingReport] = await db
       .select({ id: reports.id })
       .from(reports)
@@ -58,6 +96,19 @@ export async function POST(request: Request) {
       )
       .limit(1);
     if (existingReport) {
+      if (payload.messageId) {
+        const now = new Date();
+        await db.update(reports).set({
+          messageId: payload.messageId,
+          reportedContent,
+          conversationContext,
+          reason: payload.reason,
+          details: payload.details?.trim().slice(0, 500) ?? "",
+          status: "open",
+          updatedAt: now,
+          resolvedAt: null,
+        }).where(eq(reports.id, existingReport.id));
+      }
       if (payload.alsoBlock) {
         await db.insert(blocks).values({ blockerId: user.userId, blockedId: targetId, createdAt: new Date() }).onConflictDoNothing();
       }
@@ -68,6 +119,9 @@ export async function POST(request: Request) {
       targetId,
       recruitId: payload.recruitId,
       connectionId: payload.connectionId,
+      messageId: payload.messageId,
+      reportedContent,
+      conversationContext,
       reason: payload.reason,
       details: payload.details?.trim().slice(0, 500) ?? "",
       createdAt: new Date(),

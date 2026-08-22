@@ -648,6 +648,9 @@ button { cursor: pointer; }
 .messageBubble.me { align-self: flex-end; text-align: right; }
 .messageBubble.me p { color: #fff; border-radius: 15px 6px 15px 15px; background: linear-gradient(135deg, var(--purple), #8e76f2); text-align: left; }
 .messageBubble small { display: block; margin-top: 3px; color: #aaa4af; font-size: 6px; }
+.reportMessageButton { display: block; margin: 4px 3px 0; border: 0; padding: 3px 0; color: #a39ba8; background: transparent; font-size: 7px; font-weight: 800; text-decoration: underline; text-underline-offset: 2px; }
+.messageBubble .reportMessageButton { margin-left: 9px; }
+.playInviteMessage .reportMessageButton { margin-left: auto; }
 .playInviteMessage { width: min(88%, 330px); align-self: flex-start; overflow: hidden; border: 1px solid #e2dcf3; border-radius: 18px; padding: 13px; background: linear-gradient(145deg,#fff,#f7f3ff); box-shadow: 0 8px 20px #49367112; }
 .playInviteMessage.me { align-self: flex-end; }
 .playInviteHeading { display: flex; align-items: center; gap: 10px; }
@@ -826,6 +829,18 @@ button { cursor: pointer; }
 .adminPage article > div:last-child { display: flex; flex-wrap: wrap; gap: 7px; }
 .adminPage article button { border: 0; border-radius: 9px; padding: 9px 11px; color: #655d6d; background: #eeebf1; font-weight: 800; }
 .adminPage article button.danger { color: #fff; background: #d94663; }
+.adminReportedMessage { margin: 14px 0 10px; padding: 13px 14px; border: 1px solid #ffc9d4; border-radius: 13px; background: #fff4f6; }
+.adminReportedMessage > small { color: #c53150; font-size: 9px; font-weight: 950; letter-spacing: .5px; }
+.adminReportedMessage blockquote { margin: 8px 0 0; color: #3e3441; font-size: 12px; font-weight: 750; line-height: 1.65; white-space: pre-wrap; }
+.adminConversation { margin: 10px 0 15px; border: 1px solid #e4ddec; border-radius: 13px; overflow: hidden; background: #faf8fc; }
+.adminConversation summary { cursor: pointer; padding: 11px 13px; color: #635b69; font-size: 10px; font-weight: 900; }
+.adminConversation > div { display: grid; gap: 7px; padding: 0 10px 10px; }
+.adminConversation > div > div { position: relative; padding: 10px 11px; border-radius: 10px; background: #fff; }
+.adminConversation > div > div.reported { border: 1px solid #f18aa0; background: #fff2f5; }
+.adminConversation header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.adminConversation header strong { font-size: 9px; }.adminConversation header time { color: #9c949f; font-size: 8px; }
+.adminConversation p { margin: 6px 0 0; color: #504953 !important; font-size: 10px; line-height: 1.55; white-space: pre-wrap; }
+.adminConversation div.reported > small { display: inline-block; margin-top: 7px; padding: 3px 7px; border-radius: 99px; color: #bd2f4c; background: #ffdce4; font-size: 7px; font-weight: 950; }
 .adminPage { padding-bottom: 80px; }
 .adminPage > section + section { margin-top: 34px; }
 .adminSectionTitle { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
@@ -974,6 +989,10 @@ button { cursor: pointer; }
 .toggleRow input { width: auto !important; accent-color: var(--purple); }
 .privacyText { margin: 0; color: #9a94a2; font-size: 7px; }
 .safetySheet > p { margin: -10px 0 6px; color: #8c8593; font-size: 8px; line-height: 1.6; }
+.reportedMessagePreview { display: grid; gap: 5px; margin: 7px 0 4px; padding: 12px; border: 1px solid #f2ccd4; border-radius: 13px; background: #fff5f7; }
+.reportedMessagePreview small { color: #c43b57; font-size: 8px; font-weight: 950; }
+.reportedMessagePreview p { margin: 0; color: #4f454f; font-size: 10px; line-height: 1.55; white-space: pre-wrap; }
+.reportedMessagePreview span { color: #9a8890; font-size: 7px; }
 .dangerButton, .blockButton { width: 100%; border: 0; border-radius: 13px; padding: 13px; font-size: 9px; font-weight: 900; }
 .dangerButton { color: #fff; background: #e24762; }
 .dangerButton:disabled { opacity: .45; }

@@ -134,7 +134,7 @@ type ChatMessage = {
   createdAt: string;
   read?: boolean;
 };
-type SafetyTarget = { name: string; recruitId?: number; connectionId?: number };
+type SafetyTarget = { name: string; recruitId?: number; connectionId?: number; messageId?: number; messageBody?: string };
 type LinkedAccount = {
   provider: string;
   label: string;
@@ -3789,6 +3789,20 @@ export default function MatchApp({
                                 },
                               )}
                             </small>
+                            {message.sender === "mate" && (
+                              <button
+                                type="button"
+                                className="reportMessageButton"
+                                onClick={() => setSafetyTarget({
+                                  name: selectedConnection.mateName,
+                                  connectionId: selectedConnection.id,
+                                  messageId: message.id,
+                                  messageBody: message.body,
+                                })}
+                              >
+                                この発言を通報
+                              </button>
+                            )}
                           </div>
                         ) : (
                           <div
@@ -3810,6 +3824,20 @@ export default function MatchApp({
                                 ? " ・ 既読"
                                 : ""}
                             </small>
+                            {message.sender === "mate" && (
+                              <button
+                                type="button"
+                                className="reportMessageButton"
+                                onClick={() => setSafetyTarget({
+                                  name: selectedConnection.mateName,
+                                  connectionId: selectedConnection.id,
+                                  messageId: message.id,
+                                  messageBody: message.body,
+                                })}
+                              >
+                                この発言を通報
+                              </button>
+                            )}
                           </div>
                         ),
                       )
@@ -5916,6 +5944,13 @@ export default function MatchApp({
             <p>
               内容は相手に通知されません。危険を感じた場合はブロックも利用してください。
             </p>
+            {safetyTarget.messageBody && (
+              <div className="reportedMessagePreview">
+                <small>通報する発言</small>
+                <p>{safetyTarget.messageBody}</p>
+                <span>前後の会話も運営へ送信されます</span>
+              </div>
+            )}
             <label>
               通報理由
               <select name="reason" required defaultValue="">

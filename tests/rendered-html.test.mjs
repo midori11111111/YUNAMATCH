@@ -119,6 +119,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     bioMigration,
     adminReportsApi,
     reportsTargetMigration,
+    reportEvidenceMigration,
   ] = await Promise.all([
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/match-app.tsx", root), "utf8"),
@@ -172,6 +173,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     readFile(new URL("drizzle/0022_vengeful_prowler.sql", root), "utf8"),
     readFile(new URL("app/api/admin/reports/route.ts", root), "utf8"),
     readFile(new URL("drizzle/0023_broken_hiroim.sql", root), "utf8"),
+    readFile(new URL("drizzle/0026_heavy_gwen_stacy.sql", root), "utf8"),
   ]);
   assert.match(page, /getChatGPTUser/);
   assert.match(page, /initialProfile/);
@@ -186,6 +188,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /トレーナーカードを共有/);
   assert.match(app, /通報せずブロックのみ/);
   assert.match(app, /通報などのチャットメニューを開く/);
+  assert.match(app, /この発言を通報/);
+  assert.match(app, /前後の会話も運営へ送信されます/);
   assert.match(app, /このユーザーへの通報は受付済みです/);
   assert.match(app, /あなたのことを/);
   assert.match(app, /1〜5体・複数選択できます/);
@@ -340,11 +344,16 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(adminPanel, /登録ユーザーの男女比/);
   assert.match(adminPanel, /5件以上の要確認ユーザー/);
   assert.match(adminPanel, /チャットから通報/);
+  assert.match(adminPanel, /通報された発言/);
+  assert.match(adminPanel, /前後の会話を確認/);
   assert.match(adminReportsApi, /count\(distinct/);
+  assert.match(adminReportsApi, /conversationContext/);
   assert.match(adminReportsApi, />= 5/);
   assert.match(adminReportsApi, /flaggedUsers/);
   assert.match(safetyApi, /alreadyReported/);
   assert.match(reportsTargetMigration, /idx_reports_target_created/);
+  assert.match(reportEvidenceMigration, /reported_content/);
+  assert.match(reportEvidenceMigration, /conversation_context/);
   assert.match(statsApi, /demographics/);
   assert.match(connectionsApi, /adoptLegacyConnectionHistory/);
   assert.match(connectionsApi, /leftJoin\(connections/);
