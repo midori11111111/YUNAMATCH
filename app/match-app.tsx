@@ -409,6 +409,12 @@ function formatStart(value: string) {
 function formatRecruitStart(recruit: Recruit) {
   return recruit.startTimeUndecided ? "時間は相談" : `${formatStart(recruit.startAt)}開始`;
 }
+function formatRecruitParty(size: number) {
+  if (size === 2) return "デュオ";
+  if (size === 3) return "トリオ";
+  if (size === 5) return "フルパ";
+  return `${size}人`;
+}
 function formatRecruitPostedAt(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "掲載時刻不明";
@@ -640,6 +646,9 @@ export default function MatchApp({
   const discoverLoadingMoreRef = useRef(false);
   const [recruits, setRecruits] = useState<Recruit[]>([]);
   const [myRecruit, setMyRecruit] = useState<Recruit | null>(null);
+  const [expandedRecruitId, setExpandedRecruitId] = useState<number | null>(
+    sharedRecruitId,
+  );
   const [loading, setLoading] = useState(true);
   const [index, setIndex] = useState(0);
   const [animation, setAnimation] = useState<"" | "left" | "right">("");
@@ -3859,113 +3868,156 @@ export default function MatchApp({
               <div className="recruitList">
                 {visibleRecruits.length ? (
                   visibleRecruits.map((recruit) => (
-                    <article key={recruit.id} className="recruitItem">
-                      <header className="recruitCardHeader">
-                        <button
-                          type="button"
-                          className="recruitProfileImageButton"
-                          onClick={() => setRecruitProfileView(recruit)}
-                          aria-label={`${recruit.trainerName}さんのプロフィール画像を見る`}
-                        >
+                    <article
+                      key={recruit.id}
+                      className={`recruitItem ${roleTone(recruit.role)} ${
+                        expandedRecruitId === recruit.id ? "expanded" : ""
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        className="recruitItemSummary"
+                        aria-expanded={expandedRecruitId === recruit.id}
+                        onClick={() =>
+                          setExpandedRecruitId((current) =>
+                            current === recruit.id ? null : recruit.id,
+                          )
+                        }
+                      >
+                        <span className="recruitSummaryAvatar">
                           <UserAvatar
                             name={recruit.trainerName}
                             src={recruit.avatarUrl}
                             className="recruitProfileAvatar"
                           />
-                          <span>画像を見る</span>
-                        </button>
-                        <div>
-                          <div className="recruitTop">
-                            <h2>{recruit.trainerName}</h2>
+                          <i />
+                        </span>
+                        <span className="recruitSummaryMain">
+                          <span className="recruitSummaryEyebrow">
+                            <b>{recruit.matchType}</b>
+                            <time>{formatRecruitPostedAt(recruit.createdAt)}</time>
+                          </span>
+                          <span className="recruitTop">
+                            <strong className="recruitTrainerName">
+                              {recruit.trainerName}
+                            </strong>
                             <span>
                               ● {recruit.acceptedCount + 1}/{recruit.partySize}
                               人
                             </span>
-                          </div>
-                          <strong>
-                            {recruit.pokemon === "未定"
-                              ? "使用ポケモン未定"
-                              : recruit.pokemon}
+                          </span>
+                          <strong className="recruitSummaryTitle">
+                            {formatRecruitParty(recruit.partySize)}で募集
                           </strong>
-                          <small>
-                            {recruit.role !== "指定なし"
-                              ? recruit.role
-                              : "役割は相談"}
-                          </small>
+                          <span className="recruitSummaryChips">
+                            <span>◷ {formatRecruitStart(recruit)}</span>
+                            <span>
+                              {recruit.pokemon === "未定"
+                                ? "ポケモン相談"
+                                : recruit.pokemon}
+                            </span>
+                            <span>
+                              {recruit.role !== "指定なし"
+                                ? recruit.role
+                                : "役割は相談"}
+                            </span>
+                          </span>
+                        </span>
+                        <span className="recruitExpandIcon" aria-hidden="true">
+                          {expandedRecruitId === recruit.id ? "⌃" : "⌄"}
+                        </span>
+                      </button>
+                      {expandedRecruitId === recruit.id && (
+                        <div className="recruitItemDetails">
+                          <div className="recruitConditionBlock">
+                            <small className="recruitSectionLabel">募集条件</small>
+                            <div className="recruitBadges">
+                              <span className="matchTypeBadge">{recruit.matchType}</span>
+                              <span>{formatRecruitStart(recruit)}</span>
+                              <span>
+                                {recruit.desiredPokemon === "すべて"
+                                  ? "希望ポケモン：指定なし"
+                                  : `希望ポケモン：${recruit.desiredPokemon}`}
+                              </span>
+                              <span>
+                                {recruit.desiredRole === "指定なし"
+                                  ? "希望ロール：指定なし"
+                                  : `希望ロール：${recruit.desiredRole}`}
+                              </span>
+                            </div>
+                          </div>
+                          {recruit.note && (
+                            <p className="recruitNote">“{recruit.note}”</p>
+                          )}
+                          <div className="recruitOwnerSummary">
+                            <div className="recruitOwnerHeading">
+                              <small>募集者プロフィール</small>
+                              <strong>募集者ランク：{recruit.rank}</strong>
+                            </div>
+                            <div className="recruitFacts">
+                              <div>
+                                <span>◷</span>
+                                <small>遊べる時間</small>
+                                <strong>{recruit.playTime}</strong>
+                              </div>
+                              <div>
+                                <small>募集者の試合数</small>
+                                <strong>
+                                  {recruit.matches > 0
+                                    ? `${recruit.matches.toLocaleString()}戦`
+                                    : "未設定"}
+                                </strong>
+                              </div>
+                              <div>
+                                <small>募集者の勝率</small>
+                                <strong>
+                                  {recruit.winRate > 0
+                                    ? `${recruit.winRate}%`
+                                    : "未設定"}
+                                </strong>
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            className="recruitProfileLink"
+                            onClick={() => setRecruitProfileView(recruit)}
+                          >
+                            <UserAvatar
+                              name={recruit.trainerName}
+                              src={recruit.avatarUrl}
+                              className="recruitProfileLinkAvatar"
+                            />
+                            <span>
+                              <strong>プロフィール画像を見る</strong>
+                              <small>プロフィール画像と募集者情報</small>
+                            </span>
+                            <b>›</b>
+                          </button>
+                          <div className="recruitCardActions">
+                            <button
+                              className="recruitApply"
+                              onClick={() => quickApplyRecruit(recruit)}
+                              disabled={
+                                quickApplyingId === recruit.id ||
+                                appliedRecruitIds.has(recruit.id)
+                              }
+                            >
+                              {appliedRecruitIds.has(recruit.id)
+                                ? "✓ 申請済み"
+                                : quickApplyingId === recruit.id
+                                  ? "送信中…"
+                                  : "👋 すぐ参加申請"}
+                            </button>
+                            <button
+                              className="recruitApply secondary"
+                              onClick={() => openRecruitApplication(recruit)}
+                            >
+                              ひとこと添える
+                            </button>
+                          </div>
                         </div>
-                      </header>
-                      <div className="recruitConditionBlock">
-                        <small className="recruitSectionLabel">募集条件</small>
-                        <div className="recruitBadges">
-                          <span className="matchTypeBadge">{recruit.matchType}</span>
-                          <span>{formatRecruitStart(recruit)}</span>
-                          <span className="recruitPostedAt">
-                            ◷ {formatRecruitPostedAt(recruit.createdAt)}
-                          </span>
-                          <span>
-                            {recruit.desiredPokemon === "すべて"
-                              ? "希望相手：ポケモン指定なし"
-                              : `希望相手：${recruit.desiredPokemon}`}
-                          </span>
-                          <span>
-                            {recruit.desiredRole === "指定なし"
-                              ? "希望ロール：指定なし"
-                              : `希望ロール：${recruit.desiredRole}`}
-                          </span>
-                        </div>
-                      </div>
-                      {recruit.note && (
-                        <p className="recruitNote">“{recruit.note}”</p>
                       )}
-                      <div className="recruitOwnerSummary">
-                        <div className="recruitOwnerHeading">
-                          <small>募集者プロフィール</small>
-                          <strong>募集者ランク：{recruit.rank}</strong>
-                        </div>
-                        <div className="recruitFacts">
-                          <div>
-                            <span>◷</span>
-                            <small>募集者の遊べる時間</small>
-                            <strong>{recruit.playTime}</strong>
-                          </div>
-                          <div>
-                            <small>募集者の試合数</small>
-                            <strong>
-                              {recruit.matches > 0
-                                ? `${recruit.matches.toLocaleString()}戦`
-                                : "未設定"}
-                            </strong>
-                          </div>
-                          <div>
-                            <small>募集者の勝率</small>
-                            <strong>
-                              {recruit.winRate > 0 ? `${recruit.winRate}%` : "未設定"}
-                            </strong>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="recruitCardActions">
-                        <button
-                          className="recruitApply"
-                          onClick={() => quickApplyRecruit(recruit)}
-                          disabled={
-                            quickApplyingId === recruit.id ||
-                            appliedRecruitIds.has(recruit.id)
-                          }
-                        >
-                          {appliedRecruitIds.has(recruit.id)
-                            ? "✓ 申請済み"
-                            : quickApplyingId === recruit.id
-                              ? "送信中…"
-                              : "👋 すぐ参加申請"}
-                        </button>
-                        <button
-                          className="recruitApply secondary"
-                          onClick={() => openRecruitApplication(recruit)}
-                        >
-                          ひとこと添える
-                        </button>
-                      </div>
                     </article>
                   ))
                 ) : (

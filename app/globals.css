@@ -358,7 +358,33 @@ button { cursor: pointer; }
 .myRecruitActions button { border: 0; border-radius: 10px; padding: 8px 10px; color: #fff; background: var(--purple); font-size: 7px; font-weight: 900; }
 .myRecruitActions button:last-child { color: #c84e69; background: #ffe9ef; }
 .recruitList, .noticeList, .incomingList { display: grid; gap: 13px; }
-.recruitItem { display: grid; gap: 13px; padding: 17px; border: 1px solid #e6e0ea; border-radius: 22px; background: #fff; box-shadow: 0 10px 25px #3c315c10; }
+.recruitItem { --recruit-accent: #7257e8; --recruit-soft: #f3efff; position: relative; overflow: hidden; border: 1px solid #e6e0ea; border-radius: 22px; background: #fff; box-shadow: 0 10px 25px #3c315c10; transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
+.recruitItem::before { content: ""; position: absolute; z-index: 2; inset: 0 0 auto; height: 4px; background: var(--recruit-accent); }
+.recruitItem.attack { --recruit-accent: #ef5689; --recruit-soft: #fff0f6; }
+.recruitItem.balance { --recruit-accent: #745be8; --recruit-soft: #f2efff; }
+.recruitItem.speed { --recruit-accent: #27a0e9; --recruit-soft: #ebf8ff; }
+.recruitItem.defense { --recruit-accent: #27a87e; --recruit-soft: #eafaf5; }
+.recruitItem.support { --recruit-accent: #e79b26; --recruit-soft: #fff7e7; }
+.recruitItem.expanded { border-color: color-mix(in srgb, var(--recruit-accent) 35%, #e6e0ea); box-shadow: 0 16px 34px #3c315c18; }
+.recruitItemSummary { width: 100%; display: grid; grid-template-columns: 54px minmax(0,1fr) 28px; align-items: center; gap: 12px; padding: 16px 13px 15px; text-align: left; color: #2f2839; border: 0; background: linear-gradient(120deg, var(--recruit-soft), #fff 57%); cursor: pointer; }
+.recruitItemSummary:active { transform: scale(.992); }
+.recruitSummaryAvatar { width: 54px; height: 54px; position: relative; display: block; }
+.recruitSummaryAvatar .recruitProfileAvatar { border-radius: 17px; box-shadow: 0 8px 18px #342c4b20; }
+.recruitSummaryAvatar > i { width: 12px; height: 12px; position: absolute; right: -3px; bottom: -2px; border: 3px solid #fff; border-radius: 50%; background: var(--recruit-accent); }
+.recruitSummaryMain { min-width: 0; display: grid; gap: 3px; }
+.recruitSummaryEyebrow { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.recruitSummaryEyebrow > b { padding: 4px 7px; border-radius: 99px; color: #fff; background: var(--recruit-accent); font-size: 6px; font-weight: 950; white-space: nowrap; }
+.recruitSummaryEyebrow > time { overflow: hidden; color: #9b94a1; font-size: 6px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+.recruitSummaryMain .recruitTop { min-width: 0; display: flex; align-items: center; gap: 7px; }
+.recruitTrainerName { overflow: hidden; font-size: 15px; letter-spacing: -.3px; text-overflow: ellipsis; white-space: nowrap; }
+.recruitSummaryMain .recruitTop > span { margin-left: auto; padding: 4px 7px; border-radius: 99px; color: #16866b; background: #e5f8f1; font-size: 6px; font-weight: 950; white-space: nowrap; }
+.recruitSummaryTitle { font-size: 11px; letter-spacing: -.15px; }
+.recruitSummaryChips { min-width: 0; display: flex; gap: 5px; overflow: hidden; margin-top: 2px; }
+.recruitSummaryChips > span { overflow: hidden; padding: 4px 6px; border-radius: 7px; color: #6d6576; background: #f2eff4; font-size: 6px; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
+.recruitSummaryChips > span:first-child { color: color-mix(in srgb, var(--recruit-accent) 80%, #292232); background: var(--recruit-soft); }
+.recruitExpandIcon { width: 28px; height: 28px; display: grid; place-items: center; align-self: center; border-radius: 10px; color: var(--recruit-accent); background: var(--recruit-soft); font-size: 14px; font-weight: 950; }
+.recruitItemDetails { display: grid; gap: 12px; padding: 14px 15px 16px; border-top: 1px solid #eee9f2; animation: recruitReveal .22s ease; }
+@keyframes recruitReveal { from { opacity: 0; transform: translateY(-5px); } }
 .recruitCardHeader { display: grid; grid-template-columns: 68px 1fr; align-items: center; gap: 13px; }
 .recruitProfileImageButton { width: 68px; height: 68px; position: relative; overflow: hidden; padding: 0; border: 0; border-radius: 20px; background: #f1edfa; box-shadow: 0 8px 18px #352a4d1c; }
 .recruitProfileAvatar { width: 100%; height: 100%; display: grid; place-items: center; overflow: hidden; color: #fff; background: linear-gradient(145deg, var(--purple), var(--pink)); font-size: 24px; font-weight: 950; }
@@ -374,8 +400,6 @@ button { cursor: pointer; }
 .pokemonTile { width: 68px; height: 68px; position: relative; overflow: hidden; display: grid; place-items: center; border-radius: 20px; color: #fff; font-size: 29px; font-weight: 900; isolation: isolate; box-shadow: 0 8px 18px #b7447f25; }
 .pokemonTile .pokemonVisualFallback { font-size: 20px; }
 .recruitTop { display: flex; align-items: center; gap: 7px; }
-.recruitTop h2 { margin: 0; font-size: 18px; letter-spacing: -.4px; }
-.recruitTop span { margin-left: auto; padding: 5px 8px; border-radius: 99px; color: var(--green); background: #e7f8f2; font-size: 7px; font-weight: 900; white-space: nowrap; }
 .recruitCardHeader > div:last-child > strong { display: inline-block; margin-top: 7px; color: var(--purple-dark); font-size: 13px; }
 .recruitCardHeader > div:last-child > small { margin-left: 7px; color: #8e8796; font-size: 9px; }
 .recruitConditionBlock, .recruitOwnerSummary { display: grid; gap: 7px; }
@@ -395,6 +419,13 @@ button { cursor: pointer; }
 .recruitFacts > div:first-child > span { grid-row: 1/3; width: 22px; height: 22px; display: grid; place-items: center; align-self: center; border-radius: 8px; color: var(--purple); background: #eee9ff; font-size: 11px; }
 .recruitFacts small { color: #9a93a1; font-size: 7px; font-weight: 800; }
 .recruitFacts strong { overflow: hidden; color: #302a39; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.recruitProfileLink { width: 100%; display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 9px; padding: 8px 10px; text-align: left; border: 1px solid #e8e2ed; border-radius: 13px; color: #4e4657; background: #fff; }
+.recruitProfileLinkAvatar { width: 34px; height: 34px; display: grid; place-items: center; overflow: hidden; border-radius: 11px; color: #fff; background: linear-gradient(145deg,var(--purple),var(--pink)); font-size: 12px; font-weight: 950; }
+.recruitProfileLinkAvatar img { width: 100%; height: 100%; object-fit: cover; }
+.recruitProfileLink > span { min-width: 0; display: grid; gap: 2px; }
+.recruitProfileLink strong { overflow: hidden; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.recruitProfileLink small { color: #99919f; font-size: 6px; }
+.recruitProfileLink > b { color: var(--recruit-accent); font-size: 17px; }
 .recruitApply { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 14px; padding: 13px; color: #fff; background: linear-gradient(135deg, var(--purple), #8b73f2); font-size: 10px; font-weight: 900; box-shadow: 0 9px 20px #7257e82b; }
 .recruitApply:disabled { color: #817a89; background: #eeeaf1; box-shadow: none; }
 .recruitApply span { font-size: 17px; line-height: .6; }
