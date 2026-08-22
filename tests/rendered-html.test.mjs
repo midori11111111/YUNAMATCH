@@ -333,7 +333,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.doesNotMatch(app, /className="contactConsentBar"/);
   assert.match(app, /ポケモン名/);
   assert.match(app, /プレイヤーネーム/);
-  assert.doesNotMatch(app, /genderFilter/);
+  assert.match(app, /genderFilter/);
+  assert.match(app, /すべて/);
   assert.match(app, /名前の一部でも検索できます/);
   assert.match(app, /条件をリセット/);
   assert.match(privacyPage, /初期状態は非公開/);

@@ -613,6 +613,7 @@ export default function MatchApp({
   const [filterOpen, setFilterOpen] = useState(false);
   const [pokemonQuery, setPokemonQuery] = useState("");
   const [trainerQuery, setTrainerQuery] = useState("");
+  const [genderFilter, setGenderFilter] = useState<"" | "男性" | "女性">("");
   const [sharedTimeOnly, setSharedTimeOnly] = useState(false);
   const [compose, setCompose] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
@@ -1299,6 +1300,7 @@ export default function MatchApp({
             person.trainerName
               .toLocaleLowerCase("ja-JP")
               .includes(normalizedTrainerQuery)) &&
+          (!genderFilter || person.gender === genderFilter) &&
           (!sharedTimeOnly ||
             person.playTime.includes("時間帯はいつでも") ||
             profile.playTime.includes("時間帯はいつでも") ||
@@ -1309,6 +1311,7 @@ export default function MatchApp({
       profileCandidates,
       normalizedPokemonQuery,
       normalizedTrainerQuery,
+      genderFilter,
       sharedTimeOnly,
       profile.playTime,
     ],
@@ -1326,6 +1329,7 @@ export default function MatchApp({
             person.trainerName
               .toLocaleLowerCase("ja-JP")
               .includes(normalizedTrainerQuery)) &&
+          (!genderFilter || person.gender === genderFilter) &&
           (!sharedTimeOnly ||
             person.playTime.includes("時間帯はいつでも") ||
             profile.playTime.includes("時間帯はいつでも") ||
@@ -1336,6 +1340,7 @@ export default function MatchApp({
       receivedProfileCandidates,
       normalizedPokemonQuery,
       normalizedTrainerQuery,
+      genderFilter,
       sharedTimeOnly,
       profile.playTime,
     ],
@@ -1344,6 +1349,7 @@ export default function MatchApp({
   const activeFilterCount =
     Number(Boolean(pokemonQuery.trim())) +
     Number(Boolean(trainerQuery.trim())) +
+    Number(Boolean(genderFilter)) +
     Number(sharedTimeOnly);
   const current = cards.length
     ? cards[((index % cards.length) + cards.length) % cards.length]
@@ -4898,6 +4904,39 @@ export default function MatchApp({
                 }}
               />
             </label>
+            <fieldset className="genderChoice discoverGenderFilter">
+              <legend>性別</legend>
+              <button
+                type="button"
+                className={genderFilter === "" ? "selected" : ""}
+                onClick={() => {
+                  setGenderFilter("");
+                  setIndex(0);
+                }}
+              >
+                すべて
+              </button>
+              <button
+                type="button"
+                className={genderFilter === "男性" ? "selected" : ""}
+                onClick={() => {
+                  setGenderFilter("男性");
+                  setIndex(0);
+                }}
+              >
+                男性
+              </button>
+              <button
+                type="button"
+                className={genderFilter === "女性" ? "selected" : ""}
+                onClick={() => {
+                  setGenderFilter("女性");
+                  setIndex(0);
+                }}
+              >
+                女性
+              </button>
+            </fieldset>
             <label className="toggleRow">
               <input
                 type="checkbox"
@@ -4915,6 +4954,7 @@ export default function MatchApp({
                 onClick={() => {
                   setPokemonQuery("");
                   setTrainerQuery("");
+                  setGenderFilter("");
                   setSharedTimeOnly(false);
                   setIndex(0);
                 }}
