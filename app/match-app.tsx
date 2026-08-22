@@ -1415,9 +1415,12 @@ export default function MatchApp({
   const currentPokemon = current?.mainPokemon[0] || "未設定";
   const pendingIncoming = incoming.filter((notice) => notice.status === "pending");
   const pendingOutgoing = outgoing.filter((notice) => notice.status === "pending");
-  const pendingCount = pendingIncoming.length;
-  const pendingConversationCount = pendingIncoming.length + pendingOutgoing.length;
   const dismissedNotificationSet = new Set(dismissedNotificationKeys);
+  const visiblePendingIncoming = pendingIncoming.filter(
+    (notice) => !dismissedNotificationSet.has(`request:${notice.id}`),
+  );
+  const pendingCount = visiblePendingIncoming.length;
+  const pendingConversationCount = pendingIncoming.length + pendingOutgoing.length;
   const visibleProfileLikes = profileLikes.filter(
     (like) => !dismissedNotificationSet.has(`like:${like.id}`),
   );
@@ -1449,6 +1452,7 @@ export default function MatchApp({
     0,
   );
   const dismissibleNotificationKeys = [
+    ...visiblePendingIncoming.map((notice) => `request:${notice.id}`),
     ...visibleProfileLikes.map((like) => `like:${like.id}`),
     ...visibleHeartConnections.map((connection) => `heart:${connection.id}`),
     ...visibleAcceptedNotices.map((notice) => `accepted:${notice.id}`),
@@ -1739,11 +1743,11 @@ export default function MatchApp({
     const uniqueKeys = [...new Set(keys)].filter(
       (key) => !dismissedNotificationSet.has(key),
     );
-    if (!uniqueKeys.length) return;
+    if (!uniqueKeys.length) return true;
     setDismissedNotificationKeys((current) => [
       ...new Set([...current, ...uniqueKeys]),
     ]);
-    if (preview) return;
+    if (preview) return true;
     try {
       const response = await fetch("/api/notifications", {
         method: "PATCH",
@@ -1751,24 +1755,22 @@ export default function MatchApp({
         body: JSON.stringify({ keys: uniqueKeys }),
       });
       if (!response.ok) throw new Error("notification dismissal failed");
+      return true;
     } catch {
       setDismissedNotificationKeys((current) =>
         current.filter((key) => !uniqueKeys.includes(key)),
       );
       notify("通知を消せませんでした。もう一度お試しください");
+      return false;
     }
   };
-  const dismissAllNotifications = () => {
+  const dismissAllNotifications = async () => {
     if (!dismissibleNotificationKeys.length) return;
+    const keys = [...dismissibleNotificationKeys];
     setProfileLikes((rows) => rows.map((row) => ({ ...row, read: true })));
     if (!preview)
       fetch("/api/likes", { method: "PATCH" }).catch(() => undefined);
-    void dismissNotifications(dismissibleNotificationKeys);
-    notify(
-      pendingCount
-        ? "申請以外の通知を消しました。申請は承認か見送りを選んでください"
-        : "通知をすべて消しました",
-    );
+    if (await dismissNotifications(keys)) notify("通知をすべて消しました");
   };
   useEffect(() => {
     if (!authenticated || !profileReady || onboardingOpen) return;
@@ -5255,7 +5257,9 @@ export default function MatchApp({
                 <p>タップして確認、×で一覧から消せます</p>
               </div>
               {dismissibleNotificationKeys.length > 0 && (
-                <button onClick={dismissAllNotifications}>すべて消す</button>
+                <button onClick={() => void dismissAllNotifications()}>
+                  すべて消す
+                </button>
               )}
             </div>
             <div className="notificationList">
@@ -5336,9 +5340,7 @@ export default function MatchApp({
                   </button>
                 </div>
               ))}
-              {incoming
-                .filter((n) => n.status === "pending")
-                .map((notice) => (
+              {visiblePendingIncoming.map((notice) => (
                   <article
                     key={`request-${notice.id}`}
                     className="notificationRequest"

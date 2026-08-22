@@ -258,6 +258,9 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /install-required/);
   assert.match(app, /通知をオンにする/);
   assert.match(app, /すべて消す/);
+  assert.match(app, /visiblePendingIncoming/);
+  assert.match(app, /request:\$\{notice\.id\}/);
+  assert.match(app, /await dismissNotifications\(keys\)/);
   assert.match(app, /タップして確認、×で一覧から消せます/);
   assert.match(app, /notificationDismiss/);
   assert.match(app, /\/api\/notifications/);

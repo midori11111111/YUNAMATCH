@@ -152,6 +152,22 @@ try {
   const notices = await api("/api/applications", { user: owner });
   assert.equal(notices.incoming.length, 1);
   assert.equal(notices.incoming[0].message, "参加します");
+  const dismissedRequestNotification = await api("/api/notifications", {
+    user: owner,
+    method: "PATCH",
+    body: { keys: [`request:${notices.incoming[0].id}`] },
+  });
+  assert.deepEqual(dismissedRequestNotification.dismissedKeys, [
+    `request:${notices.incoming[0].id}`,
+  ]);
+  const dismissedNotifications = await api("/api/notifications", { user: owner });
+  assert.ok(
+    dismissedNotifications.dismissedKeys.includes(
+      `request:${notices.incoming[0].id}`,
+    ),
+  );
+  const noticesAfterDismissal = await api("/api/applications", { user: owner });
+  assert.equal(noticesAfterDismissal.incoming[0].status, "pending");
   const pendingOutgoing = await api("/api/applications", { user: applicant });
   assert.equal(pendingOutgoing.outgoing[0].status, "pending");
   assert.equal(pendingOutgoing.outgoing[0].message, "参加します");
