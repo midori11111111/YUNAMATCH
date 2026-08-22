@@ -20,6 +20,7 @@ import { sendPush } from "../../../lib/push";
 import { profilePublicId, resolveProfilePublicId } from "../../../lib/profile-id";
 import { normalizeRank } from "../../../lib/ranks";
 import { pokemonRole, pokemonRoleOptions, type PokemonRole } from "../../../lib/pokemon-role";
+import { rankDiscoverCandidates } from "../../../lib/discover-ranking";
 
 function parseList(value: string) {
   try {
@@ -123,14 +124,11 @@ async function loadProfileStats(db: ReturnType<typeof getDb>) {
         (rating.count >= 3 && rating.average >= 4.5),
     };
   };
-  const internalScore = (userId: string) => {
-    const likeCount = likes.get(userId) || 0;
+  const qualityScore = (userId: string) => {
     const rating = ratings.get(userId) || { count: 0, average: 0 };
-    const quality =
-      (rating.average * rating.count + 4 * 5) / (rating.count + 5);
-    return quality + Math.min(Math.log1p(likeCount) * 0.08, 0.25);
+    return (rating.average * rating.count + 4 * 5) / (rating.count + 5);
   };
-  return { publicStats, internalScore };
+  return { publicStats, qualityScore };
 }
 
 export async function GET(request: Request) {
@@ -148,27 +146,32 @@ export async function GET(request: Request) {
     const activeCutoff = Date.now() - 30 * 24 * 60 * 60_000;
     const activityAt = (row: (typeof profileRows)[number]) =>
       lastActiveByUser.get(row.userId) || row.updatedAt;
-    const visible = profileRows
+    const visibleRows = profileRows
       .filter(
         (row) =>
           !row.suspendedAt &&
           row.ageConfirmed &&
           row.termsAcceptedAt &&
           activityAt(row).getTime() >= activeCutoff,
-      )
-      .sort(
-        (a, b) =>
-          stats.internalScore(b.userId) - stats.internalScore(a.userId) ||
-          activityAt(b).getTime() - activityAt(a).getTime(),
-      )
-      .slice(0, 30);
+      );
+    const visible = rankDiscoverCandidates(
+      visibleRows.map((row) => ({
+        ...row,
+        mainPokemon: parseList(row.mainPokemon),
+        playTime: parseList(row.playTime),
+        lastActiveAt: activityAt(row),
+        likeCount: stats.publicStats(row.userId).likeCount,
+        qualityScore: stats.qualityScore(row.userId),
+      })),
+      { userId: "guest", mainPokemon: [], highestRate: "", playTime: [] },
+    ).slice(0, 30);
     const result = await Promise.all(
       visible.map(async (row) => ({
         id: await profilePublicId(row.userId),
         trainerName: `${row.trainerName.slice(0, 1) || "メ"}••`,
-        mainPokemon: parseList(row.mainPokemon).slice(0, 5),
+        mainPokemon: row.mainPokemon.slice(0, 5),
         highestRate: normalizeRank(row.highestRate),
-        playTime: parseList(row.playTime).slice(0, 7),
+        playTime: row.playTime.slice(0, 7),
         gender: row.gender,
         age: null,
         avatarUrl: "",
@@ -295,19 +298,22 @@ export async function GET(request: Request) {
       roleMatches
     );
   });
-  const prioritized =
-    me.gender === "男性"
-      ? [...filtered].sort(
-          (a, b) =>
-            Number(b.gender === "女性") - Number(a.gender === "女性") ||
-            stats.internalScore(b.userId) - stats.internalScore(a.userId) ||
-            activityAt(b).getTime() - activityAt(a).getTime(),
-        )
-      : [...filtered].sort(
-          (a, b) =>
-            stats.internalScore(b.userId) - stats.internalScore(a.userId) ||
-            activityAt(b).getTime() - activityAt(a).getTime(),
-        );
+  const prioritized = rankDiscoverCandidates(
+    filtered.map((row) => ({
+      ...row,
+      mainPokemon: parseList(row.mainPokemon),
+      playTime: parseList(row.playTime),
+      lastActiveAt: activityAt(row),
+      likeCount: stats.publicStats(row.userId).likeCount,
+      qualityScore: stats.qualityScore(row.userId),
+    })),
+    {
+      userId: user.userId,
+      mainPokemon: parseList(me.mainPokemon),
+      highestRate: normalizeRank(me.highestRate),
+      playTime: myPlayTime,
+    },
+  );
   const pageRows = prioritized.slice(
     query.offset,
     query.offset + discoverPageSize,
@@ -316,9 +322,9 @@ export async function GET(request: Request) {
     pageRows.map(async (row) => ({
       id: await profilePublicId(row.userId),
       trainerName: row.trainerName,
-      mainPokemon: parseList(row.mainPokemon).slice(0, 5),
+      mainPokemon: row.mainPokemon.slice(0, 5),
       highestRate: normalizeRank(row.highestRate),
-      playTime: parseList(row.playTime).slice(0, 7),
+      playTime: row.playTime.slice(0, 7),
       gender: row.gender,
       age: row.age,
       avatarUrl: row.avatarUrl || "",

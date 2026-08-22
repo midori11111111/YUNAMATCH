@@ -101,6 +101,64 @@ test("resolves profiles beyond the former 300-account action limit", async () =>
   assert.equal(await resolveProfilePublicId(userIds, targetId), userIds[349]);
 });
 
+test("diversifies recommendations without gender or popularity ranking", async () => {
+  const { rankDiscoverCandidates } = await import(
+    new URL("../lib/discover-ranking.ts", import.meta.url)
+  );
+  const now = new Date("2026-08-23T00:00:00+09:00").getTime();
+  const candidate = (overrides) => ({
+    userId: "candidate",
+    mainPokemon: ["ピカチュウ"],
+    highestRate: "レジェンド 1000〜1199",
+    playTime: ["土日 朝・昼"],
+    createdAt: new Date(now - 90 * 24 * 60 * 60_000),
+    lastActiveAt: new Date(now - 20 * 24 * 60 * 60_000),
+    likeCount: 50,
+    qualityScore: 4,
+    avatarUrl: "",
+    bio: "",
+    ...overrides,
+  });
+  const ranked = rankDiscoverCandidates(
+    [
+      candidate({ userId: "popular", likeCount: 500 }),
+      candidate({
+        userId: "compatible",
+        mainPokemon: ["ハピナス"],
+        playTime: ["平日 夜（18〜22時）"],
+        lastActiveAt: new Date(now - 60_000),
+      }),
+      candidate({
+        userId: "new-zero-like",
+        likeCount: 0,
+        createdAt: new Date(now - 24 * 60 * 60_000),
+      }),
+      ...Array.from({ length: 9 }, (_, index) =>
+        candidate({ userId: `other-${index}`, likeCount: index + 10 }),
+      ),
+    ],
+    {
+      userId: "viewer",
+      mainPokemon: ["ゲッコウガ"],
+      highestRate: "レジェンド 1000〜1199",
+      playTime: ["平日 夜（18〜22時）"],
+    },
+    now,
+  );
+  assert.equal(ranked[0].userId, "compatible");
+  assert.ok(ranked.slice(0, 5).some((person) => person.userId === "new-zero-like"));
+  assert.notEqual(ranked[0].userId, "popular");
+  assert.deepEqual(
+    ranked.map((person) => person.userId),
+    rankDiscoverCandidates(ranked, {
+      userId: "viewer",
+      mainPokemon: ["ゲッコウガ"],
+      highestRate: "レジェンド 1000〜1199",
+      playTime: ["平日 夜（18〜22時）"],
+    }, now).map((person) => person.userId),
+  );
+});
+
 test("supports casual and ranked recruiting on the site and Discord", async () => {
   const [app, recruitsApi, discordApi, commandScript, adminCommandApi, schema, migration] =
     await Promise.all([
@@ -408,13 +466,13 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(discoverApi, /requestedRows/);
   assert.doesNotMatch(discoverApi, /eq\(applications\.status, "pending"\),\s*eq\(recruits\.kind, "profile"\)/);
   assert.match(discoverApi, /👋 手を振っています/);
-  assert.match(discoverApi, /me\.gender\s*===\s*"男性"/);
-  assert.match(discoverApi, /b\.gender\s*===\s*"女性"/);
+  assert.doesNotMatch(discoverApi, /me\.gender\s*===\s*"男性"/);
+  assert.match(discoverApi, /rankDiscoverCandidates/);
   assert.match(discoverApi, /activeCutoff/);
   assert.match(discoverApi, /lastActiveAt/);
   assert.match(discoverApi, /limited:\s*true/);
   assert.match(discoverApi, /avatarUrl:\s*""/);
-  assert.match(discoverApi, /internalScore/);
+  assert.match(discoverApi, /qualityScore/);
   assert.match(discoverApi, /likeCount/);
   assert.doesNotMatch(discoverApi, /averageScore:/);
   assert.match(migration, /CREATE TABLE `connections`/);
