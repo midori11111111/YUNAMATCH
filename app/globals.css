@@ -136,7 +136,6 @@ button { cursor: pointer; }
 .pokemonVisual.pokemonRole-speed, .pokemonRole-speed { background-color: #edf8ff; background-image: radial-gradient(circle at 32% 25%, #d5f2ff, transparent 42%), linear-gradient(145deg, #edf9ff, #a8dcf0); }
 .pokemonVisual.pokemonRole-defense, .pokemonRole-defense { background-color: #effbf3; background-image: radial-gradient(circle at 32% 25%, #d6f3df, transparent 42%), linear-gradient(145deg, #effbf3, #adddbb); }
 .pokemonVisual.pokemonRole-support, .pokemonRole-support { background-color: #fff8e9; background-image: radial-gradient(circle at 32% 25%, #fff0bf, transparent 42%), linear-gradient(145deg, #fff9eb, #f1d38e); }
-.pokemonVisual > img { width: 112%; height: 112%; grid-area: 1 / 1; position: relative; z-index: 2; object-fit: contain; filter: drop-shadow(0 14px 14px #32164b48); }
 .pokemonVisualFallback { grid-area: 1 / 1; position: relative; z-index: 1; display: grid; place-items: center; font-weight: 950; line-height: 1; letter-spacing: -.08em; text-shadow: 0 12px 30px #3d183530; }
 .pokemonVisualFallback:after { content: ""; width: 72%; height: 3px; position: absolute; left: 14%; bottom: -9px; border-radius: 99px; background: #ffffff80; }
 .pokemonMonogram .pokemonVisualFallback { font-size: 48px; }
@@ -157,14 +156,12 @@ button { cursor: pointer; }
 .pairingLine small { color: #9187a0; font-size: 7px; font-weight: 800; }
 .pairingLine b { color: var(--pink); font-size: 15px; }
 .pokemonLabel { min-width: 0; display: inline-flex; align-items: center; gap: 5px; color: var(--purple-dark); font-weight: 900; }
-.pokemonLabel > .pokemonVisual { width: 31px; height: 31px; flex: none; border-radius: 10px; background: #fff; }
-.pokemonLabel > .pokemonVisual.pokemonRole-attack { background: linear-gradient(145deg, #ffeff0, #f8b8bd); }
-.pokemonLabel > .pokemonVisual.pokemonRole-balance { background: linear-gradient(145deg, #f5efff, #cdb2f0); }
-.pokemonLabel > .pokemonVisual.pokemonRole-speed { background: linear-gradient(145deg, #edf9ff, #a8dcf0); }
-.pokemonLabel > .pokemonVisual.pokemonRole-defense { background: linear-gradient(145deg, #effbf3, #adddbb); }
-.pokemonLabel > .pokemonVisual.pokemonRole-support { background: linear-gradient(145deg, #fff9eb, #f1d38e); }
-.pokemonLabel > .pokemonVisual img { width: 110%; height: 110%; filter: drop-shadow(0 4px 4px #44286f25); }
-.pokemonLabel > .pokemonVisual .pokemonVisualFallback { font-size: 8px; }
+.pokemonRoleDot { width: 10px; height: 10px; flex: none; border: 2px solid #ffffffc7; border-radius: 50%; box-shadow: 0 2px 6px #38264d22; }
+.pokemonRoleDot.pokemonRole-attack { background: #ea6575; }
+.pokemonRoleDot.pokemonRole-balance { background: #8664dc; }
+.pokemonRoleDot.pokemonRole-speed { background: #43afc6; }
+.pokemonRoleDot.pokemonRole-defense { background: #dcae43; }
+.pokemonRoleDot.pokemonRole-support { background: #ee76a6; }
 .pokemonLabel > strong { overflow: hidden; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
 .pairingLine .pokemonLabel { justify-content: center; }
 .statGrid { display: grid; grid-template-columns: 1fr 1fr 1.25fr; border: 1px solid var(--line); border-radius: 13px; }
@@ -177,7 +174,7 @@ button { cursor: pointer; }
 .profilePokemonList > small { color: #8d8694; font-size: 7px; font-weight: 900; letter-spacing: .5px; }
 .profilePokemonList > div { display: flex; flex-wrap: wrap; gap: 5px; }
 .profilePokemonList .pokemonLabel { padding: 3px 8px 3px 4px; border-radius: 99px; background: #f1edff; }
-.profilePokemonList .pokemonLabel > .pokemonVisual { width: 27px; height: 27px; border-radius: 50%; }
+.profilePokemonList .pokemonRoleDot { width: 11px; height: 11px; }
 .timeChip { display: flex; align-items: center; gap: 8px; margin-top: 10px; color: #746d7c; }
 .timeChip > span { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 9px; color: var(--purple); background: #eee9ff; font-size: 12px; }
 .timeChip div { display: grid; gap: 1px; }
@@ -210,11 +207,18 @@ button { cursor: pointer; }
 .fullDiscoverCard { height: calc(100% - 60px); min-height: 0; position: relative; overflow: hidden; border-radius: 28px; color: #fff; background: linear-gradient(145deg, #5134ca, #9268ef 58%, #e6599b); box-shadow: 0 20px 42px #37275929; touch-action: pan-y; transform-origin: 50% 100%; }
 .fullDiscoverCard.left { animation: swipeLeft .22s ease forwards; }
 .fullDiscoverCard.right { animation: swipeRight .22s ease forwards; }
-.fullCardBackdrop { position: absolute; inset: 0; overflow: hidden; background: radial-gradient(circle at 68% 20%, #ffffff42, transparent 25%), radial-gradient(circle at 18% 75%, #fbd3ea35, transparent 27%), linear-gradient(145deg, #4f35c8 0, #8c66ef 58%, #d85099 100%); }
+.fullCardBackdrop { position: absolute; inset: 0; overflow: hidden; background-position: center; background-size: cover; }
+.fullCardBackdrop.role-attack { background-image: radial-gradient(circle at 76% 18%,#ffffff45,transparent 24%),linear-gradient(145deg,#c9475b,#f47b78 58%,#b92854); }
+.fullCardBackdrop.role-balance { background-image: radial-gradient(circle at 76% 18%,#ffffff45,transparent 24%),linear-gradient(145deg,#5437c4,#8b67ea 58%,#b54d9a); }
+.fullCardBackdrop.role-speed { background-image: radial-gradient(circle at 76% 18%,#ffffff45,transparent 24%),linear-gradient(145deg,#127d9d,#48b9c9 58%,#31588e); }
+.fullCardBackdrop.role-defense { background-image: radial-gradient(circle at 76% 18%,#ffffff48,transparent 24%),linear-gradient(145deg,#9b6b13,#e0ad3c 58%,#8a5329); }
+.fullCardBackdrop.role-support { background-image: radial-gradient(circle at 76% 18%,#ffffff48,transparent 24%),linear-gradient(145deg,#d94382,#f18cad 58%,#b98d2f); }
 .fullCardBackdrop:after { content: ""; position: absolute; inset: 35% 0 0; z-index: 3; background: linear-gradient(180deg, transparent 0, #2619404d 31%, #171020dc 78%, #120c1bf2 100%); }
-.fullCardPokemon { width: 92%; height: 65%; position: absolute; z-index: 2; left: 50%; top: 4%; transform: translateX(-50%); }
-.fullCardPokemon .pokemonVisual > img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 24px 25px #24123e52); }
-.fullCardPokemon .pokemonVisualFallback { color: #ffffffcc; font-size: 82px; }
+.fullCardPokemonName { position: absolute; z-index: 4; left: 24px; top: 23%; display: grid; color: #fff; text-shadow: 0 8px 24px #1f102b42; }
+.fullCardPokemonName small { font-size: 7px; font-weight: 950; letter-spacing: 1.8px; opacity: .78; }
+.fullCardPokemonName strong { max-width: 330px; margin-top: 5px; overflow-wrap: anywhere; font-size: clamp(34px,10vw,46px); line-height: 1; letter-spacing: -2px; }
+.fullCardPokemonName span { width: fit-content; margin-top: 11px; padding: 7px 10px; border: 1px solid #ffffff55; border-radius: 99px; background: #24172f4a; font-size: 8px; font-weight: 900; backdrop-filter: blur(8px); }
+.fullDiscoverCard.hasUserHeader .artDots { opacity: .07; }
 .fullCardWatermark { position: absolute; z-index: 1; left: -10px; right: -10px; top: 44%; overflow: hidden; color: #fff; opacity: .1; font-size: 70px; font-weight: 950; line-height: .9; letter-spacing: -5px; text-align: center; white-space: nowrap; }
 .fullCardTopline { position: absolute; z-index: 5; top: 17px; left: 17px; right: 17px; display: flex; align-items: center; justify-content: space-between; pointer-events: none; }
 .fullCardTopline > span { border: 1px solid #ffffff45; border-radius: 99px; background: #281b4a45; backdrop-filter: blur(9px); }
@@ -232,8 +236,8 @@ button { cursor: pointer; }
 .fullCardIdentity > span small { overflow: hidden; color: #ffffffcf; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
 .fullCardIdentity > b { font-size: 22px; font-weight: 500; }
 .fullCardPokemonList { min-width: 0; display: flex; gap: 6px; overflow: hidden; }
-.fullCardPokemonList .pokemonLabel { min-width: 0; padding: 3px 9px 3px 4px; border-radius: 99px; color: #fff; background: #ffffff20; backdrop-filter: blur(7px); }
-.fullCardPokemonList .pokemonLabel > .pokemonVisual { width: 26px; height: 26px; border-radius: 50%; background: #ffffffdd; }
+.fullCardPokemonList .pokemonLabel { min-width: 0; padding: 7px 10px; border-radius: 99px; color: #fff; background: #ffffff20; backdrop-filter: blur(7px); }
+.fullCardPokemonList .pokemonRoleDot { border-color: #fff; }
 .fullCardPokemonList .pokemonLabel > strong { max-width: 75px; color: #fff; font-size: 8px; }
 .fullCardPopularity { display: flex; align-items: center; gap: 7px; margin-top: 1px; }
 .fullCardPopularity b,.candidatePopularity b { padding: 5px 8px; border-radius: 99px; color: #7c5600; background: #fff0b7; font-size: 7px; font-weight: 950; }
@@ -267,10 +271,17 @@ button { cursor: pointer; }
 .tutorialStart { height: 42px; position: absolute; z-index: 3; left: 18px; right: 18px; bottom: 13px; border: 0; border-radius: 14px; color: #fff; background: linear-gradient(145deg, var(--pink), #ff7cac); font-size: 10px; font-weight: 950; }
 
 .candidateDetailSheet { overflow: hidden; }
-.candidateDetailHero { height: 150px; position: relative; overflow: hidden; margin: -22px -22px 19px; background: radial-gradient(circle at 68% 25%, #ffffff46, transparent 27%), linear-gradient(145deg, #5438ca, #a16def 58%, #df559c); }
+.candidateDetailHero { height: 150px; position: relative; overflow: hidden; margin: -22px -22px 19px; background-position: center; background-size: cover; }
+.candidateDetailHero.role-attack { background-image: linear-gradient(145deg,#c9475b,#f47b78); }
+.candidateDetailHero.role-balance { background-image: linear-gradient(145deg,#5437c4,#9b73ed); }
+.candidateDetailHero.role-speed { background-image: linear-gradient(145deg,#127d9d,#58c5ce); }
+.candidateDetailHero.role-defense { background-image: linear-gradient(145deg,#9b6b13,#e3b545); }
+.candidateDetailHero.role-support { background-image: linear-gradient(145deg,#d94382,#f29ab7); }
 .candidateDetailHero.hasHeader { background-position: center; background-size: cover; }
-.candidateDetailPokemon { width: 190px; height: 150px; position: absolute; right: 18px; bottom: -3px; }
-.candidateDetailPokemon .pokemonVisual > img { width: 100%; height: 100%; object-fit: contain; }
+.candidateDetailPokemonName { max-width: 225px; position: absolute; right: 19px; top: 36px; display: grid; justify-items: end; color: #fff; text-align: right; text-shadow: 0 5px 16px #23152c66; }
+.candidateDetailPokemonName small { font-size: 6px; font-weight: 950; letter-spacing: 1.3px; opacity: .72; }
+.candidateDetailPokemonName strong { margin-top: 4px; font-size: 27px; line-height: 1; }
+.candidateDetailPokemonName span { margin-top: 8px; padding: 5px 8px; border: 1px solid #ffffff50; border-radius: 99px; background: #25162f50; font-size: 7px; font-weight: 900; backdrop-filter: blur(6px); }
 .candidateDetailAvatar { width: 62px; height: 62px; position: absolute; z-index: 2; left: 22px; bottom: 18px; overflow: hidden; display: grid; place-items: center; border: 3px solid #fff; border-radius: 50%; color: #fff; background: linear-gradient(145deg, #ff689e, #ffabc9); font-size: 23px; font-weight: 950; box-shadow: 0 9px 22px #2c17413d; }
 .candidateDetailSheet h2 { margin: 4px 0 3px; }
 .candidateDetailRank { margin: 0 0 4px; color: #817a89; font-size: 10px; }
@@ -362,7 +373,6 @@ button { cursor: pointer; }
 .recruitProfileSheet .recruitNote { margin: 12px 0; text-align: left; }
 .pokemonTile { width: 68px; height: 68px; position: relative; overflow: hidden; display: grid; place-items: center; border-radius: 20px; color: #fff; font-size: 29px; font-weight: 900; isolation: isolate; box-shadow: 0 8px 18px #b7447f25; }
 .pokemonTile .pokemonVisualFallback { font-size: 20px; }
-.pokemonTile .pokemonVisual > img { width: 92%; height: 92%; }
 .recruitTop { display: flex; align-items: center; gap: 7px; }
 .recruitTop h2 { margin: 0; font-size: 18px; letter-spacing: -.4px; }
 .recruitTop span { margin-left: auto; padding: 5px 8px; border-radius: 99px; color: var(--green); background: #e7f8f2; font-size: 7px; font-weight: 900; white-space: nowrap; }
@@ -1098,7 +1108,6 @@ button { cursor: pointer; }
 .shareCardMain strong { overflow: hidden; display: -webkit-box; font-size: clamp(12px, 4.2vw, 20px); line-height: 1.12; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .shareCardPokemon { width: 46%; height: 76%; position: absolute; z-index: 0 !important; right: 2px; bottom: -3px; display: grid; place-items: center; opacity: .94; }
 .shareCardPokemon .pokemonVisualFallback { width: 112px; height: 112px; border: 1px solid #ffffff55; border-radius: 50%; background: #ffffff18; font-size: 38px; box-shadow: 0 0 0 10px #ffffff0d; }
-.shareCardPokemon .pokemonVisual > img { width: 96%; height: 96%; }
 .shareCardTime { width: 61%; position: absolute !important; left: 20px; bottom: 16px; overflow: hidden; font-size: 7px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
 .xShareButton { width: 100%; margin-top: 16px; border: 0; border-radius: 14px; padding: 14px; color: #fff; background: #17131f; font-size: 10px; font-weight: 900; }
 .shareModal > p { margin: 11px 8px 0; color: #98919f; font-size: 7px; line-height: 1.6; text-align: center; }
@@ -1110,7 +1119,6 @@ button { cursor: pointer; }
 .recruitSharePreview.support { background: linear-gradient(145deg, #ec5794, #ff9fc4); }
 .sharePokemon { width: 100px; height: 105px; display: grid; place-items: center; }
 .sharePokemon .pokemonVisualFallback { width: 82px; height: 82px; border: 1px solid #ffffff66; border-radius: 50%; background: #ffffff18; font-size: 27px; }
-.sharePokemon .pokemonVisual > img { width: 96%; height: 96%; }
 .recruitSharePreview > div:last-child { min-width: 0; display: grid; gap: 4px; }
 .recruitSharePreview small { font-size: 6px; font-weight: 900; letter-spacing: 1px; }
 .recruitSharePreview strong { font-size: 16px; line-height: 1.2; }
@@ -1127,7 +1135,6 @@ button { cursor: pointer; }
 .shareHelp { margin: 10px 7px 0; color: #96909c; font-size: 7px; line-height: 1.6; text-align: center; }
 .applyPokemon { width: 65px; height: 65px; position: relative; display: grid; place-items: center; margin-bottom: 13px; border-radius: 18px; color: #fff; font-size: 25px; font-weight: 900; }
 .applyPokemon .pokemonVisualFallback { font-size: 21px; }
-.applyPokemon .pokemonVisual > img { width: 96%; height: 96%; }
 .matchModal { text-align: center; }
 .matchBurst { width: 78px; height: 78px; margin: auto; display: grid; place-items: center; border-radius: 26px; color: #fff; background: linear-gradient(145deg, var(--pink), #ff9abe); font-size: 31px; box-shadow: 0 13px 30px #ff5f9f38; }
 .matchModal > small { display: block; margin-top: 15px; color: var(--pink); font-size: 8px; font-weight: 900; letter-spacing: 2px; }
@@ -1193,7 +1200,7 @@ button { cursor: pointer; }
   .discoverTutorial { top: 54px; }
   .fullCardInfo { min-height: 128px; bottom: 79px; gap: 5px; }
   .fullCardActions { height: 56px; bottom: 12px; }
-  .fullCardPokemon { height: 61%; }
+  .fullCardPokemonName { top: 21%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

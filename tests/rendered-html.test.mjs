@@ -147,7 +147,6 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     exportApi,
     likesApi,
     likesMigration,
-    pokemonArt,
     ogImage,
     privacyPage,
     contactPage,
@@ -203,7 +202,6 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     readFile(new URL("app/api/admin/export/route.ts", root), "utf8"),
     readFile(new URL("app/api/likes/route.ts", root), "utf8"),
     readFile(new URL("drizzle/0011_tearful_karma.sql", root), "utf8"),
-    readFile(new URL("lib/pokemon-art.ts", root), "utf8"),
     access(new URL("public/og.png", root)),
     readFile(new URL("app/privacy/page.tsx", root), "utf8"),
     readFile(new URL("app/contact/page.tsx", root), "utf8"),
@@ -449,11 +447,11 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(likesApi, /profiles:receivedProfiles/);
   assert.match(likesApi, /onConflictDoNothing/);
   assert.match(likesMigration, /CREATE TABLE `profile_likes`/);
-  assert.match(pokemonArt, /official-artwork/);
   for (const name of ["バクフーン", "ソルガレオ", "レシラム", "イベルタル", "メガニウム", "ウェーニバル"]) {
     assert.match(app, new RegExp(name));
-    assert.match(pokemonArt, new RegExp(name));
   }
+  assert.doesNotMatch(app, /official-artwork|pokemonArtUrl|raw\.githubusercontent\.com\/PokeAPI/);
+  assert.match(app, /fullCardPokemonName/);
   assert.equal(ogImage, undefined);
   assert.match(app, /アカウントを削除して退会/);
   assert.match(app, /Discordで募集・VCに参加/);

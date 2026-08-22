@@ -12,7 +12,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { pokemonArtUrl } from "../lib/pokemon-art";
 import { filterDiscoverCandidates } from "../lib/discover-filter";
 import { rankOptions } from "../lib/ranks";
 import {
@@ -428,7 +427,6 @@ function PokemonImage({ name }: { name: string }) {
     name === "未定"
       ? "？"
       : name.replace(/^(?:アローラ|ガラル)/, "").slice(0, 2);
-  const src = pokemonArtUrl(name);
   return (
     <span
       className={`pokemonVisual pokemonRole-${pokemonRole(name)}`}
@@ -438,18 +436,6 @@ function PokemonImage({ name }: { name: string }) {
       <span className="pokemonVisualFallback" aria-hidden="true">
         {mark}
       </span>
-      {src && (
-        <img
-          src={src}
-          alt=""
-          aria-hidden="true"
-          loading="lazy"
-          decoding="async"
-          onError={(event) => {
-            event.currentTarget.hidden = true;
-          }}
-        />
-      )}
     </span>
   );
 }
@@ -457,7 +443,10 @@ function PokemonImage({ name }: { name: string }) {
 function PokemonLabel({ name }: { name: string }) {
   return (
     <span className="pokemonLabel">
-      <PokemonImage name={name} />
+      <i
+        className={`pokemonRoleDot pokemonRole-${pokemonRole(name)}`}
+        aria-hidden="true"
+      />
       <strong>{name}</strong>
     </span>
   );
@@ -1014,7 +1003,7 @@ export default function MatchApp({
       </div>
       <div>
         <strong>プロフィールヘッダー <small>任意</small></strong>
-        <p>横長に切り抜いてマイページへ表示します</p>
+        <p>マイページと探すカードの背景に表示します。自分が権利を持つ画像を設定してください。</p>
         <div>
           <label className="avatarSelectButton">
             {headerProcessing ? "処理中…" : "画像を選ぶ"}
@@ -1058,6 +1047,7 @@ export default function MatchApp({
       setProfileCandidates([previewProfile]);
       setDiscoverHasMore(false);
       setDiscoverTotal(1);
+      setLoading(false);
       return false;
     }
     if (append && discoverLoadingMoreRef.current) return false;
@@ -3512,16 +3502,31 @@ export default function MatchApp({
                 </div>
               ) : current ? (
                 <article
-                  className={`fullDiscoverCard ${animation}`}
+                  className={`fullDiscoverCard role-${pokemonRole(currentPokemon)} ${
+                    current.headerUrl ? "hasUserHeader" : ""
+                  } ${animation}`}
                   onPointerDown={(event) => setDragStart(event.clientX)}
                   onPointerUp={handlePointerUp}
                 >
-                  <div className="fullCardBackdrop">
+                  <div
+                    className={`fullCardBackdrop role-${pokemonRole(currentPokemon)}`}
+                    style={
+                      current.headerUrl
+                        ? {
+                            backgroundImage: `linear-gradient(180deg, #1d112126 0%, #1a0d1b30 38%, #160d18b8 72%, #100a12f2 100%), url(${current.headerUrl})`,
+                          }
+                        : undefined
+                    }
+                  >
                     <div className="artDots" />
-                    <div className="fullCardPokemon">
-                      <PokemonImage name={currentPokemon} />
+                    <div className="fullCardPokemonName">
+                      <small>MAIN POKÉMON</small>
+                      <strong>{currentPokemon}</strong>
+                      <span>{pokemonRoleLabel(currentPokemon)}</span>
                     </div>
-                    <div className="fullCardWatermark">{currentPokemon}</div>
+                    <div className="fullCardWatermark">
+                      {pokemonRoleLabel(currentPokemon)}
+                    </div>
                   </div>
                   <div className="fullCardTopline">
                     <span
@@ -5923,19 +5928,23 @@ export default function MatchApp({
               ×
             </button>
             <div
-              className={`candidateDetailHero ${candidateDetail.headerUrl ? "hasHeader" : ""}`}
+              className={`candidateDetailHero role-${pokemonRole(
+                candidateDetail.mainPokemon[0] || "",
+              )} ${candidateDetail.headerUrl ? "hasHeader" : ""}`}
               style={
                 candidateDetail.headerUrl
                   ? {
-                      backgroundImage: `linear-gradient(90deg, #21143e80, transparent), url(${candidateDetail.headerUrl})`,
+                      backgroundImage: `linear-gradient(90deg, #21143eaa, #21143e22), url(${candidateDetail.headerUrl})`,
                     }
                   : undefined
               }
             >
-              <div className="candidateDetailPokemon">
-                <PokemonImage
-                  name={candidateDetail.mainPokemon[0] || "未設定"}
-                />
+              <div className="candidateDetailPokemonName">
+                <small>MAIN POKÉMON</small>
+                <strong>{candidateDetail.mainPokemon[0] || "未設定"}</strong>
+                <span>
+                  {pokemonRoleLabel(candidateDetail.mainPokemon[0] || "")}
+                </span>
               </div>
               <UserAvatar
                 name={candidateDetail.trainerName}
@@ -6072,9 +6081,21 @@ export default function MatchApp({
           <section className="sheetModal candidateDetailSheet matchedProfileSheet">
             <div className="sheetHandle" />
             <button className="closeButton" onClick={() => setMatchedProfile(null)}>×</button>
-            <div className="candidateDetailHero">
-              <div className="candidateDetailPokemon">
-                <PokemonImage name={matchedProfile.mateMainPokemon[0] || matchedProfile.matePokemon} />
+            <div
+              className={`candidateDetailHero role-${pokemonRole(
+                matchedProfile.mateMainPokemon[0] || matchedProfile.matePokemon,
+              )}`}
+            >
+              <div className="candidateDetailPokemonName">
+                <small>MAIN POKÉMON</small>
+                <strong>
+                  {matchedProfile.mateMainPokemon[0] || matchedProfile.matePokemon}
+                </strong>
+                <span>
+                  {pokemonRoleLabel(
+                    matchedProfile.mateMainPokemon[0] || matchedProfile.matePokemon,
+                  )}
+                </span>
               </div>
               <UserAvatar
                 name={matchedProfile.mateName}
