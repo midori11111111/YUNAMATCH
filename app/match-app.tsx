@@ -16,7 +16,6 @@ import { filterDiscoverCandidates } from "../lib/discover-filter";
 import { rankOptions } from "../lib/ranks";
 import {
   pokemonRole,
-  pokemonRoleLabel,
   pokemonRoleOptions,
   type PokemonRole,
 } from "../lib/pokemon-role";
@@ -431,7 +430,7 @@ function PokemonImage({ name }: { name: string }) {
     <span
       className={`pokemonVisual pokemonRole-${pokemonRole(name)}`}
       role="img"
-      aria-label={`${name}（${pokemonRoleLabel(name)}）`}
+      aria-label={name}
     >
       <span className="pokemonVisualFallback" aria-hidden="true">
         {mark}
@@ -3522,10 +3521,6 @@ export default function MatchApp({
                     <div className="fullCardPokemonName">
                       <small>MAIN POKÉMON</small>
                       <strong>{currentPokemon}</strong>
-                      <span>{pokemonRoleLabel(currentPokemon)}</span>
-                    </div>
-                    <div className="fullCardWatermark">
-                      {pokemonRoleLabel(currentPokemon)}
                     </div>
                   </div>
                   <div className="fullCardTopline">
@@ -4617,11 +4612,7 @@ export default function MatchApp({
                 <div
                   className={`profileHeader pokemonRole-${pokemonRole(profile.mainPokemon[0] || "")}`}
                   style={profile.headerUrl ? { backgroundImage: `url(${profile.headerUrl})` } : undefined}
-                >
-                  {!profile.headerUrl && (
-                    <span>{pokemonRoleLabel(profile.mainPokemon[0] || "")}</span>
-                  )}
-                </div>
+                />
                 <div className="profileAvatarFrame">
                   <UserAvatar
                     name={profile.trainerName}
@@ -5942,9 +5933,6 @@ export default function MatchApp({
               <div className="candidateDetailPokemonName">
                 <small>MAIN POKÉMON</small>
                 <strong>{candidateDetail.mainPokemon[0] || "未設定"}</strong>
-                <span>
-                  {pokemonRoleLabel(candidateDetail.mainPokemon[0] || "")}
-                </span>
               </div>
               <UserAvatar
                 name={candidateDetail.trainerName}
@@ -6091,11 +6079,6 @@ export default function MatchApp({
                 <strong>
                   {matchedProfile.mateMainPokemon[0] || matchedProfile.matePokemon}
                 </strong>
-                <span>
-                  {pokemonRoleLabel(
-                    matchedProfile.mateMainPokemon[0] || matchedProfile.matePokemon,
-                  )}
-                </span>
               </div>
               <UserAvatar
                 name={matchedProfile.mateName}
