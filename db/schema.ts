@@ -248,6 +248,32 @@ export const messages = sqliteTable(
   ],
 );
 
+export const messageFavorites = sqliteTable(
+  "message_favorites",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: text("user_id").notNull(),
+    connectionId: integer("connection_id")
+      .notNull()
+      .references(() => connections.id),
+    messageId: integer("message_id")
+      .notNull()
+      .references(() => messages.id),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("idx_message_favorites_user_message").on(
+      table.userId,
+      table.messageId,
+    ),
+    index("idx_message_favorites_user_connection_created").on(
+      table.userId,
+      table.connectionId,
+      table.createdAt,
+    ),
+  ],
+);
+
 export const connectionRatings = sqliteTable(
   "connection_ratings",
   {

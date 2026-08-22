@@ -8,6 +8,7 @@ import {
   dailyVisitors,
   lobbies,
   lobbyMembers,
+  messageFavorites,
   messages,
   profiles,
   recruits,
@@ -28,6 +29,7 @@ export async function GET() {
     applicationRows,
     connectionRows,
     messageRows,
+    messageFavoriteRows,
     ratingRows,
     lobbyRows,
     lobbyMemberRows,
@@ -43,6 +45,7 @@ export async function GET() {
     db.select().from(applications),
     db.select().from(connections),
     db.select().from(messages),
+    db.select().from(messageFavorites),
     db.select().from(connectionRatings),
     db.select().from(lobbies),
     db.select().from(lobbyMembers),
@@ -56,7 +59,7 @@ export async function GET() {
   return new Response(
     JSON.stringify(
       {
-        schemaVersion: 2,
+        schemaVersion: 3,
         generatedAt: generatedAt.toISOString(),
         profiles: profileRows,
         accountLinks: accountRows,
@@ -64,6 +67,7 @@ export async function GET() {
         applications: applicationRows,
         connections: connectionRows,
         messages: messageRows,
+        messageFavorites: messageFavoriteRows,
         connectionRatings: ratingRows,
         lobbies: lobbyRows,
         lobbyMembers: lobbyMemberRows,

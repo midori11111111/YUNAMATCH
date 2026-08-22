@@ -190,6 +190,15 @@ try {
   await api("/api/messages", { user: applicant, method: "POST", body: { connectionId, body: "よろしくお願いします" } });
   const thread = await api(`/api/messages?connectionId=${connectionId}`, { user: owner });
   assert.equal(thread.messages.at(-1).body, "よろしくお願いします");
+  const favorite = await api("/api/message-favorites", {
+    user: owner,
+    method: "POST",
+    body: { messageId: thread.messages.at(-1).id },
+  });
+  assert.equal(favorite.favorited, true);
+  const favorites = await api(`/api/message-favorites?connectionId=${connectionId}`, { user: owner });
+  assert.equal(favorites.favorites[0].body, "よろしくお願いします");
+  assert.equal(favorites.favoriteMessageIds[0], thread.messages.at(-1).id);
 
   const playInvite = await api("/api/messages", {
     user: applicant,
