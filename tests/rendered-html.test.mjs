@@ -4,6 +4,15 @@ import test from "node:test";
 
 const root = new URL("../", import.meta.url);
 
+test("states the romance and dating prohibition at the end of the terms", async () => {
+  const terms = await readFile(new URL("app/terms/page.tsx", root), "utf8");
+  const prohibition = terms.indexOf("恋愛・出会い目的の利用禁止");
+  assert.ok(prohibition > terms.indexOf("お問い合わせ"));
+  assert.match(terms.slice(prohibition), /異性交際を希望する情報/);
+  assert.match(terms.slice(prohibition), /18歳未満の利用者に対する連絡先交換/);
+  assert.match(terms.slice(prohibition), /アカウント削除/);
+});
+
 async function render() {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
