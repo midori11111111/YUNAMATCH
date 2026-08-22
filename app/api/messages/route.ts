@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull, or } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, or } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { blocks, connections, messages } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
@@ -6,44 +6,48 @@ import { sendPush } from "../../../lib/push";
 import { isSuspended } from "../../../lib/safety";
 import { checkRateLimit, rateLimitResponse } from "../../../lib/rate-limit";
 import { containsProhibitedContent, prohibitedContentMessage } from "../../../lib/content-policy";
+import { identityAliases } from "../../../lib/account-aliases";
 
 const signIn = "/login";
 const playInviteBody = "一緒にプレイしませんか？";
 
-async function getMembership(connectionId: number, userId: string) {
+async function getMembership(connectionId: number, userIds: string[]) {
   const [connection] = await getDb().select().from(connections).where(and(
     eq(connections.id, connectionId),
-    or(eq(connections.userAId, userId), eq(connections.userBId, userId)),
+    or(
+      inArray(connections.userAId, userIds),
+      inArray(connections.userBId, userIds),
+    ),
   )).limit(1);
   return connection;
 }
 
-async function isBlocked(userId: string, mateId: string) {
+async function isBlocked(userIds: string[], mateId: string) {
   const [blocked] = await getDb().select({ id: blocks.id }).from(blocks).where(or(
-    and(eq(blocks.blockerId, userId), eq(blocks.blockedId, mateId)),
-    and(eq(blocks.blockerId, mateId), eq(blocks.blockedId, userId)),
+    and(inArray(blocks.blockerId, userIds), eq(blocks.blockedId, mateId)),
+    and(eq(blocks.blockerId, mateId), inArray(blocks.blockedId, userIds)),
   )).limit(1);
   return Boolean(blocked);
 }
 
 function serializeMessage(
   row: typeof messages.$inferSelect,
-  userId: string,
+  userIds: Set<string>,
   mateLastRead?: Date | null,
 ) {
   return {
     id: row.id,
     body: row.body,
-    sender: row.senderId === userId ? "me" : "mate",
+    sender: userIds.has(row.senderId) ? "me" : "mate",
     kind: row.kind === "play_invite" ? "play_invite" : "text",
     response: row.response,
     canRespond:
       row.kind === "play_invite" &&
       !row.response &&
-      row.senderId !== userId,
+      !userIds.has(row.senderId),
     createdAt: row.createdAt,
     read:
-      row.senderId === userId &&
+      userIds.has(row.senderId) &&
       Boolean(mateLastRead && row.createdAt <= mateLastRead),
   };
 }
@@ -53,14 +57,16 @@ export async function GET(request: Request) {
   if (!user) return Response.json({ error: "ログインが必要です", signIn }, { status: 401 });
   const connectionId = Number(new URL(request.url).searchParams.get("connectionId"));
   if (!Number.isInteger(connectionId)) return Response.json({ error: "マッチを選択してください" }, { status: 400 });
-  const connection = await getMembership(connectionId, user.userId);
+  const aliases = await identityAliases(user.userId, user.email);
+  const aliasSet = new Set(aliases);
+  const connection = await getMembership(connectionId, aliases);
   if (!connection) return Response.json({ error: "マッチが見つかりません" }, { status: 404 });
   const rows = await getDb().select().from(messages).where(eq(messages.connectionId, connectionId)).orderBy(asc(messages.createdAt)).limit(100);
-  const isA=connection.userAId===user.userId;const mateLastRead=isA?connection.userBLastReadAt:connection.userALastReadAt;
+  const isA=aliasSet.has(connection.userAId);const mateLastRead=isA?connection.userBLastReadAt:connection.userALastReadAt;
   await getDb().update(connections).set(isA?{userALastReadAt:new Date()}:{userBLastReadAt:new Date()}).where(eq(connections.id,connection.id));
   return Response.json({
     messages: rows.map((row) =>
-      serializeMessage(row, user.userId, mateLastRead),
+      serializeMessage(row, aliasSet, mateLastRead),
     ),
   });
 }
@@ -83,10 +89,12 @@ export async function POST(request: Request) {
   if (!payload.connectionId || !body) return Response.json({ error: "メッセージを入力してください" }, { status: 400 });
   if (body.length > 300) return Response.json({ error: "メッセージは300文字以内です" }, { status: 400 });
   if (kind === "text" && containsProhibitedContent(body)) return Response.json({ error: prohibitedContentMessage }, { status: 400 });
-  const connection = await getMembership(payload.connectionId, user.userId);
+  const aliases = await identityAliases(user.userId, user.email);
+  const aliasSet = new Set(aliases);
+  const connection = await getMembership(payload.connectionId, aliases);
   if (!connection) return Response.json({ error: "マッチが見つかりません" }, { status: 404 });
-  const mateId = connection.userAId === user.userId ? connection.userBId : connection.userAId;
-  if (await isBlocked(user.userId, mateId)) return Response.json({ error: "この相手にはメッセージを送れません" }, { status: 403 });
+  const mateId = aliasSet.has(connection.userAId) ? connection.userBId : connection.userAId;
+  if (await isBlocked(aliases, mateId)) return Response.json({ error: "この相手にはメッセージを送れません" }, { status: 403 });
   if (kind === "play_invite") {
     const [pendingInvite] = await getDb().select({ id: messages.id }).from(messages).where(and(
       eq(messages.connectionId, payload.connectionId),
@@ -120,8 +128,8 @@ export async function POST(request: Request) {
     return Response.json({ error: "返事待ちのプレイ招待があります" }, { status: 409 });
   }
   if(!message)return Response.json({error:"送信結果を確認できませんでした"},{status:500});
-  if(!createdMessage)return Response.json({ message: serializeMessage(message, user.userId) });
-  const senderName=connection.userAId===user.userId?connection.userAName:connection.userBName;
+  if(!createdMessage)return Response.json({ message: serializeMessage(message, aliasSet) });
+  const senderName=aliasSet.has(connection.userAId)?connection.userAName:connection.userBName;
   await sendPush(
     mateId,
     kind === "play_invite"
@@ -130,7 +138,7 @@ export async function POST(request: Request) {
     body.slice(0,80),
     `/?chat=${connection.id}`,
   );
-  return Response.json({ message: serializeMessage(message, user.userId) }, { status: 201 });
+  return Response.json({ message: serializeMessage(message, aliasSet) }, { status: 201 });
 }
 
 export async function PATCH(request: Request) {
@@ -152,16 +160,18 @@ export async function PATCH(request: Request) {
   }
   const [invite] = await getDb().select().from(messages).where(eq(messages.id, payload.messageId!)).limit(1);
   if (!invite || invite.kind !== "play_invite") return Response.json({ error: "プレイ招待が見つかりません" }, { status: 404 });
-  const connection = await getMembership(invite.connectionId, user.userId);
+  const aliases = await identityAliases(user.userId, user.email);
+  const aliasSet = new Set(aliases);
+  const connection = await getMembership(invite.connectionId, aliases);
   if (!connection) return Response.json({ error: "マッチが見つかりません" }, { status: 404 });
-  if (invite.senderId === user.userId) return Response.json({ error: "送信者は回答できません" }, { status: 403 });
-  if (await isBlocked(user.userId, invite.senderId)) return Response.json({ error: "この招待には回答できません" }, { status: 403 });
+  if (aliasSet.has(invite.senderId)) return Response.json({ error: "送信者は回答できません" }, { status: 403 });
+  if (await isBlocked(aliases, invite.senderId)) return Response.json({ error: "この招待には回答できません" }, { status: 403 });
   const [updated] = await getDb().update(messages).set({
     response: payload.response!,
     respondedAt: new Date(),
   }).where(and(eq(messages.id, invite.id), isNull(messages.response))).returning();
   if (!updated) return Response.json({ error: "この招待には回答済みです" }, { status: 409 });
-  const responderName = connection.userAId === user.userId
+  const responderName = aliasSet.has(connection.userAId)
     ? connection.userAName
     : connection.userBName;
   await sendPush(
@@ -174,5 +184,5 @@ export async function PATCH(request: Request) {
       : "また都合のいい時に誘ってみましょう",
     `/?chat=${connection.id}`,
   );
-  return Response.json({ message: serializeMessage(updated, user.userId) });
+  return Response.json({ message: serializeMessage(updated, aliasSet) });
 }

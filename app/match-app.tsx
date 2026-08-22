@@ -682,6 +682,7 @@ export default function MatchApp({
   >([]);
   const [likedProfileIds, setLikedProfileIds] = useState<string[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
+  const [connectionsLoaded, setConnectionsLoaded] = useState(preview);
   const [lobbies, setLobbies] = useState<Lobby[]>([]);
   const [selectedConnection, setSelectedConnection] =
     useState<Connection | null>(null);
@@ -1168,6 +1169,7 @@ export default function MatchApp({
       const data = await response.json();
       const nextConnections = (data.connections || []) as Connection[];
       setConnections(nextConnections);
+      setConnectionsLoaded(true);
       return nextConnections;
     } catch {
       /* 検索は続ける */
@@ -1276,7 +1278,9 @@ export default function MatchApp({
         ? fetch("/api/applications").then((r) => (r.ok ? r.json() : null))
         : Promise.resolve(null),
       authenticated
-        ? fetch("/api/connections").then((r) => (r.ok ? r.json() : null))
+        ? fetch("/api/connections", { cache: "no-store" }).then((r) =>
+            r.ok ? r.json() : null,
+          )
         : Promise.resolve(null),
       authenticated
         ? fetch("/api/lobbies").then((r) => (r.ok ? r.json() : null))
@@ -1308,7 +1312,10 @@ export default function MatchApp({
             setIncoming(noticeData.incoming || []);
             setOutgoing(noticeData.outgoing || []);
           }
-          if (connectionData) setConnections(connectionData.connections || []);
+          if (connectionData) {
+            setConnections(connectionData.connections || []);
+            setConnectionsLoaded(true);
+          }
           if (lobbyData) setLobbies(lobbyData.lobbies || []);
           if (likeData) {
             setProfileLikes(likeData.incoming || []);
@@ -4366,7 +4373,15 @@ export default function MatchApp({
                       </button>
                     </div>
                   </div>
-                  {connections.length ||
+                  {!connectionsLoaded ? (
+                    <div className="chatOverviewEmpty chatOverviewLoading">
+                      <div className="chatEmptyIllustration">
+                        <span>•••</span>
+                      </div>
+                      <h2>チャットを読み込んでいます</h2>
+                      <p>通信が戻ると自動で表示されます</p>
+                    </div>
+                  ) : connections.length ||
                   incoming.some((notice) => notice.status === "pending") ||
                   outgoing.some((notice) => notice.status === "pending") ? (
                     <>

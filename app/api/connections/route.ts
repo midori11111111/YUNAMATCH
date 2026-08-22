@@ -1,7 +1,6 @@
 import { and, desc, eq, gt, inArray, isNull, or } from "drizzle-orm";
 import { getDb } from "../../../db";
 import {
-  accountLinks,
   applications,
   blocks,
   connectionRatings,
@@ -14,59 +13,25 @@ import { getChatGPTUser } from "../../chatgpt-auth";
 import { sendPush } from "../../../lib/push";
 import { isSuspended } from "../../../lib/safety";
 import { checkRateLimit, rateLimitResponse } from "../../../lib/rate-limit";
+import { identityAliases } from "../../../lib/account-aliases";
 
 const signIn = "/login";
 
-async function connectionForUser(connectionId: number, userId: string) {
+async function connectionForUser(connectionId: number, userIds: string[]) {
   const [row] = await getDb()
     .select()
     .from(connections)
     .where(
       and(
         eq(connections.id, connectionId),
-        or(eq(connections.userAId, userId), eq(connections.userBId, userId)),
+        or(
+          inArray(connections.userAId, userIds),
+          inArray(connections.userBId, userIds),
+        ),
       ),
     )
     .limit(1);
   return row;
-}
-
-async function identityAliases(userId: string, email: string) {
-  const db = getDb();
-  const rows = await db
-    .select({ canonicalUserId: accountLinks.canonicalUserId })
-    .from(accountLinks)
-    .where(
-      email.includes("@")
-        ? or(
-            eq(accountLinks.canonicalUserId, userId),
-            eq(accountLinks.email, email),
-          )
-        : eq(accountLinks.canonicalUserId, userId),
-    );
-  return [...new Set([userId, ...rows.map((row) => row.canonicalUserId)])];
-}
-
-async function adoptLegacyConnectionHistory(userId: string, aliases: string[]) {
-  const legacyIds = aliases.filter((id) => id !== userId);
-  if (!legacyIds.length) return;
-  const db = getDb();
-  await db
-    .update(connections)
-    .set({ userAId: userId })
-    .where(inArray(connections.userAId, legacyIds));
-  await db
-    .update(connections)
-    .set({ userBId: userId })
-    .where(inArray(connections.userBId, legacyIds));
-  try {
-    await db
-      .update(messages)
-      .set({ senderId: userId })
-      .where(inArray(messages.senderId, legacyIds));
-  } catch {
-    /* 古い重複メッセージがあっても、メイト履歴の復元は続ける */
-  }
 }
 
 function parseList(value: string) {
@@ -153,14 +118,7 @@ export async function GET() {
       { status: 401 },
     );
   const aliases = await identityAliases(user.userId, user.email);
-  try {
-    await adoptLegacyConnectionHistory(user.userId, aliases);
-  } catch (error) {
-    console.error(
-      "Legacy connection adoption skipped",
-      error instanceof Error ? error.message : error,
-    );
-  }
+  const aliasSet = new Set(aliases);
   try {
     await backfillAcceptedConnections(aliases);
   } catch (error) {
@@ -175,11 +133,11 @@ export async function GET() {
     db
       .select({ id: blocks.blockedId })
       .from(blocks)
-      .where(eq(blocks.blockerId, user.userId)),
+      .where(inArray(blocks.blockerId, aliases)),
     db
       .select({ id: blocks.blockerId })
       .from(blocks)
-      .where(eq(blocks.blockedId, user.userId)),
+      .where(inArray(blocks.blockedId, aliases)),
   ]);
   const hidden = new Set([...blockedByMe, ...blockedMe].map((row) => row.id));
   const rows = await db
@@ -187,8 +145,8 @@ export async function GET() {
     .from(connections)
     .where(
       or(
-        eq(connections.userAId, user.userId),
-        eq(connections.userBId, user.userId),
+        inArray(connections.userAId, aliases),
+        inArray(connections.userBId, aliases),
       ),
     )
     .orderBy(desc(connections.createdAt))
@@ -196,12 +154,12 @@ export async function GET() {
 
   const visible = rows.filter(
     (row) =>
-      !hidden.has(row.userAId === user.userId ? row.userBId : row.userAId),
+      !hidden.has(aliasSet.has(row.userAId) ? row.userBId : row.userAId),
   );
   const mateIds = [
     ...new Set(
       visible.map((row) =>
-        row.userAId === user.userId ? row.userBId : row.userAId,
+        aliasSet.has(row.userAId) ? row.userBId : row.userAId,
       ),
     ),
   ];
@@ -230,7 +188,7 @@ export async function GET() {
         tags: connectionRatings.tags,
       })
       .from(connectionRatings)
-      .where(eq(connectionRatings.raterId, user.userId))
+      .where(inArray(connectionRatings.raterId, aliases))
       .limit(100),
   ]);
   const mateAvatars = new Map(
@@ -247,7 +205,7 @@ export async function GET() {
   );
   const result = await Promise.all(
     visible.map(async (row) => {
-      const isA = row.userAId === user.userId;
+      const isA = aliasSet.has(row.userAId);
       const mateId = isA ? row.userBId : row.userAId;
       const mateProfile = mateProfileById.get(mateId);
       const [latest] = await db
@@ -354,10 +312,11 @@ export async function PATCH(request: Request) {
   ) {
     return Response.json({ error: "操作を確認してください" }, { status: 400 });
   }
-  const row = await connectionForUser(payload.connectionId, user.userId);
+  const aliases = await identityAliases(user.userId, user.email);
+  const row = await connectionForUser(payload.connectionId, aliases);
   if (!row)
     return Response.json({ error: "マッチが見つかりません" }, { status: 404 });
-  const isA = row.userAId === user.userId;
+  const isA = aliases.includes(row.userAId);
   if (payload.action === "pin") {
     const pinned = !(isA ? row.userAPinned : row.userBPinned);
     await getDb()
@@ -372,7 +331,7 @@ export async function PATCH(request: Request) {
       const [profile] = await getDb()
         .select({ contact: profiles.contact })
         .from(profiles)
-        .where(eq(profiles.userId, user.userId))
+        .where(inArray(profiles.userId, aliases))
         .limit(1);
       if (!profile?.contact.trim())
         return Response.json(
@@ -451,7 +410,8 @@ export async function POST(request: Request) {
   if (!payload.connectionId || payload.action !== "rematch") {
     return Response.json({ error: "操作を確認してください" }, { status: 400 });
   }
-  const row = await connectionForUser(payload.connectionId, user.userId);
+  const aliases = await identityAliases(user.userId, user.email);
+  const row = await connectionForUser(payload.connectionId, aliases);
   if (!row)
     return Response.json({ error: "マッチが見つかりません" }, { status: 404 });
   await getDb().insert(messages).values({

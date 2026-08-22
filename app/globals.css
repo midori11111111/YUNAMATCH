@@ -626,6 +626,8 @@ button { cursor: pointer; }
 .chatOverviewEmpty h2 { margin: 0; color: #29213d; font-size: 19px; letter-spacing: -.6px; }
 .chatOverviewEmpty p { margin: 11px 0 22px; color: #8c8595; font-size: 11px; line-height: 1.75; }
 .chatOverviewEmpty > button { min-width: 180px; border: 0; border-radius: 18px; padding: 15px 22px; color: #fff; background: linear-gradient(145deg, var(--pink), #ff7fac); font-size: 11px; font-weight: 950; box-shadow: 0 11px 24px #ff4f9134; }
+.chatOverviewLoading .chatEmptyIllustration { animation: chatLoadingPulse 1.2s ease-in-out infinite alternate; }
+@keyframes chatLoadingPulse { to { opacity: .45; transform: translateY(-3px); } }
 .chatList { display: grid; gap: 10px; }
 .chatListItem { width: 100%; display: grid; grid-template-columns: 48px 1fr auto auto; align-items: center; gap: 11px; padding: 13px; text-align: left; border: 1px solid var(--line); border-radius: 18px; background: #fff; box-shadow: 0 7px 20px #33294d0c; }
 .chatMateAvatar { width: 46px; height: 46px; overflow: hidden; display: grid; place-items: center; flex: none; border-radius: 15px; color: #fff; background: linear-gradient(145deg, var(--purple), #a18aff); font-size: 15px; font-weight: 950; }
