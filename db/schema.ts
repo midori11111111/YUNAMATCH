@@ -18,6 +18,7 @@ export const profiles = sqliteTable("profiles", {
   contact: text("contact").notNull(),
   bio: text("bio").notNull().default(""),
   avatarUrl: text("avatar_url").notNull().default(""),
+  headerUrl: text("header_url").notNull().default(""),
   age: integer("age"),
   ageConfirmed: integer("age_confirmed", { mode: "boolean" })
     .notNull()

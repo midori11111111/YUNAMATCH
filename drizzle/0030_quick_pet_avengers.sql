@@ -1,0 +1,1 @@
+ALTER TABLE `profiles` ADD `header_url` text DEFAULT '' NOT NULL;

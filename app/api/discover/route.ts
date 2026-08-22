@@ -19,6 +19,7 @@ import {
 import { sendPush } from "../../../lib/push";
 import { profilePublicId, resolveProfilePublicId } from "../../../lib/profile-id";
 import { normalizeRank } from "../../../lib/ranks";
+import { pokemonRole, pokemonRoleOptions, type PokemonRole } from "../../../lib/pokemon-role";
 
 function parseList(value: string) {
   try {
@@ -46,6 +47,8 @@ function discoverQuery(request: Request) {
   const requestedGender = searchParams.get("gender");
   const requestedMinLikes = Number(searchParams.get("minLikes"));
   const requestedMaxLikes = Number(searchParams.get("maxLikes"));
+  const requestedRole = searchParams.get("role") || "";
+  const validRoles = new Set(pokemonRoleOptions.map((option) => option.value));
   return {
     offset:
       Number.isInteger(requestedOffset) && requestedOffset > 0
@@ -77,6 +80,9 @@ function discoverQuery(request: Request) {
       requestedMaxLikes >= 0
         ? requestedMaxLikes
         : null,
+    role: validRoles.has(requestedRole as PokemonRole)
+      ? (requestedRole as PokemonRole)
+      : "",
   };
 }
 
@@ -166,6 +172,7 @@ export async function GET(request: Request) {
         gender: row.gender,
         age: null,
         avatarUrl: "",
+        headerUrl: "",
         bio: "",
         ...stats.publicStats(row.userId),
         registeredAt: row.createdAt,
@@ -277,12 +284,15 @@ export async function GET(request: Request) {
     const likesMatch =
       (query.minLikes === null || likeCount >= query.minLikes) &&
       (query.maxLikes === null || likeCount <= query.maxLikes);
+    const roleMatches =
+      !query.role || mainPokemon.some((name) => pokemonRole(name) === query.role);
     return (
       pokemonMatches &&
       trainerMatches &&
       genderMatches &&
       timeMatches &&
-      likesMatch
+      likesMatch &&
+      roleMatches
     );
   });
   const prioritized =
@@ -312,6 +322,7 @@ export async function GET(request: Request) {
       gender: row.gender,
       age: row.age,
       avatarUrl: row.avatarUrl || "",
+      headerUrl: row.headerUrl || "",
       bio: row.bio || "",
       ...stats.publicStats(row.userId),
       registeredAt: row.createdAt,

@@ -1,3 +1,5 @@
+import { pokemonRole, type PokemonRole } from "./pokemon-role.ts";
+
 export type DiscoverFilterCandidate = {
   trainerName: string;
   mainPokemon: string[];
@@ -13,6 +15,7 @@ type DiscoverFilters = {
   sharedTimeOnly: boolean;
   minLikes: number | null;
   maxLikes: number | null;
+  role: PokemonRole | "";
   myPlayTime: string[];
   officialPokemon: string[];
 };
@@ -62,12 +65,15 @@ export function filterDiscoverCandidates<T extends DiscoverFilterCandidate>(
     const likesMatch =
       (filters.minLikes === null || person.likeCount >= filters.minLikes) &&
       (filters.maxLikes === null || person.likeCount <= filters.maxLikes);
+    const roleMatches =
+      !filters.role || person.mainPokemon.some((name) => pokemonRole(name) === filters.role);
     return (
       pokemonMatches &&
       trainerMatches &&
       genderMatches &&
       timeMatches &&
-      likesMatch
+      likesMatch &&
+      roleMatches
     );
   });
 }

@@ -55,6 +55,7 @@ test("keeps discover results inside every selected filter", async () => {
     sharedTimeOnly: false,
     minLikes: null,
     maxLikes: null,
+    role: "",
     myPlayTime: ["平日 夜（18〜22時）"],
     officialPokemon: ["ミュウ", "ミュウツーX", "ミュウツーY"],
   };
@@ -77,6 +78,10 @@ test("keeps discover results inside every selected filter", async () => {
   assert.deepEqual(
     filterDiscoverCandidates(candidates, { ...baseFilters, pokemonQuery: "", minLikes: 10, maxLikes: 20 }).map((person) => person.trainerName),
     ["みどり2"],
+  );
+  assert.deepEqual(
+    filterDiscoverCandidates(candidates, { ...baseFilters, pokemonQuery: "", role: "attack" }).map((person) => person.trainerName),
+    ["みどり", "あお"],
   );
 });
 
@@ -495,6 +500,10 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /もらったいいね数/);
   assert.match(app, /minLikes/);
   assert.match(app, /maxLikes/);
+  assert.match(app, /ポケモンのロール/);
+  assert.match(app, /roleFilter/);
+  assert.match(app, /プロフィールヘッダー/);
+  assert.match(app, /headerUrl/);
   assert.match(app, /yunamatch-discover-filters-v1/);
   assert.match(app, /localStorage\.setItem\(\s*discoverFiltersStorageKey/);
   assert.match(privacyPage, /初期状態は非公開/);

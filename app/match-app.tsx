@@ -15,6 +15,12 @@ import {
 import { pokemonArtUrl } from "../lib/pokemon-art";
 import { filterDiscoverCandidates } from "../lib/discover-filter";
 import { rankOptions } from "../lib/ranks";
+import {
+  pokemonRole,
+  pokemonRoleLabel,
+  pokemonRoleOptions,
+  type PokemonRole,
+} from "../lib/pokemon-role";
 
 type MatchType = "ランクマッチ" | "カジュアル";
 type Recruit = {
@@ -47,6 +53,7 @@ type ProfileCandidate = {
   gender: string;
   age: number | null;
   avatarUrl?: string;
+  headerUrl?: string;
   bio: string;
   likeCount: number;
   popular: boolean;
@@ -95,6 +102,7 @@ export type Profile = {
   contact: string;
   bio: string;
   avatarUrl: string;
+  headerUrl: string;
   age: number | null;
   ageConfirmed: boolean;
   termsAccepted: boolean;
@@ -362,6 +370,7 @@ const previewProfile: ProfileCandidate = {
   gender: "女性",
   age: 24,
   avatarUrl: "",
+  headerUrl: "",
   bio: "中央キャリーを支えるのが好きです。楽しく連携しながら勝ちたいです！",
   likeCount: 12,
   popular: true,
@@ -421,7 +430,11 @@ function PokemonImage({ name }: { name: string }) {
       : name.replace(/^(?:アローラ|ガラル)/, "").slice(0, 2);
   const src = pokemonArtUrl(name);
   return (
-    <span className="pokemonVisual" role="img" aria-label={name}>
+    <span
+      className={`pokemonVisual pokemonRole-${pokemonRole(name)}`}
+      role="img"
+      aria-label={`${name}（${pokemonRoleLabel(name)}）`}
+    >
       <span className="pokemonVisualFallback" aria-hidden="true">
         {mark}
       </span>
@@ -636,6 +649,7 @@ export default function MatchApp({
   const [sharedTimeOnly, setSharedTimeOnly] = useState(false);
   const [minLikes, setMinLikes] = useState("");
   const [maxLikes, setMaxLikes] = useState("");
+  const [roleFilter, setRoleFilter] = useState<PokemonRole | "">("");
   const [discoverFiltersReady, setDiscoverFiltersReady] = useState(false);
   const [compose, setCompose] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
@@ -748,6 +762,7 @@ export default function MatchApp({
     contact: `${providerName}: ${authContact}`,
     bio: "",
     avatarUrl: "",
+    headerUrl: "",
     age: null,
     ageConfirmed: false,
     termsAccepted: false,
@@ -756,6 +771,7 @@ export default function MatchApp({
     initialProfile || defaultProfile,
   );
   const [avatarProcessing, setAvatarProcessing] = useState(false);
+  const [headerProcessing, setHeaderProcessing] = useState(false);
   const [pushState, setPushState] = useState<
     "off" | "on" | "install-required" | "denied" | "unsupported"
   >("off");
@@ -921,6 +937,107 @@ export default function MatchApp({
     </div>
   );
 
+  const selectHeader = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      notify("JPEG・PNG・WebP画像を選んでください");
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      notify("画像は8MB以下にしてください");
+      return;
+    }
+    setHeaderProcessing(true);
+    try {
+      const source = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const image = new Image();
+        const url = URL.createObjectURL(file);
+        image.onload = () => {
+          URL.revokeObjectURL(url);
+          resolve(image);
+        };
+        image.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error("image"));
+        };
+        image.src = url;
+      });
+      const canvas = document.createElement("canvas");
+      canvas.width = 1200;
+      canvas.height = 400;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("canvas");
+      const sourceRatio = source.naturalWidth / source.naturalHeight;
+      const targetRatio = 3;
+      const sw = sourceRatio > targetRatio ? source.naturalHeight * targetRatio : source.naturalWidth;
+      const sh = sourceRatio > targetRatio ? source.naturalHeight : source.naturalWidth / targetRatio;
+      const sx = (source.naturalWidth - sw) / 2;
+      const sy = (source.naturalHeight - sh) / 2;
+      ctx.fillStyle = "#efeaff";
+      ctx.fillRect(0, 0, 1200, 400);
+      ctx.drawImage(source, sx, sy, sw, sh, 0, 0, 1200, 400);
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.82));
+      if (!blob || blob.size > 800_000) throw new Error("size");
+      if (preview) {
+        setProfile((value) => ({ ...value, headerUrl: URL.createObjectURL(blob) }));
+        notify("ヘッダー画像を選択しました");
+        return;
+      }
+      const response = await fetch("/api/media/header", {
+        method: "POST",
+        headers: { "content-type": "image/jpeg" },
+        body: blob,
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "upload");
+      setProfile((value) => ({ ...value, headerUrl: data.headerUrl }));
+      notify("ヘッダー画像をアップロードしました");
+    } catch {
+      notify("ヘッダー画像を読み込めませんでした");
+    } finally {
+      setHeaderProcessing(false);
+    }
+  };
+
+  const headerEditor = () => (
+    <div className="headerEditor" id="profile-header-field">
+      <div
+        className={`headerEditorPreview pokemonRole-${pokemonRole(profile.mainPokemon[0] || "")}`}
+        style={profile.headerUrl ? { backgroundImage: `url(${profile.headerUrl})` } : undefined}
+      >
+        {!profile.headerUrl && <span>HEADER</span>}
+      </div>
+      <div>
+        <strong>プロフィールヘッダー <small>任意</small></strong>
+        <p>横長に切り抜いてマイページへ表示します</p>
+        <div>
+          <label className="avatarSelectButton">
+            {headerProcessing ? "処理中…" : "画像を選ぶ"}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={selectHeader}
+              disabled={headerProcessing}
+            />
+          </label>
+          {profile.headerUrl && (
+            <button
+              type="button"
+              onClick={async () => {
+                if (!preview) await fetch("/api/media/header", { method: "DELETE" });
+                setProfile((value) => ({ ...value, headerUrl: "" }));
+              }}
+            >
+              削除
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   const loadRecruits = async () => {
     try {
       const response = await fetch("/api/recruits");
@@ -964,6 +1081,7 @@ export default function MatchApp({
     if (sharedTimeOnly) params.set("sharedTimeOnly", "1");
     if (minLikes !== "") params.set("minLikes", minLikes);
     if (maxLikes !== "") params.set("maxLikes", maxLikes);
+    if (roleFilter) params.set("role", roleFilter);
     if (append) discoverLoadingMoreRef.current = true;
     else setLoading(true);
     try {
@@ -1010,6 +1128,7 @@ export default function MatchApp({
     sharedTimeOnly,
     minLikes,
     maxLikes,
+    roleFilter,
   ]);
   const loadNotices = async () => {
     try {
@@ -1076,6 +1195,7 @@ export default function MatchApp({
           sharedTimeOnly?: unknown;
           minLikes?: unknown;
           maxLikes?: unknown;
+          roleFilter?: unknown;
         };
         if (typeof filters.pokemonQuery === "string")
           setPokemonQuery(filters.pokemonQuery.slice(0, 40));
@@ -1093,6 +1213,11 @@ export default function MatchApp({
           setMinLikes(filters.minLikes);
         if (typeof filters.maxLikes === "string" && /^\d{0,4}$/.test(filters.maxLikes))
           setMaxLikes(filters.maxLikes);
+        if (
+          filters.roleFilter === "" ||
+          pokemonRoleOptions.some((option) => option.value === filters.roleFilter)
+        )
+          setRoleFilter(filters.roleFilter as PokemonRole | "");
       }
     } catch {
       window.localStorage.removeItem(discoverFiltersStorageKey);
@@ -1113,6 +1238,7 @@ export default function MatchApp({
           sharedTimeOnly,
           minLikes,
           maxLikes,
+          roleFilter,
         }),
       );
     } catch {
@@ -1126,6 +1252,7 @@ export default function MatchApp({
     sharedTimeOnly,
     minLikes,
     maxLikes,
+    roleFilter,
   ]);
 
   useEffect(() => {
@@ -1473,6 +1600,7 @@ export default function MatchApp({
         sharedTimeOnly,
         minLikes: minLikes === "" ? null : Number(minLikes),
         maxLikes: maxLikes === "" ? null : Number(maxLikes),
+        role: roleFilter,
         myPlayTime: profile.playTime,
         officialPokemon: pokemon,
       }),
@@ -1484,6 +1612,7 @@ export default function MatchApp({
       sharedTimeOnly,
       minLikes,
       maxLikes,
+      roleFilter,
       profile.playTime,
     ],
   );
@@ -1497,7 +1626,8 @@ export default function MatchApp({
     Number(Boolean(trainerQuery.trim())) +
     Number(Boolean(genderFilter)) +
     Number(sharedTimeOnly) +
-    Number(minLikes !== "" || maxLikes !== "");
+    Number(minLikes !== "" || maxLikes !== "") +
+    Number(Boolean(roleFilter));
   const current = cards.length
     ? cards[((index % cards.length) + cards.length) % cards.length]
     : null;
@@ -4468,6 +4598,14 @@ export default function MatchApp({
                 <i aria-hidden="true" />
               </div>
               <div className="profileHero profileDashboardHero">
+                <div
+                  className={`profileHeader pokemonRole-${pokemonRole(profile.mainPokemon[0] || "")}`}
+                  style={profile.headerUrl ? { backgroundImage: `url(${profile.headerUrl})` } : undefined}
+                >
+                  {!profile.headerUrl && (
+                    <span>{pokemonRoleLabel(profile.mainPokemon[0] || "")}</span>
+                  )}
+                </div>
                 <div className="profileAvatarFrame">
                   <UserAvatar
                     name={profile.trainerName}
@@ -4582,6 +4720,7 @@ export default function MatchApp({
                   <p>登録内容と、マッチ後に任意で共有する連絡先を変更できます。</p>
                 </div>
                 {avatarEditor()}
+                {headerEditor()}
                 <label id="profile-trainer-name-field">
                   トレーナー名
                   <input
@@ -4729,7 +4868,7 @@ export default function MatchApp({
                 </label>
                 <button
                   className="primaryButton"
-                  disabled={sending || avatarProcessing}
+                  disabled={sending || avatarProcessing || headerProcessing}
                 >
                   {sending ? "保存中…" : "変更内容を保存"}
                 </button>
@@ -5193,7 +5332,7 @@ export default function MatchApp({
             )}
             <button
               className="onboardingSubmit"
-              disabled={sending || avatarProcessing}
+              disabled={sending || avatarProcessing || headerProcessing}
             >
               {sending ? "登録しています…" : "登録してメイトを探す"}
             </button>
@@ -5664,6 +5803,32 @@ export default function MatchApp({
               />
               <span>自分と遊べる時間帯が合う人だけ</span>
             </label>
+            <fieldset className="pokemonRoleFilter">
+              <legend>ポケモンのロール</legend>
+              <button
+                type="button"
+                className={roleFilter === "" ? "selected" : ""}
+                onClick={() => {
+                  setRoleFilter("");
+                  setIndex(0);
+                }}
+              >
+                すべて
+              </button>
+              {pokemonRoleOptions.map((option) => (
+                <button
+                  type="button"
+                  key={option.value}
+                  className={`${option.value} ${roleFilter === option.value ? "selected" : ""}`}
+                  onClick={() => {
+                    setRoleFilter(option.value);
+                    setIndex(0);
+                  }}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </fieldset>
             <fieldset className="likeCountFilter">
               <legend>もらったいいね数</legend>
               <label>
@@ -5708,6 +5873,7 @@ export default function MatchApp({
                   setSharedTimeOnly(false);
                   setMinLikes("");
                   setMaxLikes("");
+                  setRoleFilter("");
                   setIndex(0);
                 }}
                 disabled={!activeFilterCount}
@@ -5745,7 +5911,16 @@ export default function MatchApp({
             >
               ×
             </button>
-            <div className="candidateDetailHero">
+            <div
+              className={`candidateDetailHero ${candidateDetail.headerUrl ? "hasHeader" : ""}`}
+              style={
+                candidateDetail.headerUrl
+                  ? {
+                      backgroundImage: `linear-gradient(90deg, #21143e80, transparent), url(${candidateDetail.headerUrl})`,
+                    }
+                  : undefined
+              }
+            >
               <div className="candidateDetailPokemon">
                 <PokemonImage
                   name={candidateDetail.mainPokemon[0] || "未設定"}
