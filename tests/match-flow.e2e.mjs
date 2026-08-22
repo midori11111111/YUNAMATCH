@@ -100,6 +100,28 @@ try {
   const receivedLike = await api("/api/likes", { user: owner });
   assert.equal(receivedLike.incoming[0].senderName, "申請テスター");
 
+  const discoverBeforeProfileRequest = await api("/api/discover", { user: cancelTester });
+  const profileRequestTarget = discoverBeforeProfileRequest.profiles.find(
+    (row) => row.trainerName === "通報テスター2",
+  );
+  assert.ok(profileRequestTarget);
+  await api("/api/discover", {
+    user: cancelTester,
+    method: "POST",
+    body: {
+      targetId: profileRequestTarget.id,
+      pokemon: "指定なし",
+      message: "一緒に遊びたいです",
+    },
+  });
+  const discoverAfterProfileRequest = await api("/api/discover", { user: cancelTester });
+  assert.equal(
+    discoverAfterProfileRequest.profiles.some(
+      (row) => row.trainerName === "通報テスター2",
+    ),
+    false,
+  );
+
   const initialRecruitAlerts = await api("/api/recruit-alerts", { user: applicant });
   assert.equal(initialRecruitAlerts.enabled, false);
   const enabledRecruitAlerts = await api("/api/recruit-alerts", {

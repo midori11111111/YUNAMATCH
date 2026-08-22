@@ -1877,6 +1877,7 @@ export default function MatchApp({
   ) => {
     event.preventDefault();
     if (!profileApplyTo) return;
+    const requestedProfileId = profileApplyTo.id;
     setSending(true);
     const body = Object.fromEntries(new FormData(event.currentTarget));
     if (preview) {
@@ -1902,8 +1903,10 @@ export default function MatchApp({
       return;
     }
     setProfileApplyTo(null);
+    setProfileCandidates((profiles) =>
+      profiles.filter((candidate) => candidate.id !== requestedProfileId),
+    );
     notify("👋 手を振りました。承認前からやりとりで確認できます");
-    setIndex((value) => value + 1);
     await Promise.all([loadDiscover(), loadNotices()]);
   };
   const sendProfileLikeTo = async (candidate: ProfileCandidate) => {

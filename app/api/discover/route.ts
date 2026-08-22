@@ -194,7 +194,7 @@ export async function GET(request: Request) {
     blockedByMe,
     blockedMe,
     connectionRows,
-    pendingRows,
+    requestedRows,
     stats,
   ] = await Promise.all([
     db.select().from(profiles).orderBy(desc(profiles.updatedAt)),
@@ -223,7 +223,6 @@ export async function GET(request: Request) {
       .where(
         and(
           eq(applications.applicantId, user.userId),
-          eq(applications.status, "pending"),
           eq(recruits.kind, "profile"),
         ),
       ),
@@ -233,7 +232,8 @@ export async function GET(request: Request) {
     user.userId,
     ...blockedByMe.map((row) => row.id),
     ...blockedMe.map((row) => row.id),
-    ...pendingRows.map((row) => row.ownerId),
+    // 一度メイト申請を送った相手は、結果にかかわらず再検索へ戻さない。
+    ...requestedRows.map((row) => row.ownerId),
   ]);
   for (const row of connectionRows)
     hidden.add(row.userAId === user.userId ? row.userBId : row.userAId);

@@ -383,6 +383,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /マッチをシェア/);
   assert.match(applicationsApi, /matePokemon:row\.applicantPokemon/);
   assert.match(discoverApi, /kind:\s*"profile"/);
+  assert.match(discoverApi, /requestedRows/);
+  assert.doesNotMatch(discoverApi, /eq\(applications\.status, "pending"\),\s*eq\(recruits\.kind, "profile"\)/);
   assert.match(discoverApi, /👋 手を振っています/);
   assert.match(discoverApi, /me\.gender\s*===\s*"男性"/);
   assert.match(discoverApi, /b\.gender\s*===\s*"女性"/);
