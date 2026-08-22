@@ -644,6 +644,7 @@ export default function MatchApp({
   const discoverNextOffsetRef = useRef(0);
   const discoverRequestRef = useRef(0);
   const discoverLoadingMoreRef = useRef(false);
+  const discoverSessionSeedRef = useRef("");
   const [recruits, setRecruits] = useState<Recruit[]>([]);
   const [myRecruit, setMyRecruit] = useState<Recruit | null>(null);
   const [expandedRecruitId, setExpandedRecruitId] = useState<number | null>(
@@ -661,6 +662,7 @@ export default function MatchApp({
   const [minLikes, setMinLikes] = useState("");
   const [maxLikes, setMaxLikes] = useState("");
   const [roleFilter, setRoleFilter] = useState<PokemonRole | "">("");
+  const [hideLikedProfiles, setHideLikedProfiles] = useState(false);
   const [discoverFiltersReady, setDiscoverFiltersReady] = useState(false);
   const [compose, setCompose] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
@@ -1080,6 +1082,8 @@ export default function MatchApp({
       : ++discoverRequestRef.current;
     const offset = append ? discoverNextOffsetRef.current : 0;
     const params = new URLSearchParams({ offset: String(offset) });
+    if (discoverSessionSeedRef.current)
+      params.set("seed", discoverSessionSeedRef.current);
     const normalizedPokemon = pokemonQuery.normalize("NFKC").trim();
     const normalizedTrainer = trainerQuery.normalize("NFKC").trim();
     if (normalizedPokemon) {
@@ -1099,6 +1103,7 @@ export default function MatchApp({
     if (minLikes !== "") params.set("minLikes", minLikes);
     if (maxLikes !== "") params.set("maxLikes", maxLikes);
     if (roleFilter) params.set("role", roleFilter);
+    if (hideLikedProfiles) params.set("hideLiked", "1");
     if (append) discoverLoadingMoreRef.current = true;
     else setLoading(true);
     try {
@@ -1146,6 +1151,7 @@ export default function MatchApp({
     minLikes,
     maxLikes,
     roleFilter,
+    hideLikedProfiles,
   ]);
   const loadNotices = async () => {
     try {
@@ -1214,6 +1220,7 @@ export default function MatchApp({
           minLikes?: unknown;
           maxLikes?: unknown;
           roleFilter?: unknown;
+          hideLikedProfiles?: unknown;
         };
         if (typeof filters.pokemonQuery === "string")
           setPokemonQuery(filters.pokemonQuery.slice(0, 40));
@@ -1236,10 +1243,15 @@ export default function MatchApp({
           pokemonRoleOptions.some((option) => option.value === filters.roleFilter)
         )
           setRoleFilter(filters.roleFilter as PokemonRole | "");
+        if (typeof filters.hideLikedProfiles === "boolean")
+          setHideLikedProfiles(filters.hideLikedProfiles);
       }
     } catch {
       window.localStorage.removeItem(discoverFiltersStorageKey);
     } finally {
+      discoverSessionSeedRef.current =
+        globalThis.crypto?.randomUUID?.() ||
+        `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       setDiscoverFiltersReady(true);
     }
   }, []);
@@ -1257,6 +1269,7 @@ export default function MatchApp({
           minLikes,
           maxLikes,
           roleFilter,
+          hideLikedProfiles,
         }),
       );
     } catch {
@@ -1271,6 +1284,7 @@ export default function MatchApp({
     minLikes,
     maxLikes,
     roleFilter,
+    hideLikedProfiles,
   ]);
 
   useEffect(() => {
@@ -1639,7 +1653,11 @@ export default function MatchApp({
       profile.playTime,
     ],
   );
-  const recommendedCards = filteredProfileCandidates;
+  const recommendedCards = hideLikedProfiles
+    ? filteredProfileCandidates.filter(
+        (candidate) => !likedProfileIds.includes(candidate.id),
+      )
+    : filteredProfileCandidates;
   // 「相手から」は届いたいいねの受信箱なので、通常検索の条件では絞らない。
   // 検索条件が残っていても、いいねを送った相手を必ず開けるようにする。
   const receivedCards = receivedProfileCandidates;
@@ -1650,7 +1668,8 @@ export default function MatchApp({
     Number(Boolean(genderFilter)) +
     Number(sharedTimeOnly) +
     Number(minLikes !== "" || maxLikes !== "") +
-    Number(Boolean(roleFilter));
+    Number(Boolean(roleFilter)) +
+    Number(hideLikedProfiles);
   const current = cards.length
     ? cards[((index % cards.length) + cards.length) % cards.length]
     : null;
@@ -5955,6 +5974,19 @@ export default function MatchApp({
               />
               <span>自分と遊べる時間帯が合う人だけ</span>
             </label>
+            {!guestMode && (
+              <label className="toggleRow">
+                <input
+                  type="checkbox"
+                  checked={hideLikedProfiles}
+                  onChange={(event) => {
+                    setHideLikedProfiles(event.target.checked);
+                    setIndex(0);
+                  }}
+                />
+                <span>いいね済みの人を表示しない</span>
+              </label>
+            )}
             <fieldset className="pokemonRoleFilter">
               <legend>ポケモンのロール</legend>
               <button
@@ -6026,6 +6058,7 @@ export default function MatchApp({
                   setMinLikes("");
                   setMaxLikes("");
                   setRoleFilter("");
+                  setHideLikedProfiles(false);
                   setIndex(0);
                 }}
                 disabled={!activeFilterCount}

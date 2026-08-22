@@ -157,6 +157,17 @@ test("diversifies recommendations without gender or popularity ranking", async (
       playTime: ["平日 夜（18〜22時）"],
     }, now).map((person) => person.userId),
   );
+  const rotated = rankDiscoverCandidates(ranked, {
+    userId: "viewer",
+    mainPokemon: ["ゲッコウガ"],
+    highestRate: "レジェンド 1000〜1199",
+    playTime: ["平日 夜（18〜22時）"],
+    rotationSeed: "another-session",
+  }, now);
+  assert.notDeepEqual(
+    ranked.slice(0, 6).map((person) => person.userId),
+    rotated.slice(0, 6).map((person) => person.userId),
+  );
 });
 
 test("supports casual and ranked recruiting on the site and Discord", async () => {
@@ -468,6 +479,10 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(discoverApi, /👋 手を振っています/);
   assert.doesNotMatch(discoverApi, /me\.gender\s*===\s*"男性"/);
   assert.match(discoverApi, /rankDiscoverCandidates/);
+  assert.match(discoverApi, /query\.hideLiked/);
+  assert.match(discoverApi, /likedByMeRows/);
+  assert.match(app, /いいね済みの人を表示しない/);
+  assert.match(app, /discoverSessionSeedRef/);
   assert.match(discoverApi, /activeCutoff/);
   assert.match(discoverApi, /lastActiveAt/);
   assert.match(discoverApi, /limited:\s*true/);

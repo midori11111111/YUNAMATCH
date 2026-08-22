@@ -19,6 +19,7 @@ export type DiscoverViewer = {
   mainPokemon: string[];
   highestRate: string;
   playTime: string[];
+  rotationSeed?: string;
 };
 
 type RankedCandidate<T> = {
@@ -140,6 +141,7 @@ export function rankDiscoverCandidates<T extends DiscoverRankable>(
   const daySeed = new Date(now).toLocaleDateString("en-CA", {
     timeZone: "Asia/Tokyo",
   });
+  const rotationSeed = viewer.rotationSeed || daySeed;
   const ranked: RankedCandidate<T>[] = candidates.map((candidate) => {
     const affinity =
       sharedTimeScore(viewer.playTime, candidate.playTime) +
@@ -149,7 +151,7 @@ export function rankDiscoverCandidates<T extends DiscoverRankable>(
     const createdAt = candidate.createdAt.getTime();
     const quality = Math.max(0, Math.min(5, candidate.qualityScore));
     const explore = stableUnitInterval(
-      `${viewer.userId}:${candidate.userId}:${daySeed}`,
+      `${viewer.userId}:${candidate.userId}:${rotationSeed}`,
     );
     const total =
       affinity +
@@ -200,8 +202,15 @@ export function rankDiscoverCandidates<T extends DiscoverRankable>(
   const used = new Set<string>();
   const result: T[] = [];
   let slot = 0;
+  const bucketOffset = Math.floor(
+    stableUnitInterval(`${viewer.userId}:${rotationSeed}:bucket`) *
+      bucketPattern.length,
+  );
   while (result.length < ranked.length) {
-    const queue = queues[bucketPattern[slot % bucketPattern.length]];
+    const queue =
+      queues[
+        bucketPattern[(slot + bucketOffset) % bucketPattern.length]
+      ];
     let next = queue.find((item) => !used.has(item.candidate.userId));
     if (!next)
       next = byAffinity.find((item) => !used.has(item.candidate.userId));

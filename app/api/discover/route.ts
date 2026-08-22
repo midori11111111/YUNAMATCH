@@ -42,6 +42,10 @@ function normalizeSearchText(value: string) {
   return value.normalize("NFKC").trim().toLocaleLowerCase("ja-JP");
 }
 
+function normalizeRotationSeed(value: string) {
+  return value.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 64);
+}
+
 function discoverQuery(request: Request) {
   const searchParams = new URL(request.url).searchParams;
   const requestedOffset = Number(searchParams.get("offset") || 0);
@@ -84,6 +88,8 @@ function discoverQuery(request: Request) {
     role: validRoles.has(requestedRole as PokemonRole)
       ? (requestedRole as PokemonRole)
       : "",
+    hideLiked: searchParams.get("hideLiked") === "1",
+    rotationSeed: normalizeRotationSeed(searchParams.get("seed") || ""),
   };
 }
 
@@ -163,7 +169,15 @@ export async function GET(request: Request) {
         likeCount: stats.publicStats(row.userId).likeCount,
         qualityScore: stats.qualityScore(row.userId),
       })),
-      { userId: "guest", mainPokemon: [], highestRate: "", playTime: [] },
+      {
+        userId: "guest",
+        mainPokemon: [],
+        highestRate: "",
+        playTime: [],
+        rotationSeed: normalizeRotationSeed(
+          new URL(request.url).searchParams.get("seed") || "",
+        ),
+      },
     ).slice(0, 30);
     const result = await Promise.all(
       visible.map(async (row) => ({
@@ -198,6 +212,7 @@ export async function GET(request: Request) {
     blockedMe,
     connectionRows,
     requestedRows,
+    likedByMeRows,
     stats,
   ] = await Promise.all([
     db.select().from(profiles).orderBy(desc(profiles.updatedAt)),
@@ -229,6 +244,10 @@ export async function GET(request: Request) {
           eq(recruits.kind, "profile"),
         ),
       ),
+    db
+      .select({ recipientId: profileLikes.recipientId })
+      .from(profileLikes)
+      .where(eq(profileLikes.senderId, user.userId)),
     loadProfileStats(db),
   ]);
   const hidden = new Set<string>([
@@ -237,6 +256,7 @@ export async function GET(request: Request) {
     ...blockedMe.map((row) => row.id),
     // 一度メイト申請を送った相手は、結果にかかわらず再検索へ戻さない。
     ...requestedRows.map((row) => row.ownerId),
+    ...(query.hideLiked ? likedByMeRows.map((row) => row.recipientId) : []),
   ]);
   for (const row of connectionRows)
     hidden.add(row.userAId === user.userId ? row.userBId : row.userAId);
@@ -312,6 +332,7 @@ export async function GET(request: Request) {
       mainPokemon: parseList(me.mainPokemon),
       highestRate: normalizeRank(me.highestRate),
       playTime: myPlayTime,
+      rotationSeed: query.rotationSeed,
     },
   );
   const pageRows = prioritized.slice(
