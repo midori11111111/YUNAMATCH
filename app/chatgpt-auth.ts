@@ -26,15 +26,27 @@ async function resolveCanonicalUserId(
   provider: string,
   providerAccountId: string,
   fallbackUserId: string,
+  email?: string | null,
 ): Promise<string> {
   if (!providerAccountId) return fallbackUserId;
 
   try {
-    const [{ and, eq }, { getDb }, { accountLinks }] = await Promise.all([
+    const [{ and, asc, eq, sql }, { getDb }, { accountLinks, profiles }] = await Promise.all([
       import("drizzle-orm"),
       import("../db"),
       import("../db/schema"),
     ]);
+    const normalizedEmail = email?.trim().toLowerCase();
+    if (normalizedEmail && ["google", "discord"].includes(provider)) {
+      const [oldestProfile] = await getDb()
+        .select({ canonicalUserId: accountLinks.canonicalUserId })
+        .from(accountLinks)
+        .innerJoin(profiles, eq(accountLinks.canonicalUserId, profiles.userId))
+        .where(sql`lower(${accountLinks.email}) = ${normalizedEmail}`)
+        .orderBy(asc(profiles.createdAt), asc(profiles.userId))
+        .limit(1);
+      if (oldestProfile) return oldestProfile.canonicalUserId;
+    }
     const [linkedAccount] = await getDb()
       .select({ canonicalUserId: accountLinks.canonicalUserId })
       .from(accountLinks)
@@ -69,17 +81,18 @@ export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
             typeof token.provider === "string" ? token.provider : "oauth";
           const providerAccountId =
             typeof token.providerAccountId === "string" ? token.providerAccountId : token.sub;
+          const email =
+            typeof token.email === "string"
+              ? token.email
+              : `${provider}:${token.sub}`;
           const tokenUserId =
             typeof token.userId === "string" ? token.userId : `oauth:${provider}:${providerAccountId}`;
           const userId = await resolveCanonicalUserId(
             provider,
             providerAccountId,
             tokenUserId,
+            email,
           );
-          const email =
-            typeof token.email === "string"
-              ? token.email
-              : `${provider}:${token.sub}`;
           const fullName = typeof token.name === "string" ? token.name : null;
           const contactId = typeof token.contactId === "string" ? token.contactId : email;
           return {
@@ -110,7 +123,7 @@ export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
       : null;
 
   return {
-    userId: await resolveCanonicalUserId("chatgpt", userId, userId),
+    userId: await resolveCanonicalUserId("chatgpt", userId, userId, email),
     displayName: fullName ?? email,
     email,
     fullName,
