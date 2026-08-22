@@ -615,6 +615,11 @@ export default function MatchApp({
   const [profileCandidates, setProfileCandidates] = useState<
     ProfileCandidate[]
   >(preview ? [previewProfile] : []);
+  const [discoverHasMore, setDiscoverHasMore] = useState(false);
+  const [discoverTotal, setDiscoverTotal] = useState(preview ? 1 : 0);
+  const discoverNextOffsetRef = useRef(0);
+  const discoverRequestRef = useRef(0);
+  const discoverLoadingMoreRef = useRef(false);
   const [recruits, setRecruits] = useState<Recruit[]>([]);
   const [myRecruit, setMyRecruit] = useState<Recruit | null>(null);
   const [loading, setLoading] = useState(true);
@@ -921,20 +926,80 @@ export default function MatchApp({
       setLoading(false);
     }
   };
-  const loadDiscover = async () => {
+  const loadDiscover = useCallback(async (append = false) => {
     if (preview) {
       setProfileCandidates([previewProfile]);
-      return;
+      setDiscoverHasMore(false);
+      setDiscoverTotal(1);
+      return false;
     }
+    if (append && discoverLoadingMoreRef.current) return false;
+    const requestId = append
+      ? discoverRequestRef.current
+      : ++discoverRequestRef.current;
+    const offset = append ? discoverNextOffsetRef.current : 0;
+    const params = new URLSearchParams({ offset: String(offset) });
+    const normalizedPokemon = pokemonQuery.normalize("NFKC").trim();
+    const normalizedTrainer = trainerQuery.normalize("NFKC").trim();
+    if (normalizedPokemon) {
+      params.set("pokemon", normalizedPokemon);
+      if (
+        pokemon.some(
+          (name) =>
+            name.normalize("NFKC").toLocaleLowerCase("ja-JP") ===
+            normalizedPokemon.toLocaleLowerCase("ja-JP"),
+        )
+      )
+        params.set("pokemonExact", "1");
+    }
+    if (normalizedTrainer) params.set("trainer", normalizedTrainer);
+    if (genderFilter) params.set("gender", genderFilter);
+    if (sharedTimeOnly) params.set("sharedTimeOnly", "1");
+    if (append) discoverLoadingMoreRef.current = true;
+    else setLoading(true);
     try {
-      const response = await fetch("/api/discover", { cache: "no-store" });
-      if (!response.ok) return;
+      const response = await fetch(`/api/discover?${params}`, {
+        cache: "no-store",
+      });
+      if (!response.ok || requestId !== discoverRequestRef.current)
+        return false;
       const data = await response.json();
-      setProfileCandidates(data.profiles || []);
+      const nextProfiles = (data.profiles || []) as ProfileCandidate[];
+      if (append) {
+        setProfileCandidates((currentProfiles) => {
+          const known = new Set(currentProfiles.map((profile) => profile.id));
+          return [
+            ...currentProfiles,
+            ...nextProfiles.filter((profile) => !known.has(profile.id)),
+          ];
+        });
+      } else {
+        setProfileCandidates(nextProfiles);
+        setIndex(0);
+      }
+      discoverNextOffsetRef.current =
+        typeof data.nextOffset === "number"
+          ? data.nextOffset
+          : offset + nextProfiles.length;
+      setDiscoverTotal(
+        typeof data.total === "number" ? data.total : nextProfiles.length,
+      );
+      setDiscoverHasMore(Boolean(data.hasMore));
+      return nextProfiles.length > 0;
     } catch {
       /* 募集やチャット画面は利用を続ける */
+      return false;
+    } finally {
+      if (append) discoverLoadingMoreRef.current = false;
+      else if (requestId === discoverRequestRef.current) setLoading(false);
     }
-  };
+  }, [
+    preview,
+    pokemonQuery,
+    trainerQuery,
+    genderFilter,
+    sharedTimeOnly,
+  ]);
   const loadNotices = async () => {
     try {
       const response = await fetch("/api/applications");
@@ -1043,12 +1108,15 @@ export default function MatchApp({
   ]);
 
   useEffect(() => {
+    if (!discoverFiltersReady) return;
+    const timer = window.setTimeout(() => void loadDiscover(), 250);
+    return () => window.clearTimeout(timer);
+  }, [discoverFiltersReady, loadDiscover]);
+
+  useEffect(() => {
     let active = true;
     Promise.all([
       fetch("/api/recruits").then((r) => r.json()),
-      fetch("/api/discover", { cache: "no-store" }).then((r) =>
-        r.ok ? r.json() : null,
-      ),
       authenticated
         ? fetch("/api/applications").then((r) => (r.ok ? r.json() : null))
         : Promise.resolve(null),
@@ -1072,7 +1140,6 @@ export default function MatchApp({
       .then(
         ([
           recruitData,
-          discoverData,
           noticeData,
           connectionData,
           lobbyData,
@@ -1082,7 +1149,6 @@ export default function MatchApp({
           if (!active) return;
           setRecruits(recruitData.recruits || []);
           setMyRecruit(recruitData.myRecruit || null);
-          if (discoverData) setProfileCandidates(discoverData.profiles || []);
           if (noticeData) {
             setIncoming(noticeData.incoming || []);
             setOutgoing(noticeData.outgoing || []);
@@ -1100,10 +1166,7 @@ export default function MatchApp({
             );
         },
       )
-      .catch(() => undefined)
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+      .catch(() => undefined);
     if (guestMode || preview || initialProfile !== undefined)
       return () => {
         active = false;
@@ -1526,6 +1589,14 @@ export default function MatchApp({
 
   const moveCard = (step: -1 | 1) => {
     if (!current || animation) return;
+    const currentIndex = ((index % cards.length) + cards.length) % cards.length;
+    if (
+      discoverMode === "recommended" &&
+      step > 0 &&
+      discoverHasMore &&
+      currentIndex >= cards.length - 6
+    )
+      void loadDiscover(true);
     setAnimation(step > 0 ? "left" : "right");
     window.setTimeout(() => {
       setIndex((value) => value + step);
@@ -5563,7 +5634,7 @@ export default function MatchApp({
                   setFilterOpen(false);
                 }}
               >
-                {cards.length}人から探す
+                {discoverTotal}人から探す
               </button>
             </div>
           </section>

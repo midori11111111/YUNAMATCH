@@ -34,6 +34,38 @@ function parseList(value: string) {
   return value.trim() ? [value.trim()] : [];
 }
 
+const discoverPageSize = 50;
+
+function normalizeSearchText(value: string) {
+  return value.normalize("NFKC").trim().toLocaleLowerCase("ja-JP");
+}
+
+function discoverQuery(request: Request) {
+  const searchParams = new URL(request.url).searchParams;
+  const requestedOffset = Number(searchParams.get("offset") || 0);
+  const requestedGender = searchParams.get("gender");
+  return {
+    offset:
+      Number.isInteger(requestedOffset) && requestedOffset > 0
+        ? requestedOffset
+        : 0,
+    pokemon: normalizeSearchText(searchParams.get("pokemon") || "").slice(
+      0,
+      40,
+    ),
+    pokemonExact: searchParams.get("pokemonExact") === "1",
+    trainer: normalizeSearchText(searchParams.get("trainer") || "").slice(
+      0,
+      40,
+    ),
+    gender:
+      requestedGender === "男性" || requestedGender === "女性"
+        ? requestedGender
+        : "",
+    sharedTimeOnly: searchParams.get("sharedTimeOnly") === "1",
+  };
+}
+
 async function loadProfileStats(db: ReturnType<typeof getDb>) {
   const [likeRows, ratingRows] = await Promise.all([
     db
@@ -81,7 +113,7 @@ async function loadProfileStats(db: ReturnType<typeof getDb>) {
   return { publicStats, internalScore };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const user = await getChatGPTUser();
   const db = getDb();
   if (!user) {
@@ -134,6 +166,7 @@ export async function GET() {
     .where(eq(profiles.userId, user.userId))
     .limit(1);
   if (!me) return Response.json({ profiles: [] });
+  const query = discoverQuery(request);
   const [
     profileRows,
     activityRows,
@@ -143,8 +176,8 @@ export async function GET() {
     pendingRows,
     stats,
   ] = await Promise.all([
-    db.select().from(profiles).orderBy(desc(profiles.updatedAt)).limit(150),
-    db.select().from(presence).limit(300),
+    db.select().from(profiles).orderBy(desc(profiles.updatedAt)),
+    db.select().from(presence),
     db
       .select({ id: blocks.blockedId })
       .from(blocks)
@@ -197,21 +230,56 @@ export async function GET() {
       row.termsAcceptedAt &&
       activityAt(row).getTime() >= activeCutoff,
   );
+  const exactTrainerExists =
+    Boolean(query.trainer) &&
+    visible.some(
+      (row) => normalizeSearchText(row.trainerName) === query.trainer,
+    );
+  const myPlayTime = parseList(me.playTime);
+  const filtered = visible.filter((row) => {
+    const mainPokemon = parseList(row.mainPokemon);
+    const pokemonMatches =
+      !query.pokemon ||
+      mainPokemon.some((name) => {
+        const normalizedName = normalizeSearchText(name);
+        return query.pokemonExact
+          ? normalizedName === query.pokemon
+          : normalizedName.includes(query.pokemon);
+      });
+    const trainerName = normalizeSearchText(row.trainerName);
+    const trainerMatches =
+      !query.trainer ||
+      (exactTrainerExists
+        ? trainerName === query.trainer
+        : trainerName.includes(query.trainer));
+    const genderMatches = !query.gender || row.gender === query.gender;
+    const playTime = parseList(row.playTime);
+    const timeMatches =
+      !query.sharedTimeOnly ||
+      playTime.includes("時間帯はいつでも") ||
+      myPlayTime.includes("時間帯はいつでも") ||
+      playTime.some((time) => myPlayTime.includes(time));
+    return pokemonMatches && trainerMatches && genderMatches && timeMatches;
+  });
   const prioritized =
     me.gender === "男性"
-      ? [...visible].sort(
+      ? [...filtered].sort(
           (a, b) =>
             Number(b.gender === "女性") - Number(a.gender === "女性") ||
             stats.internalScore(b.userId) - stats.internalScore(a.userId) ||
             activityAt(b).getTime() - activityAt(a).getTime(),
         )
-      : [...visible].sort(
+      : [...filtered].sort(
           (a, b) =>
             stats.internalScore(b.userId) - stats.internalScore(a.userId) ||
             activityAt(b).getTime() - activityAt(a).getTime(),
         );
+  const pageRows = prioritized.slice(
+    query.offset,
+    query.offset + discoverPageSize,
+  );
   const result = await Promise.all(
-    prioritized.map(async (row) => ({
+    pageRows.map(async (row) => ({
       id: await profilePublicId(row.userId),
       trainerName: row.trainerName,
       mainPokemon: parseList(row.mainPokemon).slice(0, 5),
@@ -226,7 +294,13 @@ export async function GET() {
       lastActiveAt: activityAt(row),
     })),
   );
-  return Response.json({ profiles: result });
+  const nextOffset = query.offset + pageRows.length;
+  return Response.json({
+    profiles: result,
+    total: prioritized.length,
+    hasMore: nextOffset < prioritized.length,
+    nextOffset: nextOffset < prioritized.length ? nextOffset : null,
+  });
 }
 
 export async function POST(request: Request) {
