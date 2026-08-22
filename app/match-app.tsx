@@ -69,6 +69,7 @@ type Notice = {
   pokemon: string;
   message?: string;
   status: string;
+  decisionMessage?: string;
   recruitPokemon?: string;
   ownerContact?: string | null;
   createdAt?: string;
@@ -76,6 +77,12 @@ type Notice = {
 type PendingConversation = {
   notice: Notice;
   direction: "incoming" | "outgoing";
+};
+type ApplicationMessage = {
+  id: number;
+  body: string;
+  sender: "me" | "mate";
+  createdAt: string;
 };
 export type Profile = {
   trainerName: string;
@@ -651,6 +658,13 @@ export default function MatchApp({
   const [selectedPending, setSelectedPending] =
     useState<PendingConversation | null>(null);
   const [pendingGroupOpen, setPendingGroupOpen] = useState(false);
+  const [pendingMessages, setPendingMessages] = useState<ApplicationMessage[]>([]);
+  const [pendingMessageText, setPendingMessageText] = useState("");
+  const [pendingMessageSending, setPendingMessageSending] = useState(false);
+  const [declineReasonOpen, setDeclineReasonOpen] = useState(false);
+  const [declineReason, setDeclineReason] = useState("ロールが重なっているため");
+  const [declineNote, setDeclineNote] = useState("");
+  const pendingMessageInputRef = useRef<HTMLInputElement>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [messageText, setMessageText] = useState("");
   const [messageSending, setMessageSending] = useState(false);
@@ -1120,10 +1134,20 @@ export default function MatchApp({
       loadConnections();
       loadLobbies();
       if (selectedConnection) loadMessages(selectedConnection);
+      if (selectedPending)
+        fetch(
+          `/api/application-messages?applicationId=${selectedPending.notice.id}`,
+          { cache: "no-store" },
+        )
+          .then((response) => (response.ok ? response.json() : null))
+          .then((data) => {
+            if (data) setPendingMessages(data.messages || []);
+          })
+          .catch(() => undefined);
     };
     const timer = window.setInterval(refresh, 5000);
     return () => window.clearInterval(timer);
-  }, [preview, guestMode, selectedConnection, loadLikes]);
+  }, [preview, guestMode, selectedConnection, selectedPending, loadLikes]);
 
   useEffect(() => {
     if (!selectedPending) return;
@@ -1364,6 +1388,11 @@ export default function MatchApp({
       notice.status === "accepted" &&
       !dismissedNotificationSet.has(`accepted:${notice.id}`),
   );
+  const visibleDeclinedNotices = outgoing.filter(
+    (notice) =>
+      notice.status === "declined" &&
+      !dismissedNotificationSet.has(`declined:${notice.id}`),
+  );
   const visibleUnreadConnections = connections.filter(
     (connection) =>
       connection.unreadCount > 0 &&
@@ -1379,6 +1408,7 @@ export default function MatchApp({
     ...visibleProfileLikes.map((like) => `like:${like.id}`),
     ...visibleHeartConnections.map((connection) => `heart:${connection.id}`),
     ...visibleAcceptedNotices.map((notice) => `accepted:${notice.id}`),
+    ...visibleDeclinedNotices.map((notice) => `declined:${notice.id}`),
     ...visibleUnreadConnections.map((connection) => `chat:${connection.id}`),
   ];
   const notificationCount =
@@ -1386,6 +1416,7 @@ export default function MatchApp({
     heartCount +
     profileLikeCount +
     visibleAcceptedNotices.length +
+    visibleDeclinedNotices.length +
     unreadCount;
   const profileCompletion = Math.round(
     ([
@@ -2104,11 +2135,12 @@ export default function MatchApp({
   const decide = async (
     applicationId: number,
     action: "accept" | "decline",
+    decisionMessage = "",
   ) => {
     const response = await fetch("/api/applications", {
       method: "PATCH",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ applicationId, action }),
+      body: JSON.stringify({ applicationId, action, decisionMessage }),
     });
     const data = await response.json();
     if (!response.ok) {
@@ -2124,6 +2156,8 @@ export default function MatchApp({
       });
     if (selectedPending?.notice.id === applicationId)
       setSelectedPending(null);
+    setDeclineReasonOpen(false);
+    setDeclineNote("");
     notify(
       action === "accept"
         ? "マッチ成立！チャットが開通しました"
@@ -2156,9 +2190,69 @@ export default function MatchApp({
   ) => {
     setSelectedConnection(null);
     setMessages([]);
+    setPendingMessages([]);
+    setPendingMessageText("");
+    setDeclineReasonOpen(false);
     setSelectedPending({ notice, direction });
     setTab("chat");
     setNotificationOpen(false);
+    if (!preview)
+      fetch(`/api/application-messages?applicationId=${notice.id}`, {
+        cache: "no-store",
+      })
+        .then((response) => (response.ok ? response.json() : null))
+        .then((data) => {
+          if (data) setPendingMessages(data.messages || []);
+        })
+        .catch(() => undefined);
+  };
+  const sendPendingMessage = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedPending || pendingMessageSending) return;
+    const body = pendingMessageText.trim();
+    if (!body) return;
+    if (preview) {
+      setPendingMessages((rows) => [
+        ...rows,
+        {
+          id: -Date.now(),
+          body,
+          sender: "me",
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+      setPendingMessageText("");
+      notify("ひとことを送りました");
+      return;
+    }
+    setPendingMessageSending(true);
+    try {
+      const response = await fetch("/api/application-messages", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ applicationId: selectedPending.notice.id, body }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        notify(data.error || "ひとことを送れませんでした");
+        return;
+      }
+      setPendingMessages((rows) => [...rows, data.message]);
+      setPendingMessageText("");
+      notify("ひとことを送りました");
+    } catch {
+      notify("通信が不安定です。もう一度お試しください");
+    } finally {
+      setPendingMessageSending(false);
+    }
+  };
+  const declineSelectedApplication = () => {
+    if (!selectedPending) return;
+    const message = [declineReason, declineNote.trim()]
+      .filter(Boolean)
+      .join("。")
+      .slice(0, 180);
+    void decide(selectedPending.notice.id, "decline", message);
   };
   const shareMatchToX = (matePokemon: string) => {
     const text = `YUNAMATCHで${matePokemon}を使うメイトとマッチしました！これから一緒にユナイトします⚡ #YUNAMATCH #ポケモンユナイト`;
@@ -3441,8 +3535,8 @@ export default function MatchApp({
                   </div>
                   <div className="pendingChatNotice">
                     {selectedPending.direction === "incoming"
-                      ? "申請を承認すると、自由にメッセージを送れます"
-                      : "相手が承認すると、自由にメッセージを送れます"}
+                      ? "承認前でも、ロールや編成について相談できます"
+                      : "承認前でも、ロールや編成について相談できます"}
                   </div>
                   <div className="messageThread">
                     <div
@@ -3466,28 +3560,96 @@ export default function MatchApp({
                           : "申請を送信済み"}
                       </small>
                     </div>
-                  </div>
-                  {selectedPending.direction === "incoming" ? (
-                    <div className="pendingChatActions">
-                      <button
-                        onClick={() =>
-                          decide(selectedPending.notice.id, "decline")
-                        }
+                    {pendingMessages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={`messageBubble ${message.sender}`}
                       >
-                        見送る
+                        <p>{message.body}</p>
+                        <small>
+                          {new Date(message.createdAt).toLocaleString("ja-JP", {
+                            month: "numeric",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </small>
+                      </div>
+                    ))}
+                  </div>
+                  <form className="pendingMessageComposer" onSubmit={sendPendingMessage}>
+                    <input
+                      ref={pendingMessageInputRef}
+                      value={pendingMessageText}
+                      onChange={(event) => setPendingMessageText(event.target.value)}
+                      maxLength={180}
+                      placeholder="例：中央以外のロールもできますか？"
+                      aria-label="承認前のひとこと"
+                    />
+                    <button
+                      disabled={!pendingMessageText.trim() || pendingMessageSending}
+                    >
+                      {pendingMessageSending ? "送信中" : "送る"}
+                    </button>
+                  </form>
+                  {selectedPending.direction === "incoming" ? (
+                    <>
+                    <div className="pendingChatActions threeActions">
+                      <button
+                        onClick={() => {
+                          pendingMessageInputRef.current?.focus();
+                        }}
+                      >
+                        ひとこと
+                      </button>
+                      <button
+                        onClick={() => setDeclineReasonOpen((open) => !open)}
+                      >
+                        断る
                       </button>
                       <button
                         onClick={() =>
                           decide(selectedPending.notice.id, "accept")
                         }
                       >
-                        承認してチャット
+                        承認する
                       </button>
                     </div>
+                    {declineReasonOpen && (
+                      <section className="declineReasonPanel">
+                        <strong>理由を添えると、相手に誤解されにくくなります</strong>
+                        <div>
+                          {[
+                            "ロールが重なっているため",
+                            "募集条件が合わなかったため",
+                            "今回は人数が埋まったため",
+                            "予定が合わなくなったため",
+                          ].map((reason) => (
+                            <button
+                              key={reason}
+                              className={declineReason === reason ? "active" : ""}
+                              onClick={() => setDeclineReason(reason)}
+                            >
+                              {reason}
+                            </button>
+                          ))}
+                        </div>
+                        <input
+                          value={declineNote}
+                          onChange={(event) => setDeclineNote(event.target.value)}
+                          maxLength={100}
+                          placeholder="補足（任意）例：下レーンならぜひお願いします"
+                        />
+                        <button onClick={declineSelectedApplication}>
+                          この理由を伝えて断る
+                        </button>
+                      </section>
+                    )}
+                    </>
                   ) : (
                     <div className="pendingChatWaiting">
-                      <span>◷</span>
-                      相手の承認を待っています
+                      <span>💬</span>
+                      相手と相談しながら承認を待てます
                     </div>
                   )}
                 </>
@@ -4931,8 +5093,13 @@ export default function MatchApp({
                       </div>
                     </div>
                     <div>
-                      <button onClick={() => decide(notice.id, "decline")}>
-                        見送る
+                      <button
+                        onClick={() => {
+                          openPendingConversation(notice, "incoming");
+                          setDeclineReasonOpen(true);
+                        }}
+                      >
+                        理由を添えて断る
                       </button>
                       <button onClick={() => decide(notice.id, "accept")}>
                         承認する
@@ -4940,6 +5107,35 @@ export default function MatchApp({
                     </div>
                   </article>
                 ))}
+              {visibleDeclinedNotices.map((notice) => (
+                <div className="notificationItem" key={`declined-${notice.id}`}>
+                  <button
+                    className="notificationRow declined"
+                    onClick={() =>
+                      void dismissNotifications([`declined:${notice.id}`])
+                    }
+                  >
+                    <span>i</span>
+                    <div>
+                      <strong>{notice.trainerName}さんから申請結果</strong>
+                      <p>
+                        {notice.decisionMessage ||
+                          "今回は募集条件が合わなかったため、見送りになりました"}
+                      </p>
+                    </div>
+                    <b>×</b>
+                  </button>
+                  <button
+                    className="notificationDismiss"
+                    onClick={() =>
+                      void dismissNotifications([`declined:${notice.id}`])
+                    }
+                    aria-label={`${notice.trainerName}さんからの申請結果通知を消す`}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
               {visibleAcceptedNotices.map((notice) => (
                   <div className="notificationItem" key={`accepted-${notice.id}`}>
                   <button
@@ -4974,6 +5170,7 @@ export default function MatchApp({
                 !visibleHeartConnections.length &&
                 !visibleUnreadConnections.length &&
                 !pendingCount &&
+                !visibleDeclinedNotices.length &&
                 !visibleAcceptedNotices.length && (
                   <div className="noticeEmpty">新しい通知はありません</div>
                 )}

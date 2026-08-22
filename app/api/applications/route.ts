@@ -1,6 +1,6 @@
-import { and, desc, eq, gt } from "drizzle-orm";
+import { and, asc, desc, eq, gt } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { applications, connections, lobbies, lobbyMembers, messages, profiles, recruits } from "../../../db/schema";
+import { applicationMessages, applications, connections, lobbies, lobbyMembers, messages, profiles, recruits } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { sendPush } from "../../../lib/push";
 import { checkRateLimit, rateLimitResponse } from "../../../lib/rate-limit";
@@ -12,8 +12,8 @@ export async function GET(){
  const user=await getChatGPTUser();
  if(!user)return Response.json({error:"ログインが必要です",signIn},{status:401});
  const db=getDb();
- const incoming=await db.select({id:applications.id,recruitId:applications.recruitId,applicantName:applications.applicantName,pokemon:applications.pokemon,message:applications.message,status:applications.status,recruitPokemon:recruits.pokemon,createdAt:applications.createdAt}).from(applications).innerJoin(recruits,eq(applications.recruitId,recruits.id)).where(eq(recruits.ownerId,user.userId)).orderBy(desc(applications.createdAt)).limit(50);
- const outgoing=await db.select({id:applications.id,recruitId:applications.recruitId,trainerName:recruits.trainerName,pokemon:applications.pokemon,message:applications.message,status:applications.status,recruitPokemon:recruits.pokemon,createdAt:applications.createdAt}).from(applications).innerJoin(recruits,eq(applications.recruitId,recruits.id)).where(eq(applications.applicantId,user.userId)).orderBy(desc(applications.createdAt)).limit(50);
+ const incoming=await db.select({id:applications.id,recruitId:applications.recruitId,applicantName:applications.applicantName,pokemon:applications.pokemon,message:applications.message,status:applications.status,decisionMessage:applications.decisionMessage,recruitPokemon:recruits.pokemon,createdAt:applications.createdAt}).from(applications).innerJoin(recruits,eq(applications.recruitId,recruits.id)).where(eq(recruits.ownerId,user.userId)).orderBy(desc(applications.createdAt)).limit(50);
+ const outgoing=await db.select({id:applications.id,recruitId:applications.recruitId,trainerName:recruits.trainerName,pokemon:applications.pokemon,message:applications.message,status:applications.status,decisionMessage:applications.decisionMessage,recruitPokemon:recruits.pokemon,createdAt:applications.createdAt}).from(applications).innerJoin(recruits,eq(applications.recruitId,recruits.id)).where(eq(applications.applicantId,user.userId)).orderBy(desc(applications.createdAt)).limit(50);
  return Response.json({incoming,outgoing});
 }
 
@@ -40,25 +40,33 @@ export async function POST(request:Request){
 
 export async function PATCH(request:Request){
  const user=await getChatGPTUser();if(!user)return Response.json({error:"ログインが必要です",signIn},{status:401});
- const p=await request.json() as {applicationId?:number;action?:"accept"|"decline"};
+ const p=await request.json() as {applicationId?:number;action?:"accept"|"decline";decisionMessage?:string};
  if(!p.applicationId||!p.action)return Response.json({error:"操作を確認してください"},{status:400});
+ const decisionMessage=typeof p.decisionMessage==="string"?p.decisionMessage.trim().slice(0,180):"";
+ if(p.action==="decline"&&containsProhibitedContent(decisionMessage))return Response.json({error:prohibitedContentMessage},{status:400});
  const db=getDb();const [row]=await db.select({id:applications.id,recruitId:applications.recruitId,applicantId:applications.applicantId,applicantName:applications.applicantName,applicantPokemon:applications.pokemon,applicationMessage:applications.message,applicationCreatedAt:applications.createdAt,ownerId:recruits.ownerId,ownerName:recruits.trainerName,ownerPokemon:recruits.pokemon,partySize:recruits.partySize,acceptedCount:recruits.acceptedCount,startAt:recruits.startAt}).from(applications).innerJoin(recruits,eq(applications.recruitId,recruits.id)).where(and(eq(applications.id,p.applicationId),eq(recruits.ownerId,user.userId),eq(applications.status,"pending"))).limit(1);
  if(!row)return Response.json({error:"申請が見つからないか、処理済みです"},{status:404});
  if(p.action==="accept"&&row.acceptedCount>=row.partySize-1)return Response.json({error:"すでに募集人数に達しています"},{status:409});
  const status=p.action==="accept"?"accepted":"declined";
- await db.update(applications).set({status}).where(eq(applications.id,row.id));
+ const finalDecisionMessage=decisionMessage||"今回は募集条件が合わなかったため、見送ります。また機会があればお願いします！";
+ await db.update(applications).set({status,decisionMessage:status==="declined"?finalDecisionMessage:""}).where(eq(applications.id,row.id));
  if(status==="accepted"){
   const nextAccepted=row.acceptedCount+1;
   await db.update(recruits).set({acceptedCount:nextAccepted,status:nextAccepted>=row.partySize-1?"closed":"open"}).where(eq(recruits.id,row.recruitId));
   const now=new Date();
   const [connection]=await db.insert(connections).values({applicationId:row.id,recruitId:row.recruitId,userAId:row.ownerId,userBId:row.applicantId,userAName:row.ownerName,userBName:row.applicantName,userAPokemon:row.ownerPokemon,userBPokemon:row.applicantPokemon,userAContact:"",userBContact:"",createdAt:now}).onConflictDoNothing().returning();
   const [savedConnection]=connection?[connection]:await db.select().from(connections).where(eq(connections.applicationId,row.id)).limit(1);
-  if(savedConnection)await db.insert(messages).values({connectionId:savedConnection.id,senderId:row.applicantId,clientId:`match-wave-${row.id}`,body:`👋 ${row.applicationMessage}`,createdAt:row.applicationCreatedAt}).onConflictDoNothing();
+  if(savedConnection){
+   await db.insert(messages).values({connectionId:savedConnection.id,senderId:row.applicantId,clientId:`match-wave-${row.id}`,body:`👋 ${row.applicationMessage}`,createdAt:row.applicationCreatedAt}).onConflictDoNothing();
+   const preChat=await db.select().from(applicationMessages).where(eq(applicationMessages.applicationId,row.id)).orderBy(asc(applicationMessages.createdAt)).limit(100);
+   for(const item of preChat)await db.insert(messages).values({connectionId:savedConnection.id,senderId:item.senderId,clientId:`application-chat-${item.id}`,body:item.body,createdAt:item.createdAt}).onConflictDoNothing();
+  }
   let [lobby]=await db.select().from(lobbies).where(eq(lobbies.recruitId,row.recruitId)).limit(1);
   if(!lobby){[lobby]=await db.insert(lobbies).values({recruitId:row.recruitId,ownerId:row.ownerId,status:"forming",scheduledAt:row.startAt,createdAt:now}).returning();await db.insert(lobbyMembers).values({lobbyId:lobby.id,userId:row.ownerId,trainerName:row.ownerName,pokemon:row.ownerPokemon,contact:"",joinedAt:now}).onConflictDoNothing()}
   await db.insert(lobbyMembers).values({lobbyId:lobby.id,userId:row.applicantId,applicationId:row.id,connectionId:savedConnection?.id,trainerName:row.applicantName,pokemon:row.applicantPokemon,contact:"",joinedAt:now}).onConflictDoNothing();
   await sendPush(row.applicantId,"マッチ成立！",`${row.ownerName}さんの集合ロビーに参加しました`,`/?lobby=${lobby.id}`);
   return Response.json({ok:true,status,applicantContact:null,connectionId:savedConnection?.id,lobbyId:lobby.id,mateName:row.applicantName,matePokemon:row.applicantPokemon});
  }
- return Response.json({ok:true,status,applicantContact:null});
+ await sendPush(row.applicantId,"申請についてお知らせ",finalDecisionMessage,"/");
+ return Response.json({ok:true,status,decisionMessage:finalDecisionMessage,applicantContact:null});
 }

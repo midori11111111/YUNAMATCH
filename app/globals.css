@@ -601,8 +601,21 @@ button { cursor: pointer; }
 .pendingChatHeader > span { width: 34px; }
 .pendingChatNotice { margin: 12px 0 2px; padding: 10px 12px; border-radius: 12px; color: #735e91; background: #f2edff; font-size: 8px; font-weight: 850; text-align: center; }
 .pendingChatActions { display: grid; grid-template-columns: .8fr 1.2fr; gap: 8px; padding: 11px 0 8px; border-top: 1px solid var(--line); }
+.pendingChatActions.threeActions { grid-template-columns: .8fr .8fr 1.2fr; }
 .pendingChatActions button { min-height: 44px; border: 1px solid #e3dde8; border-radius: 14px; color: #837b8b; background: #fff; font-size: 9px; font-weight: 950; }
 .pendingChatActions button:last-child { color: #fff; border-color: transparent; background: linear-gradient(135deg,var(--purple),#8d75f1); box-shadow: 0 8px 20px #7257e82b; }
+.pendingMessageComposer { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 7px; padding: 10px 0; border-top: 1px solid var(--line); }
+.pendingMessageComposer input { min-width: 0; border: 1px solid #ddd6e5; border-radius: 13px; padding: 11px 12px; color: var(--ink); background: #fff; font-size: 9px; outline: none; }
+.pendingMessageComposer input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px #7257e813; }
+.pendingMessageComposer button { min-width: 62px; border: 0; border-radius: 13px; padding: 0 12px; color: #fff; background: var(--purple); font-size: 8px; font-weight: 950; }
+.pendingMessageComposer button:disabled { opacity: .4; }
+.declineReasonPanel { display: grid; gap: 9px; margin-bottom: 9px; padding: 13px; border: 1px solid #eadfe3; border-radius: 16px; background: #fff8fa; }
+.declineReasonPanel > strong { color: #80515f; font-size: 8px; line-height: 1.5; }
+.declineReasonPanel > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.declineReasonPanel > div button { border: 1px solid #e7dce1; border-radius: 99px; padding: 7px 9px; color: #796e73; background: #fff; font-size: 7px; font-weight: 850; }
+.declineReasonPanel > div button.active { color: #fff; border-color: var(--pink); background: var(--pink); }
+.declineReasonPanel input { width: 100%; border: 1px solid #e4d9de; border-radius: 11px; padding: 10px 11px; background: #fff; font-size: 8px; outline: none; }
+.declineReasonPanel > button { min-height: 42px; border: 0; border-radius: 12px; color: #fff; background: #615763; font-size: 8px; font-weight: 950; }
 .pendingChatWaiting { min-height: 52px; display: flex; align-items: center; justify-content: center; gap: 7px; margin: 0 -4px; border-top: 1px solid var(--line); color: #81798a; background: #fbfafc; font-size: 9px; font-weight: 900; }
 .pendingChatWaiting span { color: var(--purple); font-size: 13px; }
 .contactPrivateBox { margin: 12px 0; padding: 14px; border-radius: 13px; color: #7d7585; background: #f3f0f5; font-size: 9px; font-weight: 800; text-align: center; }
@@ -927,6 +940,7 @@ button { cursor: pointer; }
 .notificationRow > span { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; color: var(--purple); background: #eee9ff; font-size: 16px; font-weight: 900; }
 .notificationRow.heart > span { color: var(--pink); background: #ffeaf2; }
 .notificationRow.accepted > span { color: var(--green); background: #e6f8f2; }
+.notificationRow.declined > span { color: #8b6873; background: #f4e9ed; font-size: 10px; }
 .notificationRow.message > span { color: #fff; background: var(--purple); font-size: 9px; }
 .notificationRow strong { font-size: 10px; }
 .notificationRow p { margin: 4px 0 0; color: #918a98; font-size: 7px; }

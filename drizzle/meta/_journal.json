@@ -176,6 +176,13 @@
       "when": 1787390683499,
       "tag": "0024_tan_frog_thor",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1787391067438,
+      "tag": "0025_chemical_captain_stacy",
+      "breakpoints": true
     }
   ]
 }

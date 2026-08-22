@@ -3,7 +3,7 @@ import { getDb } from "../../../db";
 import { notificationDismissals } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
 
-const keyPattern = /^(?:like|heart|accepted|chat):\d+$/;
+const keyPattern = /^(?:like|heart|accepted|declined|chat):\d+$/;
 
 export async function GET() {
   const user = await getChatGPTUser();

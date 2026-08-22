@@ -141,12 +141,32 @@ export const applications = sqliteTable(
     pokemon: text("pokemon").notNull(),
     message: text("message").notNull(),
     status: text("status").notNull().default("pending"),
+    decisionMessage: text("decision_message").notNull().default(""),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   },
   (table) => [
     uniqueIndex("idx_applications_recruit_applicant").on(
       table.recruitId,
       table.applicantId,
+    ),
+  ],
+);
+
+export const applicationMessages = sqliteTable(
+  "application_messages",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    applicationId: integer("application_id")
+      .notNull()
+      .references(() => applications.id),
+    senderId: text("sender_id").notNull(),
+    body: text("body").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [
+    index("idx_application_messages_application_created").on(
+      table.applicationId,
+      table.createdAt,
     ),
   ],
 );

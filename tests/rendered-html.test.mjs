@@ -239,6 +239,12 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /navPersonIcon/);
   assert.match(app, /メイト申請を送る/);
   assert.match(app, /指定なし（どのポケモンでも）/);
+  assert.match(app, /承認前でも、ロールや編成について相談できます/);
+  assert.match(app, /中央以外のロールもできますか/);
+  assert.match(app, /理由を添えて断る/);
+  assert.match(app, /ロールが重なっているため/);
+  assert.match(app, /この理由を伝えて断る/);
+  assert.match(app, /\/api\/application-messages/);
   assert.match(app, /使うポケモンは相談したいそうです/);
   assert.match(app, /MATCHED MATE PROFILE/);
   assert.match(app, /mateCount/);
@@ -292,7 +298,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(applicationsApi, /body:`👋 \$\{row\.applicationMessage\}`/);
   assert.match(app, /承認前のあいさつ/);
   assert.match(app, /あなたに手を振っています/);
-  assert.match(app, /相手の承認を待っています/);
+  assert.match(app, /相手と相談しながら承認を待てます/);
   assert.match(app, /shareMatchToX/);
   assert.match(app, /x\.com\/intent\/tweet/);
   assert.match(app, /このマッチをシェア/);
