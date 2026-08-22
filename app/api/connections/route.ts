@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, inArray, or } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, or } from "drizzle-orm";
 import { getDb } from "../../../db";
 import {
   accountLinks,
@@ -97,9 +97,11 @@ async function backfillAcceptedConnections(userIds: string[]) {
     })
     .from(applications)
     .innerJoin(recruits, eq(applications.recruitId, recruits.id))
+    .leftJoin(connections, eq(applications.id, connections.applicationId))
     .where(
       and(
         eq(applications.status, "accepted"),
+        isNull(connections.id),
         or(
           inArray(recruits.ownerId, userIds),
           inArray(applications.applicantId, userIds),
@@ -109,16 +111,22 @@ async function backfillAcceptedConnections(userIds: string[]) {
     .limit(50);
 
   if (!rows.length) return;
-  await db
-    .insert(connections)
-    .values(
-      rows.map((row) => ({
+  for (const row of rows) {
+    const userAId = userIds.includes(row.ownerId)
+      ? currentUserId
+      : row.ownerId;
+    const userBId = userIds.includes(row.applicantId)
+      ? currentUserId
+      : row.applicantId;
+    if (userAId === userBId) continue;
+    try {
+      await db
+        .insert(connections)
+        .values({
         applicationId: row.applicationId,
         recruitId: row.recruitId,
-        userAId: userIds.includes(row.ownerId) ? currentUserId : row.ownerId,
-        userBId: userIds.includes(row.applicantId)
-          ? currentUserId
-          : row.applicantId,
+        userAId,
+        userBId,
         userAName: row.ownerName,
         userBName: row.applicantName,
         userAPokemon: row.ownerPokemon,
@@ -126,9 +134,15 @@ async function backfillAcceptedConnections(userIds: string[]) {
         userAContact: "",
         userBContact: "",
         createdAt: row.createdAt,
-      })),
-    )
-    .onConflictDoNothing();
+        })
+        .onConflictDoNothing();
+    } catch (error) {
+      console.error(
+        "Connection backfill row skipped",
+        error instanceof Error ? error.message : error,
+      );
+    }
+  }
 }
 
 export async function GET() {
@@ -139,8 +153,22 @@ export async function GET() {
       { status: 401 },
     );
   const aliases = await identityAliases(user.userId, user.email);
-  await adoptLegacyConnectionHistory(user.userId, aliases);
-  await backfillAcceptedConnections(aliases);
+  try {
+    await adoptLegacyConnectionHistory(user.userId, aliases);
+  } catch (error) {
+    console.error(
+      "Legacy connection adoption skipped",
+      error instanceof Error ? error.message : error,
+    );
+  }
+  try {
+    await backfillAcceptedConnections(aliases);
+  } catch (error) {
+    console.error(
+      "Connection backfill skipped",
+      error instanceof Error ? error.message : error,
+    );
+  }
 
   const db = getDb();
   const [blockedByMe, blockedMe] = await Promise.all([

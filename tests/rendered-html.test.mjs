@@ -278,6 +278,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(adminPanel, /登録ユーザーの男女比/);
   assert.match(statsApi, /demographics/);
   assert.match(connectionsApi, /adoptLegacyConnectionHistory/);
+  assert.match(connectionsApi, /leftJoin\(connections/);
+  assert.match(connectionsApi, /Connection backfill skipped/);
   assert.match(safetyMigration, /rate_limit_buckets/);
   assert.match(safetyMigration, /support_tickets/);
   assert.match(supportApi, /24\*60\*60_000/);
