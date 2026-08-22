@@ -669,6 +669,9 @@ export default function MatchApp({
     typing: false,
   });
   const [notificationOpen, setNotificationOpen] = useState(false);
+  const [dismissedNotificationKeys, setDismissedNotificationKeys] = useState<
+    string[]
+  >([]);
   const [shareOpen, setShareOpen] = useState(false);
   const [recruitShare, setRecruitShare] = useState<Recruit | null>(null);
   const [recruitNotifyPrompt, setRecruitNotifyPrompt] =
@@ -986,6 +989,11 @@ export default function MatchApp({
             r.ok ? r.json() : null,
           )
         : Promise.resolve(null),
+      authenticated
+        ? fetch("/api/notifications", { cache: "no-store" }).then((r) =>
+            r.ok ? r.json() : null,
+          )
+        : Promise.resolve(null),
     ])
       .then(
         ([
@@ -995,6 +1003,7 @@ export default function MatchApp({
           connectionData,
           lobbyData,
           likeData,
+          notificationData,
         ]) => {
           if (!active) return;
           setRecruits(recruitData.recruits || []);
@@ -1011,6 +1020,10 @@ export default function MatchApp({
             setReceivedProfileCandidates(likeData.profiles || []);
             setLikedProfileIds(likeData.likedProfileIds || []);
           }
+          if (notificationData)
+            setDismissedNotificationKeys(
+              notificationData.dismissedKeys || [],
+            );
         },
       )
       .catch(() => undefined)
@@ -1336,16 +1349,44 @@ export default function MatchApp({
   const pendingOutgoing = outgoing.filter((notice) => notice.status === "pending");
   const pendingCount = pendingIncoming.length;
   const pendingConversationCount = pendingIncoming.length + pendingOutgoing.length;
-  const heartCount = connections.filter(
-    (c) => c.againByMate && !c.againByMe,
-  ).length;
-  const profileLikeCount = profileLikes.filter((like) => !like.read).length;
-  const unreadCount = connections.reduce(
-    (sum, connection) => sum + (connection.unreadCount || 0),
+  const dismissedNotificationSet = new Set(dismissedNotificationKeys);
+  const visibleProfileLikes = profileLikes.filter(
+    (like) => !dismissedNotificationSet.has(`like:${like.id}`),
+  );
+  const visibleHeartConnections = connections.filter(
+    (connection) =>
+      connection.againByMate &&
+      !connection.againByMe &&
+      !dismissedNotificationSet.has(`heart:${connection.id}`),
+  );
+  const visibleAcceptedNotices = outgoing.filter(
+    (notice) =>
+      notice.status === "accepted" &&
+      !dismissedNotificationSet.has(`accepted:${notice.id}`),
+  );
+  const visibleUnreadConnections = connections.filter(
+    (connection) =>
+      connection.unreadCount > 0 &&
+      !dismissedNotificationSet.has(`chat:${connection.id}`),
+  );
+  const heartCount = visibleHeartConnections.length;
+  const profileLikeCount = visibleProfileLikes.filter((like) => !like.read).length;
+  const unreadCount = visibleUnreadConnections.reduce(
+    (sum, connection) => sum + connection.unreadCount,
     0,
   );
+  const dismissibleNotificationKeys = [
+    ...visibleProfileLikes.map((like) => `like:${like.id}`),
+    ...visibleHeartConnections.map((connection) => `heart:${connection.id}`),
+    ...visibleAcceptedNotices.map((notice) => `accepted:${notice.id}`),
+    ...visibleUnreadConnections.map((connection) => `chat:${connection.id}`),
+  ];
   const notificationCount =
-    pendingCount + heartCount + profileLikeCount + unreadCount;
+    pendingCount +
+    heartCount +
+    profileLikeCount +
+    visibleAcceptedNotices.length +
+    unreadCount;
   const profileCompletion = Math.round(
     ([
       Boolean(profile.trainerName.trim()),
@@ -1579,6 +1620,41 @@ export default function MatchApp({
     setProfileLikes((rows) => rows.map((row) => ({ ...row, read: true })));
     if (!preview)
       fetch("/api/likes", { method: "PATCH" }).catch(() => undefined);
+  };
+  const dismissNotifications = async (keys: string[]) => {
+    const uniqueKeys = [...new Set(keys)].filter(
+      (key) => !dismissedNotificationSet.has(key),
+    );
+    if (!uniqueKeys.length) return;
+    setDismissedNotificationKeys((current) => [
+      ...new Set([...current, ...uniqueKeys]),
+    ]);
+    if (preview) return;
+    try {
+      const response = await fetch("/api/notifications", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ keys: uniqueKeys }),
+      });
+      if (!response.ok) throw new Error("notification dismissal failed");
+    } catch {
+      setDismissedNotificationKeys((current) =>
+        current.filter((key) => !uniqueKeys.includes(key)),
+      );
+      notify("通知を消せませんでした。もう一度お試しください");
+    }
+  };
+  const dismissAllNotifications = () => {
+    if (!dismissibleNotificationKeys.length) return;
+    setProfileLikes((rows) => rows.map((row) => ({ ...row, read: true })));
+    if (!preview)
+      fetch("/api/likes", { method: "PATCH" }).catch(() => undefined);
+    void dismissNotifications(dismissibleNotificationKeys);
+    notify(
+      pendingCount
+        ? "申請以外の通知を消しました。申請は承認か見送りを選んでください"
+        : "通知をすべて消しました",
+    );
   };
   useEffect(() => {
     if (!authenticated || !profileReady || onboardingOpen) return;
@@ -4749,30 +4825,49 @@ export default function MatchApp({
               ×
             </button>
             <small className="modalKicker">NOTIFICATIONS</small>
-            <h2>通知</h2>
+            <div className="notificationTitleBar">
+              <div>
+                <h2>通知</h2>
+                <p>タップして確認、×で一覧から消せます</p>
+              </div>
+              {dismissibleNotificationKeys.length > 0 && (
+                <button onClick={dismissAllNotifications}>すべて消す</button>
+              )}
+            </div>
             <div className="notificationList">
-              {profileLikes.map((like) => (
-                <button
-                  key={`profile-like-${like.id}`}
-                  className="notificationRow heart"
-                  onClick={() => showLikedProfile(like.senderId)}
-                >
-                  <span>♥</span>
-                  <div>
-                    <strong>{like.senderName}さんからいいね</strong>
-                    <p>{like.senderPokemon}を使うプレイヤーです</p>
-                  </div>
-                  <b>›</b>
-                </button>
+              {visibleProfileLikes.map((like) => (
+                <div className="notificationItem" key={`profile-like-${like.id}`}>
+                  <button
+                    className="notificationRow heart"
+                    onClick={() => {
+                      void dismissNotifications([`like:${like.id}`]);
+                      showLikedProfile(like.senderId);
+                    }}
+                  >
+                    <span>♥</span>
+                    <div>
+                      <strong>{like.senderName}さんからいいね</strong>
+                      <p>{like.senderPokemon}を使うプレイヤーです</p>
+                    </div>
+                    <b>›</b>
+                  </button>
+                  <button
+                    className="notificationDismiss"
+                    onClick={() => void dismissNotifications([`like:${like.id}`])}
+                    aria-label={`${like.senderName}さんからのいいね通知を消す`}
+                  >
+                    ×
+                  </button>
+                </div>
               ))}
-              {heartCount > 0 &&
-                connections
-                  .filter((c) => c.againByMate && !c.againByMe)
-                  .map((connection) => (
+              {visibleHeartConnections.map((connection) => (
+                    <div className="notificationItem" key={`heart-${connection.id}`}>
                     <button
-                      key={`heart-${connection.id}`}
                       className="notificationRow heart"
-                      onClick={() => openChat(connection)}
+                      onClick={() => {
+                        void dismissNotifications([`heart:${connection.id}`]);
+                        void openChat(connection);
+                      }}
                     >
                       <span>♡</span>
                       <div>
@@ -4781,7 +4876,42 @@ export default function MatchApp({
                       </div>
                       <b>›</b>
                     </button>
+                    <button
+                      className="notificationDismiss"
+                      onClick={() =>
+                        void dismissNotifications([`heart:${connection.id}`])
+                      }
+                      aria-label={`${connection.mateName}さんからのハート通知を消す`}
+                    >
+                      ×
+                    </button>
+                    </div>
                   ))}
+              {visibleUnreadConnections.map((connection) => (
+                <div className="notificationItem" key={`chat-${connection.id}`}>
+                  <button
+                    className="notificationRow message"
+                    onClick={() => {
+                      void dismissNotifications([`chat:${connection.id}`]);
+                      void openChat(connection);
+                    }}
+                  >
+                    <span>●</span>
+                    <div>
+                      <strong>{connection.mateName}さんからメッセージ</strong>
+                      <p>{connection.unreadCount}件の未読メッセージがあります</p>
+                    </div>
+                    <b>›</b>
+                  </button>
+                  <button
+                    className="notificationDismiss"
+                    onClick={() => void dismissNotifications([`chat:${connection.id}`])}
+                    aria-label={`${connection.mateName}さんからのメッセージ通知を消す`}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
               {incoming
                 .filter((n) => n.status === "pending")
                 .map((notice) => (
@@ -4810,17 +4940,16 @@ export default function MatchApp({
                     </div>
                   </article>
                 ))}
-              {outgoing
-                .filter((n) => n.status === "accepted")
-                .map((notice) => (
+              {visibleAcceptedNotices.map((notice) => (
+                  <div className="notificationItem" key={`accepted-${notice.id}`}>
                   <button
-                    key={`accepted-${notice.id}`}
                     className="notificationRow accepted"
                     onClick={() => {
+                      void dismissNotifications([`accepted:${notice.id}`]);
                       const connection = connections.find(
                         (c) => c.mateName === notice.trainerName,
                       );
-                      if (connection) openChat(connection);
+                      if (connection) void openChat(connection);
                     }}
                   >
                     <span>✓</span>
@@ -4830,14 +4959,31 @@ export default function MatchApp({
                     </div>
                     <b>›</b>
                   </button>
+                  <button
+                    className="notificationDismiss"
+                    onClick={() =>
+                      void dismissNotifications([`accepted:${notice.id}`])
+                    }
+                    aria-label={`${notice.trainerName}さんとのマッチ通知を消す`}
+                  >
+                    ×
+                  </button>
+                  </div>
                 ))}
-              {!profileLikes.length &&
-                !heartCount &&
+              {!visibleProfileLikes.length &&
+                !visibleHeartConnections.length &&
+                !visibleUnreadConnections.length &&
                 !pendingCount &&
-                !outgoing.some((n) => n.status === "accepted") && (
+                !visibleAcceptedNotices.length && (
                   <div className="noticeEmpty">新しい通知はありません</div>
                 )}
             </div>
+            <button
+              className="notificationCloseAction"
+              onClick={() => setNotificationOpen(false)}
+            >
+              閉じる
+            </button>
           </section>
         </div>
       )}

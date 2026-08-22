@@ -71,6 +71,22 @@ export const profileLikes = sqliteTable(
   ],
 );
 
+export const notificationDismissals = sqliteTable(
+  "notification_dismissals",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: text("user_id").notNull(),
+    notificationKey: text("notification_key").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("idx_notification_dismissals_user_key").on(
+      table.userId,
+      table.notificationKey,
+    ),
+  ],
+);
+
 export const recruits = sqliteTable(
   "recruits",
   {

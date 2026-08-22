@@ -169,6 +169,13 @@
       "when": 1787389706579,
       "tag": "0023_broken_hiroim",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1787390683499,
+      "tag": "0024_tan_frog_thor",
+      "breakpoints": true
     }
   ]
 }
