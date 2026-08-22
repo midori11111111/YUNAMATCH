@@ -633,6 +633,9 @@ export default function MatchApp({
   const [incoming, setIncoming] = useState<Notice[]>([]);
   const [outgoing, setOutgoing] = useState<Notice[]>([]);
   const [profileLikes, setProfileLikes] = useState<ProfileLikeNotice[]>([]);
+  const [receivedProfileCandidates, setReceivedProfileCandidates] = useState<
+    ProfileCandidate[]
+  >([]);
   const [likedProfileIds, setLikedProfileIds] = useState<string[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [lobbies, setLobbies] = useState<Lobby[]>([]);
@@ -919,6 +922,7 @@ export default function MatchApp({
       if (!response.ok) return;
       const data = await response.json();
       setProfileLikes(data.incoming || []);
+      setReceivedProfileCandidates(data.profiles || []);
       setLikedProfileIds(data.likedProfileIds || []);
     } catch {
       /* 検索画面は利用を続ける */
@@ -997,6 +1001,7 @@ export default function MatchApp({
           if (lobbyData) setLobbies(lobbyData.lobbies || []);
           if (likeData) {
             setProfileLikes(likeData.incoming || []);
+            setReceivedProfileCandidates(likeData.profiles || []);
             setLikedProfileIds(likeData.likedProfileIds || []);
           }
         },
@@ -1304,10 +1309,32 @@ export default function MatchApp({
     ],
   );
   const recommendedCards = filteredProfileCandidates;
-  const receivedCards = useMemo(() => {
-    const senderIds = new Set(profileLikes.map((like) => like.senderId));
-    return filteredProfileCandidates.filter((person) => senderIds.has(person.id));
-  }, [filteredProfileCandidates, profileLikes]);
+  const receivedCards = useMemo(
+    () =>
+      receivedProfileCandidates.filter((person) => {
+        return (
+          (!normalizedPokemonQuery ||
+            person.mainPokemon.some((name) =>
+              name.toLocaleLowerCase("ja-JP").includes(normalizedPokemonQuery),
+            )) &&
+          (!normalizedTrainerQuery ||
+            person.trainerName
+              .toLocaleLowerCase("ja-JP")
+              .includes(normalizedTrainerQuery)) &&
+          (!sharedTimeOnly ||
+            person.playTime.includes("時間帯はいつでも") ||
+            profile.playTime.includes("時間帯はいつでも") ||
+            person.playTime.some((time) => profile.playTime.includes(time)))
+        );
+      }),
+    [
+      receivedProfileCandidates,
+      normalizedPokemonQuery,
+      normalizedTrainerQuery,
+      sharedTimeOnly,
+      profile.playTime,
+    ],
+  );
   const cards = discoverMode === "received" ? receivedCards : recommendedCards;
   const activeFilterCount =
     Number(Boolean(pokemonQuery.trim())) +
@@ -1624,11 +1651,7 @@ export default function MatchApp({
     recommendedCards,
   ]);
   const showLikedProfile = (senderId: string) => {
-    const senderIds = new Set(profileLikes.map((like) => like.senderId));
-    const likedCandidates = profileCandidates.filter((person) =>
-      senderIds.has(person.id),
-    );
-    const senderIndex = likedCandidates.findIndex(
+    const senderIndex = receivedCards.findIndex(
       (person) => person.id === senderId,
     );
     if (senderIndex < 0) {

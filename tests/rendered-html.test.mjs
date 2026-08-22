@@ -185,6 +185,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /自分の試合数/);
   assert.match(app, /自分の勝率/);
   assert.match(app, /もらったいいね/);
+  assert.match(app, /receivedProfileCandidates/);
   assert.match(app, /yunamatch-push-intro-v1/);
   assert.match(app, /ホーム画面から開くと通知できます/);
   assert.match(app, /install-required/);
@@ -283,6 +284,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(exportApi, /content-disposition/);
   assert.match(exportApi, /connectionRatings/);
   assert.match(likesApi, /いいねが届きました/);
+  assert.match(likesApi, /receivedProfiles/);
+  assert.match(likesApi, /profiles:receivedProfiles/);
   assert.match(likesApi, /onConflictDoNothing/);
   assert.match(likesMigration, /CREATE TABLE `profile_likes`/);
   assert.match(pokemonArt, /official-artwork/);
