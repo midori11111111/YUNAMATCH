@@ -238,6 +238,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /自分の勝率/);
   assert.match(app, /もらったいいね/);
   assert.match(app, /receivedProfileCandidates/);
+  assert.match(app, /const receivedCards = receivedProfileCandidates/);
+  assert.match(app, /receivedProfileCandidates\.findIndex/);
   assert.match(app, /yunamatch-push-intro-v1/);
   assert.match(app, /ホーム画面から開くと通知できます/);
   assert.match(app, /install-required/);

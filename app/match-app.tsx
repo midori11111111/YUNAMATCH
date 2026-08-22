@@ -1422,25 +1422,9 @@ export default function MatchApp({
     ],
   );
   const recommendedCards = filteredProfileCandidates;
-  const receivedCards = useMemo(
-    () =>
-      filterDiscoverCandidates(receivedProfileCandidates, {
-        pokemonQuery,
-        trainerQuery,
-        gender: genderFilter,
-        sharedTimeOnly,
-        myPlayTime: profile.playTime,
-        officialPokemon: pokemon,
-      }),
-    [
-      receivedProfileCandidates,
-      pokemonQuery,
-      trainerQuery,
-      genderFilter,
-      sharedTimeOnly,
-      profile.playTime,
-    ],
-  );
+  // 「相手から」は届いたいいねの受信箱なので、通常検索の条件では絞らない。
+  // 検索条件が残っていても、いいねを送った相手を必ず開けるようにする。
+  const receivedCards = receivedProfileCandidates;
   const cards = discoverMode === "received" ? receivedCards : recommendedCards;
   const activeFilterCount =
     Number(Boolean(pokemonQuery.trim())) +
@@ -1868,7 +1852,7 @@ export default function MatchApp({
     recommendedCards,
   ]);
   const showLikedProfile = (senderId: string) => {
-    const senderIndex = receivedCards.findIndex(
+    const senderIndex = receivedProfileCandidates.findIndex(
       (person) => person.id === senderId,
     );
     if (senderIndex < 0) {
@@ -3294,14 +3278,16 @@ export default function MatchApp({
                 >
                   <span>?</span>使い方
                 </button>
-                <button
-                  className={`discoverFilter ${activeFilterCount ? "active" : ""}`}
-                  onClick={() => setFilterOpen(true)}
-                  aria-label={`条件を絞る${activeFilterCount ? `、${activeFilterCount}件設定中` : ""}`}
-                >
-                  ☷
-                  {activeFilterCount > 0 && <i>{activeFilterCount}</i>}
-                </button>
+                {discoverMode === "recommended" && (
+                  <button
+                    className={`discoverFilter ${activeFilterCount ? "active" : ""}`}
+                    onClick={() => setFilterOpen(true)}
+                    aria-label={`条件を絞る${activeFilterCount ? `、${activeFilterCount}件設定中` : ""}`}
+                  >
+                    ☷
+                    {activeFilterCount > 0 && <i>{activeFilterCount}</i>}
+                  </button>
+                )}
               </div>
               {loading ? (
                 <div className="stateCard fullDiscoverState">
