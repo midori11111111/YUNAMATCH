@@ -4812,7 +4812,11 @@ export default function MatchApp({
                       <span>⚡</span>
                       <div>
                         <strong>{notice.applicantName}さんから申請</strong>
-                        <p>{notice.pokemon}で一緒に遊びたいそうです</p>
+                        <p>
+                          {notice.pokemon === "指定なし"
+                            ? "使うポケモンは相談したいそうです"
+                            : `${notice.pokemon}で一緒に遊びたいそうです`}
+                        </p>
                       </div>
                     </div>
                     <div>
@@ -5429,6 +5433,7 @@ export default function MatchApp({
             <label>
               使用ポケモン
               <select name="pokemon" defaultValue={primaryPokemon}>
+                <option value="指定なし">指定なし（どのポケモンでも）</option>
                 {profile.mainPokemon.map((name) => (
                   <option key={name}>{name}</option>
                 ))}
@@ -5490,6 +5495,7 @@ export default function MatchApp({
             <label>
               自分が使うポケモン
               <select name="pokemon" defaultValue={primaryPokemon}>
+                <option value="指定なし">指定なし（どのポケモンでも）</option>
                 {profile.mainPokemon.map((name) => (
                   <option key={name}>{name}</option>
                 ))}

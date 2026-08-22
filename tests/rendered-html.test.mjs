@@ -194,6 +194,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /通知をオンにする/);
   assert.match(app, /navPersonIcon/);
   assert.match(app, /メイト申請を送る/);
+  assert.match(app, /指定なし（どのポケモンでも）/);
+  assert.match(app, /使うポケモンは相談したいそうです/);
   assert.match(app, /MATCHED MATE PROFILE/);
   assert.match(app, /mateCount/);
   assert.match(app, /いいね済み/);

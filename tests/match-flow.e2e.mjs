@@ -95,7 +95,7 @@ try {
   const listed = await api("/api/recruits", { user: applicant });
   assert.equal(listed.recruits[0].id, created.recruit.id);
 
-  await api("/api/applications", { user: applicant, method: "POST", body: { recruitId: created.recruit.id, pokemon: "ハピナス", message: "参加します" } });
+  await api("/api/applications", { user: applicant, method: "POST", body: { recruitId: created.recruit.id, pokemon: "指定なし", message: "参加します" } });
   const notices = await api("/api/applications", { user: owner });
   assert.equal(notices.incoming.length, 1);
   assert.equal(notices.incoming[0].message, "参加します");
@@ -107,7 +107,7 @@ try {
   assert.ok(accepted.lobbyId);
   assert.equal(accepted.applicantContact, null);
   assert.equal(accepted.mateName, "申請テスター");
-  assert.equal(accepted.matePokemon, "ハピナス");
+  assert.equal(accepted.matePokemon, "指定なし");
 
   let ownerConnections = await api("/api/connections", { user: owner });
   let applicantConnections = await api("/api/connections", { user: applicant });
