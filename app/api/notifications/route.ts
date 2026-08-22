@@ -37,11 +37,16 @@ export async function PATCH(request: Request) {
     return Response.json({ error: "一度に消せる通知数を超えています" }, { status: 413 });
   const now = new Date();
   const db = getDb();
-  for (let index = 0; index < keys.length; index += 50) {
+  // D1 allows at most 100 bound values in one statement. Each row binds
+  // userId, notificationKey and createdAt, so keep each multi-row insert
+  // comfortably below that limit. This matters when "すべて消す" includes
+  // dozens of notifications at once.
+  const rowsPerInsert = 25;
+  for (let index = 0; index < keys.length; index += rowsPerInsert) {
     await db
       .insert(notificationDismissals)
       .values(
-        keys.slice(index, index + 50).map((notificationKey) => ({
+        keys.slice(index, index + rowsPerInsert).map((notificationKey) => ({
           userId: user.userId,
           notificationKey,
           createdAt: now,
