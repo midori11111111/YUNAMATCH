@@ -470,6 +470,9 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /相手と相談しながら承認を待てます/);
   assert.match(app, /shareMatchToX/);
   assert.match(app, /x\.com\/intent\/tweet/);
+  assert.match(app, /#ユナマッチ/);
+  assert.doesNotMatch(app, /#YUNAMATCH/);
+  assert.match(app, /https:\/\/yunamatch\.com\//);
   assert.match(app, /このマッチをシェア/);
   assert.match(app, /マッチをシェア/);
   assert.match(applicationsApi, /matePokemon:row\.applicantPokemon/);

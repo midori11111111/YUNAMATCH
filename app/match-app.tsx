@@ -2416,7 +2416,7 @@ export default function MatchApp({
       `募集者戦績：${recruit.matches > 0 ? `${recruit.matches.toLocaleString()}戦・` : ""}勝率${recruit.winRate}%`,
       `募集者の遊べる時間：${recruit.playTime}`,
       recruit.note ? `ひとこと：${recruit.note}` : "",
-      "#YUNAMATCH #ポケモンユナイト募集",
+      "#ユナマッチ #ポケモンユナイト募集",
     ]
       .filter(Boolean)
       .join("\n");
@@ -2650,7 +2650,7 @@ export default function MatchApp({
     void decide(selectedPending.notice.id, "decline", message);
   };
   const shareMatchToX = (matePokemon: string) => {
-    const text = `YUNAMATCHで${matePokemon}を使うメイトとマッチしました！これから一緒にユナイトします⚡ #YUNAMATCH #ポケモンユナイト`;
+    const text = `YUNAMATCHで${matePokemon}を使うメイトとマッチしました！これから一緒にユナイトします⚡ #ユナマッチ #ポケモンユナイト`;
     window.open(
       `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent("https://yunamatch.com/")}`,
       "_blank",
@@ -3437,7 +3437,7 @@ export default function MatchApp({
     const file = new File([blob], "yunamatch-trainer-card.png", {
       type: "image/png",
     });
-    const text = `${profile.mainPokemon.join("・")}を使っています！相性のいいメイトを探しています。 #YUNAMATCH`;
+    const text = `${profile.mainPokemon.join("・")}を使っています！相性のいいメイトを探しています。 #ユナマッチ`;
     try {
       if (
         navigator.share &&
