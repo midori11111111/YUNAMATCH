@@ -60,8 +60,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.userId=identity.userId;
           if(canonicalUserId)(await cookies()).delete(linkCookieName);
         }catch(error){
+          // 一時的な通信失敗で既存ユーザーを新規登録扱いにしない。
+          // 既存JWTのIDを維持し、初回ログインだけ安全な暫定IDを使う。
           if(canonicalUserId)throw error;
-          token.userId=`oauth:${account.provider}:${account.providerAccountId}`;
+          if(typeof token.userId!=="string")token.userId=`oauth:${account.provider}:${account.providerAccountId}`;
         }
         token.provider=account.provider;
         token.providerAccountId=account.providerAccountId;

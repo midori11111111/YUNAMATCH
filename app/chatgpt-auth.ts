@@ -22,6 +22,36 @@ const SIGN_IN_PATH = "/login";
 const SIGN_OUT_PATH = "/api/auth/signout";
 const CALLBACK_PATH = "/api/auth/callback";
 
+async function resolveCanonicalUserId(
+  provider: string,
+  providerAccountId: string,
+  fallbackUserId: string,
+): Promise<string> {
+  if (!providerAccountId) return fallbackUserId;
+
+  try {
+    const [{ and, eq }, { getDb }, { accountLinks }] = await Promise.all([
+      import("drizzle-orm"),
+      import("../db"),
+      import("../db/schema"),
+    ]);
+    const [linkedAccount] = await getDb()
+      .select({ canonicalUserId: accountLinks.canonicalUserId })
+      .from(accountLinks)
+      .where(
+        and(
+          eq(accountLinks.provider, provider),
+          eq(accountLinks.providerAccountId, providerAccountId),
+        ),
+      )
+      .limit(1);
+    return linkedAccount?.canonicalUserId || fallbackUserId;
+  } catch {
+    // 認証基盤が一時的に利用できない場合も、ログイン自体は維持する。
+    return fallbackUserId;
+  }
+}
+
 export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
   const requestHeaders = await headers();
   const authSecret = process.env.AUTH_SECRET;
@@ -39,8 +69,13 @@ export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
             typeof token.provider === "string" ? token.provider : "oauth";
           const providerAccountId =
             typeof token.providerAccountId === "string" ? token.providerAccountId : token.sub;
-          const userId =
+          const tokenUserId =
             typeof token.userId === "string" ? token.userId : `oauth:${provider}:${providerAccountId}`;
+          const userId = await resolveCanonicalUserId(
+            provider,
+            providerAccountId,
+            tokenUserId,
+          );
           const email =
             typeof token.email === "string"
               ? token.email
@@ -75,7 +110,7 @@ export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
       : null;
 
   return {
-    userId,
+    userId: await resolveCanonicalUserId("chatgpt", userId, userId),
     displayName: fullName ?? email,
     email,
     fullName,
