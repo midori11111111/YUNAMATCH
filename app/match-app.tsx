@@ -89,6 +89,7 @@ export type Profile = {
 };
 type Connection = {
   id: number;
+  mateId: string;
   mateName: string;
   mateAvatarUrl?: string;
   matePokemon: string;
@@ -96,6 +97,11 @@ type Connection = {
   mateContactShared: boolean;
   myContactShared: boolean;
   myPokemon: string;
+  mateMainPokemon: string[];
+  mateHighestRate: string;
+  matePlayTime: string[];
+  mateGender: string;
+  mateAge: number | null;
   againByMe: boolean;
   againByMate: boolean;
   mutualAgain: boolean;
@@ -614,6 +620,7 @@ export default function MatchApp({
   const [lobbies, setLobbies] = useState<Lobby[]>([]);
   const [selectedConnection, setSelectedConnection] =
     useState<Connection | null>(null);
+  const [matchedProfile, setMatchedProfile] = useState<Connection | null>(null);
   const [selectedPending, setSelectedPending] =
     useState<PendingConversation | null>(null);
   const [pendingGroupOpen, setPendingGroupOpen] = useState(false);
@@ -1313,6 +1320,7 @@ export default function MatchApp({
       10) *
       100,
   );
+  const mateCount = new Set(connections.map((connection) => connection.mateId)).size;
 
   const moveCard = (step: -1 | 1) => {
     if (!current || animation) return;
@@ -3309,14 +3317,19 @@ export default function MatchApp({
                     >
                       ←
                     </button>
-                    <UserAvatar
-                      name={selectedConnection.mateName}
-                      src={selectedConnection.mateAvatarUrl}
-                      className="chatMateAvatar"
-                    />
-                    <div>
-                      <h1>{selectedConnection.mateName}</h1>
-                      <p>
+                    <button
+                      className="chatProfileButton"
+                      onClick={() => setMatchedProfile(selectedConnection)}
+                      aria-label={`${selectedConnection.mateName}さんのプロフィールを見る`}
+                    >
+                      <UserAvatar
+                        name={selectedConnection.mateName}
+                        src={selectedConnection.mateAvatarUrl}
+                        className="chatMateAvatar"
+                      />
+                      <span>
+                        <h1>{selectedConnection.mateName}</h1>
+                        <p>
                         <span
                           className={
                             matePresence.online
@@ -3329,8 +3342,10 @@ export default function MatchApp({
                           : matePresence.online
                             ? "オンライン"
                             : `${selectedConnection.matePokemon} ・ マッチ済み`}
-                      </p>
-                    </div>
+                        </p>
+                        <small>プロフィールを見る</small>
+                      </span>
+                    </button>
                     <button
                       className="chatPlayInvite"
                       onClick={sendPlayInvite}
@@ -3838,7 +3853,7 @@ export default function MatchApp({
                 </button>
                 <button onClick={() => setTab("chat")}>
                   <span>●</span>
-                  <strong>{connections.length}</strong>
+                  <strong>{mateCount}</strong>
                   <small>メイト</small>
                 </button>
                 <button
@@ -4848,6 +4863,55 @@ export default function MatchApp({
                 ⚡ メイト申請
               </button>
             </div>
+          </section>
+        </div>
+      )}
+
+      {matchedProfile && (
+        <div className="modalBackdrop">
+          <button
+            className="backdropDismiss"
+            onClick={() => setMatchedProfile(null)}
+            aria-label="プロフィールを閉じる"
+          />
+          <section className="sheetModal candidateDetailSheet matchedProfileSheet">
+            <div className="sheetHandle" />
+            <button className="closeButton" onClick={() => setMatchedProfile(null)}>×</button>
+            <div className="candidateDetailHero">
+              <div className="candidateDetailPokemon">
+                <PokemonImage name={matchedProfile.mateMainPokemon[0] || matchedProfile.matePokemon} />
+              </div>
+              <UserAvatar
+                name={matchedProfile.mateName}
+                src={matchedProfile.mateAvatarUrl}
+                className="candidateDetailAvatar"
+              />
+            </div>
+            <small className="modalKicker">MATCHED MATE PROFILE</small>
+            <h2>{matchedProfile.mateName}</h2>
+            <p className="candidateDetailRank">
+              {matchedProfile.mateHighestRate} ・ {matchedProfile.mateGender}
+              {matchedProfile.mateAge !== null && ` ・ ${matchedProfile.mateAge}歳`}
+            </p>
+            <div className="matchedProfileBadge">✓ マッチ済みのメイト</div>
+            <div className="profilePokemonList">
+              <small>使うポケモン</small>
+              <div>
+                {matchedProfile.mateMainPokemon.map((name) => (
+                  <PokemonLabel key={name} name={name} />
+                ))}
+              </div>
+            </div>
+            <div className="timeChip">
+              <span>◷</span>
+              <div>
+                <small>遊べる時間帯</small>
+                <strong>{matchedProfile.matePlayTime.join("・") || "未設定"}</strong>
+              </div>
+            </div>
+            <button className="matchedProfileClose" onClick={() => setMatchedProfile(null)}>
+              チャットに戻る
+            </button>
           </section>
         </div>
       )}

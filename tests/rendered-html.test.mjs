@@ -189,6 +189,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /通知をオンにする/);
   assert.match(app, /navPersonIcon/);
   assert.match(app, /メイト申請を送る/);
+  assert.match(app, /MATCHED MATE PROFILE/);
+  assert.match(app, /mateCount/);
   assert.match(app, /いいね済み/);
   assert.match(app, /ログインすると続けられます/);
   assert.match(app, /yunamatch-pending-action-v1/);
@@ -266,6 +268,9 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(adminPanel, /今日の訪問者/);
   assert.match(adminPanel, /募集 → 申請あり/);
   assert.match(adminPanel, /バックアップをダウンロード/);
+  assert.match(adminPanel, /登録ユーザーの男女比/);
+  assert.match(statsApi, /demographics/);
+  assert.match(connectionsApi, /adoptLegacyConnectionHistory/);
   assert.match(safetyMigration, /rate_limit_buckets/);
   assert.match(safetyMigration, /support_tickets/);
   assert.match(supportApi, /24\*60\*60_000/);

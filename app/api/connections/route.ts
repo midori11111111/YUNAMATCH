@@ -1,6 +1,7 @@
 import { and, desc, eq, gt, inArray, or } from "drizzle-orm";
 import { getDb } from "../../../db";
 import {
+  accountLinks,
   applications,
   blocks,
   connectionRatings,
@@ -30,8 +31,58 @@ async function connectionForUser(connectionId: number, userId: string) {
   return row;
 }
 
-async function backfillAcceptedConnections(userId: string) {
+async function identityAliases(userId: string, email: string) {
   const db = getDb();
+  const rows = await db
+    .select({ canonicalUserId: accountLinks.canonicalUserId })
+    .from(accountLinks)
+    .where(
+      email.includes("@")
+        ? or(
+            eq(accountLinks.canonicalUserId, userId),
+            eq(accountLinks.email, email),
+          )
+        : eq(accountLinks.canonicalUserId, userId),
+    );
+  return [...new Set([userId, ...rows.map((row) => row.canonicalUserId)])];
+}
+
+async function adoptLegacyConnectionHistory(userId: string, aliases: string[]) {
+  const legacyIds = aliases.filter((id) => id !== userId);
+  if (!legacyIds.length) return;
+  const db = getDb();
+  await db
+    .update(connections)
+    .set({ userAId: userId })
+    .where(inArray(connections.userAId, legacyIds));
+  await db
+    .update(connections)
+    .set({ userBId: userId })
+    .where(inArray(connections.userBId, legacyIds));
+  try {
+    await db
+      .update(messages)
+      .set({ senderId: userId })
+      .where(inArray(messages.senderId, legacyIds));
+  } catch {
+    /* 古い重複メッセージがあっても、メイト履歴の復元は続ける */
+  }
+}
+
+function parseList(value: string) {
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === "string")
+      : [];
+  } catch {
+    return value ? [value] : [];
+  }
+}
+
+async function backfillAcceptedConnections(userIds: string[]) {
+  const db = getDb();
+  const currentUserId = userIds[0];
   const rows = await db
     .select({
       applicationId: applications.id,
@@ -49,7 +100,10 @@ async function backfillAcceptedConnections(userId: string) {
     .where(
       and(
         eq(applications.status, "accepted"),
-        or(eq(recruits.ownerId, userId), eq(applications.applicantId, userId)),
+        or(
+          inArray(recruits.ownerId, userIds),
+          inArray(applications.applicantId, userIds),
+        ),
       ),
     )
     .limit(50);
@@ -61,8 +115,10 @@ async function backfillAcceptedConnections(userId: string) {
       rows.map((row) => ({
         applicationId: row.applicationId,
         recruitId: row.recruitId,
-        userAId: row.ownerId,
-        userBId: row.applicantId,
+        userAId: userIds.includes(row.ownerId) ? currentUserId : row.ownerId,
+        userBId: userIds.includes(row.applicantId)
+          ? currentUserId
+          : row.applicantId,
         userAName: row.ownerName,
         userBName: row.applicantName,
         userAPokemon: row.ownerPokemon,
@@ -82,7 +138,9 @@ export async function GET() {
       { error: "ログインが必要です", signIn },
       { status: 401 },
     );
-  await backfillAcceptedConnections(user.userId);
+  const aliases = await identityAliases(user.userId, user.email);
+  await adoptLegacyConnectionHistory(user.userId, aliases);
+  await backfillAcceptedConnections(aliases);
 
   const db = getDb();
   const [blockedByMe, blockedMe] = await Promise.all([
@@ -126,6 +184,12 @@ export async function GET() {
             userId: profiles.userId,
             avatarUrl: profiles.avatarUrl,
             contact: profiles.contact,
+            trainerName: profiles.trainerName,
+            mainPokemon: profiles.mainPokemon,
+            highestRate: profiles.highestRate,
+            playTime: profiles.playTime,
+            gender: profiles.gender,
+            age: profiles.age,
           })
           .from(profiles)
           .where(inArray(profiles.userId, mateIds))
@@ -146,6 +210,9 @@ export async function GET() {
   const mateContacts = new Map(
     mateProfiles.map((profile) => [profile.userId, profile.contact]),
   );
+  const mateProfileById = new Map(
+    mateProfiles.map((profile) => [profile.userId, profile]),
+  );
   const ownRatingByConnection = new Map(
     ownRatings.map((rating) => [rating.connectionId, rating]),
   );
@@ -153,6 +220,7 @@ export async function GET() {
     visible.map(async (row) => {
       const isA = row.userAId === user.userId;
       const mateId = isA ? row.userBId : row.userAId;
+      const mateProfile = mateProfileById.get(mateId);
       const [latest] = await db
         .select({ body: messages.body, createdAt: messages.createdAt })
         .from(messages)
@@ -184,6 +252,7 @@ export async function GET() {
         .limit(99);
       return {
         id: row.id,
+        mateId,
         mateName: isA ? row.userBName : row.userAName,
         mateAvatarUrl: mateAvatars.get(mateId) || "",
         matePokemon: isA ? row.userBPokemon : row.userAPokemon,
@@ -197,6 +266,13 @@ export async function GET() {
           ? row.userAShareContact
           : row.userBShareContact,
         myPokemon: isA ? row.userAPokemon : row.userBPokemon,
+        mateMainPokemon: mateProfile
+          ? parseList(mateProfile.mainPokemon).slice(0, 5)
+          : [isA ? row.userBPokemon : row.userAPokemon],
+        mateHighestRate: mateProfile?.highestRate || "未設定",
+        matePlayTime: mateProfile ? parseList(mateProfile.playTime) : [],
+        mateGender: mateProfile?.gender || "未設定",
+        mateAge: mateProfile?.age ?? null,
         againByMe: isA ? row.userAAgain : row.userBAgain,
         againByMate: isA ? row.userBAgain : row.userAAgain,
         mutualAgain: row.userAAgain && row.userBAgain,
