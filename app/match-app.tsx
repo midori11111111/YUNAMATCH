@@ -2352,17 +2352,20 @@ export default function MatchApp({
   const recruitShareText = (recruit: Recruit) =>
     [
       `【ポケモンユナイト仲間募集】`,
-      `${recruit.matchType} / ${recruit.pokemon} / ${recruit.role}`,
-      `${recruit.acceptedCount + 1}/${recruit.partySize}人・${formatRecruitStart(recruit)}`,
-      recruit.desiredPokemon !== "すべて"
-        ? `希望ポケモン: ${recruit.desiredPokemon}`
-        : "",
-      recruit.desiredRole !== "指定なし"
-        ? `希望ロール: ${recruit.desiredRole}`
-        : "",
-      `${recruit.rank}・勝率${recruit.winRate}%`,
-      recruit.playTime,
-      recruit.note,
+      `募集内容：${recruit.matchType} / ${recruit.pokemon} / ${recruit.role}`,
+      `募集人数：${recruit.acceptedCount + 1}/${recruit.partySize}人・${formatRecruitStart(recruit)}`,
+      `希望する相手：${[
+        recruit.desiredPokemon !== "すべて"
+          ? `ポケモン ${recruit.desiredPokemon}`
+          : "ポケモン指定なし",
+        recruit.desiredRole !== "指定なし"
+          ? `ロール ${recruit.desiredRole}`
+          : "ロール指定なし",
+      ].join(" / ")}`,
+      `募集者ランク：${recruit.rank}`,
+      `募集者戦績：${recruit.matches > 0 ? `${recruit.matches.toLocaleString()}戦・` : ""}勝率${recruit.winRate}%`,
+      `募集者の遊べる時間：${recruit.playTime}`,
+      recruit.note ? `ひとこと：${recruit.note}` : "",
       "#YUNAMATCH #ポケモンユナイト募集",
     ]
       .filter(Boolean)
@@ -3868,38 +3871,51 @@ export default function MatchApp({
                           </small>
                         </div>
                       </header>
-                      <div className="recruitBadges">
-                        <span className="matchTypeBadge">{recruit.matchType}</span>
-                        <span>{formatRecruitStart(recruit)}</span>
-                        <span>
-                          {recruit.desiredPokemon === "すべて"
-                            ? "相方指定なし"
-                            : `${recruit.desiredPokemon}希望`}
-                        </span>
-                        <span>{recruit.rank}</span>
+                      <div className="recruitConditionBlock">
+                        <small className="recruitSectionLabel">募集条件</small>
+                        <div className="recruitBadges">
+                          <span className="matchTypeBadge">{recruit.matchType}</span>
+                          <span>{formatRecruitStart(recruit)}</span>
+                          <span>
+                            {recruit.desiredPokemon === "すべて"
+                              ? "希望相手：ポケモン指定なし"
+                              : `希望相手：${recruit.desiredPokemon}`}
+                          </span>
+                          <span>
+                            {recruit.desiredRole === "指定なし"
+                              ? "希望ロール：指定なし"
+                              : `希望ロール：${recruit.desiredRole}`}
+                          </span>
+                        </div>
                       </div>
                       {recruit.note && (
                         <p className="recruitNote">“{recruit.note}”</p>
                       )}
-                      <div className="recruitFacts">
-                        <div>
-                          <span>◷</span>
-                          <small>遊べる時間</small>
-                          <strong>{recruit.playTime}</strong>
+                      <div className="recruitOwnerSummary">
+                        <div className="recruitOwnerHeading">
+                          <small>募集者プロフィール</small>
+                          <strong>募集者ランク：{recruit.rank}</strong>
                         </div>
-                        <div>
-                          <small>本人の試合数</small>
-                          <strong>
-                            {recruit.matches > 0
-                              ? `${recruit.matches.toLocaleString()}戦`
-                              : "未設定"}
-                          </strong>
-                        </div>
-                        <div>
-                          <small>本人の勝率</small>
-                          <strong>
-                            {recruit.winRate > 0 ? `${recruit.winRate}%` : "未設定"}
-                          </strong>
+                        <div className="recruitFacts">
+                          <div>
+                            <span>◷</span>
+                            <small>募集者の遊べる時間</small>
+                            <strong>{recruit.playTime}</strong>
+                          </div>
+                          <div>
+                            <small>募集者の試合数</small>
+                            <strong>
+                              {recruit.matches > 0
+                                ? `${recruit.matches.toLocaleString()}戦`
+                                : "未設定"}
+                            </strong>
+                          </div>
+                          <div>
+                            <small>募集者の勝率</small>
+                            <strong>
+                              {recruit.winRate > 0 ? `${recruit.winRate}%` : "未設定"}
+                            </strong>
+                          </div>
                         </div>
                       </div>
                       <div className="recruitCardActions">
@@ -6082,8 +6098,8 @@ export default function MatchApp({
             )}
             <div className="recruitProfileMeta">
               <PokemonLabel name={recruitProfileView.pokemon} />
-              <span>{recruitProfileView.rank}</span>
-              <span>{recruitProfileView.matchType}</span>
+              <span>募集者ランク：{recruitProfileView.rank}</span>
+              <span>募集モード：{recruitProfileView.matchType}</span>
             </div>
             {recruitProfileView.note && (
               <p className="recruitNote">“{recruitProfileView.note}”</p>
@@ -6417,7 +6433,7 @@ export default function MatchApp({
                 <PokemonImage name={recruitShare.pokemon} />
               </div>
               <div>
-                <small>{recruitShare.matchType}</small>
+                <small>募集条件：{recruitShare.matchType}</small>
                 <strong>
                   {recruitShare.pokemon === "未定"
                     ? "役割から仲間を募集中"
@@ -6425,10 +6441,13 @@ export default function MatchApp({
                 </strong>
                 <span>
                   {recruitShare.role !== "指定なし"
-                    ? recruitShare.role
-                    : recruitShare.rank}
+                    ? `募集者の希望役割：${recruitShare.role}`
+                    : "募集者の役割：相談して決める"}
                 </span>
-                <p>{formatRecruitStart(recruitShare)} ・ {recruitShare.playTime}</p>
+                <p>
+                  募集者ランク：{recruitShare.rank}<br />
+                  {formatRecruitStart(recruitShare)} ・ {recruitShare.playTime}
+                </p>
               </div>
             </div>
             <div className="socialShareGrid">

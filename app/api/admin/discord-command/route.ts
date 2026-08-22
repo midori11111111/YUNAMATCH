@@ -25,6 +25,12 @@ const matchTypeOption: DiscordCommandOption = {
   ],
 };
 
+const clarifiedDescriptions: Record<string, string> = {
+  current_rank: "あなた（募集者本人）の現在のランク",
+  matches: "あなた（募集者本人）の試合数",
+  win_rate: "あなた（募集者本人）の勝率",
+};
+
 export async function POST() {
   if (!(await requireAdmin()))
     return Response.json(
@@ -59,7 +65,12 @@ export async function POST() {
   const currentOptions = recruitCommand.options || [];
   const options = [
     matchTypeOption,
-    ...currentOptions.filter((option) => option.name !== "match_type"),
+    ...currentOptions
+      .filter((option) => option.name !== "match_type")
+      .map((option) => ({
+        ...option,
+        description: clarifiedDescriptions[option.name] || option.description,
+      })),
   ];
   const updateResponse = await fetch(
     `https://discord.com/api/v10/applications/${appId}/commands/${recruitCommand.id}`,

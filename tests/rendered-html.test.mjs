@@ -111,10 +111,14 @@ test("supports casual and ranked recruiting on the site and Discord", async () =
   assert.match(app, /recruit\.matchType/);
   assert.match(recruitsApi, /matchType:recruits\.matchType/);
   assert.match(discordApi, /options\.match_type/);
+  assert.match(discordApi, /募集者ランク/);
+  assert.match(discordApi, /募集者の希望役割/);
   assert.match(commandScript, /name: "match_type"/);
   assert.match(commandScript, /required: true/);
+  assert.match(commandScript, /募集者本人/);
   assert.match(adminCommandApi, /requireAdmin/);
   assert.match(adminCommandApi, /method: "PATCH"/);
+  assert.match(adminCommandApi, /clarifiedDescriptions/);
   assert.match(schema, /matchType: text\("match_type"\)/);
   assert.match(migration, /ADD `match_type` text DEFAULT 'ランクマッチ' NOT NULL/);
 });
@@ -290,6 +294,11 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /通知をオンにして続ける/);
   assert.match(app, /自分の試合数/);
   assert.match(app, /自分の勝率/);
+  assert.match(app, /募集条件/);
+  assert.match(app, /希望する相手/);
+  assert.match(app, /募集者プロフィール/);
+  assert.match(app, /募集者ランク/);
+  assert.match(app, /募集者の試合数/);
   assert.match(app, /もらったいいね/);
   assert.match(app, /receivedProfileCandidates/);
   assert.match(app, /const receivedCards = receivedProfileCandidates/);

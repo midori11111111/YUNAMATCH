@@ -378,10 +378,15 @@ button { cursor: pointer; }
 .recruitTop span { margin-left: auto; padding: 5px 8px; border-radius: 99px; color: var(--green); background: #e7f8f2; font-size: 7px; font-weight: 900; white-space: nowrap; }
 .recruitCardHeader > div:last-child > strong { display: inline-block; margin-top: 7px; color: var(--purple-dark); font-size: 13px; }
 .recruitCardHeader > div:last-child > small { margin-left: 7px; color: #8e8796; font-size: 9px; }
+.recruitConditionBlock, .recruitOwnerSummary { display: grid; gap: 7px; }
+.recruitSectionLabel, .recruitOwnerHeading small { color: #8f8798; font-size: 7px; font-weight: 950; letter-spacing: .08em; }
 .recruitBadges { display: flex; flex-wrap: wrap; gap: 7px; }
 .recruitBadges span { padding: 7px 10px; border-radius: 99px; color: #5f5670; background: #f3f0f7; font-size: 9px; font-weight: 800; }
 .recruitBadges .matchTypeBadge { color: #fff; background: linear-gradient(135deg,var(--purple),#8d75f1); }
 .recruitNote { margin: 0; padding: 12px 13px; border-left: 3px solid #d6caff; border-radius: 0 11px 11px 0; color: #554e5e; background: #faf8fd; font-size: 11px; line-height: 1.55; }
+.recruitOwnerSummary { padding: 11px; border-radius: 16px; background: #faf8fd; }
+.recruitOwnerHeading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.recruitOwnerHeading strong { color: #4e4560; font-size: 9px; }
 .recruitFacts { display: grid; grid-template-columns: 1.7fr .8fr .7fr; overflow: hidden; border: 1px solid var(--line); border-radius: 14px; }
 .recruitFacts > div { min-width: 0; display: grid; align-content: center; gap: 3px; padding: 10px 11px; }
 .recruitFacts > div + div { border-left: 1px solid var(--line); }

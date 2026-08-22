@@ -30,7 +30,7 @@ const commands = [
       {
         type: 3,
         name: "current_rank",
-        description: "現在のランク",
+        description: "あなた（募集者本人）の現在のランク",
         required: true,
         choices: ranks.map((name) => ({ name, value: name })),
       },
@@ -85,8 +85,8 @@ const commands = [
           { name: "3時間", value: 3 },
         ],
       },
-      { type: 4, name: "matches", description: "試合数" },
-      { type: 10, name: "win_rate", description: "勝率" },
+      { type: 4, name: "matches", description: "あなた（募集者本人）の試合数" },
+      { type: 10, name: "win_rate", description: "あなた（募集者本人）の勝率" },
     ],
   },
   {

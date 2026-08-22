@@ -235,7 +235,7 @@ export async function POST(request: Request) {
   return json({
     type: 4,
     data: {
-      content: `⚡ **${profile.trainerName}さんがユナイト仲間を募集！**\n🎮 ${matchType}\n${role} / ${currentRank}\n${startLabel}開始・${partyLabel}・${duration}時間募集\n使用ポケモンは未定です。役割を相談して決められます\n参加申請は下のボタンから`,
+      content: `⚡ **${profile.trainerName}さんがユナイト仲間を募集！**\n🎮 **募集条件**：${matchType}・${partyLabel}\n🕒 **開始**：${startLabel}・${duration}時間募集\n👤 **募集者ランク**：${currentRank}\n🧭 **募集者の希望役割**：${role}\n使用ポケモンは未定です。役割を相談して決められます\n参加申請は下のボタンから`,
       components: [
         {
           type: 1,
