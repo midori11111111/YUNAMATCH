@@ -2,7 +2,7 @@
 
 Discord Developer Portalのアプリ設定で、Interactions Endpoint URLを次に設定します。
 
-`https://yunamatch.vercel.app/api/discord/interactions`
+`https://yunamatch.com/api/discord/interactions`
 
 公開環境に `DISCORD_PUBLIC_KEY`、`DISCORD_APP_ID`、`DISCORD_BOT_TOKEN` を登録し、次を一度実行すると `/募集` と `/はじめ方` が追加されます。
 
@@ -18,4 +18,4 @@ Discordの「コミュニティを有効にする」をオンにし、オンボ�
 - 希望ロール：アタック型 / バランス型 / スピード型 / ディフェンス型 / サポート型
 - VC：VCできます / 聞き専 / VCなし
 
-デフォルトチャンネルは「はじめに」「ルール」「ユナイト募集」「お知らせ」にし、サーバーガイドへ `https://yunamatch.vercel.app/community` を登録します。
+デフォルトチャンネルは「はじめに」「ルール」「ユナイト募集」「お知らせ」にし、サーバーガイドへ `https://yunamatch.com/community` を登録します。

@@ -2323,8 +2323,8 @@ export default function MatchApp({
 
   const recruitUrl = (recruit: Recruit) =>
     recruit.id > 0
-      ? `https://yunamatch.vercel.app/?recruit=${recruit.id}`
-      : "https://yunamatch.vercel.app/";
+      ? `https://yunamatch.com/?recruit=${recruit.id}`
+      : "https://yunamatch.com/";
   const recruitShareText = (recruit: Recruit) =>
     [
       `【ポケモンユナイト仲間募集】`,
@@ -2575,7 +2575,7 @@ export default function MatchApp({
   const shareMatchToX = (matePokemon: string) => {
     const text = `YUNAMATCHで${matePokemon}を使うメイトとマッチしました！これから一緒にユナイトします⚡ #YUNAMATCH #ポケモンユナイト`;
     window.open(
-      `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent("https://yunamatch.vercel.app/")}`,
+      `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent("https://yunamatch.com/")}`,
       "_blank",
       "noopener,noreferrer",
     );
@@ -3369,7 +3369,7 @@ export default function MatchApp({
         await navigator.share({
           title: "YUNAMATCH トレーナーカード",
           text,
-          url: "https://yunamatch.vercel.app/",
+          url: "https://yunamatch.com/",
           files: [file],
         });
         setShareOpen(false);
@@ -3384,7 +3384,7 @@ export default function MatchApp({
     download.click();
     window.setTimeout(() => URL.revokeObjectURL(download.href), 1000);
     window.open(
-      `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent("https://yunamatch.vercel.app/")}`,
+      `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent("https://yunamatch.com/")}`,
       "_blank",
       "noopener,noreferrer",
     );

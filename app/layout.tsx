@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
-  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "yunamatch.vercel.app";
+  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "yunamatch.com";
   const protocol = requestHeaders.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
   const base = new URL(`${protocol}://${host}`);
   const title = "ユナマッチ｜相性でつながるユナイト仲間";

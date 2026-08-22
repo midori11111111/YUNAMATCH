@@ -65,7 +65,7 @@ export async function POST(request: Request) {
       type: 4,
       data: {
         content:
-          "⚡ **YUNAMATCHの使い方**\n1. プロフィールでDiscordアカウントを連携\n2. このサーバーで `/募集` を入力\n3. カジュアルかランクマッチを選択\n4. 届いた申請をYUNAMATCHで承認\n5. チャットから二人だけのVC1〜VC5を作成\n\n詳しくはこちら：https://yunamatch.vercel.app/community",
+          "⚡ **YUNAMATCHの使い方**\n1. プロフィールでDiscordアカウントを連携\n2. このサーバーで `/募集` を入力\n3. カジュアルかランクマッチを選択\n4. 届いた申請をYUNAMATCHで承認\n5. チャットから二人だけのVC1〜VC5を作成\n\n詳しくはこちら：https://yunamatch.com/community",
         flags: 64,
       },
     });
@@ -230,7 +230,7 @@ export async function POST(request: Request) {
     contact: profile.contact,
     joinedAt: now,
   });
-  const url = `https://yunamatch.vercel.app/?recruit=${recruit.id}`;
+  const url = `https://yunamatch.com/?recruit=${recruit.id}`;
   const startLabel = startsIn === 0 ? "今から" : `${startsIn}分後`;
   return json({
     type: 4,
