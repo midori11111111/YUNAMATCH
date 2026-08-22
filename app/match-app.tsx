@@ -882,7 +882,7 @@ export default function MatchApp({
     }
   };
   const avatarEditor = () => (
-    <div className="avatarEditor">
+    <div className="avatarEditor" id="profile-avatar-field">
       <UserAvatar
         name={profile.trainerName || "T"}
         src={profile.avatarUrl}
@@ -1500,23 +1500,62 @@ export default function MatchApp({
     visibleAcceptedNotices.length +
     visibleDeclinedNotices.length +
     unreadCount;
+  const profileCompletionItems = [
+    {
+      label: "トレーナー名",
+      complete: Boolean(profile.trainerName.trim()),
+      targetId: "profile-trainer-name-field",
+    },
+    {
+      label: "メインポケモン",
+      complete: profile.mainPokemon.length > 0,
+      targetId: "profile-pokemon-field",
+    },
+    {
+      label: "最高レート",
+      complete: Boolean(profile.highestRate),
+      targetId: "profile-rate-field",
+    },
+    {
+      label: "遊べる時間帯",
+      complete: profile.playTime.length > 0,
+      targetId: "profile-play-time-field",
+    },
+    {
+      label: "年齢",
+      complete: profile.age !== null,
+      targetId: "profile-age-field",
+    },
+    {
+      label: "性別",
+      complete: Boolean(profile.gender),
+      targetId: "profile-gender-field",
+    },
+    {
+      label: "プロフィール画像",
+      complete: Boolean(profile.avatarUrl),
+      targetId: "profile-avatar-field",
+    },
+    {
+      label: "自己紹介",
+      complete: Boolean(profile.bio.trim()),
+      targetId: "profile-bio-field",
+    },
+  ];
+  const incompleteProfileItems = profileCompletionItems.filter(
+    (item) => !item.complete,
+  );
   const profileCompletion = Math.round(
-    ([
-      Boolean(profile.trainerName.trim()),
-      profile.mainPokemon.length > 0,
-      Boolean(profile.highestRate),
-      profile.playTime.length > 0,
-      Boolean(profile.gender),
-      profile.age !== null,
-      Boolean(profile.avatarUrl),
-      Boolean(profile.bio.trim()),
-      profile.mainPokemon.length >= 2,
-      profile.playTime.length >= 2,
-      pushState === "on",
-    ].filter(Boolean).length /
-      11) *
+    ((profileCompletionItems.length - incompleteProfileItems.length) /
+      profileCompletionItems.length) *
       100,
   );
+  const scrollToProfileField = (targetId: string) => {
+    document.getElementById(targetId)?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  };
   const mateCount = new Set(connections.map((connection) => connection.mateId)).size;
 
   const moveCard = (step: -1 | 1) => {
@@ -4366,6 +4405,33 @@ export default function MatchApp({
                     {profileCompletion}%
                   </progress>
                 </div>
+                <div
+                  className={`profileCompletionGuide ${
+                    profileCompletion === 100 ? "complete" : ""
+                  }`}
+                >
+                  {profileCompletion === 100 ? (
+                    <strong>✓ プロフィールは100%完成しています</strong>
+                  ) : (
+                    <>
+                      <strong>
+                        100%まであと{incompleteProfileItems.length}項目
+                      </strong>
+                      <p>未入力の項目を押すと編集欄へ移動します</p>
+                      <div>
+                        {incompleteProfileItems.map((item) => (
+                          <button
+                            type="button"
+                            key={item.targetId}
+                            onClick={() => scrollToProfileField(item.targetId)}
+                          >
+                            ＋ {item.label}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
                 <button
                   className="shareCardButton"
                   onClick={() => setShareOpen(true)}
@@ -4423,7 +4489,7 @@ export default function MatchApp({
                   <p>登録内容と、マッチ後に任意で共有する連絡先を変更できます。</p>
                 </div>
                 {avatarEditor()}
-                <label>
+                <label id="profile-trainer-name-field">
                   トレーナー名
                   <input
                     value={profile.trainerName}
@@ -4434,7 +4500,7 @@ export default function MatchApp({
                     required
                   />
                 </label>
-                <label>
+                <label id="profile-bio-field">
                   自己紹介（任意）
                   <textarea
                     value={profile.bio}
@@ -4447,13 +4513,15 @@ export default function MatchApp({
                   />
                   <small className="fieldCounter">{profile.bio.length} / 160</small>
                 </label>
-                <PokemonPicker
-                  selected={profile.mainPokemon}
-                  onChange={(mainPokemon) =>
-                    setProfile({ ...profile, mainPokemon })
-                  }
-                />
-                <label>
+                <div id="profile-pokemon-field">
+                  <PokemonPicker
+                    selected={profile.mainPokemon}
+                    onChange={(mainPokemon) =>
+                      setProfile({ ...profile, mainPokemon })
+                    }
+                  />
+                </div>
+                <label id="profile-rate-field">
                   最高レート
                   <select
                     value={profile.highestRate}
@@ -4466,11 +4534,13 @@ export default function MatchApp({
                     ))}
                   </select>
                 </label>
-                <PlayTimePicker
-                  selected={profile.playTime}
-                  onChange={(playTime) => setProfile({ ...profile, playTime })}
-                />
-                <label>
+                <div id="profile-play-time-field">
+                  <PlayTimePicker
+                    selected={profile.playTime}
+                    onChange={(playTime) => setProfile({ ...profile, playTime })}
+                  />
+                </div>
+                <label id="profile-age-field">
                   年齢
                   <select
                     value={profile.age ?? ""}
@@ -4511,7 +4581,7 @@ export default function MatchApp({
                     <span>保護者の同意を得ています。</span>
                   </label>
                 )}
-                <fieldset className="genderChoice">
+                <fieldset className="genderChoice" id="profile-gender-field">
                   <legend>性別</legend>
                   <button
                     type="button"

@@ -408,6 +408,13 @@ button { cursor: pointer; }
 .profileCompletionInline progress::-webkit-progress-bar { border-radius: 99px; background: #e9e4ee; }
 .profileCompletionInline progress::-webkit-progress-value { border-radius: 99px; background: linear-gradient(90deg, var(--purple), var(--pink)); }
 .profileCompletionInline progress::-moz-progress-bar { border-radius: 99px; background: linear-gradient(90deg, var(--purple), var(--pink)); }
+.profileCompletionGuide { width: min(330px,100%); margin: 12px auto 0; padding: 12px; border: 1px solid #e8e1f2; border-radius: 15px; background: #faf8ff; text-align: left; }
+.profileCompletionGuide > strong { display: block; color: #463a60; font-size: 9px; }
+.profileCompletionGuide > p { margin: 4px 0 9px; color: #928a9d; font-size: 7px; }
+.profileCompletionGuide > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.profileCompletionGuide button { border: 1px solid #ddd4f7; border-radius: 99px; padding: 7px 9px; color: #6652cd; background: #fff; font-size: 7px; font-weight: 900; }
+.profileCompletionGuide.complete { text-align: center; border-color: #cfece2; background: #f0fbf7; }
+.profileCompletionGuide.complete > strong { color: #168d70; }
 .profileQuickStats { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin: 4px 0 24px; }
 .profileQuickStats button { min-width: 0; height: 82px; display: grid; place-items: center; align-content: center; gap: 2px; padding: 6px 3px; border: 0; border-radius: 19px; color: #302747; background: #f3f1f5; }
 .profileQuickStats span { color: var(--pink); font-size: 17px; font-weight: 950; }
