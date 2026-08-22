@@ -1007,6 +1007,11 @@ button { cursor: pointer; }
 .discoverFilterSheet { display: grid; gap: 13px; }
 .discoverFilterSheet > h2 { margin-bottom: 2px; }
 .discoverGenderFilter { grid-template-columns: repeat(3, 1fr); }
+.likeCountFilter { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 10px; padding: 12px; border: 1px solid #e8e2ed; border-radius: 14px; background: #faf8fc; }
+.likeCountFilter legend { padding: 0 5px; color: #625c6a; font-size: 8px; font-weight: 900; }
+.likeCountFilter label { display: grid; gap: 5px; color: #8c8593; font-size: 7px; font-weight: 900; }
+.likeCountFilter input { width: 100%; min-width: 0; padding: 11px 9px; border: 1px solid #e1dbe7; border-radius: 10px; background: #fff; font-size: 10px; }
+.likeCountFilter > b { padding-bottom: 11px; color: #9b94a1; font-size: 11px; }
 .filterActionRow { display: grid; grid-template-columns: .8fr 1.2fr; gap: 8px; margin-top: 3px; }
 .filterActionRow button { min-height: 46px; margin: 0; border-radius: 14px; font-size: 9px; font-weight: 900; }
 .filterResetButton { border: 1px solid #e2dce7; color: #777080; background: #fff; }

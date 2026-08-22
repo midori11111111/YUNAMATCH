@@ -634,6 +634,8 @@ export default function MatchApp({
   const [trainerQuery, setTrainerQuery] = useState("");
   const [genderFilter, setGenderFilter] = useState<"" | "男性" | "女性">("");
   const [sharedTimeOnly, setSharedTimeOnly] = useState(false);
+  const [minLikes, setMinLikes] = useState("");
+  const [maxLikes, setMaxLikes] = useState("");
   const [discoverFiltersReady, setDiscoverFiltersReady] = useState(false);
   const [compose, setCompose] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
@@ -960,6 +962,8 @@ export default function MatchApp({
     if (normalizedTrainer) params.set("trainer", normalizedTrainer);
     if (genderFilter) params.set("gender", genderFilter);
     if (sharedTimeOnly) params.set("sharedTimeOnly", "1");
+    if (minLikes !== "") params.set("minLikes", minLikes);
+    if (maxLikes !== "") params.set("maxLikes", maxLikes);
     if (append) discoverLoadingMoreRef.current = true;
     else setLoading(true);
     try {
@@ -1004,6 +1008,8 @@ export default function MatchApp({
     trainerQuery,
     genderFilter,
     sharedTimeOnly,
+    minLikes,
+    maxLikes,
   ]);
   const loadNotices = async () => {
     try {
@@ -1068,6 +1074,8 @@ export default function MatchApp({
           trainerQuery?: unknown;
           genderFilter?: unknown;
           sharedTimeOnly?: unknown;
+          minLikes?: unknown;
+          maxLikes?: unknown;
         };
         if (typeof filters.pokemonQuery === "string")
           setPokemonQuery(filters.pokemonQuery.slice(0, 40));
@@ -1081,6 +1089,10 @@ export default function MatchApp({
           setGenderFilter(filters.genderFilter);
         if (typeof filters.sharedTimeOnly === "boolean")
           setSharedTimeOnly(filters.sharedTimeOnly);
+        if (typeof filters.minLikes === "string" && /^\d{0,4}$/.test(filters.minLikes))
+          setMinLikes(filters.minLikes);
+        if (typeof filters.maxLikes === "string" && /^\d{0,4}$/.test(filters.maxLikes))
+          setMaxLikes(filters.maxLikes);
       }
     } catch {
       window.localStorage.removeItem(discoverFiltersStorageKey);
@@ -1099,6 +1111,8 @@ export default function MatchApp({
           trainerQuery,
           genderFilter,
           sharedTimeOnly,
+          minLikes,
+          maxLikes,
         }),
       );
     } catch {
@@ -1110,6 +1124,8 @@ export default function MatchApp({
     trainerQuery,
     genderFilter,
     sharedTimeOnly,
+    minLikes,
+    maxLikes,
   ]);
 
   useEffect(() => {
@@ -1455,6 +1471,8 @@ export default function MatchApp({
         trainerQuery,
         gender: genderFilter,
         sharedTimeOnly,
+        minLikes: minLikes === "" ? null : Number(minLikes),
+        maxLikes: maxLikes === "" ? null : Number(maxLikes),
         myPlayTime: profile.playTime,
         officialPokemon: pokemon,
       }),
@@ -1464,6 +1482,8 @@ export default function MatchApp({
       trainerQuery,
       genderFilter,
       sharedTimeOnly,
+      minLikes,
+      maxLikes,
       profile.playTime,
     ],
   );
@@ -1476,7 +1496,8 @@ export default function MatchApp({
     Number(Boolean(pokemonQuery.trim())) +
     Number(Boolean(trainerQuery.trim())) +
     Number(Boolean(genderFilter)) +
-    Number(sharedTimeOnly);
+    Number(sharedTimeOnly) +
+    Number(minLikes !== "" || maxLikes !== "");
   const current = cards.length
     ? cards[((index % cards.length) + cards.length) % cards.length]
     : null;
@@ -5643,6 +5664,40 @@ export default function MatchApp({
               />
               <span>自分と遊べる時間帯が合う人だけ</span>
             </label>
+            <fieldset className="likeCountFilter">
+              <legend>もらったいいね数</legend>
+              <label>
+                <span>最小</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  max="9999"
+                  value={minLikes}
+                  placeholder="指定なし"
+                  onChange={(e) => {
+                    setMinLikes(e.target.value.replace(/\D/g, "").slice(0, 4));
+                    setIndex(0);
+                  }}
+                />
+              </label>
+              <b>〜</b>
+              <label>
+                <span>最大</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={minLikes || "0"}
+                  max="9999"
+                  value={maxLikes}
+                  placeholder="指定なし"
+                  onChange={(e) => {
+                    setMaxLikes(e.target.value.replace(/\D/g, "").slice(0, 4));
+                    setIndex(0);
+                  }}
+                />
+              </label>
+            </fieldset>
             <div className="filterActionRow">
               <button
                 className="filterResetButton"
@@ -5651,6 +5706,8 @@ export default function MatchApp({
                   setTrainerQuery("");
                   setGenderFilter("");
                   setSharedTimeOnly(false);
+                  setMinLikes("");
+                  setMaxLikes("");
                   setIndex(0);
                 }}
                 disabled={!activeFilterCount}

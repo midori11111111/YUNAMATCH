@@ -45,14 +45,16 @@ test("keeps discover results inside every selected filter", async () => {
     new URL("../lib/discover-filter.ts", import.meta.url)
   );
   const candidates = [
-    { trainerName: "みどり", mainPokemon: ["ミュウ"], gender: "女性", playTime: ["平日 夜（18〜22時）"] },
-    { trainerName: "みどり2", mainPokemon: ["ミュウツーX"], gender: "男性", playTime: ["平日 夜（18〜22時）"] },
-    { trainerName: "あお", mainPokemon: ["ミュウツーY"], gender: "女性", playTime: ["土日 朝・昼"] },
+    { trainerName: "みどり", mainPokemon: ["ミュウ"], gender: "女性", playTime: ["平日 夜（18〜22時）"], likeCount: 3 },
+    { trainerName: "みどり2", mainPokemon: ["ミュウツーX"], gender: "男性", playTime: ["平日 夜（18〜22時）"], likeCount: 12 },
+    { trainerName: "あお", mainPokemon: ["ミュウツーY"], gender: "女性", playTime: ["土日 朝・昼"], likeCount: 24 },
   ];
   const baseFilters = {
     trainerQuery: "",
     gender: "",
     sharedTimeOnly: false,
+    minLikes: null,
+    maxLikes: null,
     myPlayTime: ["平日 夜（18〜22時）"],
     officialPokemon: ["ミュウ", "ミュウツーX", "ミュウツーY"],
   };
@@ -71,6 +73,10 @@ test("keeps discover results inside every selected filter", async () => {
   assert.deepEqual(
     filterDiscoverCandidates(candidates, { ...baseFilters, pokemonQuery: "", gender: "女性", sharedTimeOnly: true }).map((person) => person.trainerName),
     ["みどり"],
+  );
+  assert.deepEqual(
+    filterDiscoverCandidates(candidates, { ...baseFilters, pokemonQuery: "", minLikes: 10, maxLikes: 20 }).map((person) => person.trainerName),
+    ["みどり2"],
   );
 });
 
@@ -486,6 +492,9 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /filterDiscoverCandidates/);
   assert.match(app, /setAnimation\(""\)/);
   assert.match(app, /条件をリセット/);
+  assert.match(app, /もらったいいね数/);
+  assert.match(app, /minLikes/);
+  assert.match(app, /maxLikes/);
   assert.match(app, /yunamatch-discover-filters-v1/);
   assert.match(app, /localStorage\.setItem\(\s*discoverFiltersStorageKey/);
   assert.match(privacyPage, /初期状態は非公開/);

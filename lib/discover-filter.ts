@@ -3,6 +3,7 @@ export type DiscoverFilterCandidate = {
   mainPokemon: string[];
   gender: string;
   playTime: string[];
+  likeCount: number;
 };
 
 type DiscoverFilters = {
@@ -10,6 +11,8 @@ type DiscoverFilters = {
   trainerQuery: string;
   gender: "" | "男性" | "女性";
   sharedTimeOnly: boolean;
+  minLikes: number | null;
+  maxLikes: number | null;
   myPlayTime: string[];
   officialPokemon: string[];
 };
@@ -56,6 +59,15 @@ export function filterDiscoverCandidates<T extends DiscoverFilterCandidate>(
       person.playTime.includes("時間帯はいつでも") ||
       filters.myPlayTime.includes("時間帯はいつでも") ||
       person.playTime.some((time) => filters.myPlayTime.includes(time));
-    return pokemonMatches && trainerMatches && genderMatches && timeMatches;
+    const likesMatch =
+      (filters.minLikes === null || person.likeCount >= filters.minLikes) &&
+      (filters.maxLikes === null || person.likeCount <= filters.maxLikes);
+    return (
+      pokemonMatches &&
+      trainerMatches &&
+      genderMatches &&
+      timeMatches &&
+      likesMatch
+    );
   });
 }

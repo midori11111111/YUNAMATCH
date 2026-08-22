@@ -44,6 +44,8 @@ function discoverQuery(request: Request) {
   const searchParams = new URL(request.url).searchParams;
   const requestedOffset = Number(searchParams.get("offset") || 0);
   const requestedGender = searchParams.get("gender");
+  const requestedMinLikes = Number(searchParams.get("minLikes"));
+  const requestedMaxLikes = Number(searchParams.get("maxLikes"));
   return {
     offset:
       Number.isInteger(requestedOffset) && requestedOffset > 0
@@ -63,6 +65,18 @@ function discoverQuery(request: Request) {
         ? requestedGender
         : "",
     sharedTimeOnly: searchParams.get("sharedTimeOnly") === "1",
+    minLikes:
+      searchParams.has("minLikes") &&
+      Number.isInteger(requestedMinLikes) &&
+      requestedMinLikes >= 0
+        ? requestedMinLikes
+        : null,
+    maxLikes:
+      searchParams.has("maxLikes") &&
+      Number.isInteger(requestedMaxLikes) &&
+      requestedMaxLikes >= 0
+        ? requestedMaxLikes
+        : null,
   };
 }
 
@@ -259,7 +273,17 @@ export async function GET(request: Request) {
       playTime.includes("時間帯はいつでも") ||
       myPlayTime.includes("時間帯はいつでも") ||
       playTime.some((time) => myPlayTime.includes(time));
-    return pokemonMatches && trainerMatches && genderMatches && timeMatches;
+    const likeCount = stats.publicStats(row.userId).likeCount;
+    const likesMatch =
+      (query.minLikes === null || likeCount >= query.minLikes) &&
+      (query.maxLikes === null || likeCount <= query.maxLikes);
+    return (
+      pokemonMatches &&
+      trainerMatches &&
+      genderMatches &&
+      timeMatches &&
+      likesMatch
+    );
   });
   const prioritized =
     me.gender === "男性"
