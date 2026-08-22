@@ -280,6 +280,10 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(likesApi, /onConflictDoNothing/);
   assert.match(likesMigration, /CREATE TABLE `profile_likes`/);
   assert.match(pokemonArt, /official-artwork/);
+  for (const name of ["バクフーン", "ソルガレオ", "レシラム", "イベルタル", "メガニウム", "ウェーニバル"]) {
+    assert.match(app, new RegExp(name));
+    assert.match(pokemonArt, new RegExp(name));
+  }
   assert.equal(ogImage, undefined);
   assert.match(app, /アカウントを削除して退会/);
   assert.match(app, /Discordで募集・VCに参加/);
