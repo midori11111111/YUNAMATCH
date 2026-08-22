@@ -383,6 +383,7 @@ button { cursor: pointer; }
 .recruitBadges { display: flex; flex-wrap: wrap; gap: 7px; }
 .recruitBadges span { padding: 7px 10px; border-radius: 99px; color: #5f5670; background: #f3f0f7; font-size: 9px; font-weight: 800; }
 .recruitBadges .matchTypeBadge { color: #fff; background: linear-gradient(135deg,var(--purple),#8d75f1); }
+.recruitBadges .recruitPostedAt { color: #71678a; background: #eee9ff; }
 .recruitNote { margin: 0; padding: 12px 13px; border-left: 3px solid #d6caff; border-radius: 0 11px 11px 0; color: #554e5e; background: #faf8fd; font-size: 11px; line-height: 1.55; }
 .recruitOwnerSummary { padding: 11px; border-radius: 16px; background: #faf8fd; }
 .recruitOwnerHeading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }

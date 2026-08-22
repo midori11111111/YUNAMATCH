@@ -299,6 +299,9 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /募集者プロフィール/);
   assert.match(app, /募集者ランク/);
   assert.match(app, /募集者の試合数/);
+  assert.match(app, /formatRecruitPostedAt/);
+  assert.match(app, /募集日時/);
+  assert.match(app, /に掲載/);
   assert.match(app, /もらったいいね/);
   assert.match(app, /receivedProfileCandidates/);
   assert.match(app, /const receivedCards = receivedProfileCandidates/);

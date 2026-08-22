@@ -33,6 +33,7 @@ type Recruit = {
   playTime: string;
   note: string;
   avatarUrl?: string;
+  createdAt: string;
   startAt: string;
   startTimeUndecided: boolean;
   expiresAt: string;
@@ -350,6 +351,7 @@ const previewRecruit: Recruit = {
   rank: "レジェンド 1000〜",
   playTime: "平日 夜（18〜22時）",
   note: "中央キャリーを支えるのが好きです。楽しく連携しながら勝ちたい！",
+  createdAt: new Date().toISOString(),
   startAt: new Date().toISOString(),
   startTimeUndecided: false,
   expiresAt: new Date(Date.now() + 7_200_000).toISOString(),
@@ -406,6 +408,18 @@ function formatStart(value: string) {
 }
 function formatRecruitStart(recruit: Recruit) {
   return recruit.startTimeUndecided ? "時間は相談" : `${formatStart(recruit.startAt)}開始`;
+}
+function formatRecruitPostedAt(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "掲載時刻不明";
+  return `${date.toLocaleString("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  })}に掲載`;
 }
 function formatActivity(value: string) {
   const date = new Date(value);
@@ -2354,6 +2368,7 @@ export default function MatchApp({
       `【ポケモンユナイト仲間募集】`,
       `募集内容：${recruit.matchType} / ${recruit.pokemon} / ${recruit.role}`,
       `募集人数：${recruit.acceptedCount + 1}/${recruit.partySize}人・${formatRecruitStart(recruit)}`,
+      `募集日時：${formatRecruitPostedAt(recruit.createdAt)}`,
       `希望する相手：${[
         recruit.desiredPokemon !== "すべて"
           ? `ポケモン ${recruit.desiredPokemon}`
@@ -3826,6 +3841,7 @@ export default function MatchApp({
                         ? myRecruit.role
                         : myRecruit.playTime}
                     </span>
+                    <span>{formatRecruitPostedAt(myRecruit.createdAt)}</span>
                   </div>
                   <div className="myRecruitActions">
                     <button onClick={() => setRecruitShare(myRecruit)}>共有</button>
@@ -3876,6 +3892,9 @@ export default function MatchApp({
                         <div className="recruitBadges">
                           <span className="matchTypeBadge">{recruit.matchType}</span>
                           <span>{formatRecruitStart(recruit)}</span>
+                          <span className="recruitPostedAt">
+                            ◷ {formatRecruitPostedAt(recruit.createdAt)}
+                          </span>
                           <span>
                             {recruit.desiredPokemon === "すべて"
                               ? "希望相手：ポケモン指定なし"
@@ -6100,6 +6119,7 @@ export default function MatchApp({
               <PokemonLabel name={recruitProfileView.pokemon} />
               <span>募集者ランク：{recruitProfileView.rank}</span>
               <span>募集モード：{recruitProfileView.matchType}</span>
+              <span>募集日時：{formatRecruitPostedAt(recruitProfileView.createdAt)}</span>
             </div>
             {recruitProfileView.note && (
               <p className="recruitNote">“{recruitProfileView.note}”</p>
@@ -6446,7 +6466,8 @@ export default function MatchApp({
                 </span>
                 <p>
                   募集者ランク：{recruitShare.rank}<br />
-                  {formatRecruitStart(recruitShare)} ・ {recruitShare.playTime}
+                  {formatRecruitStart(recruitShare)} ・ {recruitShare.playTime}<br />
+                  {formatRecruitPostedAt(recruitShare.createdAt)}
                 </p>
               </div>
             </div>
