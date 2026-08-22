@@ -44,6 +44,7 @@ type ProfileCandidate = {
   gender: string;
   age: number | null;
   avatarUrl?: string;
+  bio: string;
   likeCount: number;
   popular: boolean;
   registeredAt: string;
@@ -82,6 +83,7 @@ export type Profile = {
   playTime: string[];
   gender: "男性" | "女性" | "";
   contact: string;
+  bio: string;
   avatarUrl: string;
   age: number | null;
   ageConfirmed: boolean;
@@ -102,6 +104,7 @@ type Connection = {
   matePlayTime: string[];
   mateGender: string;
   mateAge: number | null;
+  mateBio: string;
   againByMe: boolean;
   againByMate: boolean;
   mutualAgain: boolean;
@@ -345,6 +348,7 @@ const previewProfile: ProfileCandidate = {
   gender: "女性",
   age: 24,
   avatarUrl: "",
+  bio: "中央キャリーを支えるのが好きです。楽しく連携しながら勝ちたいです！",
   likeCount: 12,
   popular: true,
   registeredAt: new Date().toISOString(),
@@ -707,6 +711,7 @@ export default function MatchApp({
     playTime: ["平日 夜（18〜22時）"],
     gender: "",
     contact: `${providerName}: ${authContact}`,
+    bio: "",
     avatarUrl: "",
     age: null,
     ageConfirmed: false,
@@ -1367,11 +1372,12 @@ export default function MatchApp({
       Boolean(profile.gender),
       profile.age !== null,
       Boolean(profile.avatarUrl),
+      Boolean(profile.bio.trim()),
       profile.mainPokemon.length >= 2,
       profile.playTime.length >= 2,
       pushState === "on",
     ].filter(Boolean).length /
-      10) *
+      11) *
       100,
   );
   const mateCount = new Set(connections.map((connection) => connection.mateId)).size;
@@ -3044,6 +3050,9 @@ export default function MatchApp({
                     <span className="fullCardTime">
                       ◷ {current.playTime.join("・")}
                     </span>
+                    {current.bio && (
+                      <span className="fullCardBio">{current.bio}</span>
+                    )}
                     <span className="profileTapHint">
                       タップでプロフィールを見る
                     </span>
@@ -3938,6 +3947,7 @@ export default function MatchApp({
                   {profile.mainPokemon.join("・")} ・ {profile.highestRate}
                   {profile.age !== null && ` ・ ${profile.age}歳`}
                 </p>
+                {profile.bio && <p className="profileHeroBio">{profile.bio}</p>}
                 <div className="profileCompletionInline">
                   <span>プロフィール {profileCompletion}%</span>
                   <progress value={profileCompletion} max={100}>
@@ -4011,6 +4021,19 @@ export default function MatchApp({
                     }
                     required
                   />
+                </label>
+                <label>
+                  自己紹介（任意）
+                  <textarea
+                    value={profile.bio}
+                    maxLength={160}
+                    rows={4}
+                    onChange={(event) =>
+                      setProfile({ ...profile, bio: event.target.value })
+                    }
+                    placeholder="好きなポケモンやプレイスタイル、VCについてひとこと"
+                  />
+                  <small className="fieldCounter">{profile.bio.length} / 160</small>
                 </label>
                 <PokemonPicker
                   selected={profile.mainPokemon}
@@ -4418,6 +4441,19 @@ export default function MatchApp({
                 placeholder="ゲーム内の名前"
                 required
               />
+            </label>
+            <label>
+              自己紹介（任意）
+              <textarea
+                value={profile.bio}
+                maxLength={160}
+                rows={4}
+                onChange={(event) =>
+                  setProfile({ ...profile, bio: event.target.value })
+                }
+                placeholder="好きなポケモンやプレイスタイル、VCについてひとこと"
+              />
+              <small className="fieldCounter">{profile.bio.length} / 160</small>
             </label>
             <PokemonPicker
               selected={profile.mainPokemon}
@@ -4935,6 +4971,12 @@ export default function MatchApp({
               {candidateDetail.popular && <b>人気のメイト</b>}
               <span>♥ {candidateDetail.likeCount}人からいいねされています</span>
             </div>
+            {candidateDetail.bio && (
+              <div className="candidateBio">
+                <small>自己紹介</small>
+                <p>{candidateDetail.bio}</p>
+              </div>
+            )}
             <div className="pairingLine">
               <div>
                 <small>あなた</small>
@@ -5016,6 +5058,12 @@ export default function MatchApp({
               {matchedProfile.mateAge !== null && ` ・ ${matchedProfile.mateAge}歳`}
             </p>
             <div className="matchedProfileBadge">✓ マッチ済みのメイト</div>
+            {matchedProfile.mateBio && (
+              <div className="candidateBio">
+                <small>自己紹介</small>
+                <p>{matchedProfile.mateBio}</p>
+              </div>
+            )}
             <div className="profilePokemonList">
               <small>使うポケモン</small>
               <div>

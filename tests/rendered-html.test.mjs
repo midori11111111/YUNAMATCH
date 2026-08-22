@@ -82,6 +82,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     recruitAlertsApi,
     recruitAlertsMigration,
     voiceRoomsApi,
+    bioMigration,
   ] = await Promise.all([
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/match-app.tsx", root), "utf8"),
@@ -132,6 +133,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     readFile(new URL("app/api/recruit-alerts/route.ts", root), "utf8"),
     readFile(new URL("drizzle/0021_breezy_silk_fever.sql", root), "utf8"),
     readFile(new URL("app/api/discord/voice-rooms/route.ts", root), "utf8"),
+    readFile(new URL("drizzle/0022_vengeful_prowler.sql", root), "utf8"),
   ]);
   assert.match(page, /getChatGPTUser/);
   assert.match(page, /initialProfile/);
@@ -207,6 +209,9 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /この人を評価/);
   assert.match(app, /人気のメイト/);
   assert.match(app, /人からいいねされています/);
+  assert.match(app, /自己紹介（任意）/);
+  assert.match(app, /candidateDetail\.bio/);
+  assert.match(app, /matchedProfile\.mateBio/);
   assert.match(css, /bottomNav/);
   assert.match(connectionsApi, /mutualAgain/);
   assert.match(connectionsApi, /userAPlayed/);
@@ -231,6 +236,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(safetyApi, /allowedReasons/);
   assert.match(profileApi, /mainPokemon/);
   assert.match(profileApi, /contactFor/);
+  assert.match(profileApi, /bio\.length>160/);
+  assert.match(profileApi, /containsProhibitedContent\(bio\)/);
   assert.match(profileApi, /!genders\.has\(gender\)/);
   assert.match(applicationsApi, /プロフィールの未入力項目/);
   assert.match(applicationsApi, /match-wave-/);
@@ -266,6 +273,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(voiceRoomsApi, /VC1.*VC2.*VC3.*VC4.*VC5/);
   assert.match(voiceRoomsApi, /permission_overwrites/);
   assert.match(voiceRoomsApi, /legacyRoomNames/);
+  assert.match(bioMigration, /ALTER TABLE `profiles` ADD `bio` text/);
   assert.match(expansionMigration, /CREATE TABLE `lobbies`/);
   assert.match(analyticsApi, /yunamatch_visitor/);
   assert.match(analyticsApi, /siteVisitors/);

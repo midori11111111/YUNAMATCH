@@ -218,6 +218,7 @@ export async function GET() {
             playTime: profiles.playTime,
             gender: profiles.gender,
             age: profiles.age,
+            bio: profiles.bio,
           })
           .from(profiles)
           .where(inArray(profiles.userId, mateIds))
@@ -301,6 +302,7 @@ export async function GET() {
         matePlayTime: mateProfile ? parseList(mateProfile.playTime) : [],
         mateGender: mateProfile?.gender || "未設定",
         mateAge: mateProfile?.age ?? null,
+        mateBio: mateProfile?.bio || "",
         againByMe: isA ? row.userAAgain : row.userBAgain,
         againByMate: isA ? row.userBAgain : row.userAAgain,
         mutualAgain: row.userAAgain && row.userBAgain,

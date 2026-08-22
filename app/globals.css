@@ -229,6 +229,7 @@ button { cursor: pointer; }
 .fullCardPopularity b,.candidatePopularity b { padding: 5px 8px; border-radius: 99px; color: #7c5600; background: #fff0b7; font-size: 7px; font-weight: 950; }
 .fullCardPopularity small { color: #ffd7e6; font-size: 8px; font-weight: 900; }
 .fullCardTime { overflow: hidden; color: #ffffffdc; font-size: 9px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.fullCardBio { display: -webkit-box; overflow: hidden; color: #fff; font-size: 9px; font-weight: 750; line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 2; white-space: pre-line; }
 .profileTapHint { color: #ffffffa8; font-size: 7px; font-weight: 800; }
 .fullCardActions { height: 64px; position: absolute; z-index: 7; left: 16px; right: 16px; bottom: 14px; display: grid; grid-template-columns: .9fr 1.25fr; gap: 10px; }
 .fullCardActions button { display: flex; align-items: center; justify-content: center; gap: 7px; border: 0; border-radius: 22px; font-weight: 950; box-shadow: 0 10px 24px #120b223d; backdrop-filter: blur(12px); }
@@ -264,6 +265,9 @@ button { cursor: pointer; }
 .candidateDetailRank { margin: 0 0 4px; color: #817a89; font-size: 10px; }
 .candidatePopularity { display: flex; align-items: center; gap: 7px; margin: 9px 0 2px; }
 .candidatePopularity span { color: #d14177; font-size: 8px; font-weight: 850; }
+.candidateBio { margin: 11px 0; padding: 12px 14px; border: 1px solid #ece6f0; border-radius: 15px; background: #faf8fc; }
+.candidateBio small { color: var(--purple); font-size: 7px; font-weight: 950; letter-spacing: .7px; }
+.candidateBio p { margin: 5px 0 0; color: #5f5868; font-size: 9px; line-height: 1.7; white-space: pre-line; overflow-wrap: anywhere; }
 .candidateDetailActions { display: grid; grid-template-columns: .9fr 1.2fr; gap: 8px; margin-top: 15px; }
 .candidateDetailActions button { padding: 13px 8px; border: 0; border-radius: 14px; color: var(--pink); background: #fff2f7; font-size: 9px; font-weight: 950; }
 .candidateDetailActions button.liked { color: #fff; background: linear-gradient(145deg, #ff4f91, #ff82ad); }
@@ -392,6 +396,7 @@ button { cursor: pointer; }
 .profileHero small { display: block; margin-top: 12px; color: var(--purple); font-size: 7px; font-weight: 900; letter-spacing: 1.8px; }
 .profileHero h1 { margin: 4px 0; font-size: 22px; }
 .profileHero p { margin: 0; color: #958e9e; font-size: 9px; }
+.profileHero p.profileHeroBio { max-width: 320px; margin: 9px auto 0; color: #645d6c; line-height: 1.65; white-space: pre-line; overflow-wrap: anywhere; }
 .shareCardButton { margin-top: 13px; padding: 10px 14px; border: 0; border-radius: 12px; color: #fff; background: #17131f; font-size: 8px; font-weight: 900; box-shadow: 0 8px 18px #17131f22; }
 .profileDashboardHero { padding-top: 15px; }
 .profileAvatarFrame { width: 128px; height: 128px; position: relative; margin: 0 auto 16px; }
@@ -415,8 +420,10 @@ button { cursor: pointer; }
 .profileSectionHeading h2 { margin: 4px 0 5px; font-size: 17px; }
 .profileSectionHeading p { margin: 0; color: #928b99; font-size: 8px; line-height: 1.55; }
 .profileForm label, .sheetModal label { display: grid; gap: 6px; color: #625c6a; font-size: 8px; font-weight: 900; }
-.profileForm input, .profileForm select, .sheetModal input, .sheetModal select, .sheetModal textarea { width: 100%; border: 1px solid #e3dee8; border-radius: 12px; padding: 12px; background: #fff; color: var(--ink); font-size: 10px; outline: none; }
-.profileForm input:focus, .profileForm select:focus, .sheetModal input:focus, .sheetModal select:focus, .sheetModal textarea:focus { border-color: var(--purple); box-shadow: 0 0 0 3px #7257e814; }
+.profileForm input, .profileForm select, .profileForm textarea, .sheetModal input, .sheetModal select, .sheetModal textarea { width: 100%; border: 1px solid #e3dee8; border-radius: 12px; padding: 12px; background: #fff; color: var(--ink); font-size: 10px; outline: none; }
+.profileForm input:focus, .profileForm select:focus, .profileForm textarea:focus, .sheetModal input:focus, .sheetModal select:focus, .sheetModal textarea:focus { border-color: var(--purple); box-shadow: 0 0 0 3px #7257e814; }
+.profileForm textarea, .onboardingCard textarea { min-height: 92px; resize: vertical; font-family: inherit; line-height: 1.6; }
+.fieldCounter { justify-self: end; color: #a49daa; font-size: 7px; font-weight: 750; }
 .avatarEditor { display: grid; grid-template-columns: 66px 1fr; align-items: center; gap: 13px; padding: 13px; border: 1px solid #e4deeb; border-radius: 16px; background: linear-gradient(145deg, #fff, #faf8ff); }
 .avatarEditorPreview { width: 66px; height: 66px; overflow: hidden; display: grid; place-items: center; border: 3px solid #fff; border-radius: 19px; color: #fff; background: linear-gradient(145deg, #ff689e, #ffabc9); font-size: 24px; font-weight: 950; box-shadow: 0 0 0 1px #e2d9e8, 0 8px 20px #6f4f8d18; }
 .avatarEditor > div { min-width: 0; }
@@ -526,8 +533,8 @@ button { cursor: pointer; }
 .onboardingCard h1 { margin: 0; font-size: 30px; line-height: 1.2; letter-spacing: -1.5px; }
 .onboardingLead { margin: -6px 0 1px; color: #847d8b; font-size: 9px; line-height: 1.6; }
 .onboardingCard > label { display: grid; gap: 6px; color: #625c6a; font-size: 8px; font-weight: 900; }
-.onboardingCard input, .onboardingCard select { width: 100%; border: 1px solid #e3dee8; border-radius: 12px; padding: 12px; background: #fff; color: var(--ink); font-size: 9px; outline: none; }
-.onboardingCard input:focus, .onboardingCard select:focus { border-color: var(--purple); box-shadow: 0 0 0 3px #7257e814; }
+.onboardingCard input, .onboardingCard select, .onboardingCard textarea { width: 100%; border: 1px solid #e3dee8; border-radius: 12px; padding: 12px; background: #fff; color: var(--ink); font-size: 9px; outline: none; }
+.onboardingCard input:focus, .onboardingCard select:focus, .onboardingCard textarea:focus { border-color: var(--purple); box-shadow: 0 0 0 3px #7257e814; }
 .contactNote { display: flex; align-items: flex-start; gap: 7px; margin: -7px 0 0; color: #918a98; font-size: 7px; line-height: 1.5; }
 .onboardingMissing { margin: -2px 0 0; padding: 10px 12px; border-radius: 11px; color: #6f5680; background: #f4efff; font-size: 7px; line-height: 1.55; }
 .onboardingMissing strong { color: var(--purple); }
