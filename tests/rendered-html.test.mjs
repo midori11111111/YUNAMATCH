@@ -199,6 +199,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /MATCHED MATE PROFILE/);
   assert.match(app, /mateCount/);
   assert.match(app, /いいね済み/);
+  assert.match(app, /onClick=\{\(\) => sendProfileLikeTo\(candidateDetail\)\}/);
+  assert.doesNotMatch(app, /current\?\.id === candidateDetail\.id/);
   assert.match(app, /ログインすると続けられます/);
   assert.match(app, /yunamatch-pending-action-v1/);
   assert.match(app, /PokemonLabel/);

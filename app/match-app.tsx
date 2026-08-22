@@ -5054,9 +5054,8 @@ export default function MatchApp({
                 className={
                   likedProfileIds.includes(candidateDetail.id) ? "liked" : ""
                 }
-                onClick={() => {
-                  if (current?.id === candidateDetail.id) sendProfileLike();
-                }}
+                onClick={() => sendProfileLikeTo(candidateDetail)}
+                aria-pressed={likedProfileIds.includes(candidateDetail.id)}
               >
                 {likedProfileIds.includes(candidateDetail.id)
                   ? "♥ いいね済み"

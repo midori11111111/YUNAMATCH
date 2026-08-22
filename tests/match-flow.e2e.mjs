@@ -76,6 +76,15 @@ try {
   await api("/api/profile", { user: applicant, method: "PUT", body: profile("申請テスター", "ハピナス", "女性", "Discord: applicant-test") });
   await api("/api/profile", { user: cancelTester, method: "PUT", body: profile("取消テスター", "ピカチュウ", "男性", "Discord: cancel-test") });
 
+  const discoverBeforeLike = await api("/api/discover", { user: applicant });
+  const zeroLikeProfile = discoverBeforeLike.profiles.find((row) => row.trainerName === "募集テスター");
+  assert.ok(zeroLikeProfile);
+  assert.equal(zeroLikeProfile.likeCount, 0);
+  const createdLike = await api("/api/likes", { user: applicant, method: "POST", body: { targetId: zeroLikeProfile.id } });
+  assert.equal(createdLike.created, true);
+  const receivedLike = await api("/api/likes", { user: owner });
+  assert.equal(receivedLike.incoming[0].senderName, "申請テスター");
+
   const initialRecruitAlerts = await api("/api/recruit-alerts", { user: applicant });
   assert.equal(initialRecruitAlerts.enabled, false);
   const enabledRecruitAlerts = await api("/api/recruit-alerts", {
