@@ -59,7 +59,7 @@ button { cursor: pointer; }
 .miniAvatar { overflow: hidden; padding: 0; color: #fff; border: 3px solid #fff; border-radius: 50%; background: linear-gradient(145deg, #ff689e, #ffabc9); box-shadow: 0 0 0 1px #eadfea; }
 .guestHeaderLogin { min-width: 56px; height: 32px; margin-left: -7px; border: 0; border-radius: 99px; color: #fff; background: linear-gradient(135deg, var(--purple), #9a70ef); font-size: 8px; font-weight: 950; box-shadow: 0 7px 18px #7257e82b; }
 .miniAvatarImage { width: 100%; height: 100%; display: grid; place-items: center; }
-.miniAvatarImage img, .mateAvatar img, .chatMateAvatar img, .profileHeroAvatar img, .avatarEditorPreview img, .shareTrainerAvatar img, .ratingAvatar img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.miniAvatarImage img, .mateAvatar img, .chatMateAvatar img, .profileHeroAvatar img, .avatarEditorPreview img, .shareTrainerAvatar img, .ratingAvatar img, .recruitProfileAvatar img, .recruitProfileLarge img { width: 100%; height: 100%; display: block; object-fit: cover; }
 .headerIcon { justify-self: end; background: #f7f4fa; font-size: 15px; }
 .headerIcon i, .bottomNav i { position: absolute; display: grid; place-items: center; border-radius: 99px; color: #fff; background: var(--pink); font-size: 7px; font-style: normal; }
 .headerIcon i { width: 16px; height: 16px; right: -4px; top: -5px; }
@@ -349,6 +349,17 @@ button { cursor: pointer; }
 .recruitList, .noticeList, .incomingList { display: grid; gap: 13px; }
 .recruitItem { display: grid; gap: 13px; padding: 17px; border: 1px solid #e6e0ea; border-radius: 22px; background: #fff; box-shadow: 0 10px 25px #3c315c10; }
 .recruitCardHeader { display: grid; grid-template-columns: 68px 1fr; align-items: center; gap: 13px; }
+.recruitProfileImageButton { width: 68px; height: 68px; position: relative; overflow: hidden; padding: 0; border: 0; border-radius: 20px; background: #f1edfa; box-shadow: 0 8px 18px #352a4d1c; }
+.recruitProfileAvatar { width: 100%; height: 100%; display: grid; place-items: center; overflow: hidden; color: #fff; background: linear-gradient(145deg, var(--purple), var(--pink)); font-size: 24px; font-weight: 950; }
+.recruitProfileImageButton > span:last-child { position: absolute; left: 6px; right: 6px; bottom: 5px; padding: 3px 2px; border-radius: 99px; color: #fff; background: #1e1728a6; font-size: 6px; font-weight: 950; backdrop-filter: blur(6px); }
+.recruitProfileSheet { text-align: center; }
+.recruitProfileSheet > h2 { margin: 13px 0 4px; font-size: 22px; }
+.recruitProfileHero { height: 270px; display: grid; place-items: center; overflow: hidden; margin: 18px 0 0; border-radius: 22px; }
+.recruitProfileLarge { width: 100%; height: 100%; display: grid; place-items: center; overflow: hidden; color: #fff; background: linear-gradient(145deg, #745af0, #ff6da3); font-size: 82px; font-weight: 950; }
+.recruitProfileMissing { margin: 0 0 10px; color: #948d99; font-size: 8px; }
+.recruitProfileMeta { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 7px; margin: 12px 0; }
+.recruitProfileMeta > span { padding: 7px 9px; border-radius: 99px; color: #625a6c; background: #f2eff5; font-size: 8px; font-weight: 850; }
+.recruitProfileSheet .recruitNote { margin: 12px 0; text-align: left; }
 .pokemonTile { width: 68px; height: 68px; position: relative; overflow: hidden; display: grid; place-items: center; border-radius: 20px; color: #fff; font-size: 29px; font-weight: 900; isolation: isolate; box-shadow: 0 8px 18px #b7447f25; }
 .pokemonTile .pokemonVisualFallback { font-size: 20px; }
 .pokemonTile .pokemonVisual > img { width: 92%; height: 92%; }

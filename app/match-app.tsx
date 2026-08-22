@@ -718,6 +718,9 @@ export default function MatchApp({
   >([]);
   const [shareOpen, setShareOpen] = useState(false);
   const [recruitShare, setRecruitShare] = useState<Recruit | null>(null);
+  const [recruitProfileView, setRecruitProfileView] = useState<Recruit | null>(
+    null,
+  );
   const [recruitNotifyPrompt, setRecruitNotifyPrompt] =
     useState<Recruit | null>(null);
   const [safetyTarget, setSafetyTarget] = useState<SafetyTarget | null>(null);
@@ -3797,11 +3800,19 @@ export default function MatchApp({
                   visibleRecruits.map((recruit) => (
                     <article key={recruit.id} className="recruitItem">
                       <header className="recruitCardHeader">
-                        <div
-                          className={`pokemonTile ${roleTone(recruit.role)}`}
+                        <button
+                          type="button"
+                          className="recruitProfileImageButton"
+                          onClick={() => setRecruitProfileView(recruit)}
+                          aria-label={`${recruit.trainerName}さんのプロフィール画像を見る`}
                         >
-                          <PokemonImage name={recruit.pokemon} />
-                        </div>
+                          <UserAvatar
+                            name={recruit.trainerName}
+                            src={recruit.avatarUrl}
+                            className="recruitProfileAvatar"
+                          />
+                          <span>画像を見る</span>
+                        </button>
                         <div>
                           <div className="recruitTop">
                             <h2>{recruit.trainerName}</h2>
@@ -5998,6 +6009,55 @@ export default function MatchApp({
                 ⚡ メイト申請
               </button>
             </div>
+          </section>
+        </div>
+      )}
+
+      {recruitProfileView && (
+        <div className="modalBackdrop">
+          <button
+            className="backdropDismiss"
+            onClick={() => setRecruitProfileView(null)}
+            aria-label="募集者のプロフィール画像を閉じる"
+          />
+          <section className="sheetModal recruitProfileSheet">
+            <div className="sheetHandle" />
+            <button
+              className="closeButton"
+              onClick={() => setRecruitProfileView(null)}
+            >
+              ×
+            </button>
+            <small className="modalKicker">RECRUITING TRAINER</small>
+            <div className={`recruitProfileHero ${roleTone(recruitProfileView.role)}`}>
+              <UserAvatar
+                name={recruitProfileView.trainerName}
+                src={recruitProfileView.avatarUrl}
+                className="recruitProfileLarge"
+              />
+            </div>
+            <h2>{recruitProfileView.trainerName}</h2>
+            {!recruitProfileView.avatarUrl && (
+              <p className="recruitProfileMissing">プロフィール画像は未設定です</p>
+            )}
+            <div className="recruitProfileMeta">
+              <PokemonLabel name={recruitProfileView.pokemon} />
+              <span>{recruitProfileView.rank}</span>
+              <span>{recruitProfileView.matchType}</span>
+            </div>
+            {recruitProfileView.note && (
+              <p className="recruitNote">“{recruitProfileView.note}”</p>
+            )}
+            <button
+              className="primaryButton"
+              onClick={() => {
+                const recruit = recruitProfileView;
+                setRecruitProfileView(null);
+                openRecruitApplication(recruit);
+              }}
+            >
+              この募集にひとこと添える
+            </button>
           </section>
         </div>
       )}

@@ -504,6 +504,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /roleFilter/);
   assert.match(app, /プロフィールヘッダー/);
   assert.match(app, /headerUrl/);
+  assert.match(app, /プロフィール画像を見る/);
+  assert.match(app, /recruitProfileView/);
   assert.match(app, /yunamatch-discover-filters-v1/);
   assert.match(app, /localStorage\.setItem\(\s*discoverFiltersStorageKey/);
   assert.match(privacyPage, /初期状態は非公開/);
