@@ -31,6 +31,40 @@ test("renders public browsing before login for anonymous visitors", async () => 
   assert.doesNotMatch(html, /Your site is taking shape|codex-preview/i);
 });
 
+test("keeps discover results inside every selected filter", async () => {
+  const { filterDiscoverCandidates } = await import(
+    new URL("../lib/discover-filter.ts", import.meta.url)
+  );
+  const candidates = [
+    { trainerName: "みどり", mainPokemon: ["ミュウ"], gender: "女性", playTime: ["平日 夜（18〜22時）"] },
+    { trainerName: "みどり2", mainPokemon: ["ミュウツーX"], gender: "男性", playTime: ["平日 夜（18〜22時）"] },
+    { trainerName: "あお", mainPokemon: ["ミュウツーY"], gender: "女性", playTime: ["土日 朝・昼"] },
+  ];
+  const baseFilters = {
+    trainerQuery: "",
+    gender: "",
+    sharedTimeOnly: false,
+    myPlayTime: ["平日 夜（18〜22時）"],
+    officialPokemon: ["ミュウ", "ミュウツーX", "ミュウツーY"],
+  };
+  assert.deepEqual(
+    filterDiscoverCandidates(candidates, { ...baseFilters, pokemonQuery: "ミュウ" }).map((person) => person.trainerName),
+    ["みどり"],
+  );
+  assert.deepEqual(
+    filterDiscoverCandidates(candidates, { ...baseFilters, pokemonQuery: "ミュウツ" }).map((person) => person.trainerName),
+    ["みどり2", "あお"],
+  );
+  assert.deepEqual(
+    filterDiscoverCandidates(candidates, { ...baseFilters, pokemonQuery: "", trainerQuery: "みどり" }).map((person) => person.trainerName),
+    ["みどり"],
+  );
+  assert.deepEqual(
+    filterDiscoverCandidates(candidates, { ...baseFilters, pokemonQuery: "", gender: "女性", sharedTimeOnly: true }).map((person) => person.trainerName),
+    ["みどり"],
+  );
+});
+
 test("ships the matching app, onboarding, lobby, safety, analytics, and notifications", async () => {
   const [
     page,
@@ -353,6 +387,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /genderFilter/);
   assert.match(app, /すべて/);
   assert.match(app, /名前の一部でも検索できます/);
+  assert.match(app, /filterDiscoverCandidates/);
+  assert.match(app, /setAnimation\(""\)/);
   assert.match(app, /条件をリセット/);
   assert.match(privacyPage, /初期状態は非公開/);
   assert.match(privacyPage, /ログイン前のプロフィール表示/);

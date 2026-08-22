@@ -13,6 +13,7 @@ import {
   useState,
 } from "react";
 import { pokemonArtUrl } from "../lib/pokemon-art";
+import { filterDiscoverCandidates } from "../lib/discover-filter";
 import { rankOptions } from "../lib/ranks";
 
 type Recruit = {
@@ -1282,35 +1283,20 @@ export default function MatchApp({
       ),
     [outgoing],
   );
-  const normalizedPokemonQuery = pokemonQuery
-    .trim()
-    .toLocaleLowerCase("ja-JP");
-  const normalizedTrainerQuery = trainerQuery
-    .trim()
-    .toLocaleLowerCase("ja-JP");
   const filteredProfileCandidates = useMemo(
     () =>
-      profileCandidates.filter((person) => {
-        return (
-          (!normalizedPokemonQuery ||
-            person.mainPokemon.some((name) =>
-              name.toLocaleLowerCase("ja-JP").includes(normalizedPokemonQuery),
-            )) &&
-          (!normalizedTrainerQuery ||
-            person.trainerName
-              .toLocaleLowerCase("ja-JP")
-              .includes(normalizedTrainerQuery)) &&
-          (!genderFilter || person.gender === genderFilter) &&
-          (!sharedTimeOnly ||
-            person.playTime.includes("時間帯はいつでも") ||
-            profile.playTime.includes("時間帯はいつでも") ||
-            person.playTime.some((time) => profile.playTime.includes(time)))
-        );
+      filterDiscoverCandidates(profileCandidates, {
+        pokemonQuery,
+        trainerQuery,
+        gender: genderFilter,
+        sharedTimeOnly,
+        myPlayTime: profile.playTime,
+        officialPokemon: pokemon,
       }),
     [
       profileCandidates,
-      normalizedPokemonQuery,
-      normalizedTrainerQuery,
+      pokemonQuery,
+      trainerQuery,
       genderFilter,
       sharedTimeOnly,
       profile.playTime,
@@ -1319,27 +1305,18 @@ export default function MatchApp({
   const recommendedCards = filteredProfileCandidates;
   const receivedCards = useMemo(
     () =>
-      receivedProfileCandidates.filter((person) => {
-        return (
-          (!normalizedPokemonQuery ||
-            person.mainPokemon.some((name) =>
-              name.toLocaleLowerCase("ja-JP").includes(normalizedPokemonQuery),
-            )) &&
-          (!normalizedTrainerQuery ||
-            person.trainerName
-              .toLocaleLowerCase("ja-JP")
-              .includes(normalizedTrainerQuery)) &&
-          (!genderFilter || person.gender === genderFilter) &&
-          (!sharedTimeOnly ||
-            person.playTime.includes("時間帯はいつでも") ||
-            profile.playTime.includes("時間帯はいつでも") ||
-            person.playTime.some((time) => profile.playTime.includes(time)))
-        );
+      filterDiscoverCandidates(receivedProfileCandidates, {
+        pokemonQuery,
+        trainerQuery,
+        gender: genderFilter,
+        sharedTimeOnly,
+        myPlayTime: profile.playTime,
+        officialPokemon: pokemon,
       }),
     [
       receivedProfileCandidates,
-      normalizedPokemonQuery,
-      normalizedTrainerQuery,
+      pokemonQuery,
+      trainerQuery,
       genderFilter,
       sharedTimeOnly,
       profile.playTime,
@@ -4972,7 +4949,12 @@ export default function MatchApp({
               </button>
               <button
                 className="primaryButton"
-                onClick={() => setFilterOpen(false)}
+                onClick={() => {
+                  setIndex(0);
+                  setAnimation("");
+                  setCandidateDetail(null);
+                  setFilterOpen(false);
+                }}
               >
                 {cards.length}人から探す
               </button>
