@@ -10,12 +10,16 @@ export default function LoginPage() {
         <p className="loginEyebrow">POKÉMON UNITE MATCHING</p>
         <h1>相性でつながる、<br /><span>ユナマッチ。</span></h1>
         <p className="loginLead">使用ポケモンとプレイスタイルから、<br />今夜一緒に戦うメイトを見つけよう。</p>
-        <div className="accountChoiceTitle"><strong>ログインするアカウントを選択</strong><span>あとから設定で追加連携できます</span></div>
+        <div className="returningUserGuide">
+          <strong>すでに登録済みの方</strong>
+          <p>登録時と同じSNS・同じアカウントを選ぶと、別のスマホでもプロフィールやチャットを引き継げます。</p>
+        </div>
+        <div className="accountChoiceTitle"><strong>ログインするアカウントを選択</strong><span>アカウント選択画面で、登録時のアカウントを選んでください</span></div>
         <div className="loginActions">
           <form
             action={async () => {
               "use server";
-              await signIn("google", { redirectTo: "/" });
+              await signIn("google", { redirectTo: "/" }, { prompt: "select_account" });
             }}
           >
             <LoginButton className="googleButton" markClassName="googleMark" mark="G" label="Googleでログイン" />
@@ -23,7 +27,7 @@ export default function LoginPage() {
           <form
             action={async () => {
               "use server";
-              await signIn("line", { redirectTo: "/" });
+              await signIn("line", { redirectTo: "/" }, { prompt: "consent" });
             }}
           >
             <LoginButton className="lineButton" markClassName="lineMark" mark="LINE" label="LINEでログイン" />
@@ -31,7 +35,7 @@ export default function LoginPage() {
           <form
             action={async () => {
               "use server";
-              await signIn("discord", { redirectTo: "/" });
+              await signIn("discord", { redirectTo: "/" }, { prompt: "consent" });
             }}
           >
             <LoginButton className="discordButton" markClassName="discordMark" mark="D" label="Discordでログイン" />
@@ -39,13 +43,16 @@ export default function LoginPage() {
           <form
             action={async () => {
               "use server";
-              await signIn("twitter", { redirectTo: "/" });
+              await signIn("twitter", { redirectTo: "/" }, { force_login: "true" });
             }}
           >
             <LoginButton className="xButton" markClassName="xMark" mark="X" label="Xでログイン" />
           </form>
         </div>
-        <p className="loginNote">ログイン後すぐにメイト探しを始められます</p>
+        <div className="newUserGuide">
+          <strong>初めての方</strong>
+          <span>上のいずれかを選ぶだけで、そのまま無料登録できます。</span>
+        </div>
       </section>
     </main>
   );

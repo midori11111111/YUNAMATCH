@@ -167,6 +167,7 @@ type Lobby = {
 };
 type AppTab = "discover" | "recruit" | "chat" | "lobby" | "profile";
 type DiscoverMode = "recommended" | "received";
+type LoginIntent = "login" | "signup";
 type PendingGuestAction = {
   type:
     | "like"
@@ -627,6 +628,7 @@ export default function MatchApp({
   const [loginOpen, setLoginOpen] = useState(false);
   const [loginAction, setLoginAction] = useState("この機能");
   const [loginProvider, setLoginProvider] = useState("");
+  const [loginIntent, setLoginIntent] = useState<LoginIntent>("login");
   const [applyTo, setApplyTo] = useState<Recruit | null>(null);
   const [profileApplyTo, setProfileApplyTo] = useState<ProfileCandidate | null>(
     null,
@@ -785,6 +787,7 @@ export default function MatchApp({
     }
     setLoginAction(action.label);
     setLoginProvider("");
+    setLoginIntent("login");
     setLoginOpen(true);
   };
 
@@ -4593,10 +4596,35 @@ export default function MatchApp({
             </button>
             <div className="guestLoginMark">⚡</div>
             <small>YUNAMATCH</small>
-            <h2 id="guest-login-title">ログインすると続けられます</h2>
+            <div className="loginIntentTabs" role="tablist" aria-label="ログイン方法">
+              <button
+                className={loginIntent === "login" ? "active" : ""}
+                onClick={() => setLoginIntent("login")}
+                role="tab"
+                aria-selected={loginIntent === "login"}
+              >
+                ログイン
+              </button>
+              <button
+                className={loginIntent === "signup" ? "active" : ""}
+                onClick={() => setLoginIntent("signup")}
+                role="tab"
+                aria-selected={loginIntent === "signup"}
+              >
+                新規登録
+              </button>
+            </div>
+            <h2 id="guest-login-title">
+              {loginIntent === "login"
+                ? "登録済みアカウントでログイン"
+                : "YUNAMATCHをはじめる"}
+            </h2>
             <p>
-              <strong>{loginAction}</strong>
-              は、無料ログイン後に利用できます。
+              {loginIntent === "login" ? (
+                <>登録した時と<strong>同じSNS・同じアカウント</strong>を選ぶと、プロフィールを引き継げます。</>
+              ) : (
+                <><strong>{loginAction}</strong>は、無料登録後に利用できます。</>
+              )}
             </p>
             <div className="guestLoginProviders">
               {loginProviders.map((provider) => (
@@ -4616,12 +4644,14 @@ export default function MatchApp({
                   <span>{provider.mark}</span>
                   {loginProvider === provider.id
                     ? "開いています…"
-                    : `${provider.label}で続ける`}
+                    : `${provider.label}で${loginIntent === "login" ? "ログイン" : "新規登録"}`}
                 </a>
               ))}
             </div>
             <p className="guestLoginNote">
-              初回だけプロフィールを登録します。完了後、この操作へ自動で戻ります。
+              {loginIntent === "login"
+                ? "別のスマホでも、登録時と同じアカウントなら保存済みデータを読み込めます。"
+                : "初回だけプロフィールを登録します。完了後、この操作へ自動で戻ります。"}
             </p>
             <nav aria-label="ログイン前の確認">
               <a href="/privacy">プライバシー</a>
@@ -4646,6 +4676,17 @@ export default function MatchApp({
               <span>プロフィール登録</span>
               <b>1 / 1</b>
             </div>
+            {!preview && (
+              <div className="existingAccountHelp">
+                <div>
+                  <strong>すでに登録済みですか？</strong>
+                  <p>登録時と違うSNSアカウントでログインしている可能性があります。</p>
+                </div>
+                <a href="/api/auth/signout?callbackUrl=%2Flogin">
+                  別のアカウントでログイン
+                </a>
+              </div>
+            )}
             <h1>
               あなたのことを
               <br />

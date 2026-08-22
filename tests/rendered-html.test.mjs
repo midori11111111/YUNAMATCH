@@ -251,7 +251,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /いいね済み/);
   assert.match(app, /onClick=\{\(\) => sendProfileLikeTo\(candidateDetail\)\}/);
   assert.doesNotMatch(app, /current\?\.id === candidateDetail\.id/);
-  assert.match(app, /ログインすると続けられます/);
+  assert.match(app, /登録済みアカウントでログイン/);
   assert.match(app, /yunamatch-pending-action-v1/);
   assert.match(app, /PokemonLabel/);
   assert.match(app, /すぐ参加申請/);
@@ -379,6 +379,13 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(loginPage, /LINEでログイン/);
   assert.match(loginPage, /Discordでログイン/);
   assert.match(loginPage, /Xでログイン/);
+  assert.match(loginPage, /すでに登録済みの方/);
+  assert.match(loginPage, /登録時と同じSNS・同じアカウント/);
+  assert.match(loginPage, /prompt: "select_account"/);
+  assert.match(loginPage, /force_login: "true"/);
+  assert.match(app, /登録済みアカウントでログイン/);
+  assert.match(app, /別のスマホでも/);
+  assert.match(app, /別のアカウントでログイン/);
   assert.match(privacyPage, /取得する情報/);
   assert.match(privacyPage, /外部サービスと委託先/);
   assert.match(privacyPage, /YUNAMATCH運営（個人開発）/);

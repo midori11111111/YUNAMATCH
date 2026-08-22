@@ -49,6 +49,9 @@ body { margin: 0; }
 h1 { margin: 0; font-size: clamp(30px, 8vw, 40px); line-height: 1.25; letter-spacing: -.04em; }
 h1 span { color: #ff6c91; }
 .loginLead { margin: 18px 0 22px; color: #b8bbcc; font-size: 14px; line-height: 1.8; }
+.returningUserGuide { margin-bottom: 16px; padding: 14px 15px; border: 1px solid rgba(157,125,255,.34); border-radius: 16px; background: rgba(126,87,255,.12); text-align: left; }
+.returningUserGuide strong { color: #fff; font-size: 14px; }
+.returningUserGuide p { margin: 5px 0 0; color: #c6c3dc; font-size: 11px; line-height: 1.65; }
 .accountChoiceTitle { display: grid; gap: 4px; margin-bottom: 14px; text-align: left; }
 .accountChoiceTitle strong { font-size: 14px; }
 .accountChoiceTitle span { color: #858aa2; font-size: 11px; }
@@ -102,4 +105,5 @@ h1 span { color: #ff6c91; }
   font-weight: 900;
 }
 .xMark { width: 24px; font-size: 20px; font-weight: 500; }
-.loginNote { margin: 18px 0 0; color: #777d97; font-size: 12px; }
+.newUserGuide { display: grid; gap: 3px; margin-top: 18px; color: #858aa2; font-size: 11px; line-height: 1.55; }
+.newUserGuide strong { color: #c2bfd2; font-size: 12px; }
