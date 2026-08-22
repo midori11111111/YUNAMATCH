@@ -2,7 +2,6 @@ import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
 import { blocks, profileLikes, profiles } from "../../../db/schema";
 import { getDb } from "../../../db";
 import { getChatGPTUser } from "../../chatgpt-auth";
-import { checkRateLimit, rateLimitResponse } from "../../../lib/rate-limit";
 import { profilePublicId, resolveProfilePublicId } from "../../../lib/profile-id";
 import { sendPush } from "../../../lib/push";
 import { normalizeRank } from "../../../lib/ranks";
@@ -36,7 +35,7 @@ export async function GET(){
       senderTermsAcceptedAt:profiles.termsAcceptedAt,
       readAt:profileLikes.readAt,
       createdAt:profileLikes.createdAt,
-    }).from(profileLikes).innerJoin(profiles,eq(profileLikes.senderId,profiles.userId)).where(eq(profileLikes.recipientId,user.userId)).orderBy(desc(profileLikes.createdAt)).limit(50),
+    }).from(profileLikes).innerJoin(profiles,eq(profileLikes.senderId,profiles.userId)).where(eq(profileLikes.recipientId,user.userId)).orderBy(desc(profileLikes.createdAt)),
     db.select({recipientId:profileLikes.recipientId}).from(profileLikes).where(eq(profileLikes.senderId,user.userId)),
     db.select({id:blocks.blockedId}).from(blocks).where(eq(blocks.blockerId,user.userId)),
     db.select({id:blocks.blockerId}).from(blocks).where(eq(blocks.blockedId,user.userId)),
@@ -84,8 +83,6 @@ export async function GET(){
 export async function POST(request:Request){
   const user=await getChatGPTUser();
   if(!user)return Response.json({error:"ログインが必要です",signIn:"/login"},{status:401});
-  const rateLimit=await checkRateLimit(user.userId,{action:"profile-like",limit:40,windowMs:60*60_000});
-  if(!rateLimit.allowed)return rateLimitResponse(rateLimit.retryAfter);
   const body=await request.json() as {targetId?:string};
   const targetId=typeof body.targetId==="string"?body.targetId:"";
   if(!/^[a-f0-9]{32}$/.test(targetId))return Response.json({error:"プロフィールを確認してください"},{status:400});

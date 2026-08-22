@@ -253,6 +253,11 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /receivedProfileCandidates\.findIndex/);
   assert.doesNotMatch(discoverApi, /from\(profiles\)\.limit\(300\)/);
   assert.doesNotMatch(likesApi, /from\(profiles\)\.limit\(300\)/);
+  assert.doesNotMatch(likesApi, /action:\s*["']profile-like["']/);
+  assert.doesNotMatch(
+    likesApi,
+    /where\(eq\(profileLikes\.recipientId,user\.userId\)\)[\s\S]{0,100}\.limit\(50\)/,
+  );
   assert.match(app, /yunamatch-push-intro-v1/);
   assert.match(app, /ホーム画面から開くと通知できます/);
   assert.match(app, /install-required/);
