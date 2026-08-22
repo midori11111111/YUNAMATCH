@@ -6,6 +6,16 @@ const upstream =
 
 const nextConfig: NextConfig = {
   turbopack: { root: process.cwd() },
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "yunamatch.vercel.app" }],
+        destination: "https://yunamatch.com/:path*",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {
