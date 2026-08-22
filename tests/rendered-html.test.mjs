@@ -194,8 +194,10 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /通報などのチャットメニューを開く/);
   assert.match(app, /この発言を通報/);
   assert.match(app, /前後の会話も運営へ送信されます/);
-  assert.match(app, /お気に入りメッセージ/);
-  assert.match(app, /toggleMessageFavorite/);
+  assert.match(app, /toggleConnectionPin/);
+  assert.match(app, /チャットをピン留め/);
+  assert.doesNotMatch(app, /お気に入りメッセージ/);
+  assert.doesNotMatch(app, /toggleMessageFavorite/);
   assert.match(app, /このユーザーへの通報は受付済みです/);
   assert.match(app, /あなたのことを/);
   assert.match(app, /1〜5体・複数選択できます/);
@@ -371,6 +373,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(connectionsApi, /adoptLegacyConnectionHistory/);
   assert.match(connectionsApi, /leftJoin\(connections/);
   assert.match(connectionsApi, /Connection backfill skipped/);
+  assert.match(connectionsApi, /userAPinned/);
+  assert.match(connectionsApi, /action === "pin"/);
   assert.match(safetyMigration, /rate_limit_buckets/);
   assert.match(safetyMigration, /support_tickets/);
   assert.match(supportApi, /24\*60\*60_000/);

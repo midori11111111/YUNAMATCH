@@ -190,15 +190,16 @@ try {
   await api("/api/messages", { user: applicant, method: "POST", body: { connectionId, body: "よろしくお願いします" } });
   const thread = await api(`/api/messages?connectionId=${connectionId}`, { user: owner });
   assert.equal(thread.messages.at(-1).body, "よろしくお願いします");
-  const favorite = await api("/api/message-favorites", {
+  const pin = await api("/api/connections", {
     user: owner,
-    method: "POST",
-    body: { messageId: thread.messages.at(-1).id },
+    method: "PATCH",
+    body: { connectionId, action: "pin" },
   });
-  assert.equal(favorite.favorited, true);
-  const favorites = await api(`/api/message-favorites?connectionId=${connectionId}`, { user: owner });
-  assert.equal(favorites.favorites[0].body, "よろしくお願いします");
-  assert.equal(favorites.favoriteMessageIds[0], thread.messages.at(-1).id);
+  assert.equal(pin.pinned, true);
+  ownerConnections = await api("/api/connections", { user: owner });
+  assert.equal(ownerConnections.connections[0].pinned, true);
+  applicantConnections = await api("/api/connections", { user: applicant });
+  assert.equal(applicantConnections.connections[0].pinned, false);
 
   const playInvite = await api("/api/messages", {
     user: applicant,

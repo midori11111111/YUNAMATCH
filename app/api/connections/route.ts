@@ -308,6 +308,7 @@ export async function GET() {
         mutualAgain: row.userAAgain && row.userBAgain,
         playedByMe: isA ? row.userAPlayed : row.userBPlayed,
         playedByMate: isA ? row.userBPlayed : row.userAPlayed,
+        pinned: isA ? row.userAPinned : row.userBPinned,
         myRatingScore: myRating?.score || 0,
         myRatingTags,
         latestMessage:
@@ -316,6 +317,11 @@ export async function GET() {
         unreadCount: unreadRows.length,
       };
     }),
+  );
+  result.sort(
+    (a, b) =>
+      Number(b.pinned) - Number(a.pinned) ||
+      b.latestAt.getTime() - a.latestAt.getTime(),
   );
   return Response.json({ connections: result });
 }
@@ -340,11 +346,11 @@ export async function PATCH(request: Request) {
   if (!rateLimit.allowed) return rateLimitResponse(rateLimit.retryAfter);
   const payload = (await request.json()) as {
     connectionId?: number;
-    action?: "again" | "played" | "share_contact";
+    action?: "again" | "played" | "share_contact" | "pin";
   };
   if (
     !payload.connectionId ||
-    !["again", "played", "share_contact"].includes(payload.action || "")
+    !["again", "played", "share_contact", "pin"].includes(payload.action || "")
   ) {
     return Response.json({ error: "操作を確認してください" }, { status: 400 });
   }
@@ -352,6 +358,14 @@ export async function PATCH(request: Request) {
   if (!row)
     return Response.json({ error: "マッチが見つかりません" }, { status: 404 });
   const isA = row.userAId === user.userId;
+  if (payload.action === "pin") {
+    const pinned = !(isA ? row.userAPinned : row.userBPinned);
+    await getDb()
+      .update(connections)
+      .set(isA ? { userAPinned: pinned } : { userBPinned: pinned })
+      .where(eq(connections.id, row.id));
+    return Response.json({ ok: true, pinned });
+  }
   if (payload.action === "share_contact") {
     const next = !(isA ? row.userAShareContact : row.userBShareContact);
     if (next) {

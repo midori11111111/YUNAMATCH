@@ -118,6 +118,7 @@ type Connection = {
   mutualAgain: boolean;
   playedByMe: boolean;
   playedByMate: boolean;
+  pinned: boolean;
   myRatingScore: number;
   myRatingTags: string[];
   latestMessage: string;
@@ -133,15 +134,6 @@ type ChatMessage = {
   canRespond?: boolean;
   createdAt: string;
   read?: boolean;
-};
-type FavoriteMessage = {
-  messageId: number;
-  body: string;
-  sender: "me" | "mate";
-  senderName: string;
-  kind: string;
-  createdAt: string;
-  favoritedAt: string;
 };
 type SafetyTarget = { name: string; recruitId?: number; connectionId?: number; messageId?: number; messageBody?: string };
 type LinkedAccount = {
@@ -679,10 +671,7 @@ export default function MatchApp({
   const [declineNote, setDeclineNote] = useState("");
   const pendingMessageInputRef = useRef<HTMLInputElement>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [favoriteMessages, setFavoriteMessages] = useState<FavoriteMessage[]>([]);
-  const [favoriteMessageIds, setFavoriteMessageIds] = useState<number[]>([]);
-  const [favoritesOpen, setFavoritesOpen] = useState(false);
-  const [favoriteUpdatingId, setFavoriteUpdatingId] = useState<number | null>(null);
+  const [pinUpdatingId, setPinUpdatingId] = useState<number | null>(null);
   const [messageText, setMessageText] = useState("");
   const [messageSending, setMessageSending] = useState(false);
   const [playInviteSending, setPlayInviteSending] = useState(false);
@@ -998,17 +987,6 @@ export default function MatchApp({
     if (!response.ok) return;
     const data = await response.json();
     setMessages(data.messages || []);
-  };
-  const loadMessageFavorites = async (connection: Connection) => {
-    if (preview) return;
-    const response = await fetch(
-      `/api/message-favorites?connectionId=${connection.id}`,
-      { cache: "no-store" },
-    );
-    if (!response.ok) return;
-    const data = await response.json();
-    setFavoriteMessages(data.favorites || []);
-    setFavoriteMessageIds(data.favoriteMessageIds || []);
   };
 
   useEffect(() => {
@@ -2285,12 +2263,9 @@ export default function MatchApp({
   const openChat = async (connection: Connection) => {
     setSelectedPending(null);
     setSelectedConnection(connection);
-    setFavoriteMessages([]);
-    setFavoriteMessageIds([]);
-    setFavoritesOpen(false);
     setTab("chat");
     setNotificationOpen(false);
-    await Promise.all([loadMessages(connection), loadMessageFavorites(connection)]);
+    await loadMessages(connection);
   };
   const openPendingConversation = (
     notice: Notice,
@@ -2298,8 +2273,6 @@ export default function MatchApp({
   ) => {
     setSelectedConnection(null);
     setMessages([]);
-    setFavoriteMessages([]);
-    setFavoriteMessageIds([]);
     setPendingMessages([]);
     setPendingMessageText("");
     setDeclineReasonOpen(false);
@@ -2372,49 +2345,57 @@ export default function MatchApp({
       "noopener,noreferrer",
     );
   };
-  const toggleMessageFavorite = async (message: ChatMessage) => {
-    if (!selectedConnection || favoriteUpdatingId === message.id) return;
-    const wasFavorited = favoriteMessageIds.includes(message.id);
+  const sortConnections = (rows: Connection[]) =>
+    [...rows].sort(
+      (a, b) =>
+        Number(b.pinned) - Number(a.pinned) ||
+        new Date(b.latestAt).getTime() - new Date(a.latestAt).getTime(),
+    );
+  const toggleConnectionPin = async (connection: Connection) => {
+    if (pinUpdatingId === connection.id) return;
     if (preview) {
-      setFavoriteMessageIds((ids) =>
-        wasFavorited ? ids.filter((id) => id !== message.id) : [...ids, message.id],
+      const pinned = !connection.pinned;
+      setConnections((rows) =>
+        sortConnections(
+          rows.map((row) =>
+            row.id === connection.id ? { ...row, pinned } : row,
+          ),
+        ),
       );
-      setFavoriteMessages((rows) =>
-        wasFavorited
-          ? rows.filter((item) => item.messageId !== message.id)
-          : [{
-              messageId: message.id,
-              body: message.body,
-              sender: message.sender,
-              senderName:
-                message.sender === "me"
-                  ? profile.trainerName
-                  : selectedConnection.mateName,
-              kind: message.kind || "text",
-              createdAt: message.createdAt,
-              favoritedAt: new Date().toISOString(),
-            }, ...rows],
+      setSelectedConnection((current) =>
+        current?.id === connection.id ? { ...current, pinned } : current,
       );
+      notify(pinned ? "チャットを一番上に固定しました" : "ピン留めを外しました");
       return;
     }
-    setFavoriteUpdatingId(message.id);
+    setPinUpdatingId(connection.id);
     try {
-      const response = await fetch("/api/message-favorites", {
-        method: "POST",
+      const response = await fetch("/api/connections", {
+        method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ messageId: message.id }),
+        body: JSON.stringify({ connectionId: connection.id, action: "pin" }),
       });
       const data = await response.json();
       if (!response.ok) {
-        notify(data.error || "お気に入りを変更できませんでした");
+        notify(data.error || "ピン留めを変更できませんでした");
         return;
       }
-      await loadMessageFavorites(selectedConnection);
-      notify(data.favorited ? "メッセージをお気に入りに追加しました" : "お気に入りから外しました");
+      const pinned = Boolean(data.pinned);
+      setConnections((rows) =>
+        sortConnections(
+          rows.map((row) =>
+            row.id === connection.id ? { ...row, pinned } : row,
+          ),
+        ),
+      );
+      setSelectedConnection((current) =>
+        current?.id === connection.id ? { ...current, pinned } : current,
+      );
+      notify(pinned ? "チャットを一番上に固定しました" : "ピン留めを外しました");
     } catch {
       notify("通信が不安定です。もう一度お試しください");
     } finally {
-      setFavoriteUpdatingId(null);
+      setPinUpdatingId(null);
     }
   };
   const sendMessage = async (event: FormEvent<HTMLFormElement>) => {
@@ -3816,11 +3797,8 @@ export default function MatchApp({
                     <button
                       onClick={() => {
                         setChatActionsOpen(false);
-                        setFavoritesOpen(false);
                         setSelectedConnection(null);
                         setMessages([]);
-                        setFavoriteMessages([]);
-                        setFavoriteMessageIds([]);
                       }}
                       aria-label="チャット一覧へ戻る"
                     >
@@ -3947,17 +3925,8 @@ export default function MatchApp({
                                 },
                               )}
                             </small>
-                            <div className="messageUtilityActions">
-                              <button
-                                type="button"
-                                className={`messageFavoriteButton ${favoriteMessageIds.includes(message.id) ? "active" : ""}`}
-                                onClick={() => toggleMessageFavorite(message)}
-                                disabled={favoriteUpdatingId === message.id}
-                                aria-label={favoriteMessageIds.includes(message.id) ? "お気に入りから外す" : "お気に入りに追加"}
-                              >
-                                {favoriteMessageIds.includes(message.id) ? "★ お気に入り" : "☆ お気に入り"}
-                              </button>
-                              {message.sender === "mate" && (
+                            {message.sender === "mate" && (
+                              <div className="messageUtilityActions">
                               <button
                                 type="button"
                                 className="reportMessageButton"
@@ -3970,8 +3939,8 @@ export default function MatchApp({
                               >
                                 この発言を通報
                               </button>
-                              )}
-                            </div>
+                              </div>
+                            )}
                           </div>
                         ) : (
                           <div
@@ -3994,17 +3963,8 @@ export default function MatchApp({
                                 ? " ・ 既読"
                                 : ""}
                             </small>
-                            <div className="messageUtilityActions">
-                              <button
-                                type="button"
-                                className={`messageFavoriteButton ${favoriteMessageIds.includes(message.id) ? "active" : ""}`}
-                                onClick={() => toggleMessageFavorite(message)}
-                                disabled={favoriteUpdatingId === message.id}
-                                aria-label={favoriteMessageIds.includes(message.id) ? "お気に入りから外す" : "お気に入りに追加"}
-                              >
-                                {favoriteMessageIds.includes(message.id) ? "★ お気に入り" : "☆ お気に入り"}
-                              </button>
-                              {message.sender === "mate" && (
+                            {message.sender === "mate" && (
+                              <div className="messageUtilityActions">
                               <button
                                 type="button"
                                 className="reportMessageButton"
@@ -4017,8 +3977,8 @@ export default function MatchApp({
                               >
                                 この発言を通報
                               </button>
-                              )}
-                            </div>
+                              </div>
+                            )}
                           </div>
                         ),
                       )
@@ -4150,31 +4110,52 @@ export default function MatchApp({
                           </section>
                         )}
                         {connections.map((connection) => (
-                          <button
+                          <article
                             key={connection.id}
-                            className="chatListItem"
-                            onClick={() => openChat(connection)}
+                            className={`connectionChatItem ${
+                              connection.pinned ? "pinned" : ""
+                            }`}
                           >
-                            <UserAvatar
-                              name={connection.mateName}
-                              src={connection.mateAvatarUrl}
-                              className="chatMateAvatar"
-                            />
-                            <div>
-                              <strong>{connection.mateName}</strong>
-                              <p>{connection.latestMessage}</p>
-                              <small>{connection.matePokemon}</small>
-                            </div>
-                            {connection.unreadCount > 0 && (
-                              <span className="unreadBadge">
-                                {connection.unreadCount}
-                              </span>
-                            )}
-                            {connection.againByMate && (
-                              <span className="heartDot">♡</span>
-                            )}
-                            <b>›</b>
-                          </button>
+                            <button
+                              className="connectionChatOpen"
+                              onClick={() => openChat(connection)}
+                            >
+                              <UserAvatar
+                                name={connection.mateName}
+                                src={connection.mateAvatarUrl}
+                                className="chatMateAvatar"
+                              />
+                              <div>
+                                <strong>{connection.mateName}</strong>
+                                <p>{connection.latestMessage}</p>
+                                <small>
+                                  {connection.pinned && "★ ピン留め ・ "}
+                                  {connection.matePokemon}
+                                </small>
+                              </div>
+                              {connection.unreadCount > 0 && (
+                                <span className="unreadBadge">
+                                  {connection.unreadCount}
+                                </span>
+                              )}
+                              {connection.againByMate && (
+                                <span className="heartDot">♡</span>
+                              )}
+                              <b>›</b>
+                            </button>
+                            <button
+                              className="connectionPinButton"
+                              onClick={() => void toggleConnectionPin(connection)}
+                              disabled={pinUpdatingId === connection.id}
+                              aria-label={
+                                connection.pinned
+                                  ? `${connection.mateName}さんのピン留めを外す`
+                                  : `${connection.mateName}さんを一番上に固定する`
+                              }
+                            >
+                              {connection.pinned ? "★" : "☆"}
+                            </button>
+                          </article>
                         ))}
                       </div>
                     </>
@@ -6141,70 +6122,6 @@ export default function MatchApp({
         </div>
       )}
 
-      {favoritesOpen && selectedConnection && (
-        <div className="modalBackdrop">
-          <button
-            className="backdropDismiss"
-            onClick={() => setFavoritesOpen(false)}
-            aria-label="お気に入りを閉じる"
-          />
-          <section className="sheetModal favoriteMessagesSheet">
-            <button
-              type="button"
-              className="closeButton"
-              onClick={() => setFavoritesOpen(false)}
-            >
-              ×
-            </button>
-            <small className="modalKicker">FAVORITE MESSAGES</small>
-            <h2>お気に入りメッセージ</h2>
-            <p>{selectedConnection.mateName}さんとの大切な発言を保存できます。</p>
-            <div className="favoriteMessageList">
-              {favoriteMessages.map((item) => (
-                <article key={item.messageId}>
-                  <button
-                    type="button"
-                    className="favoriteMessageJump"
-                    onClick={() => {
-                      setFavoritesOpen(false);
-                      window.setTimeout(() => {
-                        const target = document.getElementById(`message-${item.messageId}`);
-                        if (target) target.scrollIntoView({ behavior: "smooth", block: "center" });
-                        else notify("このメッセージは履歴を再読み込みすると確認できます");
-                      }, 80);
-                    }}
-                  >
-                    <span><strong>{item.senderName}</strong><time>{new Date(item.createdAt).toLocaleString("ja-JP")}</time></span>
-                    <p>{item.body}</p>
-                  </button>
-                  <button
-                    type="button"
-                    className="favoriteMessageRemove"
-                    onClick={() => toggleMessageFavorite({
-                      id: item.messageId,
-                      body: item.body,
-                      sender: item.sender,
-                      kind: item.kind === "play_invite" ? "play_invite" : "text",
-                      createdAt: item.createdAt,
-                    })}
-                    aria-label="お気に入りから外す"
-                  >
-                    ★
-                  </button>
-                </article>
-              ))}
-              {!favoriteMessages.length && (
-                <div className="favoriteMessagesEmpty">
-                  <span>☆</span>
-                  <strong>まだお気に入りはありません</strong>
-                  <p>チャットの「☆ お気に入り」を押すと、ここに保存されます。</p>
-                </div>
-              )}
-            </div>
-          </section>
-        </div>
-      )}
-
       {safetyTarget && (
         <div className="modalBackdrop">
           <form className="sheetModal safetySheet" onSubmit={submitSafety}>
@@ -6340,13 +6257,15 @@ export default function MatchApp({
                 マッチをシェア
               </button>
               <button
+                className={selectedConnection.pinned ? "pinned" : ""}
                 onClick={() => {
+                  void toggleConnectionPin(selectedConnection);
                   setChatActionsOpen(false);
-                  setFavoritesOpen(true);
                 }}
+                disabled={pinUpdatingId === selectedConnection.id}
               >
-                <b>★</b>
-                お気に入り（{favoriteMessages.length}）
+                <b>{selectedConnection.pinned ? "★" : "☆"}</b>
+                {selectedConnection.pinned ? "ピン留めを外す" : "チャットをピン留め"}
               </button>
             </div>
             <div className="chatContactMenu">
