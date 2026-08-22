@@ -704,6 +704,7 @@ export default function MatchApp({
   const [dismissedNotificationKeys, setDismissedNotificationKeys] = useState<
     string[]
   >([]);
+  const [notificationDismissBusy, setNotificationDismissBusy] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [recruitShare, setRecruitShare] = useState<Recruit | null>(null);
   const [recruitProfileView, setRecruitProfileView] = useState<Recruit | null>(
@@ -1967,29 +1968,60 @@ export default function MatchApp({
       ...new Set([...current, ...uniqueKeys]),
     ]);
     if (preview) return true;
+    const persistedKeys = new Set<string>();
     try {
-      const response = await fetch("/api/notifications", {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ keys: uniqueKeys }),
-      });
-      if (!response.ok) throw new Error("notification dismissal failed");
+      // 大量の通知でもAPIの上限を超えず、途中まで成功した分を失わないように分割する。
+      for (let index = 0; index < uniqueKeys.length; index += 100) {
+        const batch = uniqueKeys.slice(index, index + 100);
+        const response = await fetch("/api/notifications", {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ keys: batch }),
+          cache: "no-store",
+        });
+        const data = (await response.json().catch(() => ({}))) as {
+          error?: string;
+          signIn?: string;
+        };
+        if (response.status === 401) {
+          location.href = data.signIn || "/login";
+          throw new Error("ログインし直してください");
+        }
+        if (!response.ok)
+          throw new Error(data.error || "通知を消せませんでした");
+        batch.forEach((key) => persistedKeys.add(key));
+      }
       return true;
-    } catch {
+    } catch (error) {
+      const failedKeys = uniqueKeys.filter((key) => !persistedKeys.has(key));
       setDismissedNotificationKeys((current) =>
-        current.filter((key) => !uniqueKeys.includes(key)),
+        current.filter((key) => !failedKeys.includes(key)),
       );
-      notify("通知を消せませんでした。もう一度お試しください");
+      notify(
+        error instanceof Error
+          ? error.message
+          : "通知を消せませんでした。もう一度お試しください",
+      );
       return false;
     }
   };
   const dismissAllNotifications = async () => {
-    if (!dismissibleNotificationKeys.length) return;
+    if (notificationDismissBusy || !dismissibleNotificationKeys.length) return;
+    setNotificationDismissBusy(true);
     const keys = [...dismissibleNotificationKeys];
-    setProfileLikes((rows) => rows.map((row) => ({ ...row, read: true })));
-    if (!preview)
-      fetch("/api/likes", { method: "PATCH" }).catch(() => undefined);
-    if (await dismissNotifications(keys)) notify("通知をすべて消しました");
+    try {
+      const dismissed = await dismissNotifications(keys);
+      if (!dismissed) return;
+      setProfileLikes((rows) => rows.map((row) => ({ ...row, read: true })));
+      if (!preview)
+        await fetch("/api/likes", {
+          method: "PATCH",
+          cache: "no-store",
+        }).catch(() => undefined);
+      notify("通知をすべて消しました");
+    } finally {
+      setNotificationDismissBusy(false);
+    }
   };
   useEffect(() => {
     if (!authenticated || !profileReady || onboardingOpen) return;
@@ -5527,8 +5559,16 @@ export default function MatchApp({
                 <p>タップして確認、×で一覧から消せます</p>
               </div>
               {dismissibleNotificationKeys.length > 0 && (
-                <button onClick={() => void dismissAllNotifications()}>
-                  すべて消す
+                <button
+                  type="button"
+                  disabled={notificationDismissBusy}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    void dismissAllNotifications();
+                  }}
+                >
+                  {notificationDismissBusy ? "削除中…" : "すべて消す"}
                 </button>
               )}
             </div>

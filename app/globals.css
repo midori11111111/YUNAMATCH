@@ -1025,6 +1025,7 @@ button { cursor: pointer; }
 .notificationTitleBar h2 { margin: 0; font-size: 25px; }
 .notificationTitleBar p { margin: 4px 0 0; color: #918a98; font-size: 8px; line-height: 1.45; }
 .notificationTitleBar > button { flex: 0 0 auto; min-height: 36px; padding: 0 13px; border: 1px solid #e5dff0; border-radius: 12px; color: var(--purple); background: #f5f1ff; font-size: 8px; font-weight: 950; }
+.notificationTitleBar > button:disabled { cursor: wait; opacity: .58; }
 .notificationList { display: grid; gap: 9px; }
 .notificationItem { position: relative; }
 .notificationItem .notificationRow { padding-right: 50px; }
