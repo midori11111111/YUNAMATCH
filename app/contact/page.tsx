@@ -39,15 +39,16 @@ export default function ContactPage() {
           <Link href="/privacy">プライバシーポリシー</Link>
           <Link href="/terms">利用規約</Link>
         </nav>
-        <h1>お問い合わせ</h1>
-        <p className="legalLead">ログインできない場合、個人情報の確認・訂正・削除を希望する場合も、こちらからYUNAMATCH運営へ連絡できます。</p>
+        <h1>不具合・改善リクエスト</h1>
+        <p className="legalLead">YUNAMATCHで見つけたバグや、修正してほしい点を運営へ送れます。ログインに関するお問い合わせにも利用できます。</p>
         <form className="contactForm" onSubmit={submit}>
           <label>お問い合わせの種類
-            <select name="category" defaultValue="アカウント・ログイン" required>
+            <select name="category" defaultValue="不具合" required>
               <option>アカウント・ログイン</option>
               <option>個人情報・退会</option>
               <option>安全・通報</option>
               <option>不具合</option>
+              <option>改善してほしい点</option>
               <option>その他</option>
             </select>
           </label>

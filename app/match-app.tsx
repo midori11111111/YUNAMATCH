@@ -902,12 +902,15 @@ export default function MatchApp({
   }, [preview, guestMode]);
   const loadConnections = async () => {
     try {
-      const response = await fetch("/api/connections");
-      if (!response.ok) return;
+      const response = await fetch("/api/connections", { cache: "no-store" });
+      if (!response.ok) return [] as Connection[];
       const data = await response.json();
-      setConnections(data.connections || []);
+      const nextConnections = (data.connections || []) as Connection[];
+      setConnections(nextConnections);
+      return nextConnections;
     } catch {
       /* 検索は続ける */
+      return [] as Connection[];
     }
   };
   const loadLobbies = async () => {
@@ -1956,12 +1959,19 @@ export default function MatchApp({
         ? "マッチ成立！チャットが開通しました"
         : "今回は見送りました",
     );
-    await Promise.all([
+    const [, refreshedConnections] = await Promise.all([
       loadNotices(),
       loadConnections(),
       loadRecruits(),
       loadDiscover(),
     ]);
+    if (action === "accept" && data.connectionId) {
+      const matchedConnection = refreshedConnections.find(
+        (connection) => connection.id === data.connectionId,
+      );
+      if (matchedConnection) await openChat(matchedConnection);
+      else setTab("chat");
+    }
   };
   const openChat = async (connection: Connection) => {
     setSelectedPending(null);

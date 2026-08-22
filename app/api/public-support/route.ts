@@ -3,7 +3,7 @@ import { getDb } from "../../../db";
 import { supportTickets } from "../../../db/schema";
 import { checkRateLimit, rateLimitResponse } from "../../../lib/rate-limit";
 
-const categories = new Set(["アカウント・ログイン", "個人情報・退会", "安全・通報", "不具合", "その他"]);
+const categories = new Set(["アカウント・ログイン", "個人情報・退会", "安全・通報", "不具合", "改善してほしい点", "その他"]);
 
 export async function POST(request: Request) {
   const payload = await request.json().catch(() => ({})) as { category?: unknown; replyContact?: unknown; message?: unknown };

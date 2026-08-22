@@ -298,7 +298,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(privacyPage, /取得する情報/);
   assert.match(privacyPage, /外部サービスと委託先/);
   assert.match(privacyPage, /YUNAMATCH運営（個人開発）/);
-  assert.match(contactPage, /ログインできない場合/);
+  assert.match(contactPage, /不具合・改善リクエスト/);
+  assert.match(app, /refreshedConnections\.find/);
   assert.match(publicSupportApi, /public-support/);
   assert.match(publicSupportApi, /sha256/);
   assert.match(app, /共有せずチャットへ/);
