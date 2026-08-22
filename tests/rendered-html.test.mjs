@@ -40,6 +40,13 @@ test("renders public browsing before login for anonymous visitors", async () => 
   assert.doesNotMatch(html, /Your site is taking shape|codex-preview/i);
 });
 
+test("uses the YUNAMATCH logo social preview", async () => {
+  const layout = await readFile(new URL("app/layout.tsx", root), "utf8");
+  await access(new URL("public/og-yunamatch-logo.png", root));
+  assert.match(layout, /og-yunamatch-logo\.png/);
+  assert.match(layout, /width: 1200, height: 630/);
+});
+
 test("keeps discover results inside every selected filter", async () => {
   const { filterDiscoverCandidates } = await import(
     new URL("../lib/discover-filter.ts", import.meta.url)
