@@ -1112,6 +1112,7 @@ button { cursor: pointer; }
 .filterResetButton:disabled { color: #bbb5bf; background: #f6f4f7; }
 .toggleRow { display: flex !important; align-items: center; gap: 9px !important; padding: 12px; border-radius: 11px; background: #f7f5fa; }
 .toggleRow input { width: auto !important; accent-color: var(--purple); }
+.likedFilterChoices { display: grid; gap: 7px; }
 .privacyText { margin: 0; color: #9a94a2; font-size: 7px; }
 .safetySheet > p { margin: -10px 0 6px; color: #8c8593; font-size: 8px; line-height: 1.6; }
 .reportedMessagePreview { display: grid; gap: 5px; margin: 7px 0 4px; padding: 12px; border: 1px solid #f2ccd4; border-radius: 13px; background: #fff5f7; }
@@ -1164,11 +1165,15 @@ button { cursor: pointer; }
 .recruitSharePreview strong { font-size: 16px; line-height: 1.2; }
 .recruitSharePreview span { font-size: 8px; font-weight: 800; }
 .recruitSharePreview p { margin: 4px 0 0; font-size: 7px; }
-.socialShareGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-top: 15px; }
+.socialShareGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px; margin-top: 15px; }
 .socialShareGrid button { min-width: 0; display: grid; place-items: center; gap: 6px; border: 0; border-radius: 15px; padding: 13px 6px; color: #fff; font-size: 8px; font-weight: 900; }
 .socialShareGrid b { min-height: 16px; font-size: 15px; line-height: 1; }
 .socialShareGrid .shareX { background: #17131f; }
-.socialShareGrid .shareDiscord { background: #5865f2; }
+.socialShareGrid .shareDiscord { grid-column: 1 / -1; min-height: 64px; display: flex; justify-content: center; gap: 12px; border: 2px solid #fff; background: linear-gradient(135deg, #5865f2, #7289da); box-shadow: 0 9px 24px #5865f24d; }
+.socialShareGrid .shareDiscord b { width: 35px; height: 35px; min-height: 0; display: grid; place-items: center; border-radius: 12px; color: #5865f2; background: #fff; font-size: 17px; }
+.socialShareGrid .shareDiscord span { display: grid; gap: 3px; text-align: left; }
+.socialShareGrid .shareDiscord strong { font-size: 11px; }
+.socialShareGrid .shareDiscord small { color: #ffffffd9; font-size: 7px; }
 .socialShareGrid .shareLine { background: #06c755; }
 .socialShareGrid .shareLine b { font-size: 8px; }
 .nativeShareButton { width: 100%; margin-top: 9px; border: 1px solid #ded7e8; border-radius: 13px; padding: 12px; color: var(--purple); background: #f5f1ff; font-size: 8px; font-weight: 900; }

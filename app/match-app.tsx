@@ -662,6 +662,7 @@ export default function MatchApp({
   const [minLikes, setMinLikes] = useState("");
   const [maxLikes, setMaxLikes] = useState("");
   const [roleFilter, setRoleFilter] = useState<PokemonRole | "">("");
+  const [showLikedProfilesOnly, setShowLikedProfilesOnly] = useState(false);
   const [hideLikedProfiles, setHideLikedProfiles] = useState(false);
   const [discoverFiltersReady, setDiscoverFiltersReady] = useState(false);
   const [compose, setCompose] = useState(false);
@@ -1103,6 +1104,7 @@ export default function MatchApp({
     if (minLikes !== "") params.set("minLikes", minLikes);
     if (maxLikes !== "") params.set("maxLikes", maxLikes);
     if (roleFilter) params.set("role", roleFilter);
+    if (showLikedProfilesOnly) params.set("likedOnly", "1");
     if (hideLikedProfiles) params.set("hideLiked", "1");
     if (append) discoverLoadingMoreRef.current = true;
     else setLoading(true);
@@ -1151,6 +1153,7 @@ export default function MatchApp({
     minLikes,
     maxLikes,
     roleFilter,
+    showLikedProfilesOnly,
     hideLikedProfiles,
   ]);
   const loadNotices = async () => {
@@ -1220,6 +1223,7 @@ export default function MatchApp({
           minLikes?: unknown;
           maxLikes?: unknown;
           roleFilter?: unknown;
+          showLikedProfilesOnly?: unknown;
           hideLikedProfiles?: unknown;
         };
         if (typeof filters.pokemonQuery === "string")
@@ -1243,6 +1247,8 @@ export default function MatchApp({
           pokemonRoleOptions.some((option) => option.value === filters.roleFilter)
         )
           setRoleFilter(filters.roleFilter as PokemonRole | "");
+        if (typeof filters.showLikedProfilesOnly === "boolean")
+          setShowLikedProfilesOnly(filters.showLikedProfilesOnly);
         if (typeof filters.hideLikedProfiles === "boolean")
           setHideLikedProfiles(filters.hideLikedProfiles);
       }
@@ -1269,6 +1275,7 @@ export default function MatchApp({
           minLikes,
           maxLikes,
           roleFilter,
+          showLikedProfilesOnly,
           hideLikedProfiles,
         }),
       );
@@ -1284,6 +1291,7 @@ export default function MatchApp({
     minLikes,
     maxLikes,
     roleFilter,
+    showLikedProfilesOnly,
     hideLikedProfiles,
   ]);
 
@@ -1653,7 +1661,11 @@ export default function MatchApp({
       profile.playTime,
     ],
   );
-  const recommendedCards = hideLikedProfiles
+  const recommendedCards = showLikedProfilesOnly
+    ? filteredProfileCandidates.filter((candidate) =>
+        likedProfileIds.includes(candidate.id),
+      )
+    : hideLikedProfiles
     ? filteredProfileCandidates.filter(
         (candidate) => !likedProfileIds.includes(candidate.id),
       )
@@ -1669,6 +1681,7 @@ export default function MatchApp({
     Number(sharedTimeOnly) +
     Number(minLikes !== "" || maxLikes !== "") +
     Number(Boolean(roleFilter)) +
+    Number(showLikedProfilesOnly) +
     Number(hideLikedProfiles);
   const current = cards.length
     ? cards[((index % cards.length) + cards.length) % cards.length]
@@ -5975,17 +5988,32 @@ export default function MatchApp({
               <span>自分と遊べる時間帯が合う人だけ</span>
             </label>
             {!guestMode && (
-              <label className="toggleRow">
-                <input
-                  type="checkbox"
-                  checked={hideLikedProfiles}
-                  onChange={(event) => {
-                    setHideLikedProfiles(event.target.checked);
-                    setIndex(0);
-                  }}
-                />
-                <span>いいね済みの人を表示しない</span>
-              </label>
+              <div className="likedFilterChoices">
+                <label className="toggleRow">
+                  <input
+                    type="checkbox"
+                    checked={showLikedProfilesOnly}
+                    onChange={(event) => {
+                      setShowLikedProfilesOnly(event.target.checked);
+                      if (event.target.checked) setHideLikedProfiles(false);
+                      setIndex(0);
+                    }}
+                  />
+                  <span>いいねした人だけ表示</span>
+                </label>
+                <label className="toggleRow">
+                  <input
+                    type="checkbox"
+                    checked={hideLikedProfiles}
+                    onChange={(event) => {
+                      setHideLikedProfiles(event.target.checked);
+                      if (event.target.checked) setShowLikedProfilesOnly(false);
+                      setIndex(0);
+                    }}
+                  />
+                  <span>いいね済みの人を表示しない</span>
+                </label>
+              </div>
             )}
             <fieldset className="pokemonRoleFilter">
               <legend>ポケモンのロール</legend>
@@ -6058,6 +6086,7 @@ export default function MatchApp({
                   setMinLikes("");
                   setMaxLikes("");
                   setRoleFilter("");
+                  setShowLikedProfilesOnly(false);
                   setHideLikedProfiles(false);
                   setIndex(0);
                 }}
@@ -6584,7 +6613,10 @@ export default function MatchApp({
                 onClick={() => shareRecruitToDiscord(recruitShare)}
               >
                 <b>D</b>
-                <span>Discord</span>
+                <span>
+                  <strong>Discordで共有</strong>
+                  <small>募集文をコピーしてサーバーを開く</small>
+                </span>
               </button>
               <button
                 className="shareLine"

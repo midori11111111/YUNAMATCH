@@ -485,8 +485,12 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.doesNotMatch(discoverApi, /me\.gender\s*===\s*"男性"/);
   assert.match(discoverApi, /rankDiscoverCandidates/);
   assert.match(discoverApi, /query\.hideLiked/);
+  assert.match(discoverApi, /query\.likedOnly/);
+  assert.match(discoverApi, /likedByMe\.has\(row\.userId\)/);
   assert.match(discoverApi, /likedByMeRows/);
+  assert.match(app, /いいねした人だけ表示/);
   assert.match(app, /いいね済みの人を表示しない/);
+  assert.match(app, /Discordで共有/);
   assert.match(app, /discoverSessionSeedRef/);
   assert.match(discoverApi, /activeCutoff/);
   assert.match(discoverApi, /lastActiveAt/);

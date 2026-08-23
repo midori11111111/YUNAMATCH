@@ -88,6 +88,7 @@ function discoverQuery(request: Request) {
     role: validRoles.has(requestedRole as PokemonRole)
       ? (requestedRole as PokemonRole)
       : "",
+    likedOnly: searchParams.get("likedOnly") === "1",
     hideLiked: searchParams.get("hideLiked") === "1",
     rotationSeed: normalizeRotationSeed(searchParams.get("seed") || ""),
   };
@@ -256,8 +257,11 @@ export async function GET(request: Request) {
     ...blockedMe.map((row) => row.id),
     // 一度メイト申請を送った相手は、結果にかかわらず再検索へ戻さない。
     ...requestedRows.map((row) => row.ownerId),
-    ...(query.hideLiked ? likedByMeRows.map((row) => row.recipientId) : []),
+    ...(query.hideLiked && !query.likedOnly
+      ? likedByMeRows.map((row) => row.recipientId)
+      : []),
   ]);
+  const likedByMe = new Set(likedByMeRows.map((row) => row.recipientId));
   for (const row of connectionRows)
     hidden.add(row.userAId === user.userId ? row.userBId : row.userAId);
   const lastActiveByUser = new Map(
@@ -270,6 +274,7 @@ export async function GET(request: Request) {
     (row) =>
       !row.suspendedAt &&
       !hidden.has(row.userId) &&
+      (!query.likedOnly || likedByMe.has(row.userId)) &&
       row.ageConfirmed &&
       row.termsAcceptedAt &&
       activityAt(row).getTime() >= activeCutoff,
