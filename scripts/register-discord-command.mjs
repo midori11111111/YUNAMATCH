@@ -1,5 +1,6 @@
 const appId = process.env.DISCORD_APP_ID;
 const token = process.env.DISCORD_BOT_TOKEN;
+const guildId = process.env.DISCORD_GUILD_ID;
 if (!appId || !token)
   throw new Error("DISCORD_APP_ID と DISCORD_BOT_TOKEN を設定してください");
 
@@ -96,7 +97,9 @@ const commands = [
 ];
 
 const response = await fetch(
-  `https://discord.com/api/v10/applications/${appId}/commands`,
+  guildId
+    ? `https://discord.com/api/v10/applications/${appId}/guilds/${guildId}/commands`
+    : `https://discord.com/api/v10/applications/${appId}/commands`,
   {
     method: "PUT",
     headers: {
@@ -108,4 +111,6 @@ const response = await fetch(
 );
 if (!response.ok)
   throw new Error(`${response.status} ${await response.text()}`);
-console.log("Discordの /募集・/はじめ方 コマンドを登録しました");
+console.log(
+  `Discordの /募集・/はじめ方 コマンドを${guildId ? "YUNAMATCHサーバーへ" : "全体へ"}登録しました`,
+);

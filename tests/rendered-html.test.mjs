@@ -195,6 +195,8 @@ test("supports casual and ranked recruiting on the site and Discord", async () =
   assert.match(adminCommandApi, /requireAdmin/);
   assert.match(adminCommandApi, /method: "PATCH"/);
   assert.match(adminCommandApi, /clarifiedDescriptions/);
+  assert.match(adminCommandApi, /DISCORD_GUILD_ID/);
+  assert.match(adminCommandApi, /guilds\/\$\{guildId\}\/commands/);
   assert.match(schema, /matchType: text\("match_type"\)/);
   assert.match(migration, /ADD `match_type` text DEFAULT 'ランクマッチ' NOT NULL/);
 });

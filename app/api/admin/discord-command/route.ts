@@ -11,6 +11,8 @@ type DiscordCommandOption = {
 type DiscordCommand = {
   id: string;
   name: string;
+  description: string;
+  type?: number;
   options?: DiscordCommandOption[];
 };
 
@@ -39,6 +41,7 @@ export async function POST() {
     );
   const appId = process.env.DISCORD_APP_ID;
   const token = process.env.DISCORD_BOT_TOKEN;
+  const guildId = process.env.DISCORD_GUILD_ID;
   if (!appId || !token)
     return Response.json(
       { error: "Discord設定が不足しています" },
@@ -85,5 +88,45 @@ export async function POST() {
       { error: "Discordの募集コマンドを更新できませんでした" },
       { status: 502 },
     );
-  return Response.json({ ok: true });
+  const updatedRecruit = (await updateResponse.json()) as DiscordCommand;
+
+  // Global commands can take time to propagate. Register the same commands
+  // directly to the official guild as well so /募集 is available immediately.
+  if (guildId) {
+    const gettingStarted = commands.find(
+      (command) => command.name === "はじめ方",
+    );
+    const guildCommands = [
+      {
+        type: updatedRecruit.type || 1,
+        name: updatedRecruit.name,
+        description: updatedRecruit.description,
+        options: updatedRecruit.options || options,
+      },
+      ...(gettingStarted
+        ? [
+            {
+              type: gettingStarted.type || 1,
+              name: gettingStarted.name,
+              description: gettingStarted.description,
+              options: gettingStarted.options || [],
+            },
+          ]
+        : []),
+    ];
+    const guildResponse = await fetch(
+      `https://discord.com/api/v10/applications/${appId}/guilds/${guildId}/commands`,
+      {
+        method: "PUT",
+        headers: { ...headers, "content-type": "application/json" },
+        body: JSON.stringify(guildCommands),
+      },
+    );
+    if (!guildResponse.ok)
+      return Response.json(
+        { error: "YUNAMATCHサーバーへ募集コマンドを登録できませんでした" },
+        { status: 502 },
+      );
+  }
+  return Response.json({ ok: true, guildRegistered: Boolean(guildId) });
 }
