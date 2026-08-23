@@ -11,7 +11,7 @@ import { runInBackground } from "../../../lib/background";
 const recruitRoles=new Set(["上レーン","下レーン","中央","キャリー","タンク","サポート","アタック型","バランス型","スピード型","ディフェンス型","サポート型"]);
 const matchTypes=new Set(["ランクマッチ","カジュアル"]);
 const recruitPageSize=100;
-const recruitFields={ id:recruits.id, ownerId:recruits.ownerId, trainerName:recruits.trainerName, gender:recruits.gender, pokemon:recruits.pokemon, role:recruits.role, matches:recruits.matches, winRate:recruits.winRate, rank:recruits.rank, playTime:recruits.playTime, note:recruits.note, createdAt:recruits.createdAt, avatarUrl:profiles.avatarUrl, startAt:recruits.startAt, startTimeUndecided:recruits.startTimeUndecided, expiresAt:recruits.expiresAt, partySize:recruits.partySize, desiredPokemon:recruits.desiredPokemon, desiredRole:recruits.desiredRole, matchType:recruits.matchType, acceptedCount:recruits.acceptedCount };
+const recruitFields={ id:recruits.id, ownerId:recruits.ownerId, trainerName:recruits.trainerName, gender:recruits.gender, pokemon:recruits.pokemon, role:recruits.role, matches:recruits.matches, winRate:recruits.winRate, rank:recruits.rank, playTime:recruits.playTime, note:recruits.note, createdAt:recruits.createdAt, avatarUrl:profiles.avatarUrl, bio:profiles.bio, startAt:recruits.startAt, startTimeUndecided:recruits.startTimeUndecided, expiresAt:recruits.expiresAt, partySize:recruits.partySize, desiredPokemon:recruits.desiredPokemon, desiredRole:recruits.desiredRole, matchType:recruits.matchType, acceptedCount:recruits.acceptedCount };
 
 export async function GET(request:Request) {
   const db = getDb();
@@ -23,7 +23,7 @@ export async function GET(request:Request) {
   const hasMore=pageRows.length>recruitPageSize;
   const rows=pageRows.slice(0,recruitPageSize);
   const nextCursor=rows.at(-1)?.id??null;
-  const visibleRecruit=(row:typeof rows[number])=>({id:row.id,trainerName:row.trainerName,gender:row.gender,pokemon:row.pokemon,role:row.role,matches:row.matches,winRate:row.winRate,rank:normalizeRank(row.rank),playTime:row.playTime,note:row.note,createdAt:row.createdAt,avatarUrl:row.avatarUrl||"",startAt:row.startAt,startTimeUndecided:row.startTimeUndecided,expiresAt:row.expiresAt,partySize:row.partySize,desiredPokemon:row.desiredPokemon,desiredRole:row.desiredRole,matchType:row.matchType,acceptedCount:row.acceptedCount});
+  const visibleRecruit=(row:typeof rows[number])=>({id:row.id,trainerName:row.trainerName,gender:row.gender,pokemon:row.pokemon,role:row.role,matches:row.matches,winRate:row.winRate,rank:normalizeRank(row.rank),playTime:row.playTime,note:row.note,createdAt:row.createdAt,avatarUrl:row.avatarUrl||"",bio:row.bio||"",startAt:row.startAt,startTimeUndecided:row.startTimeUndecided,expiresAt:row.expiresAt,partySize:row.partySize,desiredPokemon:row.desiredPokemon,desiredRole:row.desiredRole,matchType:row.matchType,acceptedCount:row.acceptedCount});
   if (!user) return Response.json({ recruits: rows.map(visibleRecruit), myRecruit:null, hasMore, nextCursor });
   const [blockedByMe, blockedMe] = await Promise.all([
     db.select({ id: blocks.blockedId }).from(blocks).where(eq(blocks.blockerId, user.userId)),
@@ -85,7 +85,7 @@ export async function POST(request:Request) {
         )));
     }
   })(),"Recruit alert fanout");
-  return Response.json({recruit:{...row,avatarUrl:profile.avatarUrl}},{status:201});
+  return Response.json({recruit:{...row,avatarUrl:profile.avatarUrl,bio:profile.bio||""}},{status:201});
 }
 
 export async function PATCH(request:Request){

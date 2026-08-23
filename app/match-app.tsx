@@ -34,6 +34,7 @@ type Recruit = {
   playTime: string;
   note: string;
   avatarUrl?: string;
+  bio: string;
   createdAt: string;
   startAt: string;
   startTimeUndecided: boolean;
@@ -422,6 +423,7 @@ const previewRecruit: Recruit = {
   rank: "レジェンド 1000〜",
   playTime: "平日 夜（18〜22時）",
   note: "中央キャリーを支えるのが好きです。楽しく連携しながら勝ちたい！",
+  bio: "サポート役が好きです。VCはどちらでも大丈夫なので、楽しく遊べる方と仲良くなりたいです！",
   createdAt: new Date().toISOString(),
   startAt: new Date().toISOString(),
   startTimeUndecided: false,
@@ -4955,8 +4957,8 @@ export default function MatchApp({
                               className="recruitProfileLinkAvatar"
                             />
                             <span>
-                              <strong>プロフィール画像を見る</strong>
-                              <small>プロフィール画像と募集者情報</small>
+                              <strong>募集者プロフィールを見る</strong>
+                              <small>プロフィール画像・自己紹介・募集者情報</small>
                             </span>
                             <b>›</b>
                           </button>
@@ -7370,6 +7372,10 @@ export default function MatchApp({
               <span>募集者ランク：{recruitProfileView.rank}</span>
               <span>募集モード：{recruitProfileView.matchType}</span>
               <span>募集日時：{formatRecruitPostedAt(recruitProfileView.createdAt)}</span>
+            </div>
+            <div className="candidateBio recruitProfileBio">
+              <small>自己紹介</small>
+              <p>{recruitProfileView.bio || "自己紹介は未設定です"}</p>
             </div>
             {recruitProfileView.note && (
               <p className="recruitNote">“{recruitProfileView.note}”</p>

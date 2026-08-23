@@ -364,6 +364,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     reportEvidenceMigration,
     messageFavoritesApi,
     messageFavoritesMigration,
+    recruitsApi,
   ] = await Promise.all([
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/match-app.tsx", root), "utf8"),
@@ -419,6 +420,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
     readFile(new URL("drizzle/0026_heavy_gwen_stacy.sql", root), "utf8"),
     readFile(new URL("app/api/message-favorites/route.ts", root), "utf8"),
     readFile(new URL("drizzle/0027_bitter_carnage.sql", root), "utf8"),
+    readFile(new URL("app/api/recruits/route.ts", root), "utf8"),
   ]);
   assert.match(page, /getChatGPTUser/);
   assert.match(page, /initialProfile/);
@@ -758,7 +760,10 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /roleFilter/);
   assert.match(app, /プロフィールヘッダー/);
   assert.match(app, /headerUrl/);
-  assert.match(app, /プロフィール画像を見る/);
+  assert.match(app, /募集者プロフィールを見る/);
+  assert.match(app, /プロフィール画像・自己紹介・募集者情報/);
+  assert.match(app, /recruitProfileView\.bio \|\| "自己紹介は未設定です"/);
+  assert.match(recruitsApi, /bio:profiles\.bio/);
   assert.match(app, /recruitProfileView/);
   assert.match(app, /yunamatch-discover-filters-v1/);
   assert.match(app, /localStorage\.setItem\(\s*discoverFiltersStorageKey/);

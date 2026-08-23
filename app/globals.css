@@ -450,6 +450,7 @@ button { cursor: pointer; }
 .recruitProfileMeta { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 7px; margin: 12px 0; }
 .recruitProfileMeta > span { padding: 7px 9px; border-radius: 99px; color: #625a6c; background: #f2eff5; font-size: 8px; font-weight: 850; }
 .recruitProfileSheet .recruitNote { margin: 12px 0; text-align: left; }
+.recruitProfileBio { margin: 12px 0; text-align: left; }
 .pokemonTile { width: 68px; height: 68px; position: relative; overflow: hidden; display: grid; place-items: center; border-radius: 20px; color: #fff; font-size: 29px; font-weight: 900; isolation: isolate; box-shadow: 0 8px 18px #b7447f25; }
 .pokemonTile .pokemonVisualFallback { font-size: 20px; }
 .recruitTop { display: flex; align-items: center; gap: 7px; }
