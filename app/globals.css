@@ -788,7 +788,7 @@ button { cursor: pointer; }
 .pendingChatActions button { min-height: 44px; border: 1px solid #e3dde8; border-radius: 14px; color: #837b8b; background: #fff; font-size: 9px; font-weight: 950; }
 .pendingChatActions button:last-child { color: #fff; border-color: transparent; background: linear-gradient(135deg,var(--purple),#8d75f1); box-shadow: 0 8px 20px #7257e82b; }
 .pendingMessageComposer { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 7px; padding: 10px 0; border-top: 1px solid var(--line); }
-.pendingMessageComposer input { min-width: 0; border: 1px solid #ddd6e5; border-radius: 13px; padding: 11px 12px; color: var(--ink); background: #fff; font-size: 9px; outline: none; }
+.pendingMessageComposer input { min-width: 0; border: 1px solid #ddd6e5; border-radius: 13px; padding: 11px 12px; color: var(--ink); background: #fff; font-size: 16px; outline: none; touch-action: manipulation; }
 .pendingMessageComposer input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px #7257e813; }
 .pendingMessageComposer button { min-width: 62px; border: 0; border-radius: 13px; padding: 0 12px; color: #fff; background: var(--purple); font-size: 8px; font-weight: 950; }
 .pendingMessageComposer button:disabled { opacity: .4; }
@@ -797,7 +797,7 @@ button { cursor: pointer; }
 .declineReasonPanel > div { display: flex; flex-wrap: wrap; gap: 6px; }
 .declineReasonPanel > div button { border: 1px solid #e7dce1; border-radius: 99px; padding: 7px 9px; color: #796e73; background: #fff; font-size: 7px; font-weight: 850; }
 .declineReasonPanel > div button.active { color: #fff; border-color: var(--pink); background: var(--pink); }
-.declineReasonPanel input { width: 100%; border: 1px solid #e4d9de; border-radius: 11px; padding: 10px 11px; background: #fff; font-size: 8px; outline: none; }
+.declineReasonPanel input { width: 100%; border: 1px solid #e4d9de; border-radius: 11px; padding: 10px 11px; background: #fff; font-size: 16px; outline: none; touch-action: manipulation; }
 .declineReasonPanel > button { min-height: 42px; border: 0; border-radius: 12px; color: #fff; background: #615763; font-size: 8px; font-weight: 950; }
 .pendingChatWaiting { min-height: 52px; display: flex; align-items: center; justify-content: center; gap: 7px; margin: 0 -4px; border-top: 1px solid var(--line); color: #81798a; background: #fbfafc; font-size: 9px; font-weight: 900; }
 .pendingChatWaiting span { color: var(--purple); font-size: 13px; }
@@ -925,7 +925,7 @@ button { cursor: pointer; }
 .matchedProfileBadge { width: fit-content; margin: 0 auto 15px; padding: 7px 11px; border-radius: 99px; color: #16876d; background: #e3f7f0; font-size: 8px; font-weight: 950; }
 .matchedProfileClose { width: 100%; margin-top: 4px; border: 0; border-radius: 15px; padding: 14px; color: #fff; background: var(--purple); font-size: 10px; font-weight: 950; }
 .messageComposer { display: grid; grid-template-columns: minmax(0,1fr) 42px; gap: 8px; margin: 0 -4px; padding: 11px 0 8px; border-top: 1px solid var(--line); background: #fbfafc; }
-.messageComposer input { width: 100%; border: 1px solid #e2dce7; border-radius: 14px; padding: 11px 13px; background: #fff; font-size: 9px; outline: none; }
+.messageComposer input { width: 100%; border: 1px solid #e2dce7; border-radius: 14px; padding: 11px 13px; background: #fff; font-size: 16px; outline: none; touch-action: manipulation; }
 .messageComposer input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px #7257e813; }
 .messageComposer button { width: 42px; height: 42px; border: 0; border-radius: 14px; color: #fff; background: var(--purple); font-size: 15px; }
 .messageComposer button:disabled { opacity: .35; }

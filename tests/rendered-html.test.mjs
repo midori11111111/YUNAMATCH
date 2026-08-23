@@ -47,6 +47,19 @@ test("uses the YUNAMATCH logo social preview", async () => {
   assert.match(layout, /width: 1200, height: 630/);
 });
 
+test("prevents iPhone from zooming chat inputs on focus", async () => {
+  const css = await readFile(new URL("app/globals.css", root), "utf8");
+  for (const selector of [
+    ".messageComposer input",
+    ".pendingMessageComposer input",
+    ".declineReasonPanel input",
+  ]) {
+    const rule = css.match(new RegExp(`${selector.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")} \\{[^}]+\\}`))?.[0] ?? "";
+    assert.match(rule, /font-size:\s*16px/);
+    assert.match(rule, /touch-action:\s*manipulation/);
+  }
+});
+
 test("keeps discover results inside every selected filter", async () => {
   const { filterDiscoverCandidates } = await import(
     new URL("../lib/discover-filter.ts", import.meta.url)
