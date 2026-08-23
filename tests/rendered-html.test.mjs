@@ -510,9 +510,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(discordApi, /getRequestExecutionContext/);
   assert.match(discordApi, /type: 5/);
   assert.match(discordApi, /messages\/@original/);
-  assert.match(discordApi, /publishRecruitResponse/);
-  assert.match(discordApi, /method: "POST"/);
-  assert.match(discordApi, /method: "DELETE"/);
+  assert.match(discordApi, /return json\(\{ type: 5 \}\)/);
   assert.match(app, /二人だけのDiscord VCを作る/);
   assert.match(voiceRoomsApi, /VC1.*VC2.*VC3.*VC4.*VC5/);
   assert.match(voiceRoomsApi, /permission_overwrites/);

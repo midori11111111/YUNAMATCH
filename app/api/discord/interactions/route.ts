@@ -237,27 +237,6 @@ async function editOriginalResponse(
     throw new Error(`Discord interaction update failed: ${response.status}`);
 }
 
-async function publishRecruitResponse(
-  applicationId: string,
-  interactionToken: string,
-  message: DiscordMessage,
-) {
-  const webhookUrl = `https://discord.com/api/v10/webhooks/${applicationId}/${interactionToken}`;
-  const response = await fetch(webhookUrl, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(message),
-  });
-  if (!response.ok)
-    throw new Error(`Discord public response failed: ${response.status}`);
-
-  // Remove the private "processing" response after the public recruit card
-  // has been posted to the channel.
-  await fetch(`${webhookUrl}/messages/@original`, { method: "DELETE" }).catch(
-    () => undefined,
-  );
-}
-
 export async function POST(request: Request) {
   const raw = await request.text();
   if (!(await verify(request, raw)))
@@ -298,9 +277,7 @@ export async function POST(request: Request) {
 
   const task = createRecruitMessage(interaction, discordId)
     .then((message) =>
-      message.components?.length
-        ? publishRecruitResponse(applicationId, interactionToken, message)
-        : editOriginalResponse(applicationId, interactionToken, message),
+      editOriginalResponse(applicationId, interactionToken, message),
     )
     .catch(() =>
       editOriginalResponse(
@@ -313,7 +290,7 @@ export async function POST(request: Request) {
   if (executionContext) executionContext.waitUntil(task);
   else void task;
 
-  // Discord requires an acknowledgement within three seconds. Keep this
-  // processing response private, then post the completed recruit publicly.
-  return json({ type: 5, data: { flags: 64 } });
+  // Discord requires an acknowledgement within three seconds. This deferred
+  // response must be public because its visibility cannot be changed later.
+  return json({ type: 5 });
 }
