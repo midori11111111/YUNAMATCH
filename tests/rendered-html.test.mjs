@@ -931,6 +931,8 @@ test("lets administrators find and suspend any registered account", async () => 
   assert.match(panel, /トレーナー名を入力（例：桜みく）/);
   assert.match(panel, /アカウント停止/);
   assert.match(panel, /停止を解除/);
+  assert.match(panel, /アカウント削除/);
+  assert.match(panel, /window\.prompt/);
   assert.match(panel, /\/api\/admin\/users/);
   assert.match(panel, /window\.confirm/);
   assert.match(usersApi, /requireAdmin/);
@@ -938,4 +940,7 @@ test("lets administrators find and suspend any registered account", async () => 
   assert.match(usersApi, /like\(profiles\.trainerName/);
   assert.match(usersApi, /suspendedAt/);
   assert.match(usersApi, /status: "closed"/);
+  assert.match(usersApi, /payload\.confirmation !== profile\.trainerName/);
+  assert.match(usersApi, /DELETE FROM profiles WHERE user_id = \?/);
+  assert.match(usersApi, /deleted: true/);
 });

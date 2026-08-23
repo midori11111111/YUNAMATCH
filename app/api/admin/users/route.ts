@@ -1,4 +1,5 @@
 import { desc, eq, inArray, like, or, sql } from "drizzle-orm";
+import { env } from "cloudflare:workers";
 import { getDb } from "../../../../db";
 import { profiles, recruits, reports } from "../../../../db/schema";
 import { requireAdmin } from "../../../../lib/admin";
@@ -12,6 +13,51 @@ function parseList(value: string) {
     // Keep supporting profiles stored before array fields were introduced.
   }
   return value.trim() ? [value.trim()] : [];
+}
+
+async function avatarId(userId: string) {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(userId),
+  );
+  return [...new Uint8Array(digest)]
+    .map((value) => value.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function deleteAccount(userId: string) {
+  const d1 = env.DB;
+  await d1.batch([
+    d1.prepare("DELETE FROM connection_ratings WHERE rater_id = ? OR rated_user_id = ?").bind(userId, userId),
+    d1.prepare("DELETE FROM message_favorites WHERE user_id = ? OR connection_id IN (SELECT id FROM connections WHERE user_a_id = ? OR user_b_id = ?)").bind(userId, userId, userId),
+    d1.prepare("DELETE FROM messages WHERE connection_id IN (SELECT id FROM connections WHERE user_a_id = ? OR user_b_id = ?)").bind(userId, userId),
+    d1.prepare("DELETE FROM presence WHERE user_id = ?").bind(userId),
+    d1.prepare("DELETE FROM lobby_members WHERE user_id = ? OR lobby_id IN (SELECT id FROM lobbies WHERE owner_id = ?)").bind(userId, userId),
+    d1.prepare("DELETE FROM lobbies WHERE owner_id = ?").bind(userId),
+    d1.prepare("DELETE FROM connections WHERE user_a_id = ? OR user_b_id = ?").bind(userId, userId),
+    d1.prepare("DELETE FROM application_messages WHERE sender_id = ? OR application_id IN (SELECT applications.id FROM applications INNER JOIN recruits ON applications.recruit_id = recruits.id WHERE applications.applicant_id = ? OR recruits.owner_id = ?)").bind(userId, userId, userId),
+    d1.prepare("DELETE FROM applications WHERE applicant_id = ? OR recruit_id IN (SELECT id FROM recruits WHERE owner_id = ?)").bind(userId, userId),
+    d1.prepare("DELETE FROM reports WHERE reporter_id = ? OR target_id = ?").bind(userId, userId),
+    d1.prepare("DELETE FROM blocks WHERE blocker_id = ? OR blocked_id = ?").bind(userId, userId),
+    d1.prepare("DELETE FROM profile_likes WHERE sender_id = ? OR recipient_id = ?").bind(userId, userId),
+    d1.prepare("DELETE FROM notification_dismissals WHERE user_id = ?").bind(userId),
+    d1.prepare("DELETE FROM support_tickets WHERE user_id = ?").bind(userId),
+    d1.prepare("DELETE FROM push_subscriptions WHERE user_id = ?").bind(userId),
+    d1.prepare("DELETE FROM recruit_alerts WHERE user_id = ?").bind(userId),
+    d1.prepare("DELETE FROM recruits WHERE owner_id = ?").bind(userId),
+    d1.prepare("DELETE FROM account_links WHERE canonical_user_id = ?").bind(userId),
+    d1.prepare("UPDATE site_visitors SET user_id = NULL WHERE user_id = ?").bind(userId),
+    d1.prepare("DELETE FROM rate_limit_buckets WHERE substr(key, -length(?)) = ?").bind(userId, userId),
+    d1.prepare("DELETE FROM profiles WHERE user_id = ?").bind(userId),
+  ]);
+  const media = (env as unknown as { MEDIA?: R2Bucket }).MEDIA;
+  if (media) {
+    const id = await avatarId(userId);
+    await Promise.all([
+      media.delete(`avatars/${id}`),
+      media.delete(`headers/${id}`),
+    ]);
+  }
 }
 
 export async function GET(request: Request) {
@@ -79,9 +125,10 @@ export async function PATCH(request: Request) {
   const payload = (await request.json().catch(() => ({}))) as {
     userId?: unknown;
     action?: unknown;
+    confirmation?: unknown;
   };
   const userId = typeof payload.userId === "string" ? payload.userId : "";
-  const action = payload.action === "suspend" || payload.action === "restore"
+  const action = payload.action === "suspend" || payload.action === "restore" || payload.action === "delete"
     ? payload.action
     : null;
   if (!userId || !action)
@@ -95,6 +142,16 @@ export async function PATCH(request: Request) {
     .limit(1);
   if (!profile)
     return Response.json({ error: "アカウントが見つかりません" }, { status: 404 });
+
+  if (action === "delete") {
+    if (payload.confirmation !== profile.trainerName)
+      return Response.json(
+        { error: "確認のためトレーナー名を正確に入力してください" },
+        { status: 400 },
+      );
+    await deleteAccount(userId);
+    return Response.json({ ok: true, userId, deleted: true });
+  }
 
   const now = new Date();
   const suspendedAt = action === "suspend" ? now : null;
