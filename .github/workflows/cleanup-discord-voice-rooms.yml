@@ -1,0 +1,13 @@
+name: Cleanup Discord recruit voice rooms
+
+on:
+  schedule:
+    - cron: "7,22,37,52 * * * *"
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete voice rooms older than 24 hours
+        run: curl --fail --silent --show-error --request DELETE https://yunamatch.com/api/discord/voice-rooms

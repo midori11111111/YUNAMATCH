@@ -43,6 +43,15 @@ const currentRankChoices = [
   "レジェンド1250〜1499",
   "レジェンド1500以上",
 ].map((name) => ({ name, value: name }));
+const voiceLimitOption: DiscordCommandOption = {
+  type: 4,
+  name: "voice_limit",
+  description: "Botが募集VCを作る場合の人数（任意）",
+  choices: [2, 3, 4, 5].map((value) => ({
+    name: `${value}人`,
+    value,
+  })),
+};
 
 export async function POST() {
   if (!(await requireAdmin()))
@@ -77,18 +86,19 @@ export async function POST() {
       { status: 404 },
     );
   const currentOptions = recruitCommand.options || [];
-  const options = [
-    matchTypeOption,
-    ...currentOptions
-      .filter((option) => option.name !== "match_type")
-      .map((option) => ({
-        ...option,
-        description: clarifiedDescriptions[option.name] || option.description,
-        ...(option.name === "current_rank"
-          ? { choices: currentRankChoices }
-          : {}),
-      })),
-  ];
+  const mappedOptions = currentOptions
+    .filter((option) => option.name !== "match_type")
+    .map((option) => ({
+      ...option,
+      description: clarifiedDescriptions[option.name] || option.description,
+      ...(option.name === "current_rank"
+        ? { choices: currentRankChoices }
+        : {}),
+      ...(option.name === "voice_limit" ? voiceLimitOption : {}),
+    }));
+  if (!mappedOptions.some((option) => option.name === "voice_limit"))
+    mappedOptions.push(voiceLimitOption);
+  const options = [matchTypeOption, ...mappedOptions];
   const updateResponse = await fetch(
     `https://discord.com/api/v10/applications/${appId}/commands/${recruitCommand.id}`,
     {

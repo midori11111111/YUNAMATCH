@@ -3,6 +3,7 @@ import { getDb } from "../../../../db";
 import { accountLinks, connections } from "../../../../db/schema";
 import { getChatGPTUser } from "../../../chatgpt-auth";
 import { checkRateLimit, rateLimitResponse } from "../../../../lib/rate-limit";
+import { cleanupExpiredRecruitVoiceRooms } from "../../../../lib/discord-recruit-voice";
 
 const discordApi = "https://discord.com/api/v10";
 const defaultGuildId = "1540060798297182268";
@@ -215,6 +216,7 @@ export async function POST(request: Request) {
   if (!rateLimit.allowed) return rateLimitResponse(rateLimit.retryAfter);
 
   try {
+    await cleanupExpiredRecruitVoiceRooms();
     const { channels, category } = await ensureVoiceCategory();
     const rooms = channels.filter(
       (channel) =>
@@ -278,6 +280,23 @@ export async function POST(request: Request) {
   } catch (error) {
     return Response.json(
       { error: error instanceof Error ? error.message : "VCを作成できませんでした" },
+      { status: 502 },
+    );
+  }
+}
+
+export async function DELETE() {
+  try {
+    const removed = await cleanupExpiredRecruitVoiceRooms();
+    return Response.json({ ok: true, removed });
+  } catch (error) {
+    return Response.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "期限切れVCを削除できませんでした",
+      },
       { status: 502 },
     );
   }

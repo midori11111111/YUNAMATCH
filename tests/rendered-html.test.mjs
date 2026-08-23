@@ -171,7 +171,7 @@ test("diversifies recommendations without gender or popularity ranking", async (
 });
 
 test("supports casual and ranked recruiting on the site and Discord", async () => {
-  const [app, recruitsApi, discordApi, commandScript, adminCommandApi, schema, migration] =
+  const [app, recruitsApi, discordApi, commandScript, adminCommandApi, schema, migration, recruitVoice, cleanupWorkflow] =
     await Promise.all([
       readFile(new URL("app/match-app.tsx", root), "utf8"),
       readFile(new URL("app/api/recruits/route.ts", root), "utf8"),
@@ -180,6 +180,8 @@ test("supports casual and ranked recruiting on the site and Discord", async () =
       readFile(new URL("app/api/admin/discord-command/route.ts", root), "utf8"),
       readFile(new URL("db/schema.ts", root), "utf8"),
       readFile(new URL("drizzle/0029_many_shadow_king.sql", root), "utf8"),
+      readFile(new URL("lib/discord-recruit-voice.ts", root), "utf8"),
+      readFile(new URL(".github/workflows/cleanup-discord-voice-rooms.yml", root), "utf8"),
     ]);
   assert.match(app, /遊ぶモード/);
   assert.match(app, /ランクマッチ/);
@@ -200,6 +202,7 @@ test("supports casual and ranked recruiting on the site and Discord", async () =
   assert.match(discordApi, /options\.matches !== undefined \? `試合数は/);
   assert.match(discordApi, /options\.win_rate !== undefined \? `勝率は/);
   assert.match(commandScript, /name: "match_type"/);
+  assert.match(commandScript, /name: "voice_limit"/);
   assert.match(commandScript, /required: true/);
   assert.match(commandScript, /募集者本人/);
   assert.match(commandScript, /"マスター0〜249"/);
@@ -213,11 +216,17 @@ test("supports casual and ranked recruiting on the site and Discord", async () =
   assert.match(discordApi, /discordRecruitRanks/);
   assert.match(adminCommandApi, /currentRankChoices/);
   assert.match(adminCommandApi, /option\.name === "current_rank"/);
+  assert.match(adminCommandApi, /voiceLimitOption/);
   assert.match(adminCommandApi, /requireAdmin/);
   assert.match(adminCommandApi, /method: "PATCH"/);
   assert.match(adminCommandApi, /clarifiedDescriptions/);
   assert.match(adminCommandApi, /DISCORD_GUILD_ID/);
   assert.match(adminCommandApi, /guilds\/\$\{guildId\}\/commands/);
+  assert.match(discordApi, /24時間で自動削除されます/);
+  assert.match(discordApi, /label: `\$\{voiceLimit\}人用VCに入る`/);
+  assert.match(recruitVoice, /voiceRoomLifetimeMs = 24 \* 60 \* 60_000/);
+  assert.match(recruitVoice, /snowflakeCreatedAt/);
+  assert.match(cleanupWorkflow, /7,22,37,52 \* \* \* \*/);
   assert.match(schema, /matchType: text\("match_type"\)/);
   assert.match(migration, /ADD `match_type` text DEFAULT 'ランクマッチ' NOT NULL/);
 });

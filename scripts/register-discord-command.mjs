@@ -69,6 +69,15 @@ const commands = [
       },
       {
         type: 4,
+        name: "voice_limit",
+        description: "Botが募集VCを作る場合の人数（任意）",
+        choices: [2, 3, 4, 5].map((value) => ({
+          name: `${value}人`,
+          value,
+        })),
+      },
+      {
+        type: 4,
         name: "starts_in",
         description: "開始時間",
         choices: [
