@@ -32,10 +32,10 @@ export async function POST(request:Request){
  if(recruit.ownerId===user.userId)return Response.json({error:"自分の募集には申請できません"},{status:400});
  const exists=await db.select().from(applications).where(and(eq(applications.recruitId,p.recruitId),eq(applications.applicantId,user.userId))).limit(1);
  if(exists.length)return Response.json({error:"すでに申請済みです"},{status:409});
- await db.insert(applications).values({recruitId:p.recruitId,applicantId:user.userId,applicantName:profile.trainerName,applicantContact:"",pokemon:p.pokemon,message:p.message.slice(0,180),createdAt:new Date()});
+ const [application]=await db.insert(applications).values({recruitId:p.recruitId,applicantId:user.userId,applicantName:profile.trainerName,applicantContact:"",pokemon:p.pokemon,message:p.message.slice(0,180),createdAt:new Date()}).returning();
  const pokemonText=p.pokemon==="指定なし"?"使うポケモンを相談して一緒に遊びたい":`${p.pokemon}で一緒に遊びたい`;
  await sendPush(recruit.ownerId,"👋 手を振っています",`${profile.trainerName}さんが${pokemonText}と送っています`,"/");
- return Response.json({ok:true});
+ return Response.json({ok:true,application:{id:application.id,recruitId:application.recruitId,trainerName:recruit.trainerName,pokemon:application.pokemon,message:application.message,status:application.status,createdAt:application.createdAt}});
 }
 
 export async function PATCH(request:Request){

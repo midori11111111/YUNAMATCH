@@ -239,6 +239,7 @@ export async function GET() {
         .limit(99);
       return {
         id: row.id,
+        recruitId: row.recruitId,
         mateId,
         mateName: isA ? row.userBName : row.userAName,
         mateAvatarUrl: mateAvatars.get(mateId) || "",

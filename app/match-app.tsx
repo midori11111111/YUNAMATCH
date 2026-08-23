@@ -68,13 +68,6 @@ type ProfileLikeNotice = {
   read: boolean;
   createdAt: string;
 };
-type BlockedUser = {
-  id: number;
-  userId: string;
-  trainerName: string;
-  avatarUrl: string;
-  createdAt: string;
-};
 type Notice = {
   id: number;
   recruitId?: number;
@@ -115,6 +108,7 @@ export type Profile = {
 };
 type Connection = {
   id: number;
+  recruitId: number;
   mateId: string;
   mateName: string;
   mateAvatarUrl?: string;
@@ -786,9 +780,6 @@ export default function MatchApp({
       : [],
   );
   const [linkedAccountsLoaded, setLinkedAccountsLoaded] = useState(preview);
-  const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
-  const [blockedUsersLoading, setBlockedUsersLoading] = useState(false);
-  const [unblockingId, setUnblockingId] = useState<number | null>(null);
   const defaultProfile: Profile = {
     trainerName: shortName,
     mainPokemon: [],
@@ -1197,23 +1188,6 @@ export default function MatchApp({
       /* 検索画面は利用を続ける */
     }
   }, [preview, guestMode]);
-  const loadBlockedUsers = useCallback(async () => {
-    if (preview || guestMode) return;
-    setBlockedUsersLoading(true);
-    try {
-      const response = await fetch("/api/safety", { cache: "no-store" });
-      const data = await response.json();
-      if (response.ok) setBlockedUsers(data.users || []);
-    } catch {
-      /* マイページの他の設定は利用を続ける */
-    } finally {
-      setBlockedUsersLoading(false);
-    }
-  }, [preview, guestMode]);
-
-  useEffect(() => {
-    if (tab === "profile") void loadBlockedUsers();
-  }, [tab, loadBlockedUsers]);
   const loadConnections = async () => {
     try {
       const response = await fetch("/api/connections", { cache: "no-store" });
@@ -2501,6 +2475,84 @@ export default function MatchApp({
     }
   };
 
+  const openRecruitDm = async (recruit: Recruit) => {
+    if (guestMode) {
+      requestLogin({
+        type: "recruit-apply",
+        label: "募集者にDMする",
+        recruitId: recruit.id,
+      });
+      return;
+    }
+    const matched = connections.find(
+      (connection) => connection.recruitId === recruit.id,
+    );
+    if (matched) {
+      await openChat(matched);
+      return;
+    }
+    const existing = outgoing.find(
+      (notice) => notice.recruitId === recruit.id,
+    );
+    if (existing?.status === "pending") {
+      openPendingConversation(existing, "outgoing");
+      return;
+    }
+    if (existing?.status === "accepted") {
+      const refreshed = await loadConnections();
+      const connection = refreshed.find(
+        (candidate) => candidate.recruitId === recruit.id,
+      );
+      if (connection) await openChat(connection);
+      else notify("チャットを準備しています。少し待ってからもう一度お試しください");
+      return;
+    }
+    if (existing?.status === "declined") {
+      notify("この募集への申請はすでに終了しています");
+      return;
+    }
+    setQuickApplyingId(recruit.id);
+    try {
+      if (preview) {
+        const notice: Notice = {
+          id: -Date.now(),
+          recruitId: recruit.id,
+          trainerName: recruit.trainerName,
+          pokemon: "指定なし",
+          message: "募集について相談したいです！",
+          status: "pending",
+          createdAt: new Date().toISOString(),
+        };
+        setOutgoing((rows) => [...rows, notice]);
+        openPendingConversation(notice, "outgoing");
+        return;
+      }
+      const response = await fetch("/api/applications", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          recruitId: recruit.id,
+          pokemon: "指定なし",
+          message: "募集について相談したいです！",
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        notify(data.error || "DMを開けませんでした");
+        await loadNotices();
+        return;
+      }
+      const notice = data.application as Notice;
+      setOutgoing((rows) => [notice, ...rows]);
+      openPendingConversation(notice, "outgoing");
+      notify("募集者とのDMを開きました");
+    } catch {
+      notify("通信が不安定です。もう一度お試しください");
+    } finally {
+      setQuickApplyingId(null);
+    }
+  };
+
   const finishRecruitNotifyPrompt = async (enable: boolean) => {
     const recruit = recruitNotifyPrompt;
     setRecruitNotifyPrompt(null);
@@ -3382,31 +3434,6 @@ export default function MatchApp({
     notify("このユーザーをブロックしました");
     await Promise.all([loadRecruits(), loadConnections(), loadDiscover()]);
   };
-  const unblockUser = async (blockedUser: BlockedUser) => {
-    if (unblockingId !== null) return;
-    setUnblockingId(blockedUser.id);
-    try {
-      const response = await fetch("/api/safety", {
-        method: "DELETE",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ blockId: blockedUser.id }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        notify(data.error || "ブロックを解除できませんでした");
-        return;
-      }
-      setBlockedUsers((users) =>
-        users.filter((blocked) => blocked.id !== blockedUser.id),
-      );
-      notify(`${blockedUser.trainerName}さんのブロックを解除しました`);
-      await Promise.all([loadRecruits(), loadConnections(), loadDiscover()]);
-    } catch {
-      notify("通信が不安定です。もう一度お試しください");
-    } finally {
-      setUnblockingId(null);
-    }
-  };
   const submitSupport = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSending(true);
@@ -4232,9 +4259,10 @@ export default function MatchApp({
                             </button>
                             <button
                               className="recruitApply secondary"
-                              onClick={() => openRecruitApplication(recruit)}
+                              onClick={() => void openRecruitDm(recruit)}
+                              disabled={quickApplyingId === recruit.id}
                             >
-                              ひとこと添える
+                              💬 募集者にDM
                             </button>
                           </div>
                         </div>
@@ -5320,48 +5348,6 @@ export default function MatchApp({
                 <p className="accountChoiceNote">
                   連携時は各サービスのアカウント選択画面が開きます。
                 </p>
-              </section>
-              <section className="blockedUserSettings">
-                <div className="profileSectionHeading">
-                  <small>SAFETY SETTINGS</small>
-                  <h2>ブロック中のユーザー</h2>
-                  <p>解除すると、相手のプロフィールやチャットが再び表示されます。</p>
-                </div>
-                {blockedUsersLoading ? (
-                  <p className="blockedUserEmpty">読み込み中…</p>
-                ) : blockedUsers.length ? (
-                  <div className="blockedUserList">
-                    {blockedUsers.map((blockedUser) => (
-                      <article key={blockedUser.id}>
-                        <UserAvatar
-                          name={blockedUser.trainerName}
-                          src={blockedUser.avatarUrl}
-                          className="blockedUserAvatar"
-                        />
-                        <div>
-                          <strong>{blockedUser.trainerName}</strong>
-                          <small>
-                            {new Date(blockedUser.createdAt).toLocaleDateString(
-                              "ja-JP",
-                            )}
-                            にブロック
-                          </small>
-                        </div>
-                        <button
-                          type="button"
-                          disabled={unblockingId !== null}
-                          onClick={() => unblockUser(blockedUser)}
-                        >
-                          {unblockingId === blockedUser.id ? "解除中…" : "解除"}
-                        </button>
-                      </article>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="blockedUserEmpty">
-                    ブロック中のユーザーはいません
-                  </p>
-                )}
               </section>
               {isAdmin && (
                 <a className="adminDashboardLink" href="/admin">
@@ -6506,10 +6492,10 @@ export default function MatchApp({
               onClick={() => {
                 const recruit = recruitProfileView;
                 setRecruitProfileView(null);
-                openRecruitApplication(recruit);
+                void openRecruitDm(recruit);
               }}
             >
-              この募集にひとこと添える
+              💬 募集者にDM
             </button>
           </section>
         </div>
