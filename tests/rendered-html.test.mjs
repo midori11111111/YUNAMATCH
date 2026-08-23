@@ -375,6 +375,11 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /また遊びたい/);
   assert.match(app, /トレーナーカードを共有/);
   assert.match(app, /通報せずブロックのみ/);
+  assert.match(app, /ブロック中のユーザー/);
+  assert.match(app, /unblockUser/);
+  assert.match(safetyApi, /export async function GET/);
+  assert.match(safetyApi, /export async function DELETE/);
+  assert.match(safetyApi, /delete\(blocks\)/);
   assert.match(app, /通報などのチャットメニューを開く/);
   assert.match(app, /この発言を通報/);
   assert.match(app, /前後の会話も運営へ送信されます/);
