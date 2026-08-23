@@ -583,6 +583,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.equal(ogImage, undefined);
   assert.match(app, /アカウントを削除して退会/);
   assert.match(app, /Discordで募集・VCに参加/);
+  assert.match(app, /messageThreadRef/);
+  assert.match(app, /thread\.scrollTo\(\{ top: thread\.scrollHeight/);
   assert.match(app, /運営ダッシュボード/);
   assert.match(app, /フィードバックを送る/);
   assert.match(supportApi, /フィードバック・改善案/);

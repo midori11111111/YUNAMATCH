@@ -719,6 +719,7 @@ export default function MatchApp({
     null,
   );
   const messageSendingRef = useRef(false);
+  const messageThreadRef = useRef<HTMLDivElement>(null);
   const [requestMessage, setRequestMessage] = useState("");
   const [ratingTarget, setRatingTarget] = useState<Connection | null>(null);
   const [ratingScore, setRatingScore] = useState(0);
@@ -1466,6 +1467,20 @@ export default function MatchApp({
     const timer = window.setInterval(refresh, 5000);
     return () => window.clearInterval(timer);
   }, [preview, guestMode, selectedConnection, selectedPending, loadLikes]);
+
+  const latestMessage = messages[messages.length - 1];
+  const selectedConnectionId = selectedConnection?.id;
+  const latestMessageId = latestMessage?.id;
+  const latestMessageResponse = latestMessage?.response;
+  useEffect(() => {
+    if (!selectedConnectionId || !latestMessageId) return;
+    const frame = window.requestAnimationFrame(() => {
+      const thread = messageThreadRef.current;
+      if (!thread) return;
+      thread.scrollTo({ top: thread.scrollHeight, behavior: "smooth" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [selectedConnectionId, latestMessageId, latestMessageResponse]);
 
   useEffect(() => {
     if (!selectedPending) return;
@@ -4393,7 +4408,7 @@ export default function MatchApp({
                       さんも、また遊びたいと思っています
                     </div>
                   )}
-                  <div className="messageThread">
+                  <div className="messageThread" ref={messageThreadRef}>
                     {messages.length ? (
                       messages.map((message) =>
                         message.kind === "play_invite" ? (
