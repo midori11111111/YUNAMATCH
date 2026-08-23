@@ -208,6 +208,7 @@ type PendingGuestAction = {
 };
 const pendingGuestActionKey = "yunamatch-pending-action-v1";
 const discoverFiltersStorageKey = "yunamatch-discover-filters-v1";
+const activeTabSessionKey = "yunamatch-active-tab-v1";
 const connectionsSessionCacheKey = "yunamatch-connections-session-v1";
 const messagesSessionCacheKey = "yunamatch-messages-session-v1";
 const apiTimeoutMs = 8_000;
@@ -710,6 +711,7 @@ export default function MatchApp({
   const [tab, setTab] = useState<AppTab>(() =>
     sharedRecruitId ? "recruit" : "discover",
   );
+  const [activeTabRestored, setActiveTabRestored] = useState(false);
   const [profileCandidates, setProfileCandidates] = useState<
     ProfileCandidate[]
   >(preview ? [previewProfile] : []);
@@ -1503,6 +1505,44 @@ export default function MatchApp({
         pendingMessageLoadInFlightRef.current = null;
     }
   };
+
+  useEffect(() => {
+    if (sharedRecruitId) {
+      setTab("recruit");
+      setActiveTabRestored(true);
+      return;
+    }
+    try {
+      const stored = window.sessionStorage.getItem(activeTabSessionKey);
+      const availableTabs: AppTab[] = [
+        "discover",
+        "recruit",
+        "chat",
+        "lobby",
+        "profile",
+      ];
+      if (stored && availableTabs.includes(stored as AppTab)) {
+        const restoredTab = stored as AppTab;
+        const needsLogin = ["chat", "lobby", "profile"].includes(restoredTab);
+        setTab(guestMode && needsLogin ? "discover" : restoredTab);
+      } else if (stored) {
+        window.sessionStorage.removeItem(activeTabSessionKey);
+      }
+    } catch {
+      /* 保存領域を使えないブラウザでも通常表示を続ける */
+    } finally {
+      setActiveTabRestored(true);
+    }
+  }, [guestMode, sharedRecruitId]);
+
+  useEffect(() => {
+    if (!activeTabRestored) return;
+    try {
+      window.sessionStorage.setItem(activeTabSessionKey, tab);
+    } catch {
+      /* 保存領域を使えないブラウザでもタブ移動は続ける */
+    }
+  }, [activeTabRestored, tab]);
 
   useEffect(() => {
     if (preview || guestMode) return;

@@ -440,6 +440,10 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /toggleConnectionPin/);
   assert.match(app, /チャットをピン留め/);
   assert.match(app, /connectionsLoaded/);
+  assert.match(app, /yunamatch-active-tab-v1/);
+  assert.match(app, /sessionStorage\.getItem\(activeTabSessionKey\)/);
+  assert.match(app, /sessionStorage\.setItem\(activeTabSessionKey, tab\)/);
+  assert.match(app, /guestMode && needsLogin \? "discover" : restoredTab/);
   assert.match(app, /チャットを読み込んでいます/);
   assert.match(app, /通信が戻ると自動で表示されます/);
   assert.doesNotMatch(app, /お気に入りメッセージ/);
