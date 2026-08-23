@@ -817,6 +817,10 @@ test("keeps chat and recruiting responsive under load", async () => {
   assert.match(app, /メッセージを読み込めませんでした/);
   assert.match(connectionsApi, /connectionListLimit = 200/);
   assert.match(connectionsApi, /searchParams\.get\("repair"\) === "1"/);
+  assert.match(app, /connectionsRepairAttemptedRef/);
+  assert.match(app, /\/api\/connections\?repair=1/);
+  assert.match(connectionsApi, /Connection profile enrichment skipped/);
+  assert.match(connectionsApi, /Connection unread-count lookup skipped/);
   assert.match(connectionsApi, /chunked\(connectionIds\)/);
   assert.match(connectionsApi, /\.values\(group\)/);
   assert.match(messagesApi, /orderBy\(desc\(messages\.createdAt\), desc\(messages\.id\)\)/);

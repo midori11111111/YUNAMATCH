@@ -191,7 +191,9 @@ export async function GET(request: Request) {
     ),
   ];
   const connectionIds = visible.map((row) => row.id);
-  const [mateProfileGroups, ownRatings, latestIdGroups, unreadCountGroups] = await Promise.all([
+  // プロフィール、評価、最新文、未読数はチャット一覧の補助情報。
+  // 混雑時にどれか一つが失敗しても成立済みチャット自体は隠さない。
+  const [mateProfiles, ownRatings, latestIdRows, unreadCountRows] = await Promise.all([
     Promise.all(
       chunked(mateIds).map((ids) => db
           .select({
@@ -208,7 +210,12 @@ export async function GET(request: Request) {
           })
           .from(profiles)
           .where(inArray(profiles.userId, ids))),
-    ),
+    )
+      .then((groups) => groups.flat())
+      .catch((error) => {
+        console.error("Connection profile enrichment skipped", error);
+        return [];
+      }),
     db
       .select({
         connectionId: connectionRatings.connectionId,
@@ -219,7 +226,11 @@ export async function GET(request: Request) {
       .where(and(
         inArray(connectionRatings.raterId, aliases),
         inArray(connectionRatings.connectionId, connectionIds),
-      )),
+      ))
+      .catch((error) => {
+        console.error("Connection rating enrichment skipped", error);
+        return [];
+      }),
     Promise.all(
       chunked(connectionIds).map((ids) => db
         .select({
@@ -229,7 +240,12 @@ export async function GET(request: Request) {
         .from(messages)
         .where(inArray(messages.connectionId, ids))
         .groupBy(messages.connectionId)),
-    ),
+    )
+      .then((groups) => groups.flat())
+      .catch((error) => {
+        console.error("Connection latest-message lookup skipped", error);
+        return [];
+      }),
     Promise.all(
       chunked(connectionIds).map((ids) => db
         .select({
@@ -262,11 +278,13 @@ export async function GET(request: Request) {
           ),
         )
         .groupBy(messages.connectionId)),
-    ),
+    )
+      .then((groups) => groups.flat())
+      .catch((error) => {
+        console.error("Connection unread-count lookup skipped", error);
+        return [];
+      }),
   ]);
-  const mateProfiles = mateProfileGroups.flat();
-  const latestIdRows = latestIdGroups.flat();
-  const unreadCountRows = unreadCountGroups.flat();
   const latestMessageIds = latestIdRows
     .map((row) => row.messageId)
     .filter((id): id is number => typeof id === "number");
@@ -282,7 +300,10 @@ export async function GET(request: Request) {
           .from(messages)
           .where(inArray(messages.id, ids)),
       ),
-    )
+    ).catch((error) => {
+      console.error("Connection latest-message enrichment skipped", error);
+      return [];
+    })
   ).flat();
   const latestMessageById = new Map(
     latestMessages.map((message) => [message.id, message]),

@@ -41,7 +41,20 @@ export async function identityAliases(userId: string, email: string) {
       );
   } catch (error) {
     if (cached) return cached.aliases;
-    throw error;
+    // account_links は過去のログイン方法で作られたIDをまとめるための
+    // 補助テーブル。ここが一時的に読めなくても、認証済みの現在IDで
+    // チャット一覧そのものは表示できるようにする。
+    console.error(
+      "Account alias lookup skipped",
+      error instanceof Error ? error.message : error,
+    );
+    const fallbackAliases = [userId];
+    trimAliasCache();
+    aliasCache.set(cacheKey, {
+      aliases: fallbackAliases,
+      expiresAt: Date.now() + 30_000,
+    });
+    return fallbackAliases;
   }
   const aliases = [
     ...new Set([userId, ...rows.map((row) => row.canonicalUserId)]),

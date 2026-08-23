@@ -786,6 +786,7 @@ export default function MatchApp({
   const [connectionsLoadingMore, setConnectionsLoadingMore] = useState(false);
   const connectionsNextCursorRef = useRef<number | null>(null);
   const connectionsLoadedOlderRef = useRef(false);
+  const connectionsRepairAttemptedRef = useRef(false);
   const [lobbies, setLobbies] = useState<Lobby[]>([]);
   const [selectedConnection, setSelectedConnection] =
     useState<Connection | null>(null);
@@ -1353,12 +1354,28 @@ export default function MatchApp({
       const params = new URLSearchParams();
       if (append && connectionsNextCursorRef.current)
         params.set("before", String(connectionsNextCursorRef.current));
-      const { response, data } = await fetchJsonWithTimeout<{
+      let { response, data } = await fetchJsonWithTimeout<{
         connections?: Connection[];
         hasMore?: boolean;
         nextCursor?: number | null;
       }>(`/api/connections${params.size ? `?${params}` : ""}`, { cache: "no-store" });
       if (!response.ok) throw new Error("connections request failed");
+      if (
+        !append &&
+        !(data.connections || []).length &&
+        !connectionsRepairAttemptedRef.current
+      ) {
+        connectionsRepairAttemptedRef.current = true;
+        const repaired = await fetchJsonWithTimeout<{
+          connections?: Connection[];
+          hasMore?: boolean;
+          nextCursor?: number | null;
+        }>("/api/connections?repair=1", { cache: "no-store" });
+        if (repaired.response.ok) {
+          response = repaired.response;
+          data = repaired.data;
+        }
+      }
       const nextConnections = (data.connections || []) as Connection[];
       setConnections((currentRows) => {
         if (!append && !connectionsLoadedOlderRef.current) return nextConnections;
@@ -1644,12 +1661,34 @@ export default function MatchApp({
           )
         : Promise.resolve(null),
       authenticated
-        ? fetchJsonWithTimeout<{ connections?: Connection[]; hasMore?: boolean; nextCursor?: number | null }>(
-            "/api/connections",
-            { cache: "no-store" },
-          )
-            .then(({ response, data }) => ({ ok: response.ok, data }))
-            .catch(() => ({ ok: false, data: null }))
+        ? (async () => {
+            try {
+              let { response, data } = await fetchJsonWithTimeout<{
+                connections?: Connection[];
+                hasMore?: boolean;
+                nextCursor?: number | null;
+              }>("/api/connections", { cache: "no-store" });
+              if (
+                response.ok &&
+                !(data.connections || []).length &&
+                !connectionsRepairAttemptedRef.current
+              ) {
+                connectionsRepairAttemptedRef.current = true;
+                const repaired = await fetchJsonWithTimeout<{
+                  connections?: Connection[];
+                  hasMore?: boolean;
+                  nextCursor?: number | null;
+                }>("/api/connections?repair=1", { cache: "no-store" });
+                if (repaired.response.ok) {
+                  response = repaired.response;
+                  data = repaired.data;
+                }
+              }
+              return { ok: response.ok, data };
+            } catch {
+              return { ok: false, data: null };
+            }
+          })()
         : Promise.resolve(null),
       authenticated
         ? loadOptionalAfter<{ lobbies?: Lobby[] }>("/api/lobbies", 800)
