@@ -202,8 +202,12 @@ test("supports casual and ranked recruiting on the site and Discord", async () =
   assert.match(commandScript, /name: "match_type"/);
   assert.match(commandScript, /required: true/);
   assert.match(commandScript, /募集者本人/);
-  assert.match(commandScript, /"マスター",/);
-  assert.match(commandScript, /"レジェンド1000〜1499"/);
+  assert.match(commandScript, /"マスター0〜249"/);
+  assert.match(commandScript, /"マスター250〜499"/);
+  assert.match(commandScript, /"マスター500〜749"/);
+  assert.match(commandScript, /"マスター750〜999"/);
+  assert.match(commandScript, /"レジェンド1000〜1249"/);
+  assert.match(commandScript, /"レジェンド1250〜1499"/);
   assert.match(commandScript, /"レジェンド1500以上"/);
   assert.doesNotMatch(commandScript, /マスター 1200〜1399/);
   assert.match(discordApi, /discordRecruitRanks/);

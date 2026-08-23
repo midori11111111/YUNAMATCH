@@ -35,8 +35,12 @@ const clarifiedDescriptions: Record<string, string> = {
 const currentRankChoices = [
   "エキスパート未満",
   "エキスパート",
-  "マスター",
-  "レジェンド1000〜1499",
+  "マスター0〜249",
+  "マスター250〜499",
+  "マスター500〜749",
+  "マスター750〜999",
+  "レジェンド1000〜1249",
+  "レジェンド1250〜1499",
   "レジェンド1500以上",
 ].map((name) => ({ name, value: name }));
 
