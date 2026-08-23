@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray, isNull, lt, or } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { blocks, connections, messages } from "../../../db/schema";
+import { blocks, connections, messages, profiles } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { sendPush } from "../../../lib/push";
 import { isSuspended } from "../../../lib/safety";
@@ -66,22 +66,37 @@ export async function GET(request: Request) {
   const aliasSet = new Set(aliases);
   const connection = await getMembership(connectionId, aliases);
   if (!connection) return Response.json({ error: "マッチが見つかりません" }, { status: 404 });
+  const mateId = aliasSet.has(connection.userAId)
+    ? connection.userBId
+    : connection.userAId;
   // Keep the most recent part of long conversations. Ordering ascending before
   // applying the limit returned the oldest 100 messages and made new messages
   // appear to disappear once a conversation grew past that point.
   const pageSize = 100;
-  const newestRows = await getDb()
-    .select()
-    .from(messages)
-    .where(and(
-      eq(messages.connectionId, connectionId),
-      before ? lt(messages.id, before) : undefined,
-    ))
-    .orderBy(desc(messages.createdAt), desc(messages.id))
-    .limit(pageSize + 1);
+  const [newestRows, mateProfiles] = await Promise.all([
+    getDb()
+      .select()
+      .from(messages)
+      .where(and(
+        eq(messages.connectionId, connectionId),
+        before ? lt(messages.id, before) : undefined,
+      ))
+      .orderBy(desc(messages.createdAt), desc(messages.id))
+      .limit(pageSize + 1),
+    getDb()
+      .select({ readReceiptsEnabled: profiles.readReceiptsEnabled })
+      .from(profiles)
+      .where(eq(profiles.userId, mateId))
+      .limit(1)
+      .catch(() => []),
+  ]);
   const hasMore = newestRows.length > pageSize;
   const rows = newestRows.slice(0, pageSize).reverse();
-  const isA=aliasSet.has(connection.userAId);const mateLastRead=isA?connection.userBLastReadAt:connection.userALastReadAt;
+  const isA=aliasSet.has(connection.userAId);
+  const mateAllowsReadReceipts=mateProfiles[0]?.readReceiptsEnabled!==false;
+  const mateLastRead=mateAllowsReadReceipts
+    ? isA?connection.userBLastReadAt:connection.userALastReadAt
+    : null;
   runInBackground(
     getDb().update(connections).set(isA?{userALastReadAt:new Date()}:{userBLastReadAt:new Date()}).where(eq(connections.id,connection.id)),
     "Chat read receipt",

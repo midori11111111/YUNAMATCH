@@ -867,3 +867,22 @@ test("reduces repeated identity and chat database work during traffic spikes", a
   assert.match(auth, /canonicalUserCacheTtlMs = 5 \* 60_000/);
   assert.doesNotMatch(aliases + auth + accountLinks, /lower\(\$\{accountLinks\.email\}\)/);
 });
+
+test("lets users hide read receipts without keeping their own chats unread", async () => {
+  const [app, schema, profileApi, messagesApi, migration] = await Promise.all([
+    readFile(new URL("app/match-app.tsx", root), "utf8"),
+    readFile(new URL("db/schema.ts", root), "utf8"),
+    readFile(new URL("app/api/profile/route.ts", root), "utf8"),
+    readFile(new URL("app/api/messages/route.ts", root), "utf8"),
+    readFile(new URL("drizzle/0032_spotty_tomorrow_man.sql", root), "utf8"),
+  ]);
+
+  assert.match(schema, /readReceiptsEnabled/);
+  assert.match(migration, /ADD `read_receipts_enabled` integer DEFAULT true NOT NULL/);
+  assert.match(profileApi, /export async function PATCH/);
+  assert.match(profileApi, /readReceiptsEnabled:body\.readReceiptsEnabled/);
+  assert.match(messagesApi, /mateAllowsReadReceipts/);
+  assert.match(messagesApi, /Chat read receipt/);
+  assert.match(app, /既読をつけない/);
+  assert.match(app, /toggleReadReceipts/);
+});

@@ -113,6 +113,7 @@ export type Profile = {
   headerUrl: string;
   age: number | null;
   ageConfirmed: boolean;
+  readReceiptsEnabled: boolean;
   termsAccepted: boolean;
 };
 type Connection = {
@@ -899,6 +900,7 @@ export default function MatchApp({
     headerUrl: "",
     age: null,
     ageConfirmed: false,
+    readReceiptsEnabled: true,
     termsAccepted: false,
   };
   const [profile, setProfile] = useState<Profile>(
@@ -906,6 +908,7 @@ export default function MatchApp({
   );
   const [avatarProcessing, setAvatarProcessing] = useState(false);
   const [headerProcessing, setHeaderProcessing] = useState(false);
+  const [readReceiptUpdating, setReadReceiptUpdating] = useState(false);
   const [pushState, setPushState] = useState<
     "off" | "on" | "install-required" | "denied" | "unsupported"
   >("off");
@@ -4034,6 +4037,42 @@ export default function MatchApp({
       return;
     }
     location.href = "/api/auth/signout?callbackUrl=%2F";
+  };
+  const toggleReadReceipts = async () => {
+    if (readReceiptUpdating) return;
+    const readReceiptsEnabled = !profile.readReceiptsEnabled;
+    if (preview) {
+      setProfile((current) => ({ ...current, readReceiptsEnabled }));
+      notify(
+        readReceiptsEnabled
+          ? "相手に既読を表示します"
+          : "相手に既読を表示しない設定にしました",
+      );
+      return;
+    }
+    setReadReceiptUpdating(true);
+    try {
+      const response = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ readReceiptsEnabled }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        notify(data.error || "既読設定を変更できませんでした");
+        return;
+      }
+      setProfile(data.profile);
+      notify(
+        readReceiptsEnabled
+          ? "相手に既読を表示します"
+          : "相手に既読を表示しない設定にしました",
+      );
+    } catch {
+      notify("既読設定を変更できませんでした");
+    } finally {
+      setReadReceiptUpdating(false);
+    }
   };
   const saveProfile = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -7992,6 +8031,28 @@ export default function MatchApp({
                 {selectedConnection.pinned ? "ピン留めを外す" : "チャットをピン留め"}
               </button>
             </div>
+            <section className="chatReadReceiptSetting">
+              <span aria-hidden="true">✓</span>
+              <div>
+                <strong>既読をつけない</strong>
+                <small>
+                  オンにすると、すべてのチャットで相手側に既読を表示しません。
+                </small>
+              </div>
+              <button
+                type="button"
+                className={!profile.readReceiptsEnabled ? "enabled" : ""}
+                onClick={toggleReadReceipts}
+                disabled={readReceiptUpdating}
+                aria-pressed={!profile.readReceiptsEnabled}
+              >
+                {readReceiptUpdating
+                  ? "変更中"
+                  : profile.readReceiptsEnabled
+                    ? "オフ"
+                    : "オン"}
+              </button>
+            </section>
             <div className="chatContactMenu">
               <div>
                 <strong>

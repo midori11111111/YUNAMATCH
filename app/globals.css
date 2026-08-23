@@ -794,6 +794,14 @@ button { cursor: pointer; }
 .contactPrivateBox { margin: 12px 0; padding: 14px; border-radius: 13px; color: #7d7585; background: #f3f0f5; font-size: 9px; font-weight: 800; text-align: center; }
 .chatActionsSheet { max-height: min(680px, 88dvh); overflow-y: auto; }
 .chatActionsSheet h2 { margin-bottom: 16px; padding-right: 34px; font-size: 20px; }
+.chatReadReceiptSetting { display: grid; grid-template-columns: 36px 1fr auto; align-items: center; gap: 10px; margin-top: 12px; padding: 12px; border: 1px solid #e7e1ec; border-radius: 15px; background: #f9f7fb; }
+.chatReadReceiptSetting > span { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 12px; color: var(--purple); background: #ede8ff; font-size: 14px; font-weight: 950; }
+.chatReadReceiptSetting strong, .chatReadReceiptSetting small { display: block; }
+.chatReadReceiptSetting strong { color: #42394e; font-size: 9px; }
+.chatReadReceiptSetting small { margin-top: 3px; color: #8f8797; font-size: 7px; line-height: 1.45; }
+.chatReadReceiptSetting button { min-width: 48px; border: 0; border-radius: 99px; padding: 9px 10px; color: #817987; background: #e8e4eb; font-size: 7px; font-weight: 950; }
+.chatReadReceiptSetting button.enabled { color: #fff; background: var(--purple); }
+.chatReadReceiptSetting button:disabled { opacity: .55; }
 .chatActionGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .chatActionGrid button { min-width: 0; min-height: 72px; display: grid; place-items: center; align-content: center; gap: 7px; border: 1px solid #e9e3ee; border-radius: 16px; padding: 10px 5px; color: #6f6878; background: #fff; font-size: 8px; font-weight: 900; }
 .chatActionGrid button b { color: var(--purple); font-size: 17px; line-height: 1; }

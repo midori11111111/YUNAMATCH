@@ -1,0 +1,1 @@
+ALTER TABLE `profiles` ADD `read_receipts_enabled` integer DEFAULT true NOT NULL;
