@@ -609,6 +609,13 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /いいねした人だけ表示/);
   assert.match(app, /いいね済みの人を表示しない/);
   assert.match(app, /Discordで共有/);
+  assert.match(app, /trainerShareDestinations/);
+  assert.match(app, /shareTrainerCard\("x"\)/);
+  assert.match(app, /shareTrainerCard\("discord"\)/);
+  assert.match(app, /shareTrainerCard\("line"\)/);
+  assert.match(app, /https:\/\/discord\.com\/channels\/@me/);
+  assert.match(app, /https:\/\/line\.me\/R\/share/);
+  assert.match(app, /const currentUrl = "https:\/\/yunamatch\.com\/"/);
   assert.match(app, /discoverSessionSeedRef/);
   assert.match(discoverApi, /activeCutoff/);
   assert.match(discoverApi, /lastActiveAt/);

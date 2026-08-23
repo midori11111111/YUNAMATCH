@@ -4103,7 +4103,7 @@ export default function MatchApp({
     await loadDiscover();
   };
 
-  const shareTrainerCard = async () => {
+  const shareTrainerCard = async (target: "x" | "discord" | "line") => {
     const canvas = document.createElement("canvas");
     canvas.width = 1200;
     canvas.height = 675;
@@ -4269,6 +4269,7 @@ export default function MatchApp({
       type: "image/png",
     });
     const text = `${profile.mainPokemon.join("・")}を使っています！相性のいいメイトを探しています。 #ユナマッチ`;
+    const currentUrl = "https://yunamatch.com/";
     try {
       if (
         navigator.share &&
@@ -4277,7 +4278,7 @@ export default function MatchApp({
         await navigator.share({
           title: "YUNAMATCH トレーナーカード",
           text,
-          url: "https://yunamatch.com/",
+          url: currentUrl,
           files: [file],
         });
         setShareOpen(false);
@@ -4291,12 +4292,29 @@ export default function MatchApp({
     download.download = file.name;
     download.click();
     window.setTimeout(() => URL.revokeObjectURL(download.href), 1000);
-    window.open(
-      `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent("https://yunamatch.com/")}`,
-      "_blank",
-      "noopener,noreferrer",
-    );
-    notify("カード画像を保存しました。Xの投稿に添付してください");
+    if (target === "discord") {
+      await copyText(`${text}\n${currentUrl}`);
+      window.open(
+        "https://discord.com/channels/@me",
+        "_blank",
+        "noopener,noreferrer",
+      );
+      notify("カード画像を保存し、本文とリンクをコピーしました");
+    } else if (target === "line") {
+      window.open(
+        `https://line.me/R/share?text=${encodeURIComponent(`${text}\n${currentUrl}`)}`,
+        "_blank",
+        "noopener,noreferrer",
+      );
+      notify("カード画像を保存しました。LINEで画像を添付できます");
+    } else {
+      window.open(
+        `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(currentUrl)}`,
+        "_blank",
+        "noopener,noreferrer",
+      );
+      notify("カード画像を保存しました。Xの投稿に添付してください");
+    }
     setShareOpen(false);
   };
 
@@ -8133,11 +8151,31 @@ export default function MatchApp({
                 ◷ {profile.playTime.join("・")}
               </footer>
             </div>
-            <button className="xShareButton" onClick={shareTrainerCard}>
-              𝕏 画像つきで共有する
-            </button>
+            <div className="trainerShareDestinations" aria-label="共有先を選ぶ">
+              <button
+                className="trainerShareX"
+                onClick={() => shareTrainerCard("x")}
+              >
+                <b>𝕏</b>
+                <span>X</span>
+              </button>
+              <button
+                className="trainerShareDiscord"
+                onClick={() => shareTrainerCard("discord")}
+              >
+                <b>D</b>
+                <span>Discord</span>
+              </button>
+              <button
+                className="trainerShareLine"
+                onClick={() => shareTrainerCard("line")}
+              >
+                <b>LINE</b>
+                <span>LINE</span>
+              </button>
+            </div>
             <p>
-              スマホでは共有先にXを選べます。PCでは画像を保存して投稿画面を開きます。
+              スマホでは画像付きの共有画面が開きます。PCではカード画像を保存し、選んだ共有先へ現在のYUNAMATCHリンクを付けます。
             </p>
           </section>
         </div>

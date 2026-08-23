@@ -1235,7 +1235,14 @@ button { cursor: pointer; }
 .shareCardPokemon { width: 46%; height: 76%; position: absolute; z-index: 0 !important; right: 2px; bottom: -3px; display: grid; place-items: center; opacity: .94; }
 .shareCardPokemon .pokemonVisualFallback { width: 112px; height: 112px; border: 1px solid #ffffff55; border-radius: 50%; background: #ffffff18; font-size: 38px; box-shadow: 0 0 0 10px #ffffff0d; }
 .shareCardTime { width: 61%; position: absolute !important; left: 20px; bottom: 16px; overflow: hidden; font-size: 7px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
-.xShareButton { width: 100%; margin-top: 16px; border: 0; border-radius: 14px; padding: 14px; color: #fff; background: #17131f; font-size: 10px; font-weight: 900; }
+.trainerShareDestinations { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-top: 16px; }
+.trainerShareDestinations button { min-width: 0; display: grid; place-items: center; gap: 5px; border: 0; border-radius: 14px; padding: 11px 6px; color: #fff; font-size: 8px; font-weight: 950; box-shadow: 0 8px 18px #33284d20; }
+.trainerShareDestinations button b { min-width: 27px; height: 27px; display: grid; place-items: center; padding: 0 4px; border-radius: 9px; color: inherit; background: #ffffff1f; font-size: 11px; }
+.trainerShareDestinations button span { overflow: hidden; max-width: 100%; text-overflow: ellipsis; white-space: nowrap; }
+.trainerShareX { background: #17131f; }
+.trainerShareDiscord { background: linear-gradient(145deg,#5865f2,#7665e8); }
+.trainerShareLine { background: #06c755; }
+.trainerShareLine b { font-size: 6px !important; }
 .shareModal > p { margin: 11px 8px 0; color: #98919f; font-size: 7px; line-height: 1.6; text-align: center; }
 .recruitSharePreview { min-height: 140px; position: relative; overflow: hidden; display: grid; grid-template-columns: 105px 1fr; align-items: center; gap: 5px; padding: 17px; border-radius: 21px; color: #fff; background: linear-gradient(145deg, #6c43c4, #a585ed); isolation: isolate; }
 .recruitSharePreview:before { content: ""; position: absolute; inset: 0; z-index: -1; opacity: .22; background-image: radial-gradient(#fff 1.4px, transparent 1.4px); background-size: 19px 19px; transform: rotate(8deg); }
