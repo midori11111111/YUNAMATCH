@@ -203,6 +203,23 @@ type PendingGuestAction = {
 };
 const pendingGuestActionKey = "yunamatch-pending-action-v1";
 const discoverFiltersStorageKey = "yunamatch-discover-filters-v1";
+const apiTimeoutMs = 8_000;
+
+async function fetchJsonWithTimeout<T>(
+  input: string,
+  init: RequestInit = {},
+  timeoutMs = apiTimeoutMs,
+) {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(input, { ...init, signal: controller.signal });
+    const data = (await response.json().catch(() => ({}))) as T;
+    return { response, data };
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
 
 const pokemon = [
   "アブソル",
@@ -715,6 +732,9 @@ export default function MatchApp({
     useState<PendingConversation | null>(null);
   const [pendingGroupOpen, setPendingGroupOpen] = useState(false);
   const [pendingMessages, setPendingMessages] = useState<ApplicationMessage[]>([]);
+  const activeApplicationIdRef = useRef<number | null>(null);
+  const pendingMessageLoadRequestRef = useRef(0);
+  const pendingMessageLoadInFlightRef = useRef<number | null>(null);
   const [pendingMessageText, setPendingMessageText] = useState("");
   const [pendingMessageSending, setPendingMessageSending] = useState(false);
   const [declineReasonOpen, setDeclineReasonOpen] = useState(false);
@@ -722,6 +742,11 @@ export default function MatchApp({
   const [declineNote, setDeclineNote] = useState("");
   const pendingMessageInputRef = useRef<HTMLInputElement>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [messagesError, setMessagesError] = useState(false);
+  const activeConnectionIdRef = useRef<number | null>(null);
+  const messageLoadRequestRef = useRef(0);
+  const messageLoadInFlightRef = useRef<number | null>(null);
   const [pinUpdatingId, setPinUpdatingId] = useState<number | null>(null);
   const [messageText, setMessageText] = useState("");
   const [messageSending, setMessageSending] = useState(false);
@@ -1220,9 +1245,10 @@ export default function MatchApp({
   }, [tab, loadBlockedUsers]);
   const loadConnections = async () => {
     try {
-      const response = await fetch("/api/connections", { cache: "no-store" });
+      const { response, data } = await fetchJsonWithTimeout<{
+        connections?: Connection[];
+      }>("/api/connections", { cache: "no-store" });
       if (!response.ok) throw new Error("connections request failed");
-      const data = await response.json();
       const nextConnections = (data.connections || []) as Connection[];
       setConnections(nextConnections);
       setConnectionsError(false);
@@ -1245,28 +1271,88 @@ export default function MatchApp({
       /* 他画面は利用を続ける */
     }
   };
-  const loadMessages = async (connection: Connection) => {
-    const response = await fetch(`/api/messages?connectionId=${connection.id}`);
-    if (!response.ok) return;
-    const data = await response.json();
-    const serverMessages = (data.messages || []) as ChatMessage[];
-    setMessages((current) => {
-      const serverClientIds = new Set(
-        serverMessages
-          .map((message) => message.clientId)
-          .filter((clientId): clientId is string => Boolean(clientId)),
-      );
-      const localOnly = current.filter(
-        (message) =>
-          message.delivery &&
-          message.clientId &&
-          !serverClientIds.has(message.clientId),
-      );
-      return [...serverMessages, ...localOnly].sort(
-        (a, b) =>
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-      );
-    });
+  const loadMessages = async (
+    connection: Connection,
+    showLoading = false,
+  ) => {
+    if (
+      !showLoading &&
+      messageLoadInFlightRef.current === connection.id
+    )
+      return;
+    const requestId = ++messageLoadRequestRef.current;
+    messageLoadInFlightRef.current = connection.id;
+    if (showLoading) {
+      setMessagesLoading(true);
+      setMessagesError(false);
+    }
+    try {
+      const { response, data } = await fetchJsonWithTimeout<{
+        messages?: ChatMessage[];
+      }>(`/api/messages?connectionId=${connection.id}`, { cache: "no-store" });
+      if (!response.ok) throw new Error("messages request failed");
+      if (
+        activeConnectionIdRef.current !== connection.id ||
+        requestId !== messageLoadRequestRef.current
+      )
+        return;
+      const serverMessages = (data.messages || []) as ChatMessage[];
+      setMessages((current) => {
+        const serverClientIds = new Set(
+          serverMessages
+            .map((message) => message.clientId)
+            .filter((clientId): clientId is string => Boolean(clientId)),
+        );
+        const localOnly = current.filter(
+          (message) =>
+            message.delivery &&
+            message.clientId &&
+            !serverClientIds.has(message.clientId),
+        );
+        return [...serverMessages, ...localOnly].sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+        );
+      });
+      setMessagesError(false);
+    } catch {
+      if (
+        activeConnectionIdRef.current === connection.id &&
+        requestId === messageLoadRequestRef.current
+      )
+        setMessagesError(true);
+    } finally {
+      if (
+        activeConnectionIdRef.current === connection.id &&
+        requestId === messageLoadRequestRef.current
+      ) {
+        messageLoadInFlightRef.current = null;
+        setMessagesLoading(false);
+      }
+    }
+  };
+  const loadPendingMessages = async (applicationId: number) => {
+    if (pendingMessageLoadInFlightRef.current === applicationId) return;
+    const requestId = ++pendingMessageLoadRequestRef.current;
+    pendingMessageLoadInFlightRef.current = applicationId;
+    try {
+      const { response, data } = await fetchJsonWithTimeout<{
+        messages?: ApplicationMessage[];
+      }>(`/api/application-messages?applicationId=${applicationId}`, {
+        cache: "no-store",
+      });
+      if (
+        response.ok &&
+        activeApplicationIdRef.current === applicationId &&
+        requestId === pendingMessageLoadRequestRef.current
+      )
+        setPendingMessages(data.messages || []);
+    } catch {
+      /* 次の自動更新または再表示で再試行する */
+    } finally {
+      if (requestId === pendingMessageLoadRequestRef.current)
+        pendingMessageLoadInFlightRef.current = null;
+    }
   };
 
   useEffect(() => {
@@ -1361,29 +1447,45 @@ export default function MatchApp({
 
   useEffect(() => {
     let active = true;
+    const loadOptional = async <T,>(url: string) => {
+      try {
+        const { response, data } = await fetchJsonWithTimeout<T>(url, {
+          cache: "no-store",
+        });
+        return response.ok ? data : null;
+      } catch {
+        return null;
+      }
+    };
     Promise.all([
-      fetch("/api/recruits").then((r) => r.json()),
+      loadOptional<{ recruits?: Recruit[]; myRecruit?: Recruit | null }>(
+        "/api/recruits",
+      ),
       authenticated
-        ? fetch("/api/applications").then((r) => (r.ok ? r.json() : null))
-        : Promise.resolve(null),
-      authenticated
-        ? fetch("/api/connections", { cache: "no-store" }).then(async (r) => ({
-            ok: r.ok,
-            data: r.ok ? await r.json() : null,
-          }))
-        : Promise.resolve(null),
-      authenticated
-        ? fetch("/api/lobbies").then((r) => (r.ok ? r.json() : null))
-        : Promise.resolve(null),
-      authenticated
-        ? fetch("/api/likes", { cache: "no-store" }).then((r) =>
-            r.ok ? r.json() : null,
+        ? loadOptional<{ incoming?: Notice[]; outgoing?: Notice[] }>(
+            "/api/applications",
           )
         : Promise.resolve(null),
       authenticated
-        ? fetch("/api/notifications", { cache: "no-store" }).then((r) =>
-            r.ok ? r.json() : null,
+        ? fetchJsonWithTimeout<{ connections?: Connection[] }>(
+            "/api/connections",
+            { cache: "no-store" },
           )
+            .then(({ response, data }) => ({ ok: response.ok, data }))
+            .catch(() => ({ ok: false, data: null }))
+        : Promise.resolve(null),
+      authenticated
+        ? loadOptional<{ lobbies?: Lobby[] }>("/api/lobbies")
+        : Promise.resolve(null),
+      authenticated
+        ? loadOptional<{
+            incoming?: ProfileLikeNotice[];
+            profiles?: ProfileCandidate[];
+            likedProfileIds?: string[];
+          }>("/api/likes")
+        : Promise.resolve(null),
+      authenticated
+        ? loadOptional<{ dismissedKeys?: string[] }>("/api/notifications")
         : Promise.resolve(null),
     ])
       .then(
@@ -1396,8 +1498,10 @@ export default function MatchApp({
           notificationData,
         ]) => {
           if (!active) return;
-          setRecruits(recruitData.recruits || []);
-          setMyRecruit(recruitData.myRecruit || null);
+          if (recruitData) {
+            setRecruits(recruitData.recruits || []);
+            setMyRecruit(recruitData.myRecruit || null);
+          }
           if (noticeData) {
             setIncoming(noticeData.incoming || []);
             setOutgoing(noticeData.outgoing || []);
@@ -1410,6 +1514,9 @@ export default function MatchApp({
             } else {
               setConnectionsError(true);
             }
+          } else if (authenticated) {
+            setConnectionsLoaded(true);
+            setConnectionsError(true);
           }
           if (lobbyData) setLobbies(lobbyData.lobbies || []);
           if (likeData) {
@@ -1423,7 +1530,12 @@ export default function MatchApp({
             );
         },
       )
-      .catch(() => undefined);
+      .catch(() => {
+        if (active && authenticated) {
+          setConnectionsLoaded(true);
+          setConnectionsError(true);
+        }
+      });
     if (guestMode || preview || initialProfile !== undefined)
       return () => {
         active = false;
@@ -1511,15 +1623,7 @@ export default function MatchApp({
       if (document.visibilityState !== "visible") return;
       if (selectedConnection) void loadMessages(selectedConnection);
       if (selectedPending)
-        fetch(
-          `/api/application-messages?applicationId=${selectedPending.notice.id}`,
-          { cache: "no-store" },
-        )
-          .then((response) => (response.ok ? response.json() : null))
-          .then((data) => {
-            if (data) setPendingMessages(data.messages || []);
-          })
-          .catch(() => undefined);
+        void loadPendingMessages(selectedPending.notice.id);
     };
     const timer = window.setInterval(refreshCurrentConversation, 2500);
     return () => window.clearInterval(timer);
@@ -1559,7 +1663,12 @@ export default function MatchApp({
     const current = notices.find(
       (notice) => notice.id === selectedPending.notice.id,
     );
-    if (!current || current.status !== "pending") setSelectedPending(null);
+    if (!current || current.status !== "pending") {
+      activeApplicationIdRef.current = null;
+      pendingMessageLoadRequestRef.current += 1;
+      pendingMessageLoadInFlightRef.current = null;
+      setSelectedPending(null);
+    }
   }, [incoming, outgoing, selectedPending]);
 
   useEffect(() => {
@@ -2840,8 +2949,12 @@ export default function MatchApp({
         mateName: data.mateName || "メイト",
         matePokemon: data.matePokemon || "ポケモン",
       });
-    if (selectedPending?.notice.id === applicationId)
+    if (selectedPending?.notice.id === applicationId) {
+      activeApplicationIdRef.current = null;
+      pendingMessageLoadRequestRef.current += 1;
+      pendingMessageLoadInFlightRef.current = null;
       setSelectedPending(null);
+    }
     setDeclineReasonOpen(false);
     setDeclineNote("");
     notify(
@@ -2864,33 +2977,40 @@ export default function MatchApp({
     }
   };
   const openChat = async (connection: Connection) => {
+    activeApplicationIdRef.current = null;
+    pendingMessageLoadRequestRef.current += 1;
+    pendingMessageLoadInFlightRef.current = null;
+    activeConnectionIdRef.current = connection.id;
+    messageLoadRequestRef.current += 1;
     setSelectedPending(null);
     setSelectedConnection(connection);
+    setMessages([]);
+    setMessagesError(false);
     setTab("chat");
     setNotificationOpen(false);
-    await loadMessages(connection);
+    await loadMessages(connection, true);
   };
   const openPendingConversation = (
     notice: Notice,
     direction: "incoming" | "outgoing",
   ) => {
+    activeApplicationIdRef.current = notice.id;
+    pendingMessageLoadRequestRef.current += 1;
+    pendingMessageLoadInFlightRef.current = null;
+    activeConnectionIdRef.current = null;
+    messageLoadRequestRef.current += 1;
+    messageLoadInFlightRef.current = null;
     setSelectedConnection(null);
     setMessages([]);
+    setMessagesLoading(false);
+    setMessagesError(false);
     setPendingMessages([]);
     setPendingMessageText("");
     setDeclineReasonOpen(false);
     setSelectedPending({ notice, direction });
     setTab("chat");
     setNotificationOpen(false);
-    if (!preview)
-      fetch(`/api/application-messages?applicationId=${notice.id}`, {
-        cache: "no-store",
-      })
-        .then((response) => (response.ok ? response.json() : null))
-        .then((data) => {
-          if (data) setPendingMessages(data.messages || []);
-        })
-        .catch(() => undefined);
+    if (!preview) void loadPendingMessages(notice.id);
   };
   const sendPendingMessage = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -3525,7 +3645,13 @@ export default function MatchApp({
       return;
     }
     setSafetyTarget(null);
+    activeConnectionIdRef.current = null;
+    messageLoadRequestRef.current += 1;
+    messageLoadInFlightRef.current = null;
     setSelectedConnection(null);
+    setMessages([]);
+    setMessagesLoading(false);
+    setMessagesError(false);
     notify("このユーザーをブロックしました");
     await Promise.all([loadRecruits(), loadConnections(), loadDiscover()]);
   };
@@ -4582,8 +4708,13 @@ export default function MatchApp({
                     <button
                       onClick={() => {
                         setChatActionsOpen(false);
+                        activeConnectionIdRef.current = null;
+                        messageLoadRequestRef.current += 1;
+                        messageLoadInFlightRef.current = null;
                         setSelectedConnection(null);
                         setMessages([]);
+                        setMessagesLoading(false);
+                        setMessagesError(false);
                       }}
                       aria-label="チャット一覧へ戻る"
                     >
@@ -4641,7 +4772,25 @@ export default function MatchApp({
                     </div>
                   )}
                   <div className="messageThread" ref={messageThreadRef}>
-                    {messages.length ? (
+                    {messagesLoading && !messages.length ? (
+                      <div className="chatEmpty chatThreadStatus">
+                        <span>•••</span>
+                        <h2>メッセージを読み込んでいます</h2>
+                        <p>8秒以上かかる場合は再読み込みできます。</p>
+                      </div>
+                    ) : messagesError && !messages.length ? (
+                      <div className="chatEmpty chatThreadStatus">
+                        <span>↻</span>
+                        <h2>メッセージを読み込めませんでした</h2>
+                        <p>通信を確認して、もう一度お試しください。</p>
+                        <button
+                          type="button"
+                          onClick={() => void loadMessages(selectedConnection, true)}
+                        >
+                          もう一度読み込む
+                        </button>
+                      </div>
+                    ) : messages.length ? (
                       messages.map((message) =>
                         message.kind === "play_invite" ? (
                           <div

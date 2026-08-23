@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { getDb } from "../../../db";
 import {
   applicationMessages,
@@ -46,12 +46,13 @@ export async function GET(request: Request) {
   const application = await applicationForUser(applicationId, user.userId);
   if (!application)
     return Response.json({ error: "申請が見つかりません" }, { status: 404 });
-  const rows = await getDb()
+  const newestRows = await getDb()
     .select()
     .from(applicationMessages)
     .where(eq(applicationMessages.applicationId, applicationId))
-    .orderBy(asc(applicationMessages.createdAt))
+    .orderBy(desc(applicationMessages.createdAt), desc(applicationMessages.id))
     .limit(100);
+  const rows = newestRows.reverse();
   return Response.json({
     messages: rows.map((row) => ({
       id: row.id,

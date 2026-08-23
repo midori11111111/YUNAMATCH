@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt } from "drizzle-orm";
+import { and, desc, eq, gt } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { applicationMessages, applications, connections, lobbies, lobbyMembers, messages, profiles, recruits } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
@@ -59,7 +59,7 @@ export async function PATCH(request:Request){
   const [savedConnection]=connection?[connection]:await db.select().from(connections).where(eq(connections.applicationId,row.id)).limit(1);
   if(savedConnection){
    await db.insert(messages).values({connectionId:savedConnection.id,senderId:row.applicantId,clientId:`match-wave-${row.id}`,body:`👋 ${row.applicationMessage}`,createdAt:row.applicationCreatedAt}).onConflictDoNothing();
-   const preChat=await db.select().from(applicationMessages).where(eq(applicationMessages.applicationId,row.id)).orderBy(asc(applicationMessages.createdAt)).limit(100);
+   const preChat=(await db.select().from(applicationMessages).where(eq(applicationMessages.applicationId,row.id)).orderBy(desc(applicationMessages.createdAt),desc(applicationMessages.id)).limit(100)).reverse();
    for(const item of preChat)await db.insert(messages).values({connectionId:savedConnection.id,senderId:item.senderId,clientId:`application-chat-${item.id}`,body:item.body,createdAt:item.createdAt}).onConflictDoNothing();
   }
   let [lobby]=await db.select().from(lobbies).where(eq(lobbies.recruitId,row.recruitId)).limit(1);

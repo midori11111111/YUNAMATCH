@@ -16,6 +16,15 @@ import { checkRateLimit, rateLimitResponse } from "../../../lib/rate-limit";
 import { identityAliases } from "../../../lib/account-aliases";
 
 const signIn = "/login";
+const connectionListLimit = 200;
+const queryChunkSize = 80;
+
+function chunked<T>(values: T[], size = queryChunkSize) {
+  const groups: T[][] = [];
+  for (let index = 0; index < values.length; index += size)
+    groups.push(values.slice(index, index + size));
+  return groups;
+}
 
 async function connectionForUser(connectionId: number, userIds: string[]) {
   const [row] = await getDb()
@@ -73,33 +82,39 @@ async function backfillAcceptedConnections(userIds: string[]) {
         ),
       ),
     )
-    .limit(50);
+    .limit(40);
 
   if (!rows.length) return;
-  for (const row of rows) {
+  const values = rows.flatMap((row) => {
     const userAId = userIds.includes(row.ownerId)
       ? currentUserId
       : row.ownerId;
     const userBId = userIds.includes(row.applicantId)
       ? currentUserId
       : row.applicantId;
-    if (userAId === userBId) continue;
+    if (userAId === userBId) return [];
+    return [{
+      applicationId: row.applicationId,
+      recruitId: row.recruitId,
+      userAId,
+      userBId,
+      userAName: row.ownerName,
+      userBName: row.applicantName,
+      userAPokemon: row.ownerPokemon,
+      userBPokemon: row.applicantPokemon,
+      userAContact: "",
+      userBContact: "",
+      createdAt: row.createdAt,
+    }];
+  });
+  // D1 has a bounded number of bind parameters per statement. Batching a few
+  // rows at a time avoids the previous one-write-per-connection latency while
+  // staying under that limit.
+  for (const group of chunked(values, 7)) {
     try {
       await db
         .insert(connections)
-        .values({
-        applicationId: row.applicationId,
-        recruitId: row.recruitId,
-        userAId,
-        userBId,
-        userAName: row.ownerName,
-        userBName: row.applicantName,
-        userAPokemon: row.ownerPokemon,
-        userBPokemon: row.applicantPokemon,
-        userAContact: "",
-        userBContact: "",
-        createdAt: row.createdAt,
-        })
+        .values(group)
         .onConflictDoNothing();
     } catch (error) {
       console.error(
@@ -150,7 +165,7 @@ export async function GET() {
       ),
     )
     .orderBy(desc(connections.createdAt))
-    .limit(50);
+    .limit(connectionListLimit);
 
   const visible = rows.filter(
     (row) =>
@@ -165,9 +180,9 @@ export async function GET() {
     ),
   ];
   const connectionIds = visible.map((row) => row.id);
-  const [mateProfiles, ownRatings, latestIdRows, unreadCountRows] = await Promise.all([
-    mateIds.length
-      ? db
+  const [mateProfileGroups, ownRatings, latestIdGroups, unreadCountGroups] = await Promise.all([
+    Promise.all(
+      chunked(mateIds).map((ids) => db
           .select({
             userId: profiles.userId,
             avatarUrl: profiles.avatarUrl,
@@ -181,8 +196,8 @@ export async function GET() {
             bio: profiles.bio,
           })
           .from(profiles)
-          .where(inArray(profiles.userId, mateIds))
-      : Promise.resolve([]),
+          .where(inArray(profiles.userId, ids))),
+    ),
     db
       .select({
         connectionId: connectionRatings.connectionId,
@@ -191,60 +206,71 @@ export async function GET() {
       })
       .from(connectionRatings)
       .where(inArray(connectionRatings.raterId, aliases))
-      .limit(100),
-    db
-      .select({
-        connectionId: messages.connectionId,
-        messageId: max(messages.id),
-      })
-      .from(messages)
-      .where(inArray(messages.connectionId, connectionIds))
-      .groupBy(messages.connectionId),
-    db
-      .select({
-        connectionId: messages.connectionId,
-        unreadCount: count(),
-      })
-      .from(messages)
-      .innerJoin(connections, eq(messages.connectionId, connections.id))
-      .where(
-        and(
-          inArray(messages.connectionId, connectionIds),
-          or(
-            and(
-              inArray(connections.userAId, aliases),
-              eq(messages.senderId, connections.userBId),
-              gt(
-                messages.createdAt,
-                sql<Date>`coalesce(${connections.userALastReadAt}, 0)`,
+      .limit(connectionListLimit),
+    Promise.all(
+      chunked(connectionIds).map((ids) => db
+        .select({
+          connectionId: messages.connectionId,
+          messageId: max(messages.id),
+        })
+        .from(messages)
+        .where(inArray(messages.connectionId, ids))
+        .groupBy(messages.connectionId)),
+    ),
+    Promise.all(
+      chunked(connectionIds).map((ids) => db
+        .select({
+          connectionId: messages.connectionId,
+          unreadCount: count(),
+        })
+        .from(messages)
+        .innerJoin(connections, eq(messages.connectionId, connections.id))
+        .where(
+          and(
+            inArray(messages.connectionId, ids),
+            or(
+              and(
+                inArray(connections.userAId, aliases),
+                eq(messages.senderId, connections.userBId),
+                gt(
+                  messages.createdAt,
+                  sql<Date>`coalesce(${connections.userALastReadAt}, 0)`,
+                ),
               ),
-            ),
-            and(
-              inArray(connections.userBId, aliases),
-              eq(messages.senderId, connections.userAId),
-              gt(
-                messages.createdAt,
-                sql<Date>`coalesce(${connections.userBLastReadAt}, 0)`,
+              and(
+                inArray(connections.userBId, aliases),
+                eq(messages.senderId, connections.userAId),
+                gt(
+                  messages.createdAt,
+                  sql<Date>`coalesce(${connections.userBLastReadAt}, 0)`,
+                ),
               ),
             ),
           ),
-        ),
-      )
-      .groupBy(messages.connectionId),
+        )
+        .groupBy(messages.connectionId)),
+    ),
   ]);
+  const mateProfiles = mateProfileGroups.flat();
+  const latestIdRows = latestIdGroups.flat();
+  const unreadCountRows = unreadCountGroups.flat();
   const latestMessageIds = latestIdRows
     .map((row) => row.messageId)
     .filter((id): id is number => typeof id === "number");
-  const latestMessages = latestMessageIds.length
-    ? await db
-        .select({
-          id: messages.id,
-          body: messages.body,
-          createdAt: messages.createdAt,
-        })
-        .from(messages)
-        .where(inArray(messages.id, latestMessageIds))
-    : [];
+  const latestMessages = (
+    await Promise.all(
+      chunked(latestMessageIds).map((ids) =>
+        db
+          .select({
+            id: messages.id,
+            body: messages.body,
+            createdAt: messages.createdAt,
+          })
+          .from(messages)
+          .where(inArray(messages.id, ids)),
+      ),
+    )
+  ).flat();
   const latestMessageById = new Map(
     latestMessages.map((message) => [message.id, message]),
   );

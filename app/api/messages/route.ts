@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull, or } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, or } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { blocks, connections, messages } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
@@ -63,9 +63,21 @@ export async function GET(request: Request) {
   const aliasSet = new Set(aliases);
   const connection = await getMembership(connectionId, aliases);
   if (!connection) return Response.json({ error: "マッチが見つかりません" }, { status: 404 });
-  const rows = await getDb().select().from(messages).where(eq(messages.connectionId, connectionId)).orderBy(asc(messages.createdAt)).limit(100);
+  // Keep the most recent part of long conversations. Ordering ascending before
+  // applying the limit returned the oldest 100 messages and made new messages
+  // appear to disappear once a conversation grew past that point.
+  const newestRows = await getDb()
+    .select()
+    .from(messages)
+    .where(eq(messages.connectionId, connectionId))
+    .orderBy(desc(messages.createdAt), desc(messages.id))
+    .limit(100);
+  const rows = newestRows.reverse();
   const isA=aliasSet.has(connection.userAId);const mateLastRead=isA?connection.userBLastReadAt:connection.userALastReadAt;
-  await getDb().update(connections).set(isA?{userALastReadAt:new Date()}:{userBLastReadAt:new Date()}).where(eq(connections.id,connection.id));
+  runInBackground(
+    getDb().update(connections).set(isA?{userALastReadAt:new Date()}:{userBLastReadAt:new Date()}).where(eq(connections.id,connection.id)),
+    "Chat read receipt",
+  );
   return Response.json({
     messages: rows.map((row) =>
       serializeMessage(row, aliasSet, mateLastRead),
@@ -179,15 +191,18 @@ export async function PATCH(request: Request) {
   const responderName = aliasSet.has(connection.userAId)
     ? connection.userAName
     : connection.userBName;
-  await sendPush(
-    invite.senderId,
-    payload.response === "accepted"
-      ? `${responderName}さんがプレイ招待を承認しました`
-      : `${responderName}さんがプレイ招待を見送りました`,
-    payload.response === "accepted"
-      ? "チャットからDiscordへ合流できます"
-      : "また都合のいい時に誘ってみましょう",
-    `/?chat=${connection.id}`,
+  runInBackground(
+    sendPush(
+      invite.senderId,
+      payload.response === "accepted"
+        ? `${responderName}さんがプレイ招待を承認しました`
+        : `${responderName}さんがプレイ招待を見送りました`,
+      payload.response === "accepted"
+        ? "チャットからDiscordへ合流できます"
+        : "また都合のいい時に誘ってみましょう",
+      `/?chat=${connection.id}`,
+    ),
+    "Play invite response push",
   );
   return Response.json({ message: serializeMessage(updated, aliasSet) });
 }

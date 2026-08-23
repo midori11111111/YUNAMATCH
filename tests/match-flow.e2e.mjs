@@ -213,6 +213,34 @@ try {
   assert.equal(greetingThread.messages[0].body, "👋 参加します");
   assert.equal(greetingThread.messages[0].sender, "mate");
 
+  // A long chat must return the newest 100 messages, not the oldest 100.
+  const bulkMessagesFile = join(temporary, "bulk-messages.sql");
+  const bulkStartedAt = new Date(greetingThread.messages[0].createdAt).getTime() + 1;
+  await writeFile(
+    bulkMessagesFile,
+    Array.from(
+      { length: 105 },
+      (_, index) =>
+        `INSERT INTO messages (connection_id, sender_id, body, kind, created_at) VALUES (${connectionId}, 'e2e-applicant', 'bulk-${String(index + 1).padStart(3, "0")}', 'text', ${bulkStartedAt + index});`,
+    ).join("\n"),
+  );
+  await run([
+    "d1",
+    "execute",
+    "yunamatch-e2e",
+    "--local",
+    "--config",
+    config,
+    "--persist-to",
+    state,
+    "--file",
+    bulkMessagesFile,
+  ]);
+  const longThread = await api(`/api/messages?connectionId=${connectionId}`, { user: owner });
+  assert.equal(longThread.messages.length, 100);
+  assert.equal(longThread.messages[0].body, "bulk-006");
+  assert.equal(longThread.messages.at(-1).body, "bulk-105");
+
   await api("/api/connections", { user: owner, method: "PATCH", body: { connectionId, action: "share_contact" } });
   applicantConnections = await api("/api/connections", { user: applicant });
   assert.equal(applicantConnections.connections[0].mateContact, "Discord: owner-test");
