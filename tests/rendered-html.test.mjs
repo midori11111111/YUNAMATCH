@@ -201,6 +201,20 @@ test("supports casual and ranked recruiting on the site and Discord", async () =
   assert.match(migration, /ADD `match_type` text DEFAULT 'ランクマッチ' NOT NULL/);
 });
 
+test("requires a linked Discord account before opening the community invite", async () => {
+  const [app, community, linkRoute] = await Promise.all([
+    readFile(new URL("app/match-app.tsx", root), "utf8"),
+    readFile(new URL("app/community/page.tsx", root), "utf8"),
+    readFile(new URL("vercel-proxy/app/api/link/[provider]/route.ts", root), "utf8"),
+  ]);
+  assert.match(app, /linkedAccounts\.some\(\(account\) => account\.provider === "discord"\)/);
+  assert.match(app, /Discordアカウントを連携してから参加できます/);
+  assert.match(app, /\/api\/link\/discord\?joinDiscord=1/);
+  assert.match(community, /href="\/\?joinDiscord=1"/);
+  assert.doesNotMatch(community, /discord\.gg/);
+  assert.match(linkRoute, /linked=discord&joinDiscord=1/);
+});
+
 test("ships the matching app, onboarding, lobby, safety, analytics, and notifications", async () => {
   const [
     page,

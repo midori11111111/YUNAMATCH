@@ -19,5 +19,10 @@ export async function GET(_request:Request,{params}:{params:Promise<{provider:st
   if(!secret)return new Response("Account linking is unavailable",{status:503});
   const cookieStore=await cookies();
   cookieStore.set(linkCookieName,createLinkCookie(session.user.id,secret),{httpOnly:true,secure:true,sameSite:"lax",path:"/",maxAge:10*60});
-  await signIn(provider,{redirectTo:`/?linked=${provider}`},accountChoiceParams[provider]);
+  const source=new URL(_request.url);
+  const joinDiscord=provider==="discord"&&source.searchParams.get("joinDiscord")==="1";
+  const redirectTo=joinDiscord
+    ? "/?linked=discord&joinDiscord=1"
+    : `/?linked=${provider}`;
+  await signIn(provider,{redirectTo},accountChoiceParams[provider]);
 }

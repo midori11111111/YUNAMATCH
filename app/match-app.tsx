@@ -185,7 +185,8 @@ type PendingGuestAction = {
     | "recruit-apply"
     | "compose"
     | "received"
-    | "recruit-alert";
+    | "recruit-alert"
+    | "discord-join";
   label: string;
   targetId?: string;
   recruitId?: number;
@@ -772,6 +773,7 @@ export default function MatchApp({
         ]
       : [],
   );
+  const [linkedAccountsLoaded, setLinkedAccountsLoaded] = useState(preview);
   const defaultProfile: Profile = {
     trainerName: shortName,
     mainPokemon: [],
@@ -1605,18 +1607,70 @@ export default function MatchApp({
   }, [preview, selectedConnection, messageText]);
 
   useEffect(() => {
-    if (preview || guestMode) return;
+    const params = new URLSearchParams(window.location.search);
+    const wantsDiscordJoin = params.get("joinDiscord") === "1";
+    const linkedProvider = params.get("linked");
+    if (preview) return;
+    if (guestMode) {
+      if (wantsDiscordJoin) {
+        params.delete("joinDiscord");
+        params.delete("linked");
+        const query = params.toString();
+        window.history.replaceState(
+          {},
+          "",
+          `${window.location.pathname}${query ? `?${query}` : ""}`,
+        );
+        window.setTimeout(
+          () =>
+            requestLogin({
+              type: "discord-join",
+              label: "Discordサーバーに参加",
+            }),
+          0,
+        );
+      }
+      return;
+    }
+    let active = true;
     fetch("/api/account-links")
       .then((response) => (response.ok ? response.json() : null))
       .then((data) => {
-        if (data?.accounts) setLinkedAccounts(data.accounts);
+        if (!active) return;
+        const accounts: LinkedAccount[] = data?.accounts ?? [];
+        setLinkedAccounts(accounts);
+        setLinkedAccountsLoaded(true);
+        if (linkedProvider) {
+          window.setTimeout(() => notify("アカウントを連携しました"), 350);
+        }
+        if (wantsDiscordJoin) {
+          if (accounts.some((account) => account.provider === "discord")) {
+            window.location.assign(discordInviteUrl);
+          } else {
+            window.location.assign("/api/link/discord?joinDiscord=1");
+          }
+          return;
+        }
+        if (linkedProvider) {
+          params.delete("linked");
+          const query = params.toString();
+          window.history.replaceState(
+            {},
+            "",
+            `${window.location.pathname}${query ? `?${query}` : ""}`,
+          );
+        }
       })
-      .catch(() => undefined);
-    const linked = new URLSearchParams(window.location.search).get("linked");
-    if (linked) {
-      window.setTimeout(() => notify("アカウントを連携しました"), 350);
-      window.history.replaceState({}, "", window.location.pathname);
-    }
+      .catch(() => {
+        if (active) {
+          setLinkedAccountsLoaded(true);
+          if (wantsDiscordJoin)
+            notify("Discord連携を確認できませんでした。もう一度お試しください");
+        }
+      });
+    return () => {
+      active = false;
+    };
   }, [preview, guestMode]);
 
   const visibleRecruits = useMemo(
@@ -2098,6 +2152,16 @@ export default function MatchApp({
       return;
     }
     if (!action) return;
+    if (action.type === "discord-join") {
+      if (!linkedAccountsLoaded) return;
+      window.sessionStorage.removeItem(pendingGuestActionKey);
+      if (linkedAccounts.some((account) => account.provider === "discord")) {
+        window.location.assign(discordInviteUrl);
+      } else {
+        window.location.assign("/api/link/discord?joinDiscord=1");
+      }
+      return;
+    }
     if (action.type === "compose") {
       window.sessionStorage.removeItem(pendingGuestActionKey);
       setTab("recruit");
@@ -2146,6 +2210,8 @@ export default function MatchApp({
     recruits,
     profileCandidates,
     recommendedCards,
+    linkedAccounts,
+    linkedAccountsLoaded,
   ]);
   const showLikedProfile = (senderId: string) => {
     const senderIndex = receivedProfileCandidates.findIndex(
@@ -2456,12 +2522,34 @@ export default function MatchApp({
       "noopener,noreferrer",
     );
   const shareRecruitToDiscord = async (recruit: Recruit) => {
+    if (!openDiscord()) return;
     await copyText(`${recruitShareText(recruit)}\n${recruitUrl(recruit)}`);
-    window.open(discordInviteUrl, "_blank", "noopener,noreferrer");
     notify("募集文をコピーしてDiscordの募集部屋を開きました");
   };
-  const openDiscord = () =>
+  function openDiscord() {
+    if (preview) {
+      window.open(discordInviteUrl, "_blank", "noopener,noreferrer");
+      return true;
+    }
+    if (guestMode) {
+      requestLogin({
+        type: "discord-join",
+        label: "Discordサーバーに参加",
+      });
+      return false;
+    }
+    if (!linkedAccountsLoaded) {
+      notify("Discord連携を確認しています");
+      return false;
+    }
+    if (!linkedAccounts.some((account) => account.provider === "discord")) {
+      notify("Discordアカウントを連携してから参加できます");
+      window.location.assign("/api/link/discord?joinDiscord=1");
+      return false;
+    }
     window.open(discordInviteUrl, "_blank", "noopener,noreferrer");
+    return true;
+  }
   const createPrivateVoiceRoom = async (connectionId: number) => {
     if (voiceRoomLoading) return;
     if (preview) {
