@@ -503,6 +503,9 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(discordApi, /x-signature-ed25519/);
   assert.match(discordApi, /options\.lane/);
   assert.match(discordApi, /options\.play_style/);
+  assert.match(discordApi, /getRequestExecutionContext/);
+  assert.match(discordApi, /type: 5/);
+  assert.match(discordApi, /messages\/@original/);
   assert.match(app, /二人だけのDiscord VCを作る/);
   assert.match(voiceRoomsApi, /VC1.*VC2.*VC3.*VC4.*VC5/);
   assert.match(voiceRoomsApi, /permission_overwrites/);

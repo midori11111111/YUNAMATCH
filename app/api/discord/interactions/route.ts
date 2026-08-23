@@ -1,4 +1,5 @@
 import { and, eq } from "drizzle-orm";
+import { getRequestExecutionContext } from "vinext/shims/request-context";
 import { getDb } from "../../../../db";
 import {
   accountLinks,
@@ -16,6 +17,33 @@ const bytes = (hex: string) =>
     hex.match(/.{2}/g)?.map((value) => Number.parseInt(value, 16)) || [],
   );
 const matchTypes = new Set(["ランクマッチ", "カジュアル"]);
+
+type DiscordInteraction = {
+  application_id?: string;
+  token?: string;
+  type: number;
+  member?: { user?: { id?: string } };
+  user?: { id?: string };
+  data?: {
+    name?: string;
+    options?: Array<{ name: string; value: string | number }>;
+  };
+};
+
+type DiscordMessage = {
+  content: string;
+  components?: Array<{
+    type: number;
+    components: Array<{
+      type: number;
+      style: number;
+      label: string;
+      url: string;
+    }>;
+  }>;
+};
+
+const errorMessage = (content: string): DiscordMessage => ({ content });
 
 async function verify(request: Request, body: string) {
   const signature = request.headers.get("x-signature-ed25519");
@@ -41,49 +69,10 @@ async function verify(request: Request, body: string) {
   }
 }
 
-export async function POST(request: Request) {
-  const raw = await request.text();
-  if (!(await verify(request, raw)))
-    return new Response("invalid request signature", { status: 401 });
-  const interaction = JSON.parse(raw) as {
-    type: number;
-    member?: { user?: { id?: string } };
-    user?: { id?: string };
-    data?: {
-      name?: string;
-      options?: Array<{ name: string; value: string | number }>;
-    };
-  };
-  if (interaction.type === 1) return json({ type: 1 });
-  if (interaction.type !== 2)
-    return json({
-      type: 4,
-      data: { content: "対応していない操作です", flags: 64 },
-    });
-  if (interaction.data?.name === "はじめ方")
-    return json({
-      type: 4,
-      data: {
-        content:
-          "⚡ **YUNAMATCHの使い方**\n1. プロフィールでDiscordアカウントを連携\n2. このサーバーで `/募集` を入力\n3. カジュアルかランクマッチを選択\n4. 届いた申請をYUNAMATCHで承認\n5. チャットから二人だけのVC1〜VC5を作成\n\n詳しくはこちら：https://yunamatch.com/community",
-        flags: 64,
-      },
-    });
-  if (interaction.data?.name !== "募集")
-    return json({
-      type: 4,
-      data: { content: "対応していないコマンドです", flags: 64 },
-    });
-
-  const discordId = interaction.member?.user?.id || interaction.user?.id;
-  if (!discordId)
-    return json({
-      type: 4,
-      data: {
-        content: "Discordアカウントを確認できませんでした",
-        flags: 64,
-      },
-    });
+async function createRecruitMessage(
+  interaction: DiscordInteraction,
+  discordId: string,
+): Promise<DiscordMessage> {
   const db = getDb();
   const [linked] = await db
     .select()
@@ -96,41 +85,25 @@ export async function POST(request: Request) {
     )
     .limit(1);
   if (!linked)
-    return json({
-      type: 4,
-      data: {
-        content:
-          "先にYUNAMATCHのマイページで、このDiscordアカウントを連携してください。",
-        flags: 64,
-      },
-    });
+    return errorMessage(
+      "先にYUNAMATCHのマイページで、このDiscordアカウントを連携してください。",
+    );
   const [profile] = await db
     .select()
     .from(profiles)
     .where(eq(profiles.userId, linked.canonicalUserId))
     .limit(1);
   if (!profile || profile.suspendedAt)
-    return json({
-      type: 4,
-      data: {
-        content: "利用できるYUNAMATCHプロフィールが見つかりません。",
-        flags: 64,
-      },
-    });
+    return errorMessage("利用できるYUNAMATCHプロフィールが見つかりません。");
   const rateLimit = await checkRateLimit(profile.userId, {
     action: "discord-recruit",
     limit: 5,
     windowMs: 60 * 60_000,
   });
   if (!rateLimit.allowed)
-    return json({
-      type: 4,
-      data: {
-        content:
-          "短時間の募集回数が多すぎます。少し待ってからもう一度お試しください。",
-        flags: 64,
-      },
-    });
+    return errorMessage(
+      "短時間の募集回数が多すぎます。少し待ってからもう一度お試しください。",
+    );
 
   const options = Object.fromEntries(
     (interaction.data?.options || []).map((option) => [
@@ -163,10 +136,7 @@ export async function POST(request: Request) {
     ![0, 30, 60, 120].includes(startsIn) ||
     ![1, 2, 3].includes(duration)
   )
-    return json({
-      type: 4,
-      data: { content: "募集条件を確認してください。", flags: 64 },
-    });
+    return errorMessage("募集条件を確認してください。");
 
   const now = new Date();
   const startAt = new Date(now.getTime() + startsIn * 60_000);
@@ -232,23 +202,95 @@ export async function POST(request: Request) {
   });
   const url = `https://yunamatch.com/?recruit=${recruit.id}`;
   const startLabel = startsIn === 0 ? "今から" : `${startsIn}分後`;
-  return json({
-    type: 4,
-    data: {
-      content: `⚡ **${profile.trainerName}さんがユナイト仲間を募集！**\n🎮 **募集条件**：${matchType}・${partyLabel}\n🕒 **開始**：${startLabel}・${duration}時間募集\n👤 **募集者ランク**：${currentRank}\n🧭 **募集者の希望役割**：${role}\n使用ポケモンは未定です。役割を相談して決められます\n参加申請は下のボタンから`,
-      components: [
-        {
-          type: 1,
-          components: [
-            {
-              type: 2,
-              style: 5,
-              label: "YUNAMATCHで参加申請",
-              url,
-            },
-          ],
-        },
-      ],
+  return {
+    content: `⚡ **${profile.trainerName}さんがユナイト仲間を募集！**\n🎮 **募集条件**：${matchType}・${partyLabel}\n🕒 **開始**：${startLabel}・${duration}時間募集\n👤 **募集者ランク**：${currentRank}\n🧭 **募集者の希望役割**：${role}\n使用ポケモンは未定です。役割を相談して決められます\n参加申請は下のボタンから`,
+    components: [
+      {
+        type: 1,
+        components: [
+          {
+            type: 2,
+            style: 5,
+            label: "YUNAMATCHで参加申請",
+            url,
+          },
+        ],
+      },
+    ],
+  };
+}
+
+async function editOriginalResponse(
+  applicationId: string,
+  interactionToken: string,
+  message: DiscordMessage,
+) {
+  const response = await fetch(
+    `https://discord.com/api/v10/webhooks/${applicationId}/${interactionToken}/messages/@original`,
+    {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(message),
     },
-  });
+  );
+  if (!response.ok)
+    throw new Error(`Discord interaction update failed: ${response.status}`);
+}
+
+export async function POST(request: Request) {
+  const raw = await request.text();
+  if (!(await verify(request, raw)))
+    return new Response("invalid request signature", { status: 401 });
+  const interaction = JSON.parse(raw) as DiscordInteraction;
+  if (interaction.type === 1) return json({ type: 1 });
+  if (interaction.type !== 2)
+    return json({
+      type: 4,
+      data: { content: "対応していない操作です", flags: 64 },
+    });
+  if (interaction.data?.name === "はじめ方")
+    return json({
+      type: 4,
+      data: {
+        content:
+          "⚡ **YUNAMATCHの使い方**\n1. プロフィールでDiscordアカウントを連携\n2. このサーバーで `/募集` を入力\n3. カジュアルかランクマッチを選択\n4. 届いた申請をYUNAMATCHで承認\n5. チャットから二人だけのVC1〜VC5を作成\n\n詳しくはこちら：https://yunamatch.com/community",
+        flags: 64,
+      },
+    });
+  if (interaction.data?.name !== "募集")
+    return json({
+      type: 4,
+      data: { content: "対応していないコマンドです", flags: 64 },
+    });
+
+  const discordId = interaction.member?.user?.id || interaction.user?.id;
+  const applicationId = interaction.application_id;
+  const interactionToken = interaction.token;
+  if (!discordId || !applicationId || !interactionToken)
+    return json({
+      type: 4,
+      data: {
+        content: "Discordアカウントを確認できませんでした",
+        flags: 64,
+      },
+    });
+
+  const task = createRecruitMessage(interaction, discordId)
+    .then((message) =>
+      editOriginalResponse(applicationId, interactionToken, message),
+    )
+    .catch(() =>
+      editOriginalResponse(
+        applicationId,
+        interactionToken,
+        errorMessage("募集を作成できませんでした。もう一度お試しください。"),
+      ),
+    );
+  const executionContext = getRequestExecutionContext();
+  if (executionContext) executionContext.waitUntil(task);
+  else void task;
+
+  // Discord requires an acknowledgement within three seconds. The completed
+  // recruit card replaces this deferred response as soon as database work ends.
+  return json({ type: 5, data: { flags: 64 } });
 }
