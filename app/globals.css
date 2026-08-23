@@ -750,7 +750,7 @@ button { cursor: pointer; }
 .chatReportButton { width: 100%; margin-top: 11px; border: 0; padding: 9px; color: #a04c62; background: transparent; font-size: 8px; font-weight: 850; }
 .heartNotice { margin-bottom: 8px; padding: 9px 11px; border-radius: 11px; color: #c93671; background: #fff0f6; font-size: 7px; font-weight: 850; text-align: center; }
 .messageThread { min-height: 0; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 9px 2px 18px; scroll-padding-bottom: 18px; }
-.messageBubble { max-width: 82%; align-self: flex-start; }
+.messageBubble { max-width: 82%; flex-shrink: 0; align-self: flex-start; }
 .messageBubble p { margin: 0; padding: 10px 12px; border-radius: 6px 15px 15px 15px; color: #544d5b; background: #f0edf4; font-size: 9px; line-height: 1.5; }
 .messageBubble.me { align-self: flex-end; text-align: right; }
 .messageBubble.me p { color: #fff; border-radius: 15px 6px 15px 15px; background: linear-gradient(135deg, var(--purple), #8e76f2); text-align: left; }
@@ -760,7 +760,7 @@ button { cursor: pointer; }
 .reportMessageButton { border: 0; padding: 3px 0; color: #a39ba8; background: transparent; font-size: 7px; font-weight: 800; }
 .reportMessageButton { text-decoration: underline; text-underline-offset: 2px; }
 .playInviteMessage .messageUtilityActions { justify-content: flex-end; margin-right: 0; }
-.playInviteMessage { width: min(88%, 330px); align-self: flex-start; overflow: hidden; border: 1px solid #e2dcf3; border-radius: 18px; padding: 13px; background: linear-gradient(145deg,#fff,#f7f3ff); box-shadow: 0 8px 20px #49367112; }
+.playInviteMessage { width: min(88%, 330px); flex-shrink: 0; align-self: flex-start; overflow: hidden; border: 1px solid #e2dcf3; border-radius: 18px; padding: 13px; background: linear-gradient(145deg,#fff,#f7f3ff); box-shadow: 0 8px 20px #49367112; }
 .playInviteMessage.me { align-self: flex-end; }
 .playInviteHeading { display: flex; align-items: center; gap: 10px; }
 .playInviteHeading > span { width: 38px; height: 38px; display: grid; place-items: center; flex: none; border-radius: 13px; background: #ebe5ff; font-size: 18px; }
