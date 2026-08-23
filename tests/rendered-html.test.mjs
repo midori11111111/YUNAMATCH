@@ -293,6 +293,8 @@ test("requires a linked Discord account before opening the community invite", as
   ]);
   assert.match(app, /linkedAccounts\.some\(\(account\) => account\.provider === "discord"\)/);
   assert.match(app, /Discordアカウントを連携してから参加できます/);
+  assert.match(app, /className="discoverDiscord"/);
+  assert.match(app, /aria-label="Discordサーバーに参加"/);
   assert.match(app, /\/api\/link\/discord\?joinDiscord=1/);
   assert.match(community, /href="\/\?joinDiscord=1"/);
   assert.doesNotMatch(community, /discord\.gg/);

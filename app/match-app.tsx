@@ -4342,6 +4342,14 @@ export default function MatchApp({
                   </button>
                 </div>
                 <button
+                  className="discoverDiscord"
+                  onClick={openDiscord}
+                  aria-label="Discordサーバーに参加"
+                >
+                  <span>D</span>
+                  <small>Discord</small>
+                </button>
+                <button
                   className="discoverHelp"
                   onClick={() => setTutorialOpen(true)}
                   aria-label="使い方を見る"
