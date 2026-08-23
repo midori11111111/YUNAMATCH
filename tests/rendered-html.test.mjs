@@ -187,8 +187,15 @@ test("supports casual and ranked recruiting on the site and Discord", async () =
   assert.match(app, /recruit\.matchType/);
   assert.match(recruitsApi, /matchType:recruits\.matchType/);
   assert.match(discordApi, /options\.match_type/);
-  assert.match(discordApi, /募集者ランク/);
-  assert.match(discordApi, /募集者の希望役割/);
+  assert.match(discordApi, /@here \*\*\(\$\{matchType\}\)の\(\$\{partyDisplay\}\)パーティ募集中です/);
+  assert.match(discordApi, /募集者のレートは/);
+  assert.match(discordApi, /allowed_mentions: \{ parse: \["everyone"\] \}/);
+  assert.match(discordApi, /options\.lane \? `担当レーンは/);
+  assert.match(discordApi, /options\.play_style \? `役割は/);
+  assert.match(discordApi, /options\.starts_in !== undefined \? `開始時間は/);
+  assert.match(discordApi, /options\.duration !== undefined \? `募集時間は/);
+  assert.match(discordApi, /options\.matches !== undefined \? `試合数は/);
+  assert.match(discordApi, /options\.win_rate !== undefined \? `勝率は/);
   assert.match(commandScript, /name: "match_type"/);
   assert.match(commandScript, /required: true/);
   assert.match(commandScript, /募集者本人/);

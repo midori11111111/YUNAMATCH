@@ -32,6 +32,7 @@ type DiscordInteraction = {
 
 type DiscordMessage = {
   content: string;
+  allowed_mentions?: { parse: Array<"everyone" | "roles" | "users"> };
   components?: Array<{
     type: number;
     components: Array<{
@@ -122,8 +123,6 @@ async function createRecruitMessage(
   );
   const partyChoice = String(options.party_size || "up_to_3");
   const partySize = partyChoice === "up_to_3" ? 3 : Number(partyChoice);
-  const partyLabel =
-    partyChoice === "up_to_3" ? "3人以下" : `${partySize}人`;
   const startsIn = Number(options.starts_in || 0);
   const duration = Number(options.duration || 2);
   const matches = Number(options.matches || 0);
@@ -202,8 +201,23 @@ async function createRecruitMessage(
   });
   const url = `https://yunamatch.com/?recruit=${recruit.id}`;
   const startLabel = startsIn === 0 ? "今から" : `${startsIn}分後`;
+  const partyDisplay = partyChoice === "up_to_3" ? "3/2" : String(partySize);
+  const optionalDetails = [
+    options.lane ? `担当レーンは(${String(options.lane)})` : "",
+    options.play_style ? `役割は(${String(options.play_style)})` : "",
+    options.starts_in !== undefined ? `開始時間は(${startLabel})` : "",
+    options.duration !== undefined ? `募集時間は(${duration}時間)` : "",
+    options.matches !== undefined ? `試合数は(${matches.toLocaleString("ja-JP")}戦)` : "",
+    options.win_rate !== undefined ? `勝率は(${winRate}%)` : "",
+  ].filter(Boolean);
   return {
-    content: `⚡ **${profile.trainerName}さんがユナイト仲間を募集！**\n🎮 **募集条件**：${matchType}・${partyLabel}\n🕒 **開始**：${startLabel}・${duration}時間募集\n👤 **募集者ランク**：${currentRank}\n🧭 **募集者の希望役割**：${role}\n使用ポケモンは未定です。役割を相談して決められます\n参加申請は下のボタンから`,
+    content: [
+      `@here **(${matchType})の(${partyDisplay})パーティ募集中です**`,
+      `募集者のレートは(${currentRank})`,
+      ...optionalDetails,
+      "参加申請は下のボタンから",
+    ].join("\n"),
+    allowed_mentions: { parse: ["everyone"] },
     components: [
       {
         type: 1,
