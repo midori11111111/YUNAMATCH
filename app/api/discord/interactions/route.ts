@@ -292,7 +292,7 @@ export async function POST(request: Request) {
       type: 4,
       data: {
         content:
-          "⚡ **YUNAMATCHの使い方**\n1. プロフィールでDiscordアカウントを連携\n2. このサーバーで `/募集` を入力\n3. カジュアルかランクマッチを選択\n4. 届いた申請をYUNAMATCHで承認\n5. チャットから二人だけのVC1〜VC5を作成\n\n詳しくはこちら：https://yunamatch.com/community",
+          "⚡ **YUNAMATCHの使い方**\n1. プロフィールでDiscordアカウントを連携\n2. このサーバーで `/募集` を入力\n3. カジュアルかランクマッチを選択\n4. 届いた申請をYUNAMATCHで承認\n5. チャットで人数を選び、Botに専用VCを作ってもらう\n\n詳しくはこちら：https://yunamatch.com/community",
         flags: 64,
       },
     });

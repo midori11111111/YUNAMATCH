@@ -50,6 +50,7 @@ type DiscordChannel = {
   name: string;
   type: number;
   parent_id?: string | null;
+  user_limit?: number;
   permission_overwrites?: DiscordOverwrite[];
 };
 
@@ -117,7 +118,7 @@ async function guildChannels() {
   );
 }
 
-async function ensureVoiceRooms() {
+async function ensureVoiceCategory() {
   let channels = await guildChannels();
   let category = channels.find(
     (channel) => channel.type === 4 && channel.name === categoryName,
@@ -134,32 +135,7 @@ async function ensureVoiceRooms() {
     );
     channels = [...channels, category];
   }
-
-  const rooms: DiscordChannel[] = [];
-  for (const name of roomNames) {
-    let room = channels.find(
-      (channel) =>
-        channel.type === 2 &&
-        channel.parent_id === category?.id &&
-        channel.name === name,
-    );
-    if (!room) {
-      room = await discord<DiscordChannel>(
-        "POST",
-        `/guilds/${settings().guildId}/channels`,
-        {
-          name,
-          type: 2,
-          parent_id: category.id,
-          user_limit: 5,
-          permission_overwrites: privateOverwrites(),
-        },
-      );
-      channels.push(room);
-    }
-    rooms.push(room);
-  }
-  return rooms;
+  return { channels, category };
 }
 
 function assignedMemberIds(channel: DiscordChannel) {
@@ -209,6 +185,7 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as {
     action?: string;
     connectionId?: number;
+    userLimit?: number;
   };
   const connectionId = Number(body.connectionId);
   if (!Number.isInteger(connectionId) || connectionId <= 0)
@@ -238,7 +215,13 @@ export async function POST(request: Request) {
   if (!rateLimit.allowed) return rateLimitResponse(rateLimit.retryAfter);
 
   try {
-    const rooms = await ensureVoiceRooms();
+    const { channels, category } = await ensureVoiceCategory();
+    const rooms = channels.filter(
+      (channel) =>
+        channel.type === 2 &&
+        channel.parent_id === category.id &&
+        roomNames.includes(channel.name),
+    );
     const mine = rooms.find((room) =>
       assignedMemberIds(room).includes(myDiscordId),
     );
@@ -246,25 +229,50 @@ export async function POST(request: Request) {
     if (action === "close") {
       if (!mine)
         return Response.json({ ok: true, closed: false, message: "作成中のVCはありません" });
-      await discord<DiscordChannel>("PATCH", `/channels/${mine.id}`, {
-        permission_overwrites: privateOverwrites(),
-      });
+      // チャンネルごと削除することで、VC内チャットも次回へ残さない。
+      await discord<DiscordChannel>("DELETE", `/channels/${mine.id}`);
       return Response.json({ ok: true, closed: true, roomName: mine.name });
     }
 
-    const room = mine || rooms.find((candidate) => !assignedMemberIds(candidate).length);
-    if (!room)
+    const userLimit = Number(body.userLimit || 2);
+    if (![2, 3, 4, 5].includes(userLimit))
+      return Response.json(
+        { error: "VC人数は2〜5人から選んでください" },
+        { status: 400 },
+      );
+
+    const occupiedRooms = rooms.filter(
+      (room) => room.id !== mine?.id && assignedMemberIds(room).length > 0,
+    );
+    if (occupiedRooms.length >= roomNames.length)
       return Response.json(
         { error: "VC1〜VC5がすべて使用中です。少し待ってからお試しください" },
         { status: 409 },
       );
-    await discord<DiscordChannel>("PATCH", `/channels/${room.id}`, {
-      user_limit: 5,
-      permission_overwrites: privateOverwrites([myDiscordId, mateDiscordId]),
-    });
+
+    const usedNames = new Set(occupiedRooms.map((room) => room.name));
+    const roomName = roomNames.find((name) => !usedNames.has(name))!;
+    // 既存セッションや空き部屋を削除してから作り直し、過去のVCチャットを消す。
+    const roomsToDelete = rooms.filter(
+      (room) => room.id === mine?.id || room.name === roomName,
+    );
+    for (const room of roomsToDelete)
+      await discord<DiscordChannel>("DELETE", `/channels/${room.id}`);
+    const room = await discord<DiscordChannel>(
+      "POST",
+      `/guilds/${settings().guildId}/channels`,
+      {
+        name: roomName,
+        type: 2,
+        parent_id: category.id,
+        user_limit: userLimit,
+        permission_overwrites: privateOverwrites([myDiscordId, mateDiscordId]),
+      },
+    );
     return Response.json({
       ok: true,
       roomName: room.name,
+      userLimit,
       channelUrl: `https://discord.com/channels/${settings().guildId}/${room.id}`,
     });
   } catch (error) {
@@ -300,10 +308,19 @@ export async function PUT(request: Request) {
         removed.push(channel.name);
       }
     }
-    const rooms = await ensureVoiceRooms();
+    const { channels: refreshedChannels, category } = await ensureVoiceCategory();
+    const rooms = refreshedChannels.filter(
+      (channel) =>
+        channel.type === 2 &&
+        channel.parent_id === category.id &&
+        roomNames.includes(channel.name),
+    );
     return Response.json({
       ok: true,
       rooms: rooms.map((room) => room.name),
+      availableNames: roomNames.filter(
+        (name) => !rooms.some((room) => room.name === name),
+      ),
       removed,
       preserved: [...preserved],
     });

@@ -744,10 +744,14 @@ export default function MatchApp({
   const [safetyTarget, setSafetyTarget] = useState<SafetyTarget | null>(null);
   const [chatActionsOpen, setChatActionsOpen] = useState(false);
   const [voiceRoomLoading, setVoiceRoomLoading] = useState(false);
+  const [voiceRoomSetup, setVoiceRoomSetup] = useState<{
+    connectionId: number;
+  } | null>(null);
   const [voiceRoom, setVoiceRoom] = useState<{
     connectionId: number;
     roomName: string;
     channelUrl: string;
+    userLimit: number;
   } | null>(null);
   const [supportOpen, setSupportOpen] = useState(false);
   const [supportMode, setSupportMode] = useState<"support" | "feedback">(
@@ -2587,10 +2591,14 @@ export default function MatchApp({
     window.open(discordInviteUrl, "_blank", "noopener,noreferrer");
     return true;
   }
-  const createPrivateVoiceRoom = async (connectionId: number) => {
+  const createPrivateVoiceRoom = async (
+    connectionId: number,
+    userLimit: number,
+  ) => {
     if (voiceRoomLoading) return;
+    setVoiceRoomSetup(null);
     if (preview) {
-      notify("VC1を二人だけに公開しました");
+      notify(`VC1を${userLimit}人用で作成しました`);
       openDiscord();
       return;
     }
@@ -2600,7 +2608,7 @@ export default function MatchApp({
       const response = await fetch("/api/discord/voice-rooms", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ connectionId, action: "open" }),
+        body: JSON.stringify({ connectionId, action: "open", userLimit }),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -2612,8 +2620,9 @@ export default function MatchApp({
         connectionId,
         roomName: data.roomName,
         channelUrl: data.channelUrl,
+        userLimit: data.userLimit,
       });
-      notify(`${data.roomName}を二人だけに公開しました`);
+      notify(`${data.roomName}を${data.userLimit}人用で作成しました`);
       if (discordWindow) discordWindow.location.href = data.channelUrl;
       else window.location.href = data.channelUrl;
     } catch {
@@ -4455,13 +4464,15 @@ export default function MatchApp({
                                 <p>✓ 一緒にプレイすることになりました</p>
                                 <button
                                   onClick={() =>
-                                    createPrivateVoiceRoom(selectedConnection.id)
+                                    setVoiceRoomSetup({
+                                      connectionId: selectedConnection.id,
+                                    })
                                   }
                                   disabled={voiceRoomLoading}
                                 >
                                   {voiceRoomLoading
                                     ? "VCを準備中…"
-                                    : "二人だけのDiscord VCを作る"}
+                                    : "Discord VCを作る"}
                                 </button>
                               </div>
                             )}
@@ -7011,7 +7022,18 @@ export default function MatchApp({
                 再マッチ
               </button>
               <button
-                onClick={() => createPrivateVoiceRoom(selectedConnection.id)}
+                onClick={() => {
+                  if (voiceRoom?.connectionId === selectedConnection.id)
+                    window.open(
+                      voiceRoom.channelUrl,
+                      "_blank",
+                      "noopener,noreferrer",
+                    );
+                  else
+                    setVoiceRoomSetup({
+                      connectionId: selectedConnection.id,
+                    });
+                }}
                 disabled={voiceRoomLoading}
               >
                 <b>🎧</b>
@@ -7019,7 +7041,7 @@ export default function MatchApp({
                   ? `${voiceRoom.roomName}を開く`
                   : voiceRoomLoading
                     ? "VCを準備中"
-                    : "二人だけのVCを作る"}
+                    : "Discord VCを作る"}
               </button>
               {voiceRoom?.connectionId === selectedConnection.id && (
                 <button
@@ -7178,10 +7200,12 @@ export default function MatchApp({
             </button>
             <button
               className="discordMatchButton"
-              onClick={() => createPrivateVoiceRoom(matchResult.connectionId)}
+              onClick={() =>
+                setVoiceRoomSetup({ connectionId: matchResult.connectionId })
+              }
               disabled={voiceRoomLoading}
             >
-              🎧 {voiceRoomLoading ? "VCを準備中…" : "二人だけのDiscord VCを作る"}
+              🎧 {voiceRoomLoading ? "VCを準備中…" : "Discord VCを作る"}
             </button>
             <button
               className="textButton"
@@ -7192,6 +7216,40 @@ export default function MatchApp({
             >
               共有せずチャットへ
             </button>
+          </section>
+        </div>
+      )}
+      {voiceRoomSetup && (
+        <div className="modalBackdrop">
+          <section className="sheetModal voiceRoomSetupModal">
+            <button
+              type="button"
+              className="closeButton"
+              onClick={() => setVoiceRoomSetup(null)}
+              aria-label="閉じる"
+            >
+              ×
+            </button>
+            <small className="modalKicker">PRIVATE VOICE CHAT</small>
+            <h2>VCの人数を選ぶ</h2>
+            <p>
+              Botが専用VCを作成します。閉じるとVC内のチャットも削除されます。
+            </p>
+            <div className="voiceRoomLimitGrid">
+              {[2, 3, 4, 5].map((limit) => (
+                <button
+                  type="button"
+                  key={limit}
+                  disabled={voiceRoomLoading}
+                  onClick={() =>
+                    createPrivateVoiceRoom(voiceRoomSetup.connectionId, limit)
+                  }
+                >
+                  <strong>{limit}人</strong>
+                  <small>まで参加</small>
+                </button>
+              ))}
+            </div>
           </section>
         </div>
       )}

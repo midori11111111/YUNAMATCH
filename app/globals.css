@@ -740,6 +740,13 @@ button { cursor: pointer; }
 .chatActionGrid button.pinned b { color: #d89f16; }
 .chatActionGrid button.voiceRoomCloseAction { color: #b94059; border-color: #f2cfd6; background: #fff4f6; }
 .chatActionGrid button.voiceRoomCloseAction b { color: #d34c65; }
+.voiceRoomSetupModal { text-align: left; }
+.voiceRoomSetupModal > p { margin: 6px 0 18px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+.voiceRoomLimitGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.voiceRoomLimitGrid button { display: grid; gap: 3px; padding: 18px 12px; border: 1px solid #e6e0f3; border-radius: 18px; color: #312451; background: #f8f5ff; text-align: center; }
+.voiceRoomLimitGrid button:active { transform: scale(.98); }
+.voiceRoomLimitGrid button strong { font-size: 18px; }
+.voiceRoomLimitGrid button small { color: #8a819b; font-size: 11px; }
 .chatActionGrid button:disabled { cursor: default; opacity: 1; }
 .chatContactMenu { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 8px; margin-top: 13px; padding: 13px; border-radius: 15px; background: #f8f5fb; }
 .chatContactMenu > div { min-width: 0; display: grid; gap: 4px; }

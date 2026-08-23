@@ -489,7 +489,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(recruitAlertsMigration, /idx_recruit_alerts_enabled/);
   assert.match(recruitAlertsMigration, /PRAGMA optimize/);
   assert.match(app, /一緒にプレイしませんか/);
-  assert.match(app, /二人だけのDiscord VCを作る/);
+  assert.match(app, /Discord VCを作る/);
   assert.match(app, /respondPlayInvite/);
   assert.match(app, /className="chatPlayInvite"/);
   assert.doesNotMatch(app, /playInviteComposerButton/);
@@ -546,9 +546,13 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(discordApi, /type: 5/);
   assert.match(discordApi, /messages\/@original/);
   assert.match(discordApi, /return json\(\{ type: 5 \}\)/);
-  assert.match(app, /二人だけのDiscord VCを作る/);
+  assert.match(app, /Discord VCを作る/);
   assert.match(voiceRoomsApi, /VC1.*VC2.*VC3.*VC4.*VC5/);
   assert.match(voiceRoomsApi, /permission_overwrites/);
+  assert.match(voiceRoomsApi, /\[2, 3, 4, 5\]\.includes\(userLimit\)/);
+  assert.match(voiceRoomsApi, /"DELETE", `\/channels\/\$\{room\.id\}`/);
+  assert.match(app, /VCの人数を選ぶ/);
+  assert.match(app, /閉じるとVC内のチャットも削除されます/);
   assert.match(voiceRoomsApi, /legacyRoomNames/);
   assert.match(bioMigration, /ALTER TABLE `profiles` ADD `bio` text/);
   assert.match(expansionMigration, /CREATE TABLE `lobbies`/);
