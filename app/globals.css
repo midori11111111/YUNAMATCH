@@ -1112,6 +1112,21 @@ button { cursor: pointer; }
 .adminDashboardLink strong { font-size: 10px; }
 .adminDashboardLink small { margin-top: 3px; color: #8d8595; font-size: 7px; }
 .adminDashboardLink b { color: #9e94a5; font-size: 19px; }
+.adminUserManager { gap: 10px !important; }
+.adminUserLead { margin: -5px 0 4px; color: #81798a; font-size: 11px; line-height: 1.6; }
+.adminUserSearch { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; padding: 13px; border: 1px solid #dfd7e7; border-radius: 16px; background: #fff; box-shadow: 0 9px 25px #35284c0c; }
+.adminUserSearch input { min-width: 0; border: 1px solid #ddd5e5; border-radius: 11px; padding: 11px 13px; color: var(--ink); background: #faf9fb; font: inherit; font-size: 16px; outline: none; }
+.adminUserSearch input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px #7257e818; }
+.adminUserSearch button { min-width: 90px; border: 0; border-radius: 11px; padding: 11px 16px; color: #fff; background: var(--purple); font-size: 11px; font-weight: 900; }
+.adminUserSearch button:disabled { opacity: .55; }
+.adminUserSearchError,.adminUserEmpty { margin: 0; padding: 10px 13px; border-radius: 11px; font-size: 10px; }
+.adminUserSearchError { color: #a82c47; background: #ffecef; }.adminUserEmpty { color: #766e7c; background: #efebf3; }
+.adminUserResults { display: grid; gap: 10px; }
+.adminPage article.adminUserCard { box-shadow: 0 10px 28px #35284c0b; }
+.adminPage article.adminUserCard.suspended { border-color: #f0b3c0; background: #fff9fa; }
+.adminUserDetails { display: flex !important; flex-wrap: wrap; gap: 6px !important; margin-top: 13px; }
+.adminUserDetails span { padding: 6px 9px; border-radius: 99px; color: #665d70; background: #f0ecf5; font-size: 9px; font-weight: 850; }
+.adminUserCard > p { margin: 10px 0 12px; font-size: 9px; }
 
 @media (max-width: 720px) {
   .adminPage { padding: 26px 14px 60px; }
@@ -1126,6 +1141,7 @@ button { cursor: pointer; }
   .adminFunnel { grid-template-columns: 1fr 1fr; }.adminFunnel > b { display: none; }
   .adminOutcomeGrid { grid-template-columns: 1fr 1fr; }
   .adminBackup { align-items: flex-start; flex-direction: column; }.adminBackup a { width: 100%; text-align: center; }
+  .adminUserSearch { grid-template-columns: 1fr; }.adminUserSearch button { width: 100%; }
 }
 
 .modalBackdrop { position: fixed; z-index: 30; inset: 0; display: grid; place-items: center; padding: 18px; background: #211b36b8; backdrop-filter: blur(7px); }

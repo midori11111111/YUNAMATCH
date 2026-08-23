@@ -920,3 +920,22 @@ test("lets users hide read receipts without keeping their own chats unread", asy
   assert.match(app, /既読をつけない/);
   assert.match(app, /toggleReadReceipts/);
 });
+
+test("lets administrators find and suspend any registered account", async () => {
+  const [panel, usersApi] = await Promise.all([
+    readFile(new URL("app/admin/admin-panel.tsx", root), "utf8"),
+    readFile(new URL("app/api/admin/users/route.ts", root), "utf8"),
+  ]);
+
+  assert.match(panel, /USER MANAGEMENT/);
+  assert.match(panel, /トレーナー名を入力（例：桜みく）/);
+  assert.match(panel, /アカウント停止/);
+  assert.match(panel, /停止を解除/);
+  assert.match(panel, /\/api\/admin\/users/);
+  assert.match(panel, /window\.confirm/);
+  assert.match(usersApi, /requireAdmin/);
+  assert.match(usersApi, /eq\(profiles\.trainerName, query\)/);
+  assert.match(usersApi, /like\(profiles\.trainerName/);
+  assert.match(usersApi, /suspendedAt/);
+  assert.match(usersApi, /status: "closed"/);
+});
