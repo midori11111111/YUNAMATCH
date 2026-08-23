@@ -1,17 +1,17 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, or } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { applications, lobbies, lobbyMembers, profiles, recruits } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { isSuspended } from "../../../lib/safety";
 
 const activeLobbyStatuses=["forming","ready","playing"];
+const endedLobbyRetentionMs=10*60*1000;
 
 export async function GET(){
   const user=await getChatGPTUser();if(!user)return Response.json({error:"ログインが必要です"},{status:401});
   const db=getDb();
-  const ownMemberships=await db.select({lobbyId:lobbyMembers.lobbyId}).from(lobbyMembers).where(and(eq(lobbyMembers.userId,user.userId),eq(lobbyMembers.status,"active"))).limit(20);
-  const ids=ownMemberships.map(row=>row.lobbyId);if(!ids.length)return Response.json({lobbies:[]});
-  const lobbyRows=await db.select({id:lobbies.id,recruitId:lobbies.recruitId,ownerId:lobbies.ownerId,status:lobbies.status,scheduledAt:lobbies.scheduledAt,createdAt:lobbies.createdAt,finishedAt:lobbies.finishedAt,partySize:recruits.partySize,pokemon:recruits.pokemon,desiredPokemon:recruits.desiredPokemon,desiredRole:recruits.desiredRole,startTimeUndecided:recruits.startTimeUndecided}).from(lobbies).innerJoin(recruits,eq(lobbies.recruitId,recruits.id)).where(inArray(lobbies.id,ids)).orderBy(desc(lobbies.createdAt));
+  const visibleEndedAfter=new Date(Date.now()-endedLobbyRetentionMs);
+  const lobbyRows=await db.select({id:lobbies.id,recruitId:lobbies.recruitId,ownerId:lobbies.ownerId,status:lobbies.status,scheduledAt:lobbies.scheduledAt,createdAt:lobbies.createdAt,finishedAt:lobbies.finishedAt,partySize:recruits.partySize,pokemon:recruits.pokemon,desiredPokemon:recruits.desiredPokemon,desiredRole:recruits.desiredRole,startTimeUndecided:recruits.startTimeUndecided}).from(lobbies).innerJoin(recruits,eq(lobbies.recruitId,recruits.id)).innerJoin(lobbyMembers,and(eq(lobbyMembers.lobbyId,lobbies.id),eq(lobbyMembers.userId,user.userId),eq(lobbyMembers.status,"active"))).where(or(inArray(lobbies.status,activeLobbyStatuses),gt(lobbies.finishedAt,visibleEndedAfter))).orderBy(desc(lobbies.createdAt)).limit(20);
   const result=[];
   for(const lobby of lobbyRows){
     const members=await db.select({userId:lobbyMembers.userId,trainerName:lobbyMembers.trainerName,pokemon:lobbyMembers.pokemon,ready:lobbyMembers.ready,status:lobbyMembers.status,avatarUrl:profiles.avatarUrl}).from(lobbyMembers).leftJoin(profiles,eq(lobbyMembers.userId,profiles.userId)).where(and(eq(lobbyMembers.lobbyId,lobby.id),eq(lobbyMembers.status,"active")));

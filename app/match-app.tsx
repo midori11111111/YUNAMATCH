@@ -3163,9 +3163,12 @@ export default function MatchApp({
                 status:
                   action === "start"
                     ? "playing"
-                    : action === "finish" || action === "cancel"
+                    : action === "finish"
                       ? "finished"
+                      : action === "cancel"
+                        ? "cancelled"
                       : row.status,
+                active: action === "finish" || action === "cancel" ? false : row.active,
                 members:
                   action === "ready"
                     ? row.members.map((member) =>
@@ -4777,13 +4780,21 @@ export default function MatchApp({
                               {lobby.members.length}/{lobby.partySize}人 ・{" "}
                               {lobby.status === "playing"
                                 ? "プレイ中"
+                                : !lobby.active
+                                  ? lobby.status === "cancelled"
+                                    ? "解散済み"
+                                    : "終了済み"
                                 : allReady
                                   ? "全員準備OK"
                                   : "集合中"}
                             </p>
                           </div>
                           <span>
-                            {lobby.status === "playing" ? "PLAY" : "LOBBY"}
+                            {!lobby.active
+                              ? "CLOSED"
+                              : lobby.status === "playing"
+                                ? "PLAY"
+                                : "LOBBY"}
                           </span>
                         </header>
                         <div className="lobbyMembers">
@@ -4825,7 +4836,7 @@ export default function MatchApp({
                             </div>
                           ))}
                         </div>
-                        {lobby.status !== "playing" && (
+                        {lobby.active && lobby.status !== "playing" && (
                           <button
                             className={`readyButton ${me?.ready ? "active" : ""}`}
                             onClick={() => lobbyAction(lobby, "ready")}
@@ -4833,7 +4844,7 @@ export default function MatchApp({
                             {me?.ready ? "✓ 準備OKを取り消す" : "準備OK"}
                           </button>
                         )}
-                        {lobby.isOwner && lobby.status !== "playing" && (
+                        {lobby.active && lobby.isOwner && lobby.status !== "playing" && (
                           <button
                             className="startPlayButton"
                             disabled={!allReady}
@@ -4842,7 +4853,7 @@ export default function MatchApp({
                             全員そろったらプレイ開始
                           </button>
                         )}
-                        {lobby.status === "playing" && (
+                        {lobby.active && lobby.status === "playing" && (
                           <button
                             className="finishPlayButton"
                             onClick={() => lobbyAction(lobby, "finish")}
@@ -4850,10 +4861,12 @@ export default function MatchApp({
                             ✓ プレイ完了
                           </button>
                         )}
-                        <button className="lobbyVcButton" onClick={openDiscord}>
-                          🎧 Discord VCで合流
-                        </button>
-                        {lobby.status !== "playing" && (
+                        {lobby.active && (
+                          <button className="lobbyVcButton" onClick={openDiscord}>
+                            🎧 Discord VCで合流
+                          </button>
+                        )}
+                        {lobby.active && lobby.status !== "playing" && (
                           <button
                             className="cancelLobbyButton"
                             onClick={() => lobbyAction(lobby, "cancel")}
@@ -4862,6 +4875,11 @@ export default function MatchApp({
                               ? "ロビーを解散"
                               : "参加をキャンセル"}
                           </button>
+                        )}
+                        {!lobby.active && (
+                          <p className="lobbyArchivedNote">
+                            このロビーは10分後に一覧から消えます
+                          </p>
                         )}
                       </article>
                     );

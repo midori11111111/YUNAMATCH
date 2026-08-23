@@ -876,6 +876,9 @@ button { cursor: pointer; }
 .lobbyCard > header h2 { margin: 3px 0; font-size: 17px; }
 .lobbyCard > header p { margin: 0; color: #8f8896; font-size: 8px; }
 .lobbyCard > header > span { height: fit-content; padding: 6px 8px; border-radius: 8px; color: #fff; background: var(--purple); font-size: 7px; font-weight: 950; }
+.lobbyCard.cancelled, .lobbyCard.finished { opacity: .72; }
+.lobbyCard.cancelled > header > span, .lobbyCard.finished > header > span { background: #89818f; }
+.lobbyArchivedNote { margin: 12px 0 0; padding: 10px; border-radius: 11px; color: #746d79; background: #f2eff4; font-size: 8px; font-weight: 850; text-align: center; }
 .lobbyMembers { display: grid; gap: 8px; margin: 13px 0; }
 .lobbyMembers > div { min-height: 48px; display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 9px; padding: 7px; border-radius: 13px; background: #f9f7fb; }
 .lobbyAvatar { width: 40px; height: 40px; overflow: hidden; display: grid; place-items: center; border-radius: 12px; color: #fff; background: linear-gradient(145deg,var(--purple),#a690ff); font-size: 12px; font-weight: 950; }
