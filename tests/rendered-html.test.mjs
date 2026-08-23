@@ -233,6 +233,15 @@ test("supports casual and ranked recruiting on the site and Discord", async () =
   assert.match(migration, /ADD `match_type` text DEFAULT 'ランクマッチ' NOT NULL/);
 });
 
+test("explains what happens after likes and mate requests", async () => {
+  const app = await readFile(new URL("app/match-app.tsx", root), "utf8");
+  assert.match(app, /「気になる」を相手に通知/);
+  assert.match(app, /チャットや申請はまだ始まりません/);
+  assert.match(app, /承認前から「やりとり」で相談できます/);
+  assert.match(app, /承認されると通常チャットが開きます/);
+  assert.match(app, /「相手から」：自分にいいねした人を見る/);
+});
+
 test("requires a linked Discord account before opening the community invite", async () => {
   const [app, community, linkRoute] = await Promise.all([
     readFile(new URL("app/match-app.tsx", root), "utf8"),

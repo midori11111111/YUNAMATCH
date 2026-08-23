@@ -2133,7 +2133,7 @@ export default function MatchApp({
     }
     if (preview) {
       setLikedProfileIds((ids) => [...ids, candidate.id]);
-      notify(`${candidate.trainerName}さんにいいねしました`);
+      notify(`${candidate.trainerName}さんに「気になる」を通知しました。チャットはまだ始まりません`);
       return;
     }
     const response = await fetch("/api/likes", {
@@ -2155,7 +2155,7 @@ export default function MatchApp({
     );
     notify(
       data.created
-        ? `${candidate.trainerName}さんにいいねしました`
+        ? `${candidate.trainerName}さんに「気になる」を通知しました。チャットはまだ始まりません`
         : "いいね済みです",
     );
   };
@@ -4030,21 +4030,27 @@ export default function MatchApp({
                       onClick={sendProfileLike}
                       aria-pressed={likedProfileIds.includes(current.id)}
                     >
-                      <span>
+                      <span className="fullActionIcon">
                         {likedProfileIds.includes(current.id) ? "♥" : "♡"}
                       </span>
-                      <small>
-                        {likedProfileIds.includes(current.id)
-                          ? "いいね済み"
-                          : "いいね"}
-                      </small>
+                      <span className="fullActionCopy">
+                        <small>
+                          {likedProfileIds.includes(current.id)
+                            ? "いいね済み"
+                            : "いいね"}
+                        </small>
+                        <em>気になるを通知</em>
+                      </span>
                     </button>
                     <button
                       className="fullRequestAction"
                       onClick={() => openProfileApplication(current)}
                     >
-                      <span>⚡</span>
-                      <small>メイト申請</small>
+                      <span className="fullActionIcon">⚡</span>
+                      <span className="fullActionCopy">
+                        <small>メイト申請</small>
+                        <em>申請して相談</em>
+                      </span>
                     </button>
                   </div>
                 </article>
@@ -4086,26 +4092,40 @@ export default function MatchApp({
                       ×
                     </button>
                   </div>
-                  <div className="tutorialZones">
-                    <div>
-                      <span>☝</span>
-                      <strong>左をタップ</strong>
-                      <small>前のメイト</small>
+                  <div className="tutorialFeatureGuide">
+                    <p>相手への伝わり方が違います</p>
+                    <div className="tutorialFeatureCards">
+                      <article>
+                        <b>♡</b>
+                        <div>
+                          <strong>いいね</strong>
+                          <span>「気になる」を相手に通知</span>
+                          <small>チャットや申請はまだ始まりません</small>
+                        </div>
+                      </article>
+                      <article>
+                        <b>⚡</b>
+                        <div>
+                          <strong>メイト申請</strong>
+                          <span>ポケモンとひとことを送信</span>
+                          <small>承認前から「やりとり」で相談できます</small>
+                        </div>
+                      </article>
                     </div>
-                    <div>
-                      <span>☝</span>
-                      <strong>右をタップ</strong>
-                      <small>次のメイト</small>
+                    <div className="tutorialMatchFlow" aria-label="メイト申請後の流れ">
+                      <span><b>1</b>申請</span>
+                      <i>›</i>
+                      <span><b>2</b>相談</span>
+                      <i>›</i>
+                      <span><b>3</b>承認</span>
+                      <i>›</i>
+                      <span><b>4</b>通常チャット</span>
                     </div>
-                    <div>
-                      <span>☝</span>
-                      <strong>下をタップ</strong>
-                      <small>プロフィールを見る</small>
-                    </div>
-                  </div>
-                  <div className="tutorialActionGuide">
-                    <span>♡ いいね</span>
-                    <span>⚡ メイト申請</span>
+                    <ul>
+                      <li>カードの左右をタップ：前・次のメイト</li>
+                      <li>プロフィール部分をタップ：詳しい情報</li>
+                      <li>「相手から」：自分にいいねした人を見る</li>
+                    </ul>
                   </div>
                   <button className="tutorialStart" onClick={closeTutorial}>
                     使ってみる
@@ -6641,6 +6661,10 @@ export default function MatchApp({
                 ⚡ メイト申請
               </button>
             </div>
+            <div className="candidateActionGuide">
+              <p><b>♡ いいね</b><span>気になる気持ちだけ通知。チャットは始まりません</span></p>
+              <p><b>⚡ メイト申請</b><span>ひとことを送り、承認前から相談できます</span></p>
+            </div>
           </section>
         </div>
       )}
@@ -7148,6 +7172,17 @@ export default function MatchApp({
               <br />
               メイト申請
             </h2>
+            <div className="requestFlowGuide">
+              <strong>送ったあとの流れ</strong>
+              <div>
+                <span><b>1</b>申請を送る</span>
+                <i>›</i>
+                <span><b>2</b>やりとりで相談</span>
+                <i>›</i>
+                <span><b>3</b>承認でメイト</span>
+              </div>
+              <p>承認されると通常チャットが開きます。断られた場合も結果を通知します。</p>
+            </div>
             <label>
               自分が使うポケモン
               <select name="pokemon" defaultValue={primaryPokemon}>
@@ -7179,7 +7214,7 @@ export default function MatchApp({
               ))}
             </div>
             <p className="privacyText">
-              時間を今決めなくても申請できます。承認後にチャットで相談してください。連絡先はマッチ後に本人が共有した場合だけ表示されます。
+              時間を今決めなくても申請できます。連絡先はマッチ後に本人が共有した場合だけ表示されます。
             </p>
             <button className="primaryButton" disabled={sending}>
               {sending ? "送信中…" : "メイト申請を送る"}
