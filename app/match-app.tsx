@@ -58,6 +58,7 @@ type ProfileCandidate = {
   popular: boolean;
   registeredAt: string;
   lastActiveAt: string;
+  online: boolean;
 };
 type ProfileLikeNotice = {
   id: number;
@@ -407,6 +408,7 @@ const previewProfile: ProfileCandidate = {
   popular: true,
   registeredAt: new Date().toISOString(),
   lastActiveAt: new Date().toISOString(),
+  online: true,
 };
 const roleClass: Record<string, string> = {
   アタック型: "attack",
@@ -458,13 +460,17 @@ function formatRecruitPostedAt(value: string) {
     hour12: false,
   })}に掲載`;
 }
-function formatActivity(value: string) {
+function formatActivity(value: string, online = false) {
+  if (online) return "オンライン";
   const date = new Date(value);
-  const age = Date.now() - date.getTime();
-  if (!Number.isFinite(age) || age < 2 * 60_000) return "オンライン";
-  if (age < 24 * 60 * 60_000) return "今日ログイン";
-  if (age < 3 * 24 * 60 * 60_000) return "3日以内にログイン";
-  return "30日以内にログイン";
+  const age = Math.max(0, Date.now() - date.getTime());
+  if (!Number.isFinite(age)) return "最近ログイン";
+  if (age < 60 * 60_000)
+    return `${Math.max(1, Math.floor(age / 60_000))}分前にオンライン`;
+  if (age < 24 * 60 * 60_000)
+    return `${Math.floor(age / (60 * 60_000))}時間前にオンライン`;
+  const days = Math.max(1, Math.floor(age / (24 * 60 * 60_000)));
+  return `${days}日前にオンライン`;
 }
 function decodePushKey(value: string) {
   const padding = "=".repeat((4 - (value.length % 4)) % 4);
@@ -4191,14 +4197,14 @@ export default function MatchApp({
                     <span
                       className={
                         discoverMode === "recommended" &&
-                        formatActivity(current.lastActiveAt) === "オンライン"
+                        current.online
                           ? "active"
                           : ""
                       }
                     >
                       {discoverMode === "received"
                         ? "♥ あなたにいいね"
-                        : `● ${formatActivity(current.lastActiveAt)}`}
+                        : `● ${formatActivity(current.lastActiveAt, current.online)}`}
                     </span>
                     {guestMode && <b>ログインでプロフィールをすべて表示</b>}
                   </div>
@@ -6939,7 +6945,10 @@ export default function MatchApp({
             <p className="candidateDetailRank">
               {candidateDetail.highestRate} ・ {candidateDetail.gender} ・{" "}
               {candidateDetail.age !== null && `${candidateDetail.age}歳 ・ `}
-              {formatActivity(candidateDetail.lastActiveAt)}
+              {formatActivity(
+                candidateDetail.lastActiveAt,
+                candidateDetail.online,
+              )}
             </p>
             <div className="candidatePopularity">
               {candidateDetail.popular && <b>人気のメイト</b>}

@@ -150,6 +150,9 @@ export async function GET(request: Request) {
     const lastActiveByUser = new Map(
       activityRows.map((row) => [row.userId, row.lastSeenAt]),
     );
+    const onlineCutoff = Date.now() - 3 * 60_000;
+    const isOnline = (userId: string) =>
+      (lastActiveByUser.get(userId)?.getTime() || 0) >= onlineCutoff;
     const activeCutoff = Date.now() - 30 * 24 * 60 * 60_000;
     const activityAt = (row: (typeof profileRows)[number]) =>
       lastActiveByUser.get(row.userId) || row.updatedAt;
@@ -167,6 +170,7 @@ export async function GET(request: Request) {
         mainPokemon: parseList(row.mainPokemon),
         playTime: parseList(row.playTime),
         lastActiveAt: activityAt(row),
+        online: isOnline(row.userId),
         likeCount: stats.publicStats(row.userId).likeCount,
         qualityScore: stats.qualityScore(row.userId),
       })),
@@ -195,6 +199,7 @@ export async function GET(request: Request) {
         ...stats.publicStats(row.userId),
         registeredAt: row.createdAt,
         lastActiveAt: activityAt(row),
+        online: isOnline(row.userId),
       })),
     );
     return Response.json({ profiles: result, limited: true });
@@ -267,6 +272,9 @@ export async function GET(request: Request) {
   const lastActiveByUser = new Map(
     activityRows.map((row) => [row.userId, row.lastSeenAt]),
   );
+  const onlineCutoff = Date.now() - 3 * 60_000;
+  const isOnline = (userId: string) =>
+    (lastActiveByUser.get(userId)?.getTime() || 0) >= onlineCutoff;
   const activeCutoff = Date.now() - 30 * 24 * 60 * 60_000;
   const activityAt = (row: (typeof profileRows)[number]) =>
     lastActiveByUser.get(row.userId) || row.updatedAt;
@@ -329,6 +337,7 @@ export async function GET(request: Request) {
       mainPokemon: parseList(row.mainPokemon),
       playTime: parseList(row.playTime),
       lastActiveAt: activityAt(row),
+      online: isOnline(row.userId),
       likeCount: stats.publicStats(row.userId).likeCount,
       qualityScore: stats.qualityScore(row.userId),
     })),
@@ -359,6 +368,7 @@ export async function GET(request: Request) {
       ...stats.publicStats(row.userId),
       registeredAt: row.createdAt,
       lastActiveAt: activityAt(row),
+      online: isOnline(row.userId),
     })),
   );
   const nextOffset = query.offset + pageRows.length;

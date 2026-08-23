@@ -8,6 +8,7 @@ export type DiscoverRankable = {
   playTime: string[];
   createdAt: Date;
   lastActiveAt: Date;
+  online?: boolean;
   likeCount: number;
   qualityScore: number;
   avatarUrl?: string | null;
@@ -29,20 +30,21 @@ type RankedCandidate<T> = {
   activityAt: number;
   createdAt: number;
   quality: number;
+  online: boolean;
   discovery: boolean;
   explore: number;
 };
 
 const bucketPattern = [
+  "online",
   "affinity",
   "recent",
+  "online",
   "discovery",
-  "affinity",
+  "online",
   "quality",
-  "explore",
   "affinity",
-  "recent",
-  "discovery",
+  "online",
   "explore",
 ] as const;
 
@@ -103,10 +105,12 @@ function rankProximityScore(mine: string, theirs: string) {
   return 2;
 }
 
-function activityScore(lastActiveAt: number, now: number) {
+function activityScore(lastActiveAt: number, now: number, online: boolean) {
+  if (online) return 32;
   const age = Math.max(0, now - lastActiveAt);
-  if (age <= 2 * 60 * 60_000) return 15;
-  if (age <= 24 * 60 * 60_000) return 13;
+  if (age <= 60 * 60_000) return 22;
+  if (age <= 6 * 60 * 60_000) return 16;
+  if (age <= 24 * 60 * 60_000) return 11;
   if (age <= 3 * 24 * 60 * 60_000) return 9;
   if (age <= 7 * 24 * 60 * 60_000) return 5;
   return 1;
@@ -130,8 +134,9 @@ function profileScore(candidate: DiscoverRankable) {
 }
 
 /**
- * 相性の高い人を軸に、最近活動した人・新規/低反応の人・高評価の人・
- * 探索枠を10件ごとに混ぜる。性別は使わず、いいね数も人気加点には使わない。
+ * 相性の高い人を軸に、オンラインの人を10件中4枠まで優先し、
+ * 最近活動した人・新規/低反応の人・高評価の人・探索枠も混ぜる。
+ * 性別は使わず、いいね数も人気加点には使わない。
  */
 export function rankDiscoverCandidates<T extends DiscoverRankable>(
   candidates: T[],
@@ -148,6 +153,7 @@ export function rankDiscoverCandidates<T extends DiscoverRankable>(
       pokemonCompatibilityScore(viewer.mainPokemon, candidate.mainPokemon) +
       rankProximityScore(viewer.highestRate, candidate.highestRate);
     const activityAt = candidate.lastActiveAt.getTime();
+    const online = Boolean(candidate.online);
     const createdAt = candidate.createdAt.getTime();
     const quality = Math.max(0, Math.min(5, candidate.qualityScore));
     const explore = stableUnitInterval(
@@ -155,7 +161,7 @@ export function rankDiscoverCandidates<T extends DiscoverRankable>(
     );
     const total =
       affinity +
-      activityScore(activityAt, now) +
+      activityScore(activityAt, now, online) +
       newcomerScore(createdAt, now) +
       quality * 2 +
       profileScore(candidate) +
@@ -167,6 +173,7 @@ export function rankDiscoverCandidates<T extends DiscoverRankable>(
       activityAt,
       createdAt,
       quality,
+      online,
       // いいね数は加点せず、まだ反応が少ない人を発見枠へ入れるためだけに使う。
       discovery:
         now - createdAt <= 30 * 24 * 60 * 60_000 || candidate.likeCount <= 2,
@@ -180,6 +187,9 @@ export function rankDiscoverCandidates<T extends DiscoverRankable>(
   const byRecent = [...ranked].sort(
     (a, b) => b.activityAt - a.activityAt || b.total - a.total,
   );
+  const byOnline = ranked
+    .filter((item) => item.online)
+    .sort((a, b) => b.total - a.total || b.activityAt - a.activityAt);
   const byDiscovery = ranked
     .filter((item) => item.discovery)
     .sort(
@@ -193,6 +203,7 @@ export function rankDiscoverCandidates<T extends DiscoverRankable>(
     (a, b) => b.explore - a.explore || b.total - a.total,
   );
   const queues = {
+    online: byOnline,
     affinity: byAffinity,
     recent: byRecent,
     discovery: byDiscovery,

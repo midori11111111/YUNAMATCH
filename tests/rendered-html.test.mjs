@@ -145,7 +145,9 @@ test("diversifies recommendations without gender or popularity ranking", async (
     },
     now,
   );
-  assert.equal(ranked[0].userId, "compatible");
+  assert.ok(
+    ranked.slice(0, 3).some((person) => person.userId === "compatible"),
+  );
   assert.ok(ranked.slice(0, 5).some((person) => person.userId === "new-zero-like"));
   assert.notEqual(ranked[0].userId, "popular");
   assert.deepEqual(
@@ -167,6 +169,45 @@ test("diversifies recommendations without gender or popularity ranking", async (
   assert.notDeepEqual(
     ranked.slice(0, 6).map((person) => person.userId),
     rotated.slice(0, 6).map((person) => person.userId),
+  );
+});
+
+test("raises the share of online profiles without removing other discovery slots", async () => {
+  const { rankDiscoverCandidates } = await import(
+    new URL("../lib/discover-ranking.ts", import.meta.url)
+  );
+  const now = new Date("2026-08-23T12:00:00+09:00").getTime();
+  const candidates = Array.from({ length: 20 }, (_, index) => ({
+    userId: `candidate-${index}`,
+    mainPokemon: ["ピカチュウ"],
+    highestRate: "レジェンド 1000〜1199",
+    playTime: ["平日 夜（18〜22時）"],
+    createdAt: new Date(now - 60 * 24 * 60 * 60_000),
+    lastActiveAt: new Date(now - (index + 1) * 60_000),
+    online: index < 8,
+    likeCount: 10,
+    qualityScore: 4,
+    avatarUrl: "",
+    bio: "",
+  }));
+  const ranked = rankDiscoverCandidates(
+    candidates,
+    {
+      userId: "viewer",
+      mainPokemon: ["ゲッコウガ"],
+      highestRate: "レジェンド 1000〜1199",
+      playTime: ["平日 夜（18〜22時）"],
+      rotationSeed: "online-ratio-test",
+    },
+    now,
+  );
+  assert.ok(
+    ranked.slice(0, 10).filter((person) => person.online).length >= 4,
+    "先頭10件にオンラインの人を4人以上含める",
+  );
+  assert.ok(
+    ranked.slice(0, 10).some((person) => !person.online),
+    "オンライン以外の発見枠も残す",
   );
 });
 
@@ -432,7 +473,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /profileCompletionInline/);
   assert.doesNotMatch(app, /profileCompletionCard/);
   assert.doesNotMatch(app, /getSynergy/);
-  assert.match(app, /今日ログイン/);
+  assert.match(app, /分前にオンライン/);
+  assert.match(app, /時間前にオンライン/);
   assert.match(app, /ランク行きませんか？/);
   assert.match(app, /一緒に遊んだ/);
   assert.match(app, /プレイ完了/);
