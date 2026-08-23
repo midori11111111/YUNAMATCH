@@ -50,10 +50,20 @@ const commands = [
         ],
       },
       {
+        type: 3,
+        name: "create_vc",
+        description: "募集専用VCを作成するか選択",
+        required: true,
+        choices: [
+          { name: "作成する", value: "yes" },
+          { name: "作成しない", value: "no" },
+        ],
+      },
+      {
         type: 4,
         name: "voice_limit",
-        description: "Botが作る募集VCの人数",
-        required: true,
+        description: "作成する募集VCの人数（未指定なら募集人数）",
+        required: false,
         choices: [2, 3, 4, 5].map((value) => ({
           name: `${value}人`,
           value,
