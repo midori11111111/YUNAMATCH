@@ -791,8 +791,9 @@ test("keeps chat and recruiting responsive under load", async () => {
 
   assert.match(app, /delivery: "sending"/);
   assert.match(app, /送信失敗/);
-  assert.match(app, /setInterval\(refreshCurrentConversation, 2500\)/);
-  assert.match(app, /setInterval\(refreshVisibleSummary, 15000\)/);
+  assert.match(app, /setInterval\(refreshCurrentConversation, 5000\)/);
+  assert.match(app, /setInterval\(refreshVisibleSummary, 45000\)/);
+  assert.match(app, /setInterval\(ping, 6000\)/);
   assert.match(connectionsApi, /groupBy\(messages\.connectionId\)/);
   assert.match(connectionsApi, /unreadCountByConnection/);
   assert.match(connectionsApi, /innerJoin\(connections/);
@@ -804,6 +805,10 @@ test("keeps chat and recruiting responsive under load", async () => {
   assert.match(app, /apiTimeoutMs = 8_000/);
   assert.match(app, /AbortController/);
   assert.match(app, /setConnectionsLoaded\(true\)/);
+  assert.match(app, /yunamatch-connections-session-v1/);
+  assert.match(app, /yunamatch-messages-session-v1/);
+  assert.match(app, /直前に読み込んだやりとりを表示しています/);
+  assert.match(app, /通信混雑のため直前のメッセージを表示中/);
   assert.match(app, /activeConnectionIdRef\.current = connection\.id/);
   assert.match(app, /messageLoadRequestRef/);
   assert.match(app, /messageLoadInFlightRef/);
@@ -811,6 +816,7 @@ test("keeps chat and recruiting responsive under load", async () => {
   assert.match(app, /setMessages\(\[\]\)/);
   assert.match(app, /メッセージを読み込めませんでした/);
   assert.match(connectionsApi, /connectionListLimit = 200/);
+  assert.match(connectionsApi, /searchParams\.get\("repair"\) === "1"/);
   assert.match(connectionsApi, /chunked\(connectionIds\)/);
   assert.match(connectionsApi, /\.values\(group\)/);
   assert.match(messagesApi, /orderBy\(desc\(messages\.createdAt\), desc\(messages\.id\)\)/);
@@ -833,4 +839,21 @@ test("keeps chat and recruiting responsive under load", async () => {
   assert.doesNotMatch(recruitsApi, /recruitAlerts\.enabled, true\)\)\.limit\(100\)/);
   assert.match(recruitsApi, /Recruit alert fanout/);
   assert.match(background, /context\.waitUntil/);
+});
+
+test("reduces repeated identity and chat database work during traffic spikes", async () => {
+  const [schema, migration, aliases, auth, accountLinks] = await Promise.all([
+    readFile(new URL("db/schema.ts", root), "utf8"),
+    readFile(new URL("drizzle/0031_fresh_cammi.sql", root), "utf8"),
+    readFile(new URL("lib/account-aliases.ts", root), "utf8"),
+    readFile(new URL("app/chatgpt-auth.ts", root), "utf8"),
+    readFile(new URL("app/api/account-links/internal/route.ts", root), "utf8"),
+  ]);
+
+  assert.match(schema, /idx_account_links_email/);
+  assert.match(migration, /SET `email` = lower\(trim\(`email`\)\)/);
+  assert.match(migration, /CREATE INDEX `idx_account_links_email`/);
+  assert.match(aliases, /aliasCacheTtlMs = 5 \* 60_000/);
+  assert.match(auth, /canonicalUserCacheTtlMs = 5 \* 60_000/);
+  assert.doesNotMatch(aliases + auth + accountLinks, /lower\(\$\{accountLinks\.email\}\)/);
 });

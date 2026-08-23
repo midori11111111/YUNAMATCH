@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { accountLinks, profiles } from "../../../../db/schema";
 
@@ -17,7 +17,7 @@ async function findOldestProfileByEmail(email:string){
     .select({canonicalUserId:accountLinks.canonicalUserId,createdAt:profiles.createdAt})
     .from(accountLinks)
     .innerJoin(profiles,eq(accountLinks.canonicalUserId,profiles.userId))
-    .where(sql`lower(${accountLinks.email}) = ${normalized}`)
+    .where(eq(accountLinks.email,normalized))
     .limit(20);
   const profilesById=new Map<string,number>();
   for(const row of rows){
@@ -38,7 +38,7 @@ export async function POST(request:Request){
   const requestedCanonicalId=typeof body.canonicalUserId==="string"?body.canonicalUserId:"";
   const contactId=typeof body.contactId==="string"?body.contactId.slice(0,120):providerAccountId;
   const displayName=typeof body.displayName==="string"?body.displayName.slice(0,120):null;
-  const email=typeof body.email==="string"?body.email.slice(0,254):null;
+  const email=typeof body.email==="string"?body.email.slice(0,254).trim().toLowerCase():null;
   if(!provider||!providerAccountId)return Response.json({error:"invalid account"},{status:400});
   const db=getDb();
   const [existing]=await db.select().from(accountLinks).where(and(eq(accountLinks.provider,provider),eq(accountLinks.providerAccountId,providerAccountId))).limit(1);

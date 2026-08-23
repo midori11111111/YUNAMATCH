@@ -48,6 +48,7 @@ export const accountLinks = sqliteTable(
       table.providerAccountId,
     ),
     index("idx_account_links_canonical_user").on(table.canonicalUserId),
+    index("idx_account_links_email").on(table.email),
   ],
 );
 

@@ -11,7 +11,7 @@ export async function GET(){
   const db=getDb();
   const [current]=await db.select().from(accountLinks).where(and(eq(accountLinks.provider,user.provider),eq(accountLinks.providerAccountId,user.providerAccountId))).limit(1);
   if(!current){
-    await db.insert(accountLinks).values({canonicalUserId:user.userId,provider:user.provider,providerAccountId:user.providerAccountId,contactId:user.contactId,displayName:user.displayName,email:user.email,createdAt:new Date()}).onConflictDoNothing();
+    await db.insert(accountLinks).values({canonicalUserId:user.userId,provider:user.provider,providerAccountId:user.providerAccountId,contactId:user.contactId,displayName:user.displayName,email:user.email.trim().toLowerCase(),createdAt:new Date()}).onConflictDoNothing();
   }
   const rows=await db.select().from(accountLinks).where(eq(accountLinks.canonicalUserId,user.userId));
   return Response.json({accounts:rows.map(row=>({provider:row.provider,label:providerLabels[row.provider]||row.provider,contactId:row.contactId,displayName:row.displayName,isCurrent:row.provider===user.provider}))});

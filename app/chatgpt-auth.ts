@@ -21,6 +21,24 @@ const PERCENT_ENCODED_UTF8 = "percent-encoded-utf-8";
 const SIGN_IN_PATH = "/login";
 const SIGN_OUT_PATH = "/api/auth/signout";
 const CALLBACK_PATH = "/api/auth/callback";
+const canonicalUserCache = new Map<
+  string,
+  { userId: string; expiresAt: number }
+>();
+const canonicalUserCacheTtlMs = 5 * 60_000;
+
+function trimCanonicalUserCache() {
+  if (canonicalUserCache.size < 2_500) return;
+  const now = Date.now();
+  for (const [key, value] of canonicalUserCache) {
+    if (value.expiresAt <= now) canonicalUserCache.delete(key);
+  }
+  while (canonicalUserCache.size >= 2_500) {
+    const oldest = canonicalUserCache.keys().next().value;
+    if (!oldest) break;
+    canonicalUserCache.delete(oldest);
+  }
+}
 
 async function resolveCanonicalUserId(
   provider: string,
@@ -29,38 +47,50 @@ async function resolveCanonicalUserId(
   email?: string | null,
 ): Promise<string> {
   if (!providerAccountId) return fallbackUserId;
+  const normalizedEmail = email?.trim().toLowerCase() || "";
+  const cacheKey = `${provider}:${providerAccountId}:${normalizedEmail}`;
+  const cached = canonicalUserCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.userId;
 
   try {
-    const [{ and, asc, eq, sql }, { getDb }, { accountLinks, profiles }] = await Promise.all([
+    const [{ and, asc, eq }, { getDb }, { accountLinks, profiles }] = await Promise.all([
       import("drizzle-orm"),
       import("../db"),
       import("../db/schema"),
     ]);
-    const normalizedEmail = email?.trim().toLowerCase();
+    let resolvedUserId = fallbackUserId;
     if (normalizedEmail && ["google", "discord"].includes(provider)) {
       const [oldestProfile] = await getDb()
         .select({ canonicalUserId: accountLinks.canonicalUserId })
         .from(accountLinks)
         .innerJoin(profiles, eq(accountLinks.canonicalUserId, profiles.userId))
-        .where(sql`lower(${accountLinks.email}) = ${normalizedEmail}`)
+        .where(eq(accountLinks.email, normalizedEmail))
         .orderBy(asc(profiles.createdAt), asc(profiles.userId))
         .limit(1);
-      if (oldestProfile) return oldestProfile.canonicalUserId;
+      if (oldestProfile) resolvedUserId = oldestProfile.canonicalUserId;
     }
-    const [linkedAccount] = await getDb()
-      .select({ canonicalUserId: accountLinks.canonicalUserId })
-      .from(accountLinks)
-      .where(
-        and(
-          eq(accountLinks.provider, provider),
-          eq(accountLinks.providerAccountId, providerAccountId),
-        ),
-      )
-      .limit(1);
-    return linkedAccount?.canonicalUserId || fallbackUserId;
+    if (resolvedUserId === fallbackUserId) {
+      const [linkedAccount] = await getDb()
+        .select({ canonicalUserId: accountLinks.canonicalUserId })
+        .from(accountLinks)
+        .where(
+          and(
+            eq(accountLinks.provider, provider),
+            eq(accountLinks.providerAccountId, providerAccountId),
+          ),
+        )
+        .limit(1);
+      resolvedUserId = linkedAccount?.canonicalUserId || fallbackUserId;
+    }
+    trimCanonicalUserCache();
+    canonicalUserCache.set(cacheKey, {
+      userId: resolvedUserId,
+      expiresAt: Date.now() + canonicalUserCacheTtlMs,
+    });
+    return resolvedUserId;
   } catch {
     // 認証基盤が一時的に利用できない場合も、ログイン自体は維持する。
-    return fallbackUserId;
+    return cached?.userId || fallbackUserId;
   }
 }
 

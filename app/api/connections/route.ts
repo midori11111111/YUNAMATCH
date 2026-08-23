@@ -136,27 +136,31 @@ export async function GET(request: Request) {
   const aliasSet = new Set(aliases);
   const beforeValue = Number(new URL(request.url).searchParams.get("before"));
   const before = Number.isInteger(beforeValue) && beforeValue > 0 ? beforeValue : null;
-  try {
-    await backfillAcceptedConnections(aliases);
-  } catch (error) {
-    console.error(
-      "Connection backfill skipped",
-      error instanceof Error ? error.message : error,
-    );
+  // 過去データ修復は通常の一覧取得では実行しない。毎回の結合検索が
+  // 混雑時のD1負荷を大きくしていたため、明示した保守リクエストだけに限定する。
+  if (new URL(request.url).searchParams.get("repair") === "1") {
+    try {
+      await backfillAcceptedConnections(aliases);
+    } catch (error) {
+      console.error("Connection backfill skipped", error);
+    }
   }
 
   const db = getDb();
-  const [blockedByMe, blockedMe] = await Promise.all([
-    db
-      .select({ id: blocks.blockedId })
-      .from(blocks)
-      .where(inArray(blocks.blockerId, aliases)),
-    db
-      .select({ id: blocks.blockerId })
-      .from(blocks)
-      .where(inArray(blocks.blockedId, aliases)),
-  ]);
-  const hidden = new Set([...blockedByMe, ...blockedMe].map((row) => row.id));
+  const blockRows = await db
+    .select({ blockerId: blocks.blockerId, blockedId: blocks.blockedId })
+    .from(blocks)
+    .where(
+      or(
+        inArray(blocks.blockerId, aliases),
+        inArray(blocks.blockedId, aliases),
+      ),
+    );
+  const hidden = new Set(
+    blockRows.map((row) =>
+      aliasSet.has(row.blockerId) ? row.blockedId : row.blockerId,
+    ),
+  );
   const rows = await db
     .select()
     .from(connections)

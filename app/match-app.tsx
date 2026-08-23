@@ -208,7 +208,43 @@ type PendingGuestAction = {
 };
 const pendingGuestActionKey = "yunamatch-pending-action-v1";
 const discoverFiltersStorageKey = "yunamatch-discover-filters-v1";
+const connectionsSessionCacheKey = "yunamatch-connections-session-v1";
+const messagesSessionCacheKey = "yunamatch-messages-session-v1";
 const apiTimeoutMs = 8_000;
+
+function readCachedConnections() {
+  if (typeof window === "undefined") return [] as Connection[];
+  try {
+    const parsed = JSON.parse(
+      window.sessionStorage.getItem(connectionsSessionCacheKey) || "[]",
+    );
+    return Array.isArray(parsed)
+      ? parsed.filter(
+          (row): row is Connection =>
+            typeof row?.id === "number" && typeof row?.mateName === "string",
+        )
+      : [];
+  } catch {
+    return [] as Connection[];
+  }
+}
+
+function readCachedMessages(connectionId: number) {
+  if (typeof window === "undefined") return [] as ChatMessage[];
+  try {
+    const parsed = JSON.parse(
+      window.sessionStorage.getItem(messagesSessionCacheKey) || "{}",
+    ) as { connectionId?: unknown; messages?: unknown };
+    if (parsed.connectionId !== connectionId || !Array.isArray(parsed.messages))
+      return [] as ChatMessage[];
+    return parsed.messages.filter(
+      (message): message is ChatMessage =>
+        typeof message?.id === "number" && typeof message?.body === "string",
+    );
+  } catch {
+    return [] as ChatMessage[];
+  }
+}
 
 async function fetchJsonWithTimeout<T>(
   input: string,
@@ -1452,6 +1488,45 @@ export default function MatchApp({
   };
 
   useEffect(() => {
+    if (preview || guestMode) return;
+    const cached = readCachedConnections();
+    if (!cached.length) return;
+    setConnections((current) => (current.length ? current : cached));
+    setConnectionsLoaded(true);
+  }, [preview, guestMode]);
+
+  useEffect(() => {
+    if (preview || guestMode || !connections.length) return;
+    try {
+      const safeCache = connections.slice(0, 200).map((connection) => ({
+        ...connection,
+        mateContact: null,
+      }));
+      window.sessionStorage.setItem(
+        connectionsSessionCacheKey,
+        JSON.stringify(safeCache),
+      );
+    } catch {
+      /* 容量制限中も通常のチャット表示は続ける */
+    }
+  }, [preview, guestMode, connections]);
+
+  useEffect(() => {
+    if (!selectedConnection || !messages.length) return;
+    try {
+      window.sessionStorage.setItem(
+        messagesSessionCacheKey,
+        JSON.stringify({
+          connectionId: selectedConnection.id,
+          messages: messages.slice(-100),
+        }),
+      );
+    } catch {
+      /* キャッシュできなくてもサーバー履歴を正とする */
+    }
+  }, [selectedConnection, messages]);
+
+  useEffect(() => {
     try {
       const stored = window.localStorage.getItem(discoverFiltersStorageKey);
       if (stored) {
@@ -1553,13 +1628,19 @@ export default function MatchApp({
         return null;
       }
     };
+    const loadOptionalAfter = async <T,>(url: string, delayMs: number) => {
+      if (delayMs)
+        await new Promise((resolve) => window.setTimeout(resolve, delayMs));
+      if (!active) return null;
+      return loadOptional<T>(url);
+    };
     Promise.all([
-      loadOptional<{ recruits?: Recruit[]; myRecruit?: Recruit | null; hasMore?: boolean; nextCursor?: number | null }>(
-        "/api/recruits",
+      loadOptionalAfter<{ recruits?: Recruit[]; myRecruit?: Recruit | null; hasMore?: boolean; nextCursor?: number | null }>(
+        "/api/recruits", 200,
       ),
       authenticated
-        ? loadOptional<{ incoming?: Notice[]; outgoing?: Notice[]; hasMoreIncoming?: boolean; hasMoreOutgoing?: boolean; nextIncomingCursor?: number | null; nextOutgoingCursor?: number | null }>(
-            "/api/applications",
+        ? loadOptionalAfter<{ incoming?: Notice[]; outgoing?: Notice[]; hasMoreIncoming?: boolean; hasMoreOutgoing?: boolean; nextIncomingCursor?: number | null; nextOutgoingCursor?: number | null }>(
+            "/api/applications", 500,
           )
         : Promise.resolve(null),
       authenticated
@@ -1571,17 +1652,20 @@ export default function MatchApp({
             .catch(() => ({ ok: false, data: null }))
         : Promise.resolve(null),
       authenticated
-        ? loadOptional<{ lobbies?: Lobby[] }>("/api/lobbies")
+        ? loadOptionalAfter<{ lobbies?: Lobby[] }>("/api/lobbies", 800)
         : Promise.resolve(null),
       authenticated
-        ? loadOptional<{
+        ? loadOptionalAfter<{
             incoming?: ProfileLikeNotice[];
             profiles?: ProfileCandidate[];
             likedProfileIds?: string[];
-          }>("/api/likes")
+          }>("/api/likes", 1_100)
         : Promise.resolve(null),
       authenticated
-        ? loadOptional<{ dismissedKeys?: string[] }>("/api/notifications")
+        ? loadOptionalAfter<{ dismissedKeys?: string[] }>(
+            "/api/notifications",
+            1_400,
+          )
         : Promise.resolve(null),
     ])
       .then(
@@ -1728,7 +1812,7 @@ export default function MatchApp({
       if (selectedPending)
         void loadPendingMessages(selectedPending.notice.id);
     };
-    const timer = window.setInterval(refreshCurrentConversation, 2500);
+    const timer = window.setInterval(refreshCurrentConversation, 5000);
     return () => window.clearInterval(timer);
   }, [preview, guestMode, selectedConnection, selectedPending]);
 
@@ -1741,7 +1825,7 @@ export default function MatchApp({
       if (tab === "chat") void loadConnections();
       if (tab === "lobby") void loadLobbies();
     };
-    const timer = window.setInterval(refreshVisibleSummary, 15000);
+    const timer = window.setInterval(refreshVisibleSummary, 45000);
     return () => window.clearInterval(timer);
   }, [preview, guestMode, tab, loadLikes]);
 
@@ -1888,7 +1972,7 @@ export default function MatchApp({
       if (active && response.ok) setMatePresence(await response.json());
     };
     ping();
-    const timer = window.setInterval(ping, 4000);
+    const timer = window.setInterval(ping, 6000);
     return () => {
       active = false;
       window.clearInterval(timer);
@@ -3129,7 +3213,7 @@ export default function MatchApp({
     messageLoadRequestRef.current += 1;
     setSelectedPending(null);
     setSelectedConnection(connection);
-    setMessages([]);
+    setMessages(readCachedMessages(connection.id));
     messagesNextCursorRef.current = null;
     messagesLoadedOlderRef.current = false;
     setMessagesHasMore(false);
@@ -5009,6 +5093,19 @@ export default function MatchApp({
                     </div>
                   )}
                   <div className="messageThread" ref={messageThreadRef}>
+                    {messagesError && messages.length > 0 && (
+                      <div className="chatSyncWarning messageSyncWarning">
+                        <span>通信混雑のため直前のメッセージを表示中</span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void loadMessages(selectedConnection, false)
+                          }
+                        >
+                          再接続
+                        </button>
+                      </div>
+                    )}
                     {messagesHasMore && messages.length > 0 && (
                       <button
                         type="button"
@@ -5230,6 +5327,14 @@ export default function MatchApp({
                       </button>
                     </div>
                   </div>
+                  {connectionsError && connections.length > 0 && (
+                    <div className="chatSyncWarning">
+                      <span>直前に読み込んだやりとりを表示しています</span>
+                      <button onClick={() => void loadConnections()}>
+                        再接続
+                      </button>
+                    </div>
+                  )}
                   {!connectionsLoaded ? (
                     <div className="chatOverviewEmpty chatOverviewLoading">
                       <div className="chatEmptyIllustration">
