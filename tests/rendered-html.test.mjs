@@ -191,6 +191,8 @@ test("supports casual and ranked recruiting on the site and Discord", async () =
   assert.match(discordApi, /partyChoice === "up_to_3" \? "3人以下" : `\$\{partySize\}人`/);
   assert.match(discordApi, /募集者のレートは/);
   assert.match(discordApi, /allowed_mentions: \{ parse: \["everyone"\] \}/);
+  assert.match(discordApi, /label: "Discord連携はこちら"/);
+  assert.match(discordApi, /https:\/\/yunamatch\.com\/\?joinDiscord=1/);
   assert.match(discordApi, /options\.lane \? `担当レーンは/);
   assert.match(discordApi, /options\.play_style \? `役割は/);
   assert.match(discordApi, /options\.starts_in !== undefined \? `開始時間は/);

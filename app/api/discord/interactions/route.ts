@@ -45,6 +45,23 @@ type DiscordMessage = {
 };
 
 const errorMessage = (content: string): DiscordMessage => ({ content });
+const discordLinkMessage = (): DiscordMessage => ({
+  content:
+    "YUNAMATCHでこのDiscordアカウントを連携してから、もう一度 `/募集` を実行してください。",
+  components: [
+    {
+      type: 1,
+      components: [
+        {
+          type: 2,
+          style: 5,
+          label: "Discord連携はこちら",
+          url: "https://yunamatch.com/?joinDiscord=1",
+        },
+      ],
+    },
+  ],
+});
 
 async function verify(request: Request, body: string) {
   const signature = request.headers.get("x-signature-ed25519");
@@ -85,10 +102,7 @@ async function createRecruitMessage(
       ),
     )
     .limit(1);
-  if (!linked)
-    return errorMessage(
-      "先にYUNAMATCHのマイページで、このDiscordアカウントを連携してください。",
-    );
+  if (!linked) return discordLinkMessage();
   const [profile] = await db
     .select()
     .from(profiles)
