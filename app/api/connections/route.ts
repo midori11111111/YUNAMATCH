@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gt, inArray, isNull, max, or } from "drizzle-orm";
+import { and, count, desc, eq, gt, inArray, isNull, max, or, sql } from "drizzle-orm";
 import { getDb } from "../../../db";
 import {
   applications,
@@ -165,17 +165,6 @@ export async function GET() {
     ),
   ];
   const connectionIds = visible.map((row) => row.id);
-  const unreadPredicates = visible.map((row) => {
-    const isA = aliasSet.has(row.userAId);
-    return and(
-      eq(messages.connectionId, row.id),
-      eq(messages.senderId, isA ? row.userBId : row.userAId),
-      gt(
-        messages.createdAt,
-        (isA ? row.userALastReadAt : row.userBLastReadAt) || new Date(0),
-      ),
-    );
-  });
   const [mateProfiles, ownRatings, latestIdRows, unreadCountRows] = await Promise.all([
     mateIds.length
       ? db
@@ -217,7 +206,30 @@ export async function GET() {
         unreadCount: count(),
       })
       .from(messages)
-      .where(or(...unreadPredicates))
+      .innerJoin(connections, eq(messages.connectionId, connections.id))
+      .where(
+        and(
+          inArray(messages.connectionId, connectionIds),
+          or(
+            and(
+              inArray(connections.userAId, aliases),
+              eq(messages.senderId, connections.userBId),
+              gt(
+                messages.createdAt,
+                sql<Date>`coalesce(${connections.userALastReadAt}, 0)`,
+              ),
+            ),
+            and(
+              inArray(connections.userBId, aliases),
+              eq(messages.senderId, connections.userAId),
+              gt(
+                messages.createdAt,
+                sql<Date>`coalesce(${connections.userBLastReadAt}, 0)`,
+              ),
+            ),
+          ),
+        ),
+      )
       .groupBy(messages.connectionId),
   ]);
   const latestMessageIds = latestIdRows

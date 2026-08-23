@@ -706,6 +706,7 @@ export default function MatchApp({
   const [likedProfileIds, setLikedProfileIds] = useState<string[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [connectionsLoaded, setConnectionsLoaded] = useState(preview);
+  const [connectionsError, setConnectionsError] = useState(false);
   const [lobbies, setLobbies] = useState<Lobby[]>([]);
   const [selectedConnection, setSelectedConnection] =
     useState<Connection | null>(null);
@@ -1220,15 +1221,18 @@ export default function MatchApp({
   const loadConnections = async () => {
     try {
       const response = await fetch("/api/connections", { cache: "no-store" });
-      if (!response.ok) return [] as Connection[];
+      if (!response.ok) throw new Error("connections request failed");
       const data = await response.json();
       const nextConnections = (data.connections || []) as Connection[];
       setConnections(nextConnections);
-      setConnectionsLoaded(true);
+      setConnectionsError(false);
       return nextConnections;
     } catch {
+      setConnectionsError(true);
       /* 検索は続ける */
       return [] as Connection[];
+    } finally {
+      setConnectionsLoaded(true);
     }
   };
   const loadLobbies = async () => {
@@ -1363,9 +1367,10 @@ export default function MatchApp({
         ? fetch("/api/applications").then((r) => (r.ok ? r.json() : null))
         : Promise.resolve(null),
       authenticated
-        ? fetch("/api/connections", { cache: "no-store" }).then((r) =>
-            r.ok ? r.json() : null,
-          )
+        ? fetch("/api/connections", { cache: "no-store" }).then(async (r) => ({
+            ok: r.ok,
+            data: r.ok ? await r.json() : null,
+          }))
         : Promise.resolve(null),
       authenticated
         ? fetch("/api/lobbies").then((r) => (r.ok ? r.json() : null))
@@ -1385,7 +1390,7 @@ export default function MatchApp({
         ([
           recruitData,
           noticeData,
-          connectionData,
+          connectionResult,
           lobbyData,
           likeData,
           notificationData,
@@ -1397,9 +1402,14 @@ export default function MatchApp({
             setIncoming(noticeData.incoming || []);
             setOutgoing(noticeData.outgoing || []);
           }
-          if (connectionData) {
-            setConnections(connectionData.connections || []);
+          if (connectionResult) {
             setConnectionsLoaded(true);
+            if (connectionResult.ok && connectionResult.data) {
+              setConnections(connectionResult.data.connections || []);
+              setConnectionsError(false);
+            } else {
+              setConnectionsError(true);
+            }
           }
           if (lobbyData) setLobbies(lobbyData.lobbies || []);
           if (likeData) {
@@ -4811,6 +4821,20 @@ export default function MatchApp({
                       </div>
                       <h2>チャットを読み込んでいます</h2>
                       <p>通信が戻ると自動で表示されます</p>
+                    </div>
+                  ) : connectionsError &&
+                    !connections.length &&
+                    !incoming.some((notice) => notice.status === "pending") &&
+                    !outgoing.some((notice) => notice.status === "pending") ? (
+                    <div className="chatOverviewEmpty">
+                      <div className="chatEmptyIllustration">
+                        <span>↻</span>
+                      </div>
+                      <h2>チャットを読み込めませんでした</h2>
+                      <p>通信を確認して、もう一度読み込んでください。</p>
+                      <button onClick={() => void loadConnections()}>
+                        もう一度読み込む
+                      </button>
                     </div>
                   ) : connections.length ||
                   incoming.some((notice) => notice.status === "pending") ||

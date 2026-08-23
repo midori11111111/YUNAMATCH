@@ -738,7 +738,12 @@ test("keeps chat and recruiting responsive under load", async () => {
   assert.match(app, /setInterval\(refreshVisibleSummary, 15000\)/);
   assert.match(connectionsApi, /groupBy\(messages\.connectionId\)/);
   assert.match(connectionsApi, /unreadCountByConnection/);
+  assert.match(connectionsApi, /innerJoin\(connections/);
+  assert.doesNotMatch(connectionsApi, /unreadPredicates/);
   assert.doesNotMatch(connectionsApi, /visible\.map\(async/);
+  assert.match(app, /connectionsError/);
+  assert.match(app, /チャットを読み込めませんでした/);
+  assert.match(app, /もう一度読み込む/);
   assert.match(messagesApi, /runInBackground/);
   assert.match(applicationMessagesApi, /runInBackground/);
   assert.match(applicationsApi, /runInBackground/);
