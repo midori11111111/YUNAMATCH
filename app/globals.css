@@ -1212,6 +1212,15 @@ button { cursor: pointer; }
 .supportSla { margin: -10px 0 6px; color: #817988; font-size: 8px; line-height: 1.6; }
 .deleteAccountModal { display: grid; gap: 14px; }.deleteAccountModal > p { margin: -8px 0 0; color: #817988; font-size: 9px; line-height: 1.7; }.deleteAccountModal label { display: grid; gap: 7px; color: #625c6a; font-size: 8px; font-weight: 900; }.deleteAccountModal input { width: 100%; border: 1px solid #e3dee8; border-radius: 12px; padding: 12px; font-size: 10px; }
 
+/* iOS and in-app browsers zoom focused fields when their text is below 16px. */
+@media (max-width: 768px) {
+  .messageComposer input,
+  .pendingMessageComposer input,
+  .declineReasonPanel input {
+    font-size: 16px;
+  }
+}
+
 .communityPage { min-height: 100vh; padding: 45px 20px 80px; color: var(--ink); background: radial-gradient(circle at 50% 0,#ece8ff,transparent 38%),#f7f4fa; }
 .communityPage > section { width: min(760px,100%); margin: auto; }.communityPage > section > a { color: var(--purple); font-weight: 850; text-decoration: none; }
 .communityHero { margin-top: 20px; padding: 48px; border-radius: 30px; color: #fff; background: linear-gradient(145deg,#31386c,#5865f2 58%,#8a6ef0); box-shadow: 0 22px 60px #3f419b33; }

@@ -710,6 +710,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /messageThreadRef/);
   assert.match(app, /thread\.scrollTo\(\{ top: thread\.scrollHeight/);
   assert.match(css, /\.playInviteMessage \{[^}]*flex-shrink: 0/);
+  assert.match(css, /@media \(max-width: 768px\)[\s\S]*?\.messageComposer input,[\s\S]*?font-size: 16px/);
   assert.match(app, /このロビーは10分後に一覧から消えます/);
   assert.match(lobbyApi, /endedLobbyRetentionMs=10\*60\*1000/);
   assert.match(lobbyApi, /gt\(lobbies\.finishedAt,visibleEndedAfter\)/);
