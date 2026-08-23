@@ -144,6 +144,7 @@ type Connection = {
 };
 type ChatMessage = {
   id: number;
+  clientId?: string | null;
   body: string;
   sender: "me" | "mate";
   kind?: "text" | "play_invite";
@@ -151,6 +152,7 @@ type ChatMessage = {
   canRespond?: boolean;
   createdAt: string;
   read?: boolean;
+  delivery?: "sending" | "failed";
 };
 type SafetyTarget = { name: string; recruitId?: number; connectionId?: number; messageId?: number; messageBody?: string };
 type LinkedAccount = {
@@ -1243,7 +1245,24 @@ export default function MatchApp({
     const response = await fetch(`/api/messages?connectionId=${connection.id}`);
     if (!response.ok) return;
     const data = await response.json();
-    setMessages(data.messages || []);
+    const serverMessages = (data.messages || []) as ChatMessage[];
+    setMessages((current) => {
+      const serverClientIds = new Set(
+        serverMessages
+          .map((message) => message.clientId)
+          .filter((clientId): clientId is string => Boolean(clientId)),
+      );
+      const localOnly = current.filter(
+        (message) =>
+          message.delivery &&
+          message.clientId &&
+          !serverClientIds.has(message.clientId),
+      );
+      return [...serverMessages, ...localOnly].sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      );
+    });
   };
 
   useEffect(() => {
@@ -1478,13 +1497,9 @@ export default function MatchApp({
 
   useEffect(() => {
     if (preview || guestMode) return;
-    const refresh = () => {
+    const refreshCurrentConversation = () => {
       if (document.visibilityState !== "visible") return;
-      loadNotices();
-      loadLikes();
-      loadConnections();
-      loadLobbies();
-      if (selectedConnection) loadMessages(selectedConnection);
+      if (selectedConnection) void loadMessages(selectedConnection);
       if (selectedPending)
         fetch(
           `/api/application-messages?applicationId=${selectedPending.notice.id}`,
@@ -1496,9 +1511,22 @@ export default function MatchApp({
           })
           .catch(() => undefined);
     };
-    const timer = window.setInterval(refresh, 5000);
+    const timer = window.setInterval(refreshCurrentConversation, 2500);
     return () => window.clearInterval(timer);
-  }, [preview, guestMode, selectedConnection, selectedPending, loadLikes]);
+  }, [preview, guestMode, selectedConnection, selectedPending]);
+
+  useEffect(() => {
+    if (preview || guestMode) return;
+    const refreshVisibleSummary = () => {
+      if (document.visibilityState !== "visible") return;
+      void loadNotices();
+      if (tab === "discover") void loadLikes();
+      if (tab === "chat") void loadConnections();
+      if (tab === "lobby") void loadLobbies();
+    };
+    const timer = window.setInterval(refreshVisibleSummary, 15000);
+    return () => window.clearInterval(timer);
+  }, [preview, guestMode, tab, loadLikes]);
 
   const latestMessage = messages[messages.length - 1];
   const selectedConnectionId = selectedConnection?.id;
@@ -2974,6 +3002,18 @@ export default function MatchApp({
       typeof crypto.randomUUID === "function"
         ? crypto.randomUUID()
         : `message-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const optimisticId = -Date.now();
+    const optimisticMessage: ChatMessage = {
+      id: optimisticId,
+      clientId,
+      body,
+      sender: "me",
+      kind: "text",
+      createdAt: new Date().toISOString(),
+      delivery: "sending",
+    };
+    setMessages((rows) => [...rows, optimisticMessage]);
+    setMessageText("");
     try {
       const response = await fetch("/api/messages", {
         method: "POST",
@@ -2982,17 +3022,35 @@ export default function MatchApp({
       });
       const data = await response.json();
       if (!response.ok) {
+        setMessages((rows) =>
+          rows.map((message) =>
+            message.id === optimisticId
+              ? { ...message, delivery: "failed" }
+              : message,
+          ),
+        );
         notify(data.error || "送信できませんでした");
         return;
       }
-      setMessages((rows) =>
-        rows.some((message) => message.id === data.message.id)
-          ? rows
-          : [...rows, data.message],
-      );
-      setMessageText((value) => (value.trim() === body ? "" : value));
+      setMessages((rows) => {
+        const withoutOptimistic = rows.filter(
+          (message) => message.id !== optimisticId,
+        );
+        return withoutOptimistic.some(
+          (message) => message.id === data.message.id,
+        )
+          ? withoutOptimistic
+          : [...withoutOptimistic, data.message];
+      });
       void loadConnections();
     } catch {
+      setMessages((rows) =>
+        rows.map((message) =>
+          message.id === optimisticId
+            ? { ...message, delivery: "failed" }
+            : message,
+        ),
+      );
       notify("通信が不安定です。メッセージは送信されていません");
     } finally {
       messageSendingRef.current = false;
@@ -4658,10 +4716,28 @@ export default function MatchApp({
                                   minute: "2-digit",
                                 },
                               )}
-                              {message.sender === "me" && message.read
-                                ? " ・ 既読"
-                                : ""}
+                              {message.delivery === "sending"
+                                ? " ・ 送信中"
+                                : message.delivery === "failed"
+                                  ? " ・ 送信失敗"
+                                  : message.sender === "me" && message.read
+                                    ? " ・ 既読"
+                                    : ""}
                             </small>
+                            {message.delivery === "failed" && (
+                              <button
+                                type="button"
+                                className="messageRetryButton"
+                                onClick={() => {
+                                  setMessageText(message.body);
+                                  setMessages((rows) =>
+                                    rows.filter((row) => row.id !== message.id),
+                                  );
+                                }}
+                              >
+                                再入力
+                              </button>
+                            )}
                             {message.sender === "mate" && (
                               <div className="messageUtilityActions">
                               <button

@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, inArray, isNull, or } from "drizzle-orm";
+import { and, count, desc, eq, gt, inArray, isNull, max, or } from "drizzle-orm";
 import { getDb } from "../../../db";
 import {
   applications,
@@ -156,6 +156,7 @@ export async function GET() {
     (row) =>
       !hidden.has(aliasSet.has(row.userAId) ? row.userBId : row.userAId),
   );
+  if (!visible.length) return Response.json({ connections: [] });
   const mateIds = [
     ...new Set(
       visible.map((row) =>
@@ -163,7 +164,19 @@ export async function GET() {
       ),
     ),
   ];
-  const [mateProfiles, ownRatings] = await Promise.all([
+  const connectionIds = visible.map((row) => row.id);
+  const unreadPredicates = visible.map((row) => {
+    const isA = aliasSet.has(row.userAId);
+    return and(
+      eq(messages.connectionId, row.id),
+      eq(messages.senderId, isA ? row.userBId : row.userAId),
+      gt(
+        messages.createdAt,
+        (isA ? row.userALastReadAt : row.userBLastReadAt) || new Date(0),
+      ),
+    );
+  });
+  const [mateProfiles, ownRatings, latestIdRows, unreadCountRows] = await Promise.all([
     mateIds.length
       ? db
           .select({
@@ -190,7 +203,50 @@ export async function GET() {
       .from(connectionRatings)
       .where(inArray(connectionRatings.raterId, aliases))
       .limit(100),
+    db
+      .select({
+        connectionId: messages.connectionId,
+        messageId: max(messages.id),
+      })
+      .from(messages)
+      .where(inArray(messages.connectionId, connectionIds))
+      .groupBy(messages.connectionId),
+    db
+      .select({
+        connectionId: messages.connectionId,
+        unreadCount: count(),
+      })
+      .from(messages)
+      .where(or(...unreadPredicates))
+      .groupBy(messages.connectionId),
   ]);
+  const latestMessageIds = latestIdRows
+    .map((row) => row.messageId)
+    .filter((id): id is number => typeof id === "number");
+  const latestMessages = latestMessageIds.length
+    ? await db
+        .select({
+          id: messages.id,
+          body: messages.body,
+          createdAt: messages.createdAt,
+        })
+        .from(messages)
+        .where(inArray(messages.id, latestMessageIds))
+    : [];
+  const latestMessageById = new Map(
+    latestMessages.map((message) => [message.id, message]),
+  );
+  const latestMessageByConnection = new Map(
+    latestIdRows.map((row) => [
+      row.connectionId,
+      typeof row.messageId === "number"
+        ? latestMessageById.get(row.messageId)
+        : undefined,
+    ]),
+  );
+  const unreadCountByConnection = new Map(
+    unreadCountRows.map((row) => [row.connectionId, Number(row.unreadCount)]),
+  );
   const mateAvatars = new Map(
     mateProfiles.map((profile) => [profile.userId, profile.avatarUrl]),
   );
@@ -203,18 +259,11 @@ export async function GET() {
   const ownRatingByConnection = new Map(
     ownRatings.map((rating) => [rating.connectionId, rating]),
   );
-  const result = await Promise.all(
-    visible.map(async (row) => {
+  const result = visible.map((row) => {
       const isA = aliasSet.has(row.userAId);
       const mateId = isA ? row.userBId : row.userAId;
       const mateProfile = mateProfileById.get(mateId);
-      const [latest] = await db
-        .select({ body: messages.body, createdAt: messages.createdAt })
-        .from(messages)
-        .where(eq(messages.connectionId, row.id))
-        .orderBy(desc(messages.createdAt))
-        .limit(1);
-      const myLastRead = isA ? row.userALastReadAt : row.userBLastReadAt;
+      const latest = latestMessageByConnection.get(row.id);
       const myRating = ownRatingByConnection.get(row.id);
       let myRatingTags: string[] = [];
       try {
@@ -226,17 +275,6 @@ export async function GET() {
       } catch {
         /* 古い評価のタグは空として扱う */
       }
-      const unreadRows = await db
-        .select({ id: messages.id })
-        .from(messages)
-        .where(
-          and(
-            eq(messages.connectionId, row.id),
-            eq(messages.senderId, mateId),
-            gt(messages.createdAt, myLastRead || new Date(0)),
-          ),
-        )
-        .limit(99);
       return {
         id: row.id,
         recruitId: row.recruitId,
@@ -273,10 +311,9 @@ export async function GET() {
         latestMessage:
           latest?.body ?? "マッチ成立！最初のメッセージを送りましょう",
         latestAt: latest?.createdAt ?? row.createdAt,
-        unreadCount: unreadRows.length,
+        unreadCount: Math.min(99, unreadCountByConnection.get(row.id) || 0),
       };
-    }),
-  );
+    });
   result.sort(
     (a, b) =>
       Number(b.pinned) - Number(a.pinned) ||

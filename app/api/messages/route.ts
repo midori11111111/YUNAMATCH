@@ -7,6 +7,7 @@ import { isSuspended } from "../../../lib/safety";
 import { checkRateLimit, rateLimitResponse } from "../../../lib/rate-limit";
 import { containsProhibitedContent, prohibitedContentMessage } from "../../../lib/content-policy";
 import { identityAliases } from "../../../lib/account-aliases";
+import { runInBackground } from "../../../lib/background";
 
 const signIn = "/login";
 const playInviteBody = "一緒にプレイしませんか？";
@@ -37,6 +38,7 @@ function serializeMessage(
 ) {
   return {
     id: row.id,
+    clientId: row.clientId,
     body: row.body,
     sender: userIds.has(row.senderId) ? "me" : "mate",
     kind: row.kind === "play_invite" ? "play_invite" : "text",
@@ -130,13 +132,16 @@ export async function POST(request: Request) {
   if(!message)return Response.json({error:"送信結果を確認できませんでした"},{status:500});
   if(!createdMessage)return Response.json({ message: serializeMessage(message, aliasSet) });
   const senderName=aliasSet.has(connection.userAId)?connection.userAName:connection.userBName;
-  await sendPush(
-    mateId,
-    kind === "play_invite"
-      ? `${senderName}さんからプレイのお誘い`
-      : `${senderName}さんからメッセージ`,
-    body.slice(0,80),
-    `/?chat=${connection.id}`,
+  runInBackground(
+    sendPush(
+      mateId,
+      kind === "play_invite"
+        ? `${senderName}さんからプレイのお誘い`
+        : `${senderName}さんからメッセージ`,
+      body.slice(0,80),
+      `/?chat=${connection.id}`,
+    ),
+    "Message push",
   );
   return Response.json({ message: serializeMessage(message, aliasSet) }, { status: 201 });
 }

@@ -13,6 +13,7 @@ import {
   prohibitedContentMessage,
 } from "../../../lib/content-policy";
 import { sendPush } from "../../../lib/push";
+import { runInBackground } from "../../../lib/background";
 
 async function applicationForUser(applicationId: number, userId: string) {
   const [row] = await getDb()
@@ -102,11 +103,14 @@ export async function POST(request: Request) {
     user.userId === application.ownerId
       ? application.applicantId
       : application.ownerId;
-  await sendPush(
-    recipientId,
-    "申請についてひとことが届きました",
-    `${profile?.trainerName || "メイト"}さん: ${body}`,
-    "/",
+  runInBackground(
+    sendPush(
+      recipientId,
+      "申請についてひとことが届きました",
+      `${profile?.trainerName || "メイト"}さん: ${body}`,
+      "/",
+    ),
+    "Application message push",
   );
   return Response.json({
     message: {

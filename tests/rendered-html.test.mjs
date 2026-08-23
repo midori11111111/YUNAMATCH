@@ -719,3 +719,29 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(adminSessionApi, /limit: 5/);
   assert.doesNotMatch(adminAuth + adminSessionApi, /unimatch/);
 });
+
+test("keeps chat and recruiting responsive under load", async () => {
+  const [app, connectionsApi, messagesApi, applicationMessagesApi, applicationsApi, recruitsApi, background] =
+    await Promise.all([
+      readFile(new URL("app/match-app.tsx", root), "utf8"),
+      readFile(new URL("app/api/connections/route.ts", root), "utf8"),
+      readFile(new URL("app/api/messages/route.ts", root), "utf8"),
+      readFile(new URL("app/api/application-messages/route.ts", root), "utf8"),
+      readFile(new URL("app/api/applications/route.ts", root), "utf8"),
+      readFile(new URL("app/api/recruits/route.ts", root), "utf8"),
+      readFile(new URL("lib/background.ts", root), "utf8"),
+    ]);
+
+  assert.match(app, /delivery: "sending"/);
+  assert.match(app, /送信失敗/);
+  assert.match(app, /setInterval\(refreshCurrentConversation, 2500\)/);
+  assert.match(app, /setInterval\(refreshVisibleSummary, 15000\)/);
+  assert.match(connectionsApi, /groupBy\(messages\.connectionId\)/);
+  assert.match(connectionsApi, /unreadCountByConnection/);
+  assert.doesNotMatch(connectionsApi, /visible\.map\(async/);
+  assert.match(messagesApi, /runInBackground/);
+  assert.match(applicationMessagesApi, /runInBackground/);
+  assert.match(applicationsApi, /runInBackground/);
+  assert.match(recruitsApi, /Recruit alert fanout/);
+  assert.match(background, /context\.waitUntil/);
+});

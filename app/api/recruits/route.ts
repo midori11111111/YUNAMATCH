@@ -6,6 +6,7 @@ import { checkRateLimit, rateLimitResponse } from "../../../lib/rate-limit";
 import { containsProhibitedContent, prohibitedContentMessage } from "../../../lib/content-policy";
 import { normalizeRank } from "../../../lib/ranks";
 import { sendPush } from "../../../lib/push";
+import { runInBackground } from "../../../lib/background";
 
 const recruitRoles=new Set(["上レーン","下レーン","中央","キャリー","タンク","サポート","アタック型","バランス型","スピード型","ディフェンス型","サポート型"]);
 const matchTypes=new Set(["ランクマッチ","カジュアル"]);
@@ -66,8 +67,9 @@ export async function POST(request:Request) {
     blockRows.map((block) => block.blockerId === user.userId ? block.blockedId : block.blockerId),
   );
   const startLabel = startTimeUndecided ? "時間は相談" : startsIn === 0 ? "今から" : `${startsIn}分後`;
-  await Promise.allSettled(
-    alertRows
+  runInBackground(
+    Promise.allSettled(
+      alertRows
       .filter((alert) => alert.userId !== user.userId && !hiddenAlertUsers.has(alert.userId))
       .map((alert) => sendPush(
         alert.userId,
@@ -75,6 +77,8 @@ export async function POST(request:Request) {
         `${profile.trainerName}さんが${matchType}・${startLabel}・${partySize}人で募集中です`,
         `/?recruit=${row.id}`,
       )),
+    ),
+    "Recruit alert fanout",
   );
   return Response.json({recruit:{...row,avatarUrl:profile.avatarUrl}},{status:201});
 }

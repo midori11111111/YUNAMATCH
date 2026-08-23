@@ -773,6 +773,7 @@ button { cursor: pointer; }
 .messageBubble.me { align-self: flex-end; text-align: right; }
 .messageBubble.me p { color: #fff; border-radius: 15px 6px 15px 15px; background: linear-gradient(135deg, var(--purple), #8e76f2); text-align: left; }
 .messageBubble small { display: block; margin-top: 3px; color: #aaa4af; font-size: 6px; }
+.messageRetryButton { margin-top: 4px; padding: 3px 7px; border: 1px solid #f0a1b9; border-radius: 999px; color: #d94c79; background: #fff; font-size: 7px; font-weight: 850; }
 .messageUtilityActions { display: flex; align-items: center; gap: 8px; margin: 4px 8px 0; }
 .messageBubble.me .messageUtilityActions { justify-content: flex-end; }
 .reportMessageButton { border: 0; padding: 3px 0; color: #a39ba8; background: transparent; font-size: 7px; font-weight: 800; }

@@ -5,6 +5,7 @@ import { getChatGPTUser } from "../../chatgpt-auth";
 import { sendPush } from "../../../lib/push";
 import { checkRateLimit, rateLimitResponse } from "../../../lib/rate-limit";
 import { containsProhibitedContent, prohibitedContentMessage } from "../../../lib/content-policy";
+import { runInBackground } from "../../../lib/background";
 
 const signIn = "/login";
 
@@ -34,7 +35,7 @@ export async function POST(request:Request){
  if(exists.length)return Response.json({error:"すでに申請済みです"},{status:409});
  const [application]=await db.insert(applications).values({recruitId:p.recruitId,applicantId:user.userId,applicantName:profile.trainerName,applicantContact:"",pokemon:p.pokemon,message:p.message.slice(0,180),createdAt:new Date()}).returning();
  const pokemonText=p.pokemon==="指定なし"?"使うポケモンを相談して一緒に遊びたい":`${p.pokemon}で一緒に遊びたい`;
- await sendPush(recruit.ownerId,"👋 手を振っています",`${profile.trainerName}さんが${pokemonText}と送っています`,"/");
+ runInBackground(sendPush(recruit.ownerId,"👋 手を振っています",`${profile.trainerName}さんが${pokemonText}と送っています`,"/"),"Application push");
  return Response.json({ok:true,application:{id:application.id,recruitId:application.recruitId,trainerName:recruit.trainerName,pokemon:application.pokemon,message:application.message,status:application.status,createdAt:application.createdAt}});
 }
 
@@ -64,9 +65,9 @@ export async function PATCH(request:Request){
   let [lobby]=await db.select().from(lobbies).where(eq(lobbies.recruitId,row.recruitId)).limit(1);
   if(!lobby){[lobby]=await db.insert(lobbies).values({recruitId:row.recruitId,ownerId:row.ownerId,status:"forming",scheduledAt:row.startAt,createdAt:now}).returning();await db.insert(lobbyMembers).values({lobbyId:lobby.id,userId:row.ownerId,trainerName:row.ownerName,pokemon:row.ownerPokemon,contact:"",joinedAt:now}).onConflictDoNothing()}
   await db.insert(lobbyMembers).values({lobbyId:lobby.id,userId:row.applicantId,applicationId:row.id,connectionId:savedConnection?.id,trainerName:row.applicantName,pokemon:row.applicantPokemon,contact:"",joinedAt:now}).onConflictDoNothing();
-  await sendPush(row.applicantId,"マッチ成立！",`${row.ownerName}さんの集合ロビーに参加しました`,`/?lobby=${lobby.id}`);
+  runInBackground(sendPush(row.applicantId,"マッチ成立！",`${row.ownerName}さんの集合ロビーに参加しました`,`/?lobby=${lobby.id}`),"Application accepted push");
   return Response.json({ok:true,status,applicantContact:null,connectionId:savedConnection?.id,lobbyId:lobby.id,mateName:row.applicantName,matePokemon:row.applicantPokemon});
  }
- await sendPush(row.applicantId,"申請についてお知らせ",finalDecisionMessage,"/");
+ runInBackground(sendPush(row.applicantId,"申請についてお知らせ",finalDecisionMessage,"/"),"Application declined push");
  return Response.json({ok:true,status,decisionMessage:finalDecisionMessage,applicantContact:null});
 }
