@@ -17,6 +17,13 @@ const bytes = (hex: string) =>
     hex.match(/.{2}/g)?.map((value) => Number.parseInt(value, 16)) || [],
   );
 const matchTypes = new Set(["ランクマッチ", "カジュアル"]);
+const discordRecruitRanks = new Set([
+  "エキスパート未満",
+  "エキスパート",
+  "マスター",
+  "レジェンド1000〜1499",
+  "レジェンド1500以上",
+]);
 
 type DiscordInteraction = {
   application_id?: string;
@@ -143,7 +150,7 @@ async function createRecruitMessage(
   const winRate = Number(options.win_rate || 50);
   if (
     !matchTypes.has(matchType) ||
-    !currentRank ||
+    !discordRecruitRanks.has(currentRank) ||
     ![2, 3, 5].includes(partySize) ||
     !["up_to_3", "2", "3", "5"].includes(partyChoice) ||
     ![0, 30, 60, 120].includes(startsIn) ||

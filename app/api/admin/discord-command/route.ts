@@ -32,6 +32,13 @@ const clarifiedDescriptions: Record<string, string> = {
   matches: "あなた（募集者本人）の試合数",
   win_rate: "あなた（募集者本人）の勝率",
 };
+const currentRankChoices = [
+  "エキスパート未満",
+  "エキスパート",
+  "マスター",
+  "レジェンド1000〜1499",
+  "レジェンド1500以上",
+].map((name) => ({ name, value: name }));
 
 export async function POST() {
   if (!(await requireAdmin()))
@@ -73,6 +80,9 @@ export async function POST() {
       .map((option) => ({
         ...option,
         description: clarifiedDescriptions[option.name] || option.description,
+        ...(option.name === "current_rank"
+          ? { choices: currentRankChoices }
+          : {}),
       })),
   ];
   const updateResponse = await fetch(
