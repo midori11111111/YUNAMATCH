@@ -139,6 +139,7 @@ type Connection = {
   myRatingScore: number;
   myRatingTags: string[];
   latestMessage: string;
+  latestMessageId: number | null;
   latestAt: string;
   unreadCount: number;
 };
@@ -154,6 +155,8 @@ type ChatMessage = {
   read?: boolean;
   delivery?: "sending" | "failed";
 };
+const chatNotificationKey = (connection: Connection) =>
+  `chat:${connection.id}:${connection.latestMessageId ?? 0}`;
 type SafetyTarget = { name: string; recruitId?: number; connectionId?: number; messageId?: number; messageBody?: string };
 type LinkedAccount = {
   provider: string;
@@ -675,6 +678,9 @@ export default function MatchApp({
   const discoverSessionSeedRef = useRef("");
   const [recruits, setRecruits] = useState<Recruit[]>([]);
   const [myRecruit, setMyRecruit] = useState<Recruit | null>(null);
+  const [recruitsHasMore, setRecruitsHasMore] = useState(false);
+  const [recruitsLoadingMore, setRecruitsLoadingMore] = useState(false);
+  const recruitsNextCursorRef = useRef<number | null>(null);
   const [expandedRecruitId, setExpandedRecruitId] = useState<number | null>(
     sharedRecruitId,
   );
@@ -716,6 +722,11 @@ export default function MatchApp({
   const [toast, setToast] = useState("");
   const [incoming, setIncoming] = useState<Notice[]>([]);
   const [outgoing, setOutgoing] = useState<Notice[]>([]);
+  const [noticesHaveMore, setNoticesHaveMore] = useState(false);
+  const [noticesLoadingMore, setNoticesLoadingMore] = useState(false);
+  const noticesNextIncomingRef = useRef<number | null>(null);
+  const noticesNextOutgoingRef = useRef<number | null>(null);
+  const noticesLoadedOlderRef = useRef(false);
   const [profileLikes, setProfileLikes] = useState<ProfileLikeNotice[]>([]);
   const [receivedProfileCandidates, setReceivedProfileCandidates] = useState<
     ProfileCandidate[]
@@ -724,6 +735,10 @@ export default function MatchApp({
   const [connections, setConnections] = useState<Connection[]>([]);
   const [connectionsLoaded, setConnectionsLoaded] = useState(preview);
   const [connectionsError, setConnectionsError] = useState(false);
+  const [connectionsHasMore, setConnectionsHasMore] = useState(false);
+  const [connectionsLoadingMore, setConnectionsLoadingMore] = useState(false);
+  const connectionsNextCursorRef = useRef<number | null>(null);
+  const connectionsLoadedOlderRef = useRef(false);
   const [lobbies, setLobbies] = useState<Lobby[]>([]);
   const [selectedConnection, setSelectedConnection] =
     useState<Connection | null>(null);
@@ -743,6 +758,10 @@ export default function MatchApp({
   const pendingMessageInputRef = useRef<HTMLInputElement>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
+  const [messagesHasMore, setMessagesHasMore] = useState(false);
+  const [messagesLoadingOlder, setMessagesLoadingOlder] = useState(false);
+  const messagesNextCursorRef = useRef<number | null>(null);
+  const messagesLoadedOlderRef = useRef(false);
   const [messagesError, setMessagesError] = useState(false);
   const activeConnectionIdRef = useRef<number | null>(null);
   const messageLoadRequestRef = useRef(0);
@@ -1103,15 +1122,29 @@ export default function MatchApp({
     </div>
   );
 
-  const loadRecruits = async () => {
+  const loadRecruits = async (append = false) => {
+    if (append && recruitsLoadingMore) return;
+    if (append) setRecruitsLoadingMore(true);
     try {
-      const response = await fetch("/api/recruits");
+      const params = new URLSearchParams();
+      if (append && recruitsNextCursorRef.current)
+        params.set("before", String(recruitsNextCursorRef.current));
+      const response = await fetch(`/api/recruits${params.size ? `?${params}` : ""}`, { cache: "no-store" });
       const data = await response.json();
-      setRecruits(data.recruits || []);
+      const nextRows = (data.recruits || []) as Recruit[];
+      setRecruits((currentRows) => {
+        if (!append) return nextRows;
+        const byId = new Map(currentRows.map((row) => [row.id, row]));
+        nextRows.forEach((row) => byId.set(row.id, row));
+        return [...byId.values()];
+      });
       setMyRecruit(data.myRecruit || null);
+      recruitsNextCursorRef.current = typeof data.nextCursor === "number" ? data.nextCursor : null;
+      setRecruitsHasMore(Boolean(data.hasMore));
     } catch {
       notify("募集を読み込めませんでした");
     } finally {
+      if (append) setRecruitsLoadingMore(false);
       setLoading(false);
     }
   };
@@ -1202,15 +1235,38 @@ export default function MatchApp({
     showLikedProfilesOnly,
     hideLikedProfiles,
   ]);
-  const loadNotices = async () => {
+  const loadNotices = async (append = false) => {
+    if (append && noticesLoadingMore) return;
+    if (append) setNoticesLoadingMore(true);
     try {
-      const response = await fetch("/api/applications");
+      const params = new URLSearchParams();
+      if (append && noticesNextIncomingRef.current)
+        params.set("beforeIncoming", String(noticesNextIncomingRef.current));
+      if (append && noticesNextOutgoingRef.current)
+        params.set("beforeOutgoing", String(noticesNextOutgoingRef.current));
+      const response = await fetch(`/api/applications${params.size ? `?${params}` : ""}`, { cache: "no-store" });
       if (!response.ok) return;
       const data = await response.json();
-      setIncoming(data.incoming || []);
-      setOutgoing(data.outgoing || []);
+      const mergeNotices = (currentRows: Notice[], nextRows: Notice[]) => {
+        const base = append || noticesLoadedOlderRef.current
+          ? currentRows.filter((row) => row.status !== "pending")
+          : [];
+        const byId = new Map(base.map((row) => [row.id, row]));
+        nextRows.forEach((row) => byId.set(row.id, row));
+        return [...byId.values()].sort((a, b) => b.id - a.id);
+      };
+      setIncoming((rows) => mergeNotices(rows, data.incoming || []));
+      setOutgoing((rows) => mergeNotices(rows, data.outgoing || []));
+      if (append || !noticesLoadedOlderRef.current) {
+        noticesNextIncomingRef.current = typeof data.nextIncomingCursor === "number" ? data.nextIncomingCursor : null;
+        noticesNextOutgoingRef.current = typeof data.nextOutgoingCursor === "number" ? data.nextOutgoingCursor : null;
+        setNoticesHaveMore(Boolean(data.hasMoreIncoming || data.hasMoreOutgoing));
+      }
+      if (append) noticesLoadedOlderRef.current = true;
     } catch {
       /* カード表示は続ける */
+    } finally {
+      if (append) setNoticesLoadingMore(false);
     }
   };
   const loadLikes = useCallback(async () => {
@@ -1243,14 +1299,33 @@ export default function MatchApp({
   useEffect(() => {
     if (tab === "profile") void loadBlockedUsers();
   }, [tab, loadBlockedUsers]);
-  const loadConnections = async () => {
+  const loadConnections = async (append = false) => {
+    if (append && connectionsLoadingMore) return [] as Connection[];
+    if (append) setConnectionsLoadingMore(true);
     try {
+      const params = new URLSearchParams();
+      if (append && connectionsNextCursorRef.current)
+        params.set("before", String(connectionsNextCursorRef.current));
       const { response, data } = await fetchJsonWithTimeout<{
         connections?: Connection[];
-      }>("/api/connections", { cache: "no-store" });
+        hasMore?: boolean;
+        nextCursor?: number | null;
+      }>(`/api/connections${params.size ? `?${params}` : ""}`, { cache: "no-store" });
       if (!response.ok) throw new Error("connections request failed");
       const nextConnections = (data.connections || []) as Connection[];
-      setConnections(nextConnections);
+      setConnections((currentRows) => {
+        if (!append && !connectionsLoadedOlderRef.current) return nextConnections;
+        const byId = new Map(currentRows.map((row) => [row.id, row]));
+        nextConnections.forEach((row) => byId.set(row.id, row));
+        return [...byId.values()].sort(
+          (a, b) => Number(b.pinned) - Number(a.pinned) || new Date(b.latestAt).getTime() - new Date(a.latestAt).getTime(),
+        );
+      });
+      if (append || !connectionsLoadedOlderRef.current) {
+        connectionsNextCursorRef.current = typeof data.nextCursor === "number" ? data.nextCursor : null;
+        setConnectionsHasMore(Boolean(data.hasMore));
+      }
+      if (append) connectionsLoadedOlderRef.current = true;
       setConnectionsError(false);
       return nextConnections;
     } catch {
@@ -1258,6 +1333,7 @@ export default function MatchApp({
       /* 検索は続ける */
       return [] as Connection[];
     } finally {
+      if (append) setConnectionsLoadingMore(false);
       setConnectionsLoaded(true);
     }
   };
@@ -1274,6 +1350,7 @@ export default function MatchApp({
   const loadMessages = async (
     connection: Connection,
     showLoading = false,
+    loadOlder = false,
   ) => {
     if (
       !showLoading &&
@@ -1282,6 +1359,7 @@ export default function MatchApp({
       return;
     const requestId = ++messageLoadRequestRef.current;
     messageLoadInFlightRef.current = connection.id;
+    if (loadOlder) setMessagesLoadingOlder(true);
     if (showLoading) {
       setMessagesLoading(true);
       setMessagesError(false);
@@ -1289,7 +1367,9 @@ export default function MatchApp({
     try {
       const { response, data } = await fetchJsonWithTimeout<{
         messages?: ChatMessage[];
-      }>(`/api/messages?connectionId=${connection.id}`, { cache: "no-store" });
+        hasMore?: boolean;
+        nextCursor?: number | null;
+      }>(`/api/messages?connectionId=${connection.id}${loadOlder && messagesNextCursorRef.current ? `&before=${messagesNextCursorRef.current}` : ""}`, { cache: "no-store" });
       if (!response.ok) throw new Error("messages request failed");
       if (
         activeConnectionIdRef.current !== connection.id ||
@@ -1298,22 +1378,26 @@ export default function MatchApp({
         return;
       const serverMessages = (data.messages || []) as ChatMessage[];
       setMessages((current) => {
-        const serverClientIds = new Set(
-          serverMessages
-            .map((message) => message.clientId)
-            .filter((clientId): clientId is string => Boolean(clientId)),
-        );
-        const localOnly = current.filter(
-          (message) =>
-            message.delivery &&
-            message.clientId &&
-            !serverClientIds.has(message.clientId),
-        );
-        return [...serverMessages, ...localOnly].sort(
+        const retainCurrent = loadOlder || messagesLoadedOlderRef.current;
+        const byKey = new Map<string, ChatMessage>();
+        if (retainCurrent)
+          current.forEach((message) => byKey.set(message.clientId ? `client:${message.clientId}` : `id:${message.id}`, message));
+        else
+          current.filter((message) => message.delivery).forEach((message) => byKey.set(message.clientId ? `client:${message.clientId}` : `id:${message.id}`, message));
+        serverMessages.forEach((message) => {
+          if (message.clientId) byKey.delete(`client:${message.clientId}`);
+          byKey.set(`id:${message.id}`, message);
+        });
+        return [...byKey.values()].sort(
           (a, b) =>
             new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
         );
       });
+      if (loadOlder || !messagesLoadedOlderRef.current) {
+        messagesNextCursorRef.current = typeof data.nextCursor === "number" ? data.nextCursor : null;
+        setMessagesHasMore(Boolean(data.hasMore));
+      }
+      if (loadOlder) messagesLoadedOlderRef.current = true;
       setMessagesError(false);
     } catch {
       if (
@@ -1328,6 +1412,7 @@ export default function MatchApp({
       ) {
         messageLoadInFlightRef.current = null;
         setMessagesLoading(false);
+        setMessagesLoadingOlder(false);
       }
     }
   };
@@ -1458,16 +1543,16 @@ export default function MatchApp({
       }
     };
     Promise.all([
-      loadOptional<{ recruits?: Recruit[]; myRecruit?: Recruit | null }>(
+      loadOptional<{ recruits?: Recruit[]; myRecruit?: Recruit | null; hasMore?: boolean; nextCursor?: number | null }>(
         "/api/recruits",
       ),
       authenticated
-        ? loadOptional<{ incoming?: Notice[]; outgoing?: Notice[] }>(
+        ? loadOptional<{ incoming?: Notice[]; outgoing?: Notice[]; hasMoreIncoming?: boolean; hasMoreOutgoing?: boolean; nextIncomingCursor?: number | null; nextOutgoingCursor?: number | null }>(
             "/api/applications",
           )
         : Promise.resolve(null),
       authenticated
-        ? fetchJsonWithTimeout<{ connections?: Connection[] }>(
+        ? fetchJsonWithTimeout<{ connections?: Connection[]; hasMore?: boolean; nextCursor?: number | null }>(
             "/api/connections",
             { cache: "no-store" },
           )
@@ -1501,15 +1586,22 @@ export default function MatchApp({
           if (recruitData) {
             setRecruits(recruitData.recruits || []);
             setMyRecruit(recruitData.myRecruit || null);
+            setRecruitsHasMore(Boolean(recruitData.hasMore));
+            recruitsNextCursorRef.current = typeof recruitData.nextCursor === "number" ? recruitData.nextCursor : null;
           }
           if (noticeData) {
             setIncoming(noticeData.incoming || []);
             setOutgoing(noticeData.outgoing || []);
+            setNoticesHaveMore(Boolean(noticeData.hasMoreIncoming || noticeData.hasMoreOutgoing));
+            noticesNextIncomingRef.current = typeof noticeData.nextIncomingCursor === "number" ? noticeData.nextIncomingCursor : null;
+            noticesNextOutgoingRef.current = typeof noticeData.nextOutgoingCursor === "number" ? noticeData.nextOutgoingCursor : null;
           }
           if (connectionResult) {
             setConnectionsLoaded(true);
             if (connectionResult.ok && connectionResult.data) {
               setConnections(connectionResult.data.connections || []);
+              setConnectionsHasMore(Boolean(connectionResult.data.hasMore));
+              connectionsNextCursorRef.current = typeof connectionResult.data.nextCursor === "number" ? connectionResult.data.nextCursor : null;
               setConnectionsError(false);
             } else {
               setConnectionsError(true);
@@ -1976,7 +2068,7 @@ export default function MatchApp({
   const visibleUnreadConnections = connections.filter(
     (connection) =>
       connection.unreadCount > 0 &&
-      !dismissedNotificationSet.has(`chat:${connection.id}`),
+      !dismissedNotificationSet.has(chatNotificationKey(connection)),
   );
   const heartCount = visibleHeartConnections.length;
   const profileLikeCount = visibleProfileLikes.filter((like) => !like.read).length;
@@ -1990,7 +2082,7 @@ export default function MatchApp({
     ...visibleHeartConnections.map((connection) => `heart:${connection.id}`),
     ...visibleAcceptedNotices.map((notice) => `accepted:${notice.id}`),
     ...visibleDeclinedNotices.map((notice) => `declined:${notice.id}`),
-    ...visibleUnreadConnections.map((connection) => `chat:${connection.id}`),
+    ...visibleUnreadConnections.map(chatNotificationKey),
   ];
   const notificationCount =
     pendingCount +
@@ -2985,6 +3077,9 @@ export default function MatchApp({
     setSelectedPending(null);
     setSelectedConnection(connection);
     setMessages([]);
+    messagesNextCursorRef.current = null;
+    messagesLoadedOlderRef.current = false;
+    setMessagesHasMore(false);
     setMessagesError(false);
     setTab("chat");
     setNotificationOpen(false);
@@ -3002,6 +3097,9 @@ export default function MatchApp({
     messageLoadInFlightRef.current = null;
     setSelectedConnection(null);
     setMessages([]);
+    messagesNextCursorRef.current = null;
+    messagesLoadedOlderRef.current = false;
+    setMessagesHasMore(false);
     setMessagesLoading(false);
     setMessagesError(false);
     setPendingMessages([]);
@@ -3650,6 +3748,9 @@ export default function MatchApp({
     messageLoadInFlightRef.current = null;
     setSelectedConnection(null);
     setMessages([]);
+    messagesNextCursorRef.current = null;
+    messagesLoadedOlderRef.current = false;
+    setMessagesHasMore(false);
     setMessagesLoading(false);
     setMessagesError(false);
     notify("このユーザーをブロックしました");
@@ -4550,6 +4651,16 @@ export default function MatchApp({
                   </div>
                 )}
               </div>
+              {recruitsHasMore && (
+                <button
+                  type="button"
+                  className="paginationButton"
+                  onClick={() => void loadRecruits(true)}
+                  disabled={recruitsLoadingMore}
+                >
+                  {recruitsLoadingMore ? "読み込み中…" : "過去の募集をさらに表示"}
+                </button>
+              )}
             </section>
           )}
 
@@ -4713,6 +4824,9 @@ export default function MatchApp({
                         messageLoadInFlightRef.current = null;
                         setSelectedConnection(null);
                         setMessages([]);
+                        messagesNextCursorRef.current = null;
+                        messagesLoadedOlderRef.current = false;
+                        setMessagesHasMore(false);
                         setMessagesLoading(false);
                         setMessagesError(false);
                       }}
@@ -4772,6 +4886,16 @@ export default function MatchApp({
                     </div>
                   )}
                   <div className="messageThread" ref={messageThreadRef}>
+                    {messagesHasMore && messages.length > 0 && (
+                      <button
+                        type="button"
+                        className="paginationButton messageHistoryButton"
+                        onClick={() => void loadMessages(selectedConnection, false, true)}
+                        disabled={messagesLoadingOlder}
+                      >
+                        {messagesLoadingOlder ? "読み込み中…" : "過去のメッセージを読み込む"}
+                      </button>
+                    )}
                     {messagesLoading && !messages.length ? (
                       <div className="chatEmpty chatThreadStatus">
                         <span>•••</span>
@@ -5006,6 +5130,7 @@ export default function MatchApp({
                       </button>
                     </div>
                   ) : connections.length ||
+                  connectionsHasMore ||
                   incoming.some((notice) => notice.status === "pending") ||
                   outgoing.some((notice) => notice.status === "pending") ? (
                     <>
@@ -5085,6 +5210,16 @@ export default function MatchApp({
                             )}
                           </section>
                         )}
+                        {noticesHaveMore && (
+                          <button
+                            type="button"
+                            className="paginationButton"
+                            onClick={() => void loadNotices(true)}
+                            disabled={noticesLoadingMore}
+                          >
+                            {noticesLoadingMore ? "読み込み中…" : "過去の申請履歴を読み込む"}
+                          </button>
+                        )}
                         {connections.map((connection) => (
                           <article
                             key={connection.id}
@@ -5133,6 +5268,16 @@ export default function MatchApp({
                             </button>
                           </article>
                         ))}
+                        {connectionsHasMore && (
+                          <button
+                            type="button"
+                            className="paginationButton"
+                            onClick={() => void loadConnections(true)}
+                            disabled={connectionsLoadingMore}
+                          >
+                            {connectionsLoadingMore ? "読み込み中…" : "過去のチャットを読み込む"}
+                          </button>
+                        )}
                       </div>
                     </>
                   ) : (
@@ -6364,7 +6509,7 @@ export default function MatchApp({
                   <button
                     className="notificationRow message"
                     onClick={() => {
-                      void dismissNotifications([`chat:${connection.id}`]);
+                      void dismissNotifications([chatNotificationKey(connection)]);
                       void openChat(connection);
                     }}
                   >
@@ -6377,7 +6522,7 @@ export default function MatchApp({
                   </button>
                   <button
                     className="notificationDismiss"
-                    onClick={() => void dismissNotifications([`chat:${connection.id}`])}
+                    onClick={() => void dismissNotifications([chatNotificationKey(connection)])}
                     aria-label={`${connection.mateName}さんからのメッセージ通知を消す`}
                   >
                     ×

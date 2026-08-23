@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull, or } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, lt, or } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { blocks, connections, messages } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
@@ -57,7 +57,10 @@ function serializeMessage(
 export async function GET(request: Request) {
   const user = await getChatGPTUser();
   if (!user) return Response.json({ error: "ログインが必要です", signIn }, { status: 401 });
-  const connectionId = Number(new URL(request.url).searchParams.get("connectionId"));
+  const params = new URL(request.url).searchParams;
+  const connectionId = Number(params.get("connectionId"));
+  const beforeValue = Number(params.get("before"));
+  const before = Number.isInteger(beforeValue) && beforeValue > 0 ? beforeValue : null;
   if (!Number.isInteger(connectionId)) return Response.json({ error: "マッチを選択してください" }, { status: 400 });
   const aliases = await identityAliases(user.userId, user.email);
   const aliasSet = new Set(aliases);
@@ -66,13 +69,18 @@ export async function GET(request: Request) {
   // Keep the most recent part of long conversations. Ordering ascending before
   // applying the limit returned the oldest 100 messages and made new messages
   // appear to disappear once a conversation grew past that point.
+  const pageSize = 100;
   const newestRows = await getDb()
     .select()
     .from(messages)
-    .where(eq(messages.connectionId, connectionId))
+    .where(and(
+      eq(messages.connectionId, connectionId),
+      before ? lt(messages.id, before) : undefined,
+    ))
     .orderBy(desc(messages.createdAt), desc(messages.id))
-    .limit(100);
-  const rows = newestRows.reverse();
+    .limit(pageSize + 1);
+  const hasMore = newestRows.length > pageSize;
+  const rows = newestRows.slice(0, pageSize).reverse();
   const isA=aliasSet.has(connection.userAId);const mateLastRead=isA?connection.userBLastReadAt:connection.userALastReadAt;
   runInBackground(
     getDb().update(connections).set(isA?{userALastReadAt:new Date()}:{userBLastReadAt:new Date()}).where(eq(connections.id,connection.id)),
@@ -82,6 +90,8 @@ export async function GET(request: Request) {
     messages: rows.map((row) =>
       serializeMessage(row, aliasSet, mateLastRead),
     ),
+    hasMore,
+    nextCursor: rows[0]?.id ?? null,
   });
 }
 

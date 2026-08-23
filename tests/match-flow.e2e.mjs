@@ -240,6 +240,22 @@ try {
   assert.equal(longThread.messages.length, 100);
   assert.equal(longThread.messages[0].body, "bulk-006");
   assert.equal(longThread.messages.at(-1).body, "bulk-105");
+  assert.equal(longThread.hasMore, true);
+  assert.equal(typeof longThread.nextCursor, "number");
+  const olderThread = await api(`/api/messages?connectionId=${connectionId}&before=${longThread.nextCursor}`, { user: owner });
+  assert.equal(olderThread.messages.length, 6);
+  assert.equal(olderThread.messages[0].body, "👋 参加します");
+  assert.equal(olderThread.messages.at(-1).body, "bulk-005");
+  assert.equal(olderThread.hasMore, false);
+
+  ownerConnections = await api("/api/connections", { user: owner });
+  const dismissedChatKey = `chat:${connectionId}:${ownerConnections.connections[0].latestMessageId}`;
+  const dismissedChatNotification = await api("/api/notifications", {
+    user: owner,
+    method: "PATCH",
+    body: { keys: [dismissedChatKey] },
+  });
+  assert.deepEqual(dismissedChatNotification.dismissedKeys, [dismissedChatKey]);
 
   await api("/api/connections", { user: owner, method: "PATCH", body: { connectionId, action: "share_contact" } });
   applicantConnections = await api("/api/connections", { user: applicant });

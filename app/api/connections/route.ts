@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gt, inArray, isNull, max, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, gt, inArray, isNull, lt, max, or, sql } from "drizzle-orm";
 import { getDb } from "../../../db";
 import {
   applications,
@@ -125,7 +125,7 @@ async function backfillAcceptedConnections(userIds: string[]) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const user = await getChatGPTUser();
   if (!user)
     return Response.json(
@@ -134,6 +134,8 @@ export async function GET() {
     );
   const aliases = await identityAliases(user.userId, user.email);
   const aliasSet = new Set(aliases);
+  const beforeValue = Number(new URL(request.url).searchParams.get("before"));
+  const before = Number.isInteger(beforeValue) && beforeValue > 0 ? beforeValue : null;
   try {
     await backfillAcceptedConnections(aliases);
   } catch (error) {
@@ -158,20 +160,25 @@ export async function GET() {
   const rows = await db
     .select()
     .from(connections)
-    .where(
+    .where(and(
       or(
         inArray(connections.userAId, aliases),
         inArray(connections.userBId, aliases),
       ),
-    )
-    .orderBy(desc(connections.createdAt))
-    .limit(connectionListLimit);
+      before ? lt(connections.id, before) : undefined,
+    ))
+    .orderBy(desc(connections.id))
+    .limit(connectionListLimit + 1);
 
-  const visible = rows.filter(
+  const hasMore = rows.length > connectionListLimit;
+  const pageRows = rows.slice(0, connectionListLimit);
+  const nextCursor = pageRows.at(-1)?.id ?? null;
+
+  const visible = pageRows.filter(
     (row) =>
       !hidden.has(aliasSet.has(row.userAId) ? row.userBId : row.userAId),
   );
-  if (!visible.length) return Response.json({ connections: [] });
+  if (!visible.length) return Response.json({ connections: [], hasMore, nextCursor });
   const mateIds = [
     ...new Set(
       visible.map((row) =>
@@ -205,8 +212,10 @@ export async function GET() {
         tags: connectionRatings.tags,
       })
       .from(connectionRatings)
-      .where(inArray(connectionRatings.raterId, aliases))
-      .limit(connectionListLimit),
+      .where(and(
+        inArray(connectionRatings.raterId, aliases),
+        inArray(connectionRatings.connectionId, connectionIds),
+      )),
     Promise.all(
       chunked(connectionIds).map((ids) => db
         .select({
@@ -348,6 +357,7 @@ export async function GET() {
         myRatingTags,
         latestMessage:
           latest?.body ?? "マッチ成立！最初のメッセージを送りましょう",
+        latestMessageId: latest?.id ?? null,
         latestAt: latest?.createdAt ?? row.createdAt,
         unreadCount: Math.min(99, unreadCountByConnection.get(row.id) || 0),
       };
@@ -357,7 +367,7 @@ export async function GET() {
       Number(b.pinned) - Number(a.pinned) ||
       b.latestAt.getTime() - a.latestAt.getTime(),
   );
-  return Response.json({ connections: result });
+  return Response.json({ connections: result, hasMore, nextCursor });
 }
 
 export async function PATCH(request: Request) {

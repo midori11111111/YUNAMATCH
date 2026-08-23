@@ -10,21 +10,28 @@ import { runInBackground } from "../../../lib/background";
 
 const recruitRoles=new Set(["上レーン","下レーン","中央","キャリー","タンク","サポート","アタック型","バランス型","スピード型","ディフェンス型","サポート型"]);
 const matchTypes=new Set(["ランクマッチ","カジュアル"]);
+const recruitPageSize=100;
+const recruitFields={ id:recruits.id, ownerId:recruits.ownerId, trainerName:recruits.trainerName, gender:recruits.gender, pokemon:recruits.pokemon, role:recruits.role, matches:recruits.matches, winRate:recruits.winRate, rank:recruits.rank, playTime:recruits.playTime, note:recruits.note, createdAt:recruits.createdAt, avatarUrl:profiles.avatarUrl, startAt:recruits.startAt, startTimeUndecided:recruits.startTimeUndecided, expiresAt:recruits.expiresAt, partySize:recruits.partySize, desiredPokemon:recruits.desiredPokemon, desiredRole:recruits.desiredRole, matchType:recruits.matchType, acceptedCount:recruits.acceptedCount };
 
-export async function GET() {
+export async function GET(request:Request) {
   const db = getDb();
   const user = await getChatGPTUser();
+  const beforeValue=Number(new URL(request.url).searchParams.get("before"));
+  const before=Number.isInteger(beforeValue)&&beforeValue>0?beforeValue:null;
   await db.update(recruits).set({status:"expired"}).where(and(eq(recruits.status,"open"),lt(recruits.expiresAt,new Date())));
-  const rows = await db.select({ id:recruits.id, ownerId:recruits.ownerId, trainerName:recruits.trainerName, gender:recruits.gender, pokemon:recruits.pokemon, role:recruits.role, matches:recruits.matches, winRate:recruits.winRate, rank:recruits.rank, playTime:recruits.playTime, note:recruits.note, createdAt:recruits.createdAt, avatarUrl:profiles.avatarUrl, startAt:recruits.startAt, startTimeUndecided:recruits.startTimeUndecided, expiresAt:recruits.expiresAt, partySize:recruits.partySize, desiredPokemon:recruits.desiredPokemon, desiredRole:recruits.desiredRole, matchType:recruits.matchType, acceptedCount:recruits.acceptedCount }).from(recruits).leftJoin(profiles,eq(recruits.ownerId,profiles.userId)).where(and(eq(recruits.status,"open"),eq(recruits.kind,"timed"))).orderBy(desc(recruits.createdAt)).limit(100);
+  const pageRows = await db.select(recruitFields).from(recruits).leftJoin(profiles,eq(recruits.ownerId,profiles.userId)).where(and(eq(recruits.status,"open"),eq(recruits.kind,"timed"),before?lt(recruits.id,before):undefined)).orderBy(desc(recruits.id)).limit(recruitPageSize+1);
+  const hasMore=pageRows.length>recruitPageSize;
+  const rows=pageRows.slice(0,recruitPageSize);
+  const nextCursor=rows.at(-1)?.id??null;
   const visibleRecruit=(row:typeof rows[number])=>({id:row.id,trainerName:row.trainerName,gender:row.gender,pokemon:row.pokemon,role:row.role,matches:row.matches,winRate:row.winRate,rank:normalizeRank(row.rank),playTime:row.playTime,note:row.note,createdAt:row.createdAt,avatarUrl:row.avatarUrl||"",startAt:row.startAt,startTimeUndecided:row.startTimeUndecided,expiresAt:row.expiresAt,partySize:row.partySize,desiredPokemon:row.desiredPokemon,desiredRole:row.desiredRole,matchType:row.matchType,acceptedCount:row.acceptedCount});
-  if (!user) return Response.json({ recruits: rows.map(visibleRecruit), myRecruit:null });
+  if (!user) return Response.json({ recruits: rows.map(visibleRecruit), myRecruit:null, hasMore, nextCursor });
   const [blockedByMe, blockedMe] = await Promise.all([
     db.select({ id: blocks.blockedId }).from(blocks).where(eq(blocks.blockerId, user.userId)),
     db.select({ id: blocks.blockerId }).from(blocks).where(eq(blocks.blockedId, user.userId)),
   ]);
   const hidden = new Set([...blockedByMe, ...blockedMe].map((row) => row.id));
-  const myRecruit=rows.find((row)=>row.ownerId===user.userId);
-  return Response.json({ recruits: rows.filter((row) => row.ownerId !== user.userId && !hidden.has(row.ownerId)).map(visibleRecruit), myRecruit:myRecruit?visibleRecruit(myRecruit):null });
+  const [myRecruit]=await db.select(recruitFields).from(recruits).leftJoin(profiles,eq(recruits.ownerId,profiles.userId)).where(and(eq(recruits.ownerId,user.userId),eq(recruits.status,"open"),eq(recruits.kind,"timed"))).orderBy(desc(recruits.id)).limit(1);
+  return Response.json({ recruits: rows.filter((row) => row.ownerId !== user.userId && !hidden.has(row.ownerId)).map(visibleRecruit), myRecruit:myRecruit?visibleRecruit(myRecruit):null, hasMore, nextCursor });
 }
 
 export async function POST(request:Request) {
@@ -60,26 +67,24 @@ export async function POST(request:Request) {
   const [lobby]=await db.insert(lobbies).values({recruitId:row.id,ownerId:user.userId,status:"forming",scheduledAt:startAt,createdAt:now}).returning();
   await db.insert(lobbyMembers).values({lobbyId:lobby.id,userId:user.userId,trainerName:profile.trainerName,pokemon:row.pokemon,contact:"",joinedAt:now});
   const [alertRows, blockRows] = await Promise.all([
-    db.select({ userId: recruitAlerts.userId }).from(recruitAlerts).where(eq(recruitAlerts.enabled, true)).limit(100),
+    db.select({ userId: recruitAlerts.userId }).from(recruitAlerts).where(eq(recruitAlerts.enabled, true)),
     db.select({ blockerId: blocks.blockerId, blockedId: blocks.blockedId }).from(blocks).where(or(eq(blocks.blockerId, user.userId), eq(blocks.blockedId, user.userId))),
   ]);
   const hiddenAlertUsers = new Set(
     blockRows.map((block) => block.blockerId === user.userId ? block.blockedId : block.blockerId),
   );
   const startLabel = startTimeUndecided ? "時間は相談" : startsIn === 0 ? "今から" : `${startsIn}分後`;
-  runInBackground(
-    Promise.allSettled(
-      alertRows
-      .filter((alert) => alert.userId !== user.userId && !hiddenAlertUsers.has(alert.userId))
-      .map((alert) => sendPush(
-        alert.userId,
-        "新しいユナイト募集が届きました",
-        `${profile.trainerName}さんが${matchType}・${startLabel}・${partySize}人で募集中です`,
-        `/?recruit=${row.id}`,
-      )),
-    ),
-    "Recruit alert fanout",
-  );
+  const alertRecipients=alertRows.filter((alert) => alert.userId !== user.userId && !hiddenAlertUsers.has(alert.userId));
+  runInBackground((async()=>{
+    for(let index=0;index<alertRecipients.length;index+=50){
+      await Promise.allSettled(alertRecipients.slice(index,index+50).map((alert) => sendPush(
+          alert.userId,
+          "新しいユナイト募集が届きました",
+          `${profile.trainerName}さんが${matchType}・${startLabel}・${partySize}人で募集中です`,
+          `/?recruit=${row.id}`,
+        )));
+    }
+  })(),"Recruit alert fanout");
   return Response.json({recruit:{...row,avatarUrl:profile.avatarUrl}},{status:201});
 }
 

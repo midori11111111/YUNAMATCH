@@ -1305,3 +1305,26 @@ button { cursor: pointer; }
   * { scroll-behavior: auto !important; }
   .discoverCard.left, .discoverCard.right, .fullDiscoverCard.left, .fullDiscoverCard.right, .loadingBall, .toast { animation: none; }
 }
+.paginationButton {
+  width: 100%;
+  min-height: 48px;
+  margin: 12px 0;
+  border: 1px solid rgba(103, 78, 232, 0.2);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #5d47d8;
+  font: inherit;
+  font-weight: 800;
+  box-shadow: 0 8px 24px rgba(57, 39, 109, 0.08);
+}
+
+.paginationButton:disabled {
+  cursor: wait;
+  opacity: 0.58;
+}
+
+.messageHistoryButton {
+  flex: 0 0 auto;
+  margin: 4px 0 12px;
+  box-shadow: none;
+}

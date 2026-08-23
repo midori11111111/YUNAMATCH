@@ -1,4 +1,4 @@
-import { and, desc, eq, gt } from "drizzle-orm";
+import { and, desc, eq, gt, lt, ne } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { applicationMessages, applications, connections, lobbies, lobbyMembers, messages, profiles, recruits } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
@@ -8,14 +8,38 @@ import { containsProhibitedContent, prohibitedContentMessage } from "../../../li
 import { runInBackground } from "../../../lib/background";
 
 const signIn = "/login";
+const historyPageSize = 50;
 
-export async function GET(){
+function cursor(value: string | null) {
+ const parsed=Number(value);
+ return Number.isInteger(parsed)&&parsed>0?parsed:null;
+}
+
+export async function GET(request:Request){
  const user=await getChatGPTUser();
  if(!user)return Response.json({error:"ログインが必要です",signIn},{status:401});
  const db=getDb();
- const incoming=await db.select({id:applications.id,recruitId:applications.recruitId,applicantName:applications.applicantName,pokemon:applications.pokemon,message:applications.message,status:applications.status,decisionMessage:applications.decisionMessage,recruitPokemon:recruits.pokemon,createdAt:applications.createdAt}).from(applications).innerJoin(recruits,eq(applications.recruitId,recruits.id)).where(eq(recruits.ownerId,user.userId)).orderBy(desc(applications.createdAt)).limit(50);
- const outgoing=await db.select({id:applications.id,recruitId:applications.recruitId,trainerName:recruits.trainerName,pokemon:applications.pokemon,message:applications.message,status:applications.status,decisionMessage:applications.decisionMessage,recruitPokemon:recruits.pokemon,createdAt:applications.createdAt}).from(applications).innerJoin(recruits,eq(applications.recruitId,recruits.id)).where(eq(applications.applicantId,user.userId)).orderBy(desc(applications.createdAt)).limit(50);
- return Response.json({incoming,outgoing});
+ const params=new URL(request.url).searchParams;
+ const beforeIncoming=cursor(params.get("beforeIncoming"));
+ const beforeOutgoing=cursor(params.get("beforeOutgoing"));
+ const incomingFields={id:applications.id,recruitId:applications.recruitId,applicantName:applications.applicantName,pokemon:applications.pokemon,message:applications.message,status:applications.status,decisionMessage:applications.decisionMessage,recruitPokemon:recruits.pokemon,createdAt:applications.createdAt};
+ const outgoingFields={id:applications.id,recruitId:applications.recruitId,trainerName:recruits.trainerName,pokemon:applications.pokemon,message:applications.message,status:applications.status,decisionMessage:applications.decisionMessage,recruitPokemon:recruits.pokemon,createdAt:applications.createdAt};
+ const [pendingIncoming,pendingOutgoing,incomingHistoryRows,outgoingHistoryRows]=await Promise.all([
+  db.select(incomingFields).from(applications).innerJoin(recruits,eq(applications.recruitId,recruits.id)).where(and(eq(recruits.ownerId,user.userId),eq(applications.status,"pending"))).orderBy(desc(applications.createdAt),desc(applications.id)),
+  db.select(outgoingFields).from(applications).innerJoin(recruits,eq(applications.recruitId,recruits.id)).where(and(eq(applications.applicantId,user.userId),eq(applications.status,"pending"))).orderBy(desc(applications.createdAt),desc(applications.id)),
+  db.select(incomingFields).from(applications).innerJoin(recruits,eq(applications.recruitId,recruits.id)).where(and(eq(recruits.ownerId,user.userId),ne(applications.status,"pending"),beforeIncoming?lt(applications.id,beforeIncoming):undefined)).orderBy(desc(applications.createdAt),desc(applications.id)).limit(historyPageSize+1),
+  db.select(outgoingFields).from(applications).innerJoin(recruits,eq(applications.recruitId,recruits.id)).where(and(eq(applications.applicantId,user.userId),ne(applications.status,"pending"),beforeOutgoing?lt(applications.id,beforeOutgoing):undefined)).orderBy(desc(applications.createdAt),desc(applications.id)).limit(historyPageSize+1),
+ ]);
+ const incomingHistory=incomingHistoryRows.slice(0,historyPageSize);
+ const outgoingHistory=outgoingHistoryRows.slice(0,historyPageSize);
+ return Response.json({
+  incoming:[...pendingIncoming,...incomingHistory],
+  outgoing:[...pendingOutgoing,...outgoingHistory],
+  hasMoreIncoming:incomingHistoryRows.length>historyPageSize,
+  hasMoreOutgoing:outgoingHistoryRows.length>historyPageSize,
+  nextIncomingCursor:incomingHistory.at(-1)?.id??null,
+  nextOutgoingCursor:outgoingHistory.at(-1)?.id??null,
+ });
 }
 
 export async function POST(request:Request){
