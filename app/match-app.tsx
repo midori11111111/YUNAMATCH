@@ -1647,6 +1647,17 @@ export default function MatchApp({
           if (accounts.some((account) => account.provider === "discord")) {
             window.location.assign(discordInviteUrl);
           } else {
+            try {
+              window.sessionStorage.setItem(
+                pendingGuestActionKey,
+                JSON.stringify({
+                  type: "discord-join",
+                  label: "Discordサーバーに参加",
+                } satisfies PendingGuestAction),
+              );
+            } catch {
+              /* Discord連携自体は続ける */
+            }
             window.location.assign("/api/link/discord?joinDiscord=1");
           }
           return;
@@ -2544,6 +2555,17 @@ export default function MatchApp({
     }
     if (!linkedAccounts.some((account) => account.provider === "discord")) {
       notify("Discordアカウントを連携してから参加できます");
+      try {
+        window.sessionStorage.setItem(
+          pendingGuestActionKey,
+          JSON.stringify({
+            type: "discord-join",
+            label: "Discordサーバーに参加",
+          } satisfies PendingGuestAction),
+        );
+      } catch {
+        /* Discord連携自体は続ける */
+      }
       window.location.assign("/api/link/discord?joinDiscord=1");
       return false;
     }
