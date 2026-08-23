@@ -4871,9 +4871,14 @@ export default function MatchApp({
                             <time>{formatRecruitPostedAt(recruit.createdAt)}</time>
                           </span>
                           <span className="recruitTop">
-                            <strong className="recruitTrainerName">
-                              {recruit.trainerName}
-                            </strong>
+                            <span className="recruitTrainerIdentity">
+                              <strong className="recruitTrainerName">
+                                {recruit.trainerName}
+                              </strong>
+                              <span className="recruitGenderBadge">
+                                {recruit.gender || "性別未設定"}
+                              </span>
+                            </span>
                             <span>
                               ● {recruit.acceptedCount + 1}/{recruit.partySize}
                               人
@@ -4925,7 +4930,9 @@ export default function MatchApp({
                           <div className="recruitOwnerSummary">
                             <div className="recruitOwnerHeading">
                               <small>募集者プロフィール</small>
-                              <strong>募集者ランク：{recruit.rank}</strong>
+                              <strong>
+                                {recruit.gender || "性別未設定"} ・ 募集者ランク：{recruit.rank}
+                              </strong>
                             </div>
                             <div className="recruitFacts">
                               <div>
@@ -7374,6 +7381,7 @@ export default function MatchApp({
             )}
             <div className="recruitProfileMeta">
               <PokemonLabel name={recruitProfileView.pokemon} />
+              <span>性別：{recruitProfileView.gender || "未設定"}</span>
               <span>募集者ランク：{recruitProfileView.rank}</span>
               <span>募集モード：{recruitProfileView.matchType}</span>
               <span>募集日時：{formatRecruitPostedAt(recruitProfileView.createdAt)}</span>

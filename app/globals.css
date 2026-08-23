@@ -480,6 +480,8 @@ button { cursor: pointer; }
 .recruitProfileLink strong { overflow: hidden; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
 .recruitProfileLink small { color: #99919f; font-size: 6px; }
 .recruitProfileLink > b { color: var(--recruit-accent); font-size: 17px; }
+.recruitTrainerIdentity { min-width: 0; display: flex; align-items: center; gap: 6px; }
+.recruitGenderBadge { flex: 0 0 auto; padding: 3px 6px; border: 1px solid #ddd5f2; border-radius: 99px; color: #675d78; background: #f6f3fc; font-size: 6px; font-weight: 900; white-space: nowrap; }
 .recruitApply { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 14px; padding: 13px; color: #fff; background: linear-gradient(135deg, var(--purple), #8b73f2); font-size: 10px; font-weight: 900; box-shadow: 0 9px 20px #7257e82b; }
 .recruitApply:disabled { color: #817a89; background: #eeeaf1; box-shadow: none; }
 .recruitApply span { font-size: 17px; line-height: .6; }
