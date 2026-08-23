@@ -237,6 +237,27 @@ async function editOriginalResponse(
     throw new Error(`Discord interaction update failed: ${response.status}`);
 }
 
+async function publishRecruitResponse(
+  applicationId: string,
+  interactionToken: string,
+  message: DiscordMessage,
+) {
+  const webhookUrl = `https://discord.com/api/v10/webhooks/${applicationId}/${interactionToken}`;
+  const response = await fetch(webhookUrl, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(message),
+  });
+  if (!response.ok)
+    throw new Error(`Discord public response failed: ${response.status}`);
+
+  // Remove the private "processing" response after the public recruit card
+  // has been posted to the channel.
+  await fetch(`${webhookUrl}/messages/@original`, { method: "DELETE" }).catch(
+    () => undefined,
+  );
+}
+
 export async function POST(request: Request) {
   const raw = await request.text();
   if (!(await verify(request, raw)))
@@ -277,20 +298,22 @@ export async function POST(request: Request) {
 
   const task = createRecruitMessage(interaction, discordId)
     .then((message) =>
-      editOriginalResponse(applicationId, interactionToken, message),
+      message.components?.length
+        ? publishRecruitResponse(applicationId, interactionToken, message)
+        : editOriginalResponse(applicationId, interactionToken, message),
     )
     .catch(() =>
       editOriginalResponse(
         applicationId,
         interactionToken,
         errorMessage("募集を作成できませんでした。もう一度お試しください。"),
-      ),
+      ).catch(() => undefined),
     );
   const executionContext = getRequestExecutionContext();
   if (executionContext) executionContext.waitUntil(task);
   else void task;
 
-  // Discord requires an acknowledgement within three seconds. The completed
-  // recruit card replaces this deferred response as soon as database work ends.
+  // Discord requires an acknowledgement within three seconds. Keep this
+  // processing response private, then post the completed recruit publicly.
   return json({ type: 5, data: { flags: 64 } });
 }
