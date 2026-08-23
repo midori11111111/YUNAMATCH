@@ -50,6 +50,16 @@ const commands = [
         ],
       },
       {
+        type: 4,
+        name: "voice_limit",
+        description: "Botが作る募集VCの人数",
+        required: true,
+        choices: [2, 3, 4, 5].map((value) => ({
+          name: `${value}人`,
+          value,
+        })),
+      },
+      {
         type: 3,
         name: "lane",
         description: "担当レーン（任意）",
@@ -65,15 +75,6 @@ const commands = [
         choices: ["キャリー", "タンク", "サポート"].map((name) => ({
           name,
           value: name,
-        })),
-      },
-      {
-        type: 4,
-        name: "voice_limit",
-        description: "Botが募集VCを作る場合の人数（任意）",
-        choices: [2, 3, 4, 5].map((value) => ({
-          name: `${value}人`,
-          value,
         })),
       },
       {

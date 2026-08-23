@@ -46,7 +46,8 @@ const currentRankChoices = [
 const voiceLimitOption: DiscordCommandOption = {
   type: 4,
   name: "voice_limit",
-  description: "Botが募集VCを作る場合の人数（任意）",
+  description: "Botが作る募集VCの人数",
+  required: true,
   choices: [2, 3, 4, 5].map((value) => ({
     name: `${value}人`,
     value,
@@ -98,7 +99,11 @@ export async function POST() {
     }));
   if (!mappedOptions.some((option) => option.name === "voice_limit"))
     mappedOptions.push(voiceLimitOption);
-  const options = [matchTypeOption, ...mappedOptions];
+  const options = [
+    matchTypeOption,
+    ...mappedOptions.filter((option) => option.required),
+    ...mappedOptions.filter((option) => !option.required),
+  ];
   const updateResponse = await fetch(
     `https://discord.com/api/v10/applications/${appId}/commands/${recruitCommand.id}`,
     {

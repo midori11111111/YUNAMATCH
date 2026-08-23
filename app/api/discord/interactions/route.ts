@@ -154,7 +154,7 @@ async function createRecruitMessage(
   const duration = Number(options.duration || 2);
   const matches = Number(options.matches || 0);
   const winRate = Number(options.win_rate || 50);
-  const voiceLimit = Number(options.voice_limit || 0);
+  const voiceLimit = Number(options.voice_limit);
   if (
     !matchTypes.has(matchType) ||
     !discordRecruitRanks.has(currentRank) ||
@@ -162,7 +162,7 @@ async function createRecruitMessage(
     !["up_to_3", "2", "3", "5"].includes(partyChoice) ||
     ![0, 30, 60, 120].includes(startsIn) ||
     ![1, 2, 3].includes(duration) ||
-    ![0, 2, 3, 4, 5].includes(voiceLimit)
+    ![2, 3, 4, 5].includes(voiceLimit)
   )
     return errorMessage("募集条件を確認してください。");
 
@@ -240,28 +240,33 @@ async function createRecruitMessage(
     options.win_rate !== undefined ? `勝率は${winRate}%` : "",
   ].filter(Boolean);
   let voiceRoom: { name: string; url: string } | null = null;
-  let voiceRoomError = false;
-  if (voiceLimit) {
-    try {
-      voiceRoom = await createRecruitVoiceRoom({
-        discordId,
-        trainerName: profile.trainerName,
-        userLimit: voiceLimit,
-      });
-    } catch {
-      voiceRoomError = true;
-    }
+  try {
+    voiceRoom = await createRecruitVoiceRoom({
+      discordId,
+      trainerName: profile.trainerName,
+      userLimit: voiceLimit,
+    });
+  } catch {
+    await Promise.all([
+      db
+        .update(recruits)
+        .set({ status: "closed" })
+        .where(eq(recruits.id, recruit.id)),
+      db
+        .update(lobbies)
+        .set({ status: "cancelled", finishedAt: new Date() })
+        .where(eq(lobbies.id, lobby.id)),
+    ]);
+    return errorMessage(
+      "VCを作成できなかったため、募集は公開しませんでした。Botの権限を確認してもう一度お試しください。",
+    );
   }
   return {
     content: [
       `@here **${matchType}の${partyDisplay}パーティ募集中です**`,
       `募集者のレートは${currentRank}`,
       ...optionalDetails,
-      voiceRoom
-        ? `VCは${voiceLimit}人用・24時間で自動削除されます`
-        : voiceRoomError
-          ? "VCの作成に失敗しました（募集は公開済みです）"
-          : "",
+      `VCは${voiceLimit}人用・24時間で自動削除されます`,
       "参加申請は下のボタンから",
     ].filter(Boolean).join("\n"),
     allowed_mentions: { parse: ["everyone"] },

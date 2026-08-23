@@ -203,6 +203,7 @@ test("supports casual and ranked recruiting on the site and Discord", async () =
   assert.match(discordApi, /options\.win_rate !== undefined \? `勝率は/);
   assert.match(commandScript, /name: "match_type"/);
   assert.match(commandScript, /name: "voice_limit"/);
+  assert.match(commandScript, /name: "voice_limit",[\s\S]*?required: true/);
   assert.match(commandScript, /required: true/);
   assert.match(commandScript, /募集者本人/);
   assert.match(commandScript, /"マスター0〜249"/);
@@ -217,6 +218,7 @@ test("supports casual and ranked recruiting on the site and Discord", async () =
   assert.match(adminCommandApi, /currentRankChoices/);
   assert.match(adminCommandApi, /option\.name === "current_rank"/);
   assert.match(adminCommandApi, /voiceLimitOption/);
+  assert.match(adminCommandApi, /mappedOptions\.filter\(\(option\) => option\.required\)/);
   assert.match(adminCommandApi, /requireAdmin/);
   assert.match(adminCommandApi, /method: "PATCH"/);
   assert.match(adminCommandApi, /clarifiedDescriptions/);
