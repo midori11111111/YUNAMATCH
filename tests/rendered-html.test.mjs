@@ -235,11 +235,13 @@ test("supports casual and ranked recruiting on the site and Discord", async () =
 
 test("explains what happens after likes and mate requests", async () => {
   const app = await readFile(new URL("app/match-app.tsx", root), "utf8");
-  assert.match(app, /「気になる」を相手に通知/);
-  assert.match(app, /チャットや申請はまだ始まりません/);
-  assert.match(app, /承認前から「やりとり」で相談できます/);
-  assert.match(app, /承認されると通常チャットが開きます/);
-  assert.match(app, /「相手から」：自分にいいねした人を見る/);
+  assert.match(app, /相手の通知と「相手から」にあなたのプロフィールが表示されます/);
+  assert.match(app, /チャットは始まらない/);
+  assert.match(app, /メイト成立にもならない/);
+  assert.match(app, /「やりとり」の承認待ちで相談できる/);
+  assert.match(app, /承認されるとメイト成立・通常チャット開始/);
+  assert.match(app, /参加申請やDMが届き、承認するとロビーへ進みます/);
+  assert.match(app, /連絡先は自動公開されません/);
 });
 
 test("requires a linked Discord account before opening the community invite", async () => {
@@ -413,7 +415,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /キャリー/);
   assert.match(app, /おすすめ/);
   assert.match(app, /相手から/);
-  assert.match(app, /カードの使い方/);
+  assert.match(app, /使い方・機能ガイド/);
   assert.match(app, /yunamatch-discover-tutorial-v1/);
   assert.doesNotMatch(app, /次の人/);
   assert.match(app, /まだやりとりがありません/);

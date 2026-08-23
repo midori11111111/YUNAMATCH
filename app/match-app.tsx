@@ -4311,7 +4311,10 @@ export default function MatchApp({
                   aria-label="探す画面の使い方"
                 >
                   <div className="tutorialTop">
-                    <strong>カードの使い方</strong>
+                    <div>
+                      <small>YUNAMATCH GUIDE</small>
+                      <strong>使い方・機能ガイド</strong>
+                    </div>
                     <button
                       onClick={closeTutorial}
                       aria-label="チュートリアルを閉じる"
@@ -4320,42 +4323,84 @@ export default function MatchApp({
                     </button>
                   </div>
                   <div className="tutorialFeatureGuide">
-                    <p>相手への伝わり方が違います</p>
+                    <div className="tutorialGuideIntro">
+                      <strong>「いいね」と「メイト申請」は違います</strong>
+                      <p>相手への伝わり方と、チャットが始まるタイミングを確認できます。</p>
+                    </div>
                     <div className="tutorialFeatureCards">
-                      <article>
+                      <article className="likeGuideCard">
                         <b>♡</b>
                         <div>
                           <strong>いいね</strong>
-                          <span>「気になる」を相手に通知</span>
-                          <small>チャットや申請はまだ始まりません</small>
+                          <span>気になる気持ちだけを伝える</span>
+                          <small>相手の通知と「相手から」にあなたのプロフィールが表示されます。</small>
                         </div>
+                        <ul>
+                          <li>相手に「いいね」が届く</li>
+                          <li>チャットは始まらない</li>
+                          <li>メイト成立にもならない</li>
+                        </ul>
                       </article>
-                      <article>
+                      <article className="requestGuideCard">
                         <b>⚡</b>
                         <div>
                           <strong>メイト申請</strong>
-                          <span>ポケモンとひとことを送信</span>
-                          <small>承認前から「やりとり」で相談できます</small>
+                          <span>一緒に遊びたい相手へ正式に申請</span>
+                          <small>使うポケモンとひとことを送り、承認前から相談できます。</small>
+                        </div>
+                        <ul>
+                          <li>相手へ申請通知が届く</li>
+                          <li>「やりとり」の承認待ちで相談できる</li>
+                          <li>承認されるとメイト成立・通常チャット開始</li>
+                        </ul>
+                      </article>
+                    </div>
+                    <div className="tutorialMatchFlow" aria-label="いいねとメイト申請後の流れ">
+                      <span><b>1</b>プロフィールを見る</span>
+                      <i>›</i>
+                      <span><b>2</b>いいね／申請</span>
+                      <i>›</i>
+                      <span><b>3</b>承認前に相談</span>
+                      <i>›</i>
+                      <span><b>4</b>承認でメイト成立</span>
+                    </div>
+                    <div className="tutorialMoreFeatures">
+                      <article>
+                        <b>＋</b>
+                        <div>
+                          <strong>募集</strong>
+                          <p>今から遊びたい時に条件を公開。参加申請やDMが届き、承認するとロビーへ進みます。</p>
+                        </div>
+                      </article>
+                      <article>
+                        <b>▢</b>
+                        <div>
+                          <strong>やりとり</strong>
+                          <p>承認待ちの相談と、成立後の通常チャットを確認。相手をピン留めできます。</p>
+                        </div>
+                      </article>
+                      <article>
+                        <b>🎮</b>
+                        <div>
+                          <strong>一緒にプレイ</strong>
+                          <p>チャットから誘い、相手が「はい」を押したらDiscord VCを作って合流できます。</p>
+                        </div>
+                      </article>
+                      <article>
+                        <b>🔒</b>
+                        <div>
+                          <strong>安心機能</strong>
+                          <p>連絡先は自動公開されません。相手ごとの共有、通報、ブロックを選べます。</p>
                         </div>
                       </article>
                     </div>
-                    <div className="tutorialMatchFlow" aria-label="メイト申請後の流れ">
-                      <span><b>1</b>申請</span>
-                      <i>›</i>
-                      <span><b>2</b>相談</span>
-                      <i>›</i>
-                      <span><b>3</b>承認</span>
-                      <i>›</i>
-                      <span><b>4</b>通常チャット</span>
+                    <div className="tutorialTips">
+                      <strong>カードの見方</strong>
+                      <p>左右をタップで前・次へ／プロフィール部分をタップで詳細／「相手から」で自分にいいねした人を確認</p>
                     </div>
-                    <ul>
-                      <li>カードの左右をタップ：前・次のメイト</li>
-                      <li>プロフィール部分をタップ：詳しい情報</li>
-                      <li>「相手から」：自分にいいねした人を見る</li>
-                    </ul>
                   </div>
                   <button className="tutorialStart" onClick={closeTutorial}>
-                    使ってみる
+                    分かった、使ってみる
                   </button>
                 </div>
               )}
