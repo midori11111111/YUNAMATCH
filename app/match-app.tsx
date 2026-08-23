@@ -4466,7 +4466,12 @@ export default function MatchApp({
                     onClick={() => setFilterOpen(true)}
                     aria-label={`条件を絞る${activeFilterCount ? `、${activeFilterCount}件設定中` : ""}`}
                   >
-                    ☷
+                    <span className="filterGlyph" aria-hidden="true">
+                      <b />
+                      <b />
+                      <b />
+                    </span>
+                    <small>絞り込み</small>
                     {activeFilterCount > 0 && <i>{activeFilterCount}</i>}
                   </button>
                 )}

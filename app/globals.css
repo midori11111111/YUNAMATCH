@@ -212,8 +212,15 @@ button { cursor: pointer; }
 .discoverHelp, .discoverFilter { height: 44px; flex: none; border: 1px solid #ece7f1; border-radius: 15px; color: #777080; background: #fff; box-shadow: 0 5px 15px #3c315c0c; }
 .discoverHelp { width: 49px; display: grid; place-items: center; align-content: center; gap: 1px; font-size: 6px; font-weight: 900; }
 .discoverHelp span { font-size: 13px; line-height: 1; }
-.discoverFilter { width: 44px; position: relative; color: var(--pink); font-size: 18px; font-weight: 950; }
+.discoverFilter { width: 54px; position: relative; display: grid; place-items: center; align-content: center; gap: 2px; padding: 0 5px; color: var(--pink); font-weight: 950; }
 .discoverFilter.active { color: #fff; border-color: var(--pink); background: var(--pink); }
+.discoverFilter small { font-size: 6px; font-weight: 950; line-height: 1; white-space: nowrap; }
+.filterGlyph { width: 21px; height: 15px; display: grid; align-content: space-between; }
+.filterGlyph b { height: 2px; position: relative; display: block; border-radius: 99px; background: currentColor; }
+.filterGlyph b::after { width: 5px; height: 5px; position: absolute; top: 50%; border: 2px solid currentColor; border-radius: 50%; background: #fff; content: ""; transform: translateY(-50%); }
+.discoverFilter.active .filterGlyph b::after { background: var(--pink); }
+.filterGlyph b:nth-child(1)::after, .filterGlyph b:nth-child(3)::after { left: 3px; }
+.filterGlyph b:nth-child(2)::after { right: 3px; }
 .discoverFilter i { min-width: 16px; height: 16px; position: absolute; right: -5px; top: -5px; display: grid; place-items: center; padding: 0 4px; border: 2px solid #fff; border-radius: 99px; color: #fff; background: var(--purple); font-size: 7px; font-style: normal; }
 .fullDiscoverCard { height: calc(100% - 60px); min-height: 0; position: relative; overflow: hidden; border-radius: 28px; color: #fff; background: linear-gradient(145deg, #5134ca, #9268ef 58%, #e6599b); box-shadow: 0 20px 42px #37275929; touch-action: pan-y; transform-origin: 50% 100%; }
 .fullDiscoverCard.left { animation: swipeLeft .22s ease forwards; }
