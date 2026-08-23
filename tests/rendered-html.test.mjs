@@ -493,6 +493,8 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /下に引いて更新/);
   assert.match(app, /離して更新/);
   assert.match(app, /handlePullMove/);
+  assert.match(app, /tab === "chat" \|\|[\s\S]*?pullRefreshing/);
+  assert.match(css, /\.messageThread \{[^}]*overscroll-behavior-y: contain;[^}]*touch-action: pan-y/);
   assert.match(app, /window\.location\.reload/);
   assert.match(app, /ランク行きませんか？/);
   assert.match(app, /一緒に遊んだ/);

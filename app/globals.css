@@ -829,7 +829,7 @@ button { cursor: pointer; }
 .chatContactMenu button:last-child { color: var(--purple); background: #eae4ff; }
 .chatReportButton { width: 100%; margin-top: 11px; border: 0; padding: 9px; color: #a04c62; background: transparent; font-size: 8px; font-weight: 850; }
 .heartNotice { margin-bottom: 8px; padding: 9px 11px; border-radius: 11px; color: #c93671; background: #fff0f6; font-size: 7px; font-weight: 850; text-align: center; }
-.messageThread { min-height: 0; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 9px 2px 18px; scroll-padding-bottom: 18px; }
+.messageThread { min-height: 0; flex: 1; overflow-y: auto; overscroll-behavior-y: contain; touch-action: pan-y; display: flex; flex-direction: column; gap: 8px; padding: 9px 2px 18px; scroll-padding-bottom: 18px; }
 .messageBubble { max-width: 82%; flex-shrink: 0; align-self: flex-start; }
 .messageBubble p { margin: 0; padding: 10px 12px; border-radius: 6px 15px 15px 15px; color: #544d5b; background: #f0edf4; font-size: 9px; line-height: 1.5; }
 .messageBubble.me { align-self: flex-end; text-align: right; }

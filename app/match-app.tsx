@@ -2357,6 +2357,7 @@ export default function MatchApp({
   };
   const handlePullStart = (event: TouchEvent<HTMLDivElement>) => {
     if (
+      tab === "chat" ||
       pullRefreshing ||
       event.touches.length !== 1 ||
       event.currentTarget.scrollTop > 0
@@ -2368,6 +2369,10 @@ export default function MatchApp({
     pullStartRef.current = { x: touch.clientX, y: touch.clientY };
   };
   const handlePullMove = (event: TouchEvent<HTMLDivElement>) => {
+    if (tab === "chat") {
+      resetPullRefresh();
+      return;
+    }
     const start = pullStartRef.current;
     if (!start || event.touches.length !== 1) return;
     const touch = event.touches[0];
