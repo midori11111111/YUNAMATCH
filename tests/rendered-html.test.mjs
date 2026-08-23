@@ -187,7 +187,8 @@ test("supports casual and ranked recruiting on the site and Discord", async () =
   assert.match(app, /recruit\.matchType/);
   assert.match(recruitsApi, /matchType:recruits\.matchType/);
   assert.match(discordApi, /options\.match_type/);
-  assert.match(discordApi, /@here \*\*\(\$\{matchType\}\)の\(\$\{partyDisplay\}\)パーティ募集中です/);
+  assert.match(discordApi, /@here \*\*\$\{matchType\}の\$\{partyDisplay\}パーティ募集中です/);
+  assert.match(discordApi, /partyChoice === "up_to_3" \? "3人以下" : `\$\{partySize\}人`/);
   assert.match(discordApi, /募集者のレートは/);
   assert.match(discordApi, /allowed_mentions: \{ parse: \["everyone"\] \}/);
   assert.match(discordApi, /options\.lane \? `担当レーンは/);
