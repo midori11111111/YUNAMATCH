@@ -475,6 +475,10 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.doesNotMatch(app, /getSynergy/);
   assert.match(app, /分前にオンライン/);
   assert.match(app, /時間前にオンライン/);
+  assert.match(app, /下に引いて更新/);
+  assert.match(app, /離して更新/);
+  assert.match(app, /handlePullMove/);
+  assert.match(app, /window\.location\.reload/);
   assert.match(app, /ランク行きませんか？/);
   assert.match(app, /一緒に遊んだ/);
   assert.match(app, /プレイ完了/);

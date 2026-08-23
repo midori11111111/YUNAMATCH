@@ -6,6 +6,7 @@ import {
   ChangeEvent,
   FormEvent,
   PointerEvent,
+  TouchEvent,
   useCallback,
   useEffect,
   useMemo,
@@ -694,6 +695,10 @@ export default function MatchApp({
   const [index, setIndex] = useState(0);
   const [animation, setAnimation] = useState<"" | "left" | "right">("");
   const [dragStart, setDragStart] = useState<number | null>(null);
+  const [pullDistance, setPullDistance] = useState(0);
+  const [pullRefreshing, setPullRefreshing] = useState(false);
+  const pullStartRef = useRef<{ x: number; y: number } | null>(null);
+  const pullDistanceRef = useRef(0);
   const [filterOpen, setFilterOpen] = useState(false);
   const [pokemonQuery, setPokemonQuery] = useState("");
   const [trainerQuery, setTrainerQuery] = useState("");
@@ -2176,6 +2181,48 @@ export default function MatchApp({
     const distance = event.clientX - dragStart;
     setDragStart(null);
     if (Math.abs(distance) >= 65) moveCard(distance > 0 ? -1 : 1);
+  };
+  const resetPullRefresh = () => {
+    pullStartRef.current = null;
+    pullDistanceRef.current = 0;
+    setPullDistance(0);
+  };
+  const handlePullStart = (event: TouchEvent<HTMLDivElement>) => {
+    if (
+      pullRefreshing ||
+      event.touches.length !== 1 ||
+      event.currentTarget.scrollTop > 0
+    ) {
+      pullStartRef.current = null;
+      return;
+    }
+    const touch = event.touches[0];
+    pullStartRef.current = { x: touch.clientX, y: touch.clientY };
+  };
+  const handlePullMove = (event: TouchEvent<HTMLDivElement>) => {
+    const start = pullStartRef.current;
+    if (!start || event.touches.length !== 1) return;
+    const touch = event.touches[0];
+    const horizontal = Math.abs(touch.clientX - start.x);
+    const vertical = touch.clientY - start.y;
+    if (vertical <= 0 || horizontal > vertical) {
+      resetPullRefresh();
+      return;
+    }
+    event.preventDefault();
+    const distance = Math.min(88, vertical * 0.65);
+    pullDistanceRef.current = distance;
+    setPullDistance(distance);
+  };
+  const handlePullEnd = () => {
+    pullStartRef.current = null;
+    if (pullDistanceRef.current < 64) {
+      resetPullRefresh();
+      return;
+    }
+    setPullRefreshing(true);
+    setPullDistance(64);
+    window.setTimeout(() => window.location.reload(), 320);
   };
   const changeDiscoverMode = (mode: DiscoverMode) => {
     if (guestMode && mode === "received") {
@@ -4077,6 +4124,25 @@ export default function MatchApp({
   return (
     <main className="appStage">
       <section className="phoneShell">
+        <div
+          className={`pullRefreshIndicator ${pullRefreshing ? "refreshing" : ""}`}
+          style={{
+            opacity: pullDistance > 5 || pullRefreshing ? 1 : 0,
+            transform: `translate(-50%, ${Math.min(pullDistance, 64) - 55}px)`,
+          }}
+          aria-live="polite"
+        >
+          <span aria-hidden="true">
+            {pullRefreshing ? "↻" : pullDistance >= 64 ? "↑" : "↓"}
+          </span>
+          <strong>
+            {pullRefreshing
+              ? "更新中…"
+              : pullDistance >= 64
+                ? "離して更新"
+                : "下に引いて更新"}
+          </strong>
+        </div>
         <header className="appHeader">
           <button
             className={guestMode ? "guestHeaderLogin" : "miniAvatar"}
@@ -4114,7 +4180,13 @@ export default function MatchApp({
           </button>
         </header>
 
-        <div className="appViewport">
+        <div
+          className="appViewport"
+          onTouchStart={handlePullStart}
+          onTouchMove={handlePullMove}
+          onTouchEnd={handlePullEnd}
+          onTouchCancel={resetPullRefresh}
+        >
           {guestMode && (
             <div className="guestBrowseBanner">
               <span>見るだけなら登録不要</span>
