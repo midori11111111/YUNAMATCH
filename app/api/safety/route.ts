@@ -1,8 +1,9 @@
-import { and, asc, desc, eq, gt, lte, or } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, lte, or } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { blocks, connections, messages, recruits, reports } from "../../../db/schema";
+import { blocks, connections, messages, profiles, recruits, reports } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { checkRateLimit, rateLimitResponse } from "../../../lib/rate-limit";
+import { identityAliases } from "../../../lib/account-aliases";
 
 const allowedReasons = new Set(["出会い目的", "迷惑行為", "暴言・嫌がらせ", "なりすまし", "不正なプロフィール", "不適切なプロフィール画像", "その他"]);
 
@@ -21,6 +22,58 @@ async function resolveTarget(userId: string, recruitId?: number, connectionId?: 
     return row.userAId === userId ? row.userBId : row.userAId;
   }
   return null;
+}
+
+export async function GET() {
+  const user = await getChatGPTUser();
+  if (!user)
+    return Response.json(
+      { error: "ログインが必要です", signIn: "/login" },
+      { status: 401 },
+    );
+  const aliases = await identityAliases(user.userId, user.email);
+  const rows = await getDb()
+    .select({
+      id: blocks.id,
+      userId: blocks.blockedId,
+      trainerName: profiles.trainerName,
+      avatarUrl: profiles.avatarUrl,
+      createdAt: blocks.createdAt,
+    })
+    .from(blocks)
+    .leftJoin(profiles, eq(blocks.blockedId, profiles.userId))
+    .where(inArray(blocks.blockerId, aliases))
+    .orderBy(desc(blocks.createdAt));
+  return Response.json({
+    users: rows.map((row) => ({
+      ...row,
+      trainerName: row.trainerName || "退会済みユーザー",
+      avatarUrl: row.avatarUrl || "",
+    })),
+  });
+}
+
+export async function DELETE(request: Request) {
+  const user = await getChatGPTUser();
+  if (!user)
+    return Response.json(
+      { error: "ログインが必要です", signIn: "/login" },
+      { status: 401 },
+    );
+  const body = (await request.json().catch(() => ({}))) as {
+    blockId?: number;
+  };
+  const blockId = Number(body.blockId);
+  if (!Number.isInteger(blockId) || blockId <= 0)
+    return Response.json({ error: "解除するユーザーを確認してください" }, { status: 400 });
+  const aliases = await identityAliases(user.userId, user.email);
+  const [removed] = await getDb()
+    .delete(blocks)
+    .where(and(eq(blocks.id, blockId), inArray(blocks.blockerId, aliases)))
+    .returning({ id: blocks.id });
+  if (!removed)
+    return Response.json({ error: "ブロック情報が見つかりません" }, { status: 404 });
+  return Response.json({ ok: true });
 }
 
 export async function POST(request: Request) {

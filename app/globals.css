@@ -569,6 +569,17 @@ button { cursor: pointer; }
 .accountOperations > button:first-child { width: 100%; display: grid; grid-template-columns: 38px 1fr auto; align-items: center; gap: 10px; padding: 11px; text-align: left; border: 1px solid #e5dfea; border-radius: 15px; color: var(--ink); background: #fff; }
 .accountOperations > button:first-child > span { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 11px; color: var(--purple); background: #eee9ff; font-weight: 950; }
 .accountOperations strong,.accountOperations small { display: block; }
+.blockedUserSettings { margin-top: 14px; padding: 20px; border: 1px solid var(--line); border-radius: 22px; background: #fff; }
+.blockedUserList { display: grid; gap: 9px; margin-top: 14px; }
+.blockedUserList article { display: grid; grid-template-columns: 42px minmax(0,1fr) auto; align-items: center; gap: 11px; padding: 11px; border-radius: 15px; background: #f8f6fb; }
+.blockedUserAvatar { width: 42px; height: 42px; display: grid; place-items: center; overflow: hidden; border-radius: 50%; color: #fff; background: linear-gradient(145deg,#7655ee,#ff70a3); font-weight: 900; }
+.blockedUserList article div { min-width: 0; }
+.blockedUserList strong,.blockedUserList small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.blockedUserList strong { color: #332a43; font-size: 12px; }
+.blockedUserList small { margin-top: 3px; color: #9991a0; font-size: 9px; }
+.blockedUserList button { padding: 9px 13px; border: 1px solid #e6dce8; border-radius: 11px; color: #9b4054; background: #fff; font-size: 10px; font-weight: 900; }
+.blockedUserList button:disabled { opacity: .55; }
+.blockedUserEmpty { margin: 12px 0 0; padding: 14px; border-radius: 14px; color: #8f8798; background: #f8f6fa; font-size: 11px; text-align: center; }
 .accountOperations strong { font-size: 9px; }.accountOperations small { margin-top: 2px; color: #968e9c; font-size: 7px; }
 .accountOperations button > b { color: #aaa1b0; font-size: 16px; }
 .deleteAccountLink { border: 0; padding: 8px; color: #bf5d6d; background: transparent; font-size: 7px; font-weight: 850; }

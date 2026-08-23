@@ -68,6 +68,13 @@ type ProfileLikeNotice = {
   read: boolean;
   createdAt: string;
 };
+type BlockedUser = {
+  id: number;
+  userId: string;
+  trainerName: string;
+  avatarUrl: string;
+  createdAt: string;
+};
 type Notice = {
   id: number;
   recruitId?: number;
@@ -779,6 +786,9 @@ export default function MatchApp({
       : [],
   );
   const [linkedAccountsLoaded, setLinkedAccountsLoaded] = useState(preview);
+  const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
+  const [blockedUsersLoading, setBlockedUsersLoading] = useState(false);
+  const [unblockingId, setUnblockingId] = useState<number | null>(null);
   const defaultProfile: Profile = {
     trainerName: shortName,
     mainPokemon: [],
@@ -1187,6 +1197,23 @@ export default function MatchApp({
       /* 検索画面は利用を続ける */
     }
   }, [preview, guestMode]);
+  const loadBlockedUsers = useCallback(async () => {
+    if (preview || guestMode) return;
+    setBlockedUsersLoading(true);
+    try {
+      const response = await fetch("/api/safety", { cache: "no-store" });
+      const data = await response.json();
+      if (response.ok) setBlockedUsers(data.users || []);
+    } catch {
+      /* マイページの他の設定は利用を続ける */
+    } finally {
+      setBlockedUsersLoading(false);
+    }
+  }, [preview, guestMode]);
+
+  useEffect(() => {
+    if (tab === "profile") void loadBlockedUsers();
+  }, [tab, loadBlockedUsers]);
   const loadConnections = async () => {
     try {
       const response = await fetch("/api/connections", { cache: "no-store" });
@@ -3355,6 +3382,31 @@ export default function MatchApp({
     notify("このユーザーをブロックしました");
     await Promise.all([loadRecruits(), loadConnections(), loadDiscover()]);
   };
+  const unblockUser = async (blockedUser: BlockedUser) => {
+    if (unblockingId !== null) return;
+    setUnblockingId(blockedUser.id);
+    try {
+      const response = await fetch("/api/safety", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ blockId: blockedUser.id }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        notify(data.error || "ブロックを解除できませんでした");
+        return;
+      }
+      setBlockedUsers((users) =>
+        users.filter((blocked) => blocked.id !== blockedUser.id),
+      );
+      notify(`${blockedUser.trainerName}さんのブロックを解除しました`);
+      await Promise.all([loadRecruits(), loadConnections(), loadDiscover()]);
+    } catch {
+      notify("通信が不安定です。もう一度お試しください");
+    } finally {
+      setUnblockingId(null);
+    }
+  };
   const submitSupport = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSending(true);
@@ -5268,6 +5320,48 @@ export default function MatchApp({
                 <p className="accountChoiceNote">
                   連携時は各サービスのアカウント選択画面が開きます。
                 </p>
+              </section>
+              <section className="blockedUserSettings">
+                <div className="profileSectionHeading">
+                  <small>SAFETY SETTINGS</small>
+                  <h2>ブロック中のユーザー</h2>
+                  <p>解除すると、相手のプロフィールやチャットが再び表示されます。</p>
+                </div>
+                {blockedUsersLoading ? (
+                  <p className="blockedUserEmpty">読み込み中…</p>
+                ) : blockedUsers.length ? (
+                  <div className="blockedUserList">
+                    {blockedUsers.map((blockedUser) => (
+                      <article key={blockedUser.id}>
+                        <UserAvatar
+                          name={blockedUser.trainerName}
+                          src={blockedUser.avatarUrl}
+                          className="blockedUserAvatar"
+                        />
+                        <div>
+                          <strong>{blockedUser.trainerName}</strong>
+                          <small>
+                            {new Date(blockedUser.createdAt).toLocaleDateString(
+                              "ja-JP",
+                            )}
+                            にブロック
+                          </small>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={unblockingId !== null}
+                          onClick={() => unblockUser(blockedUser)}
+                        >
+                          {unblockingId === blockedUser.id ? "解除中…" : "解除"}
+                        </button>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="blockedUserEmpty">
+                    ブロック中のユーザーはいません
+                  </p>
+                )}
               </section>
               {isAdmin && (
                 <a className="adminDashboardLink" href="/admin">
