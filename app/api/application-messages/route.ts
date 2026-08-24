@@ -110,6 +110,7 @@ export async function POST(request: Request) {
       "申請についてひとことが届きました",
       `${profile?.trainerName || "メイト"}さん: ${body}`,
       "/",
+      { type: "application-message", applicationId },
     ),
     "Application message push",
   );

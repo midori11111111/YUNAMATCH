@@ -189,6 +189,7 @@ export async function POST(request: Request) {
           : `${senderName}さんからメッセージ`,
         body.slice(0,80),
         `/?chat=${connection.id}`,
+        { type: "chat-message", connectionId: connection.id },
       ),
       "Message push",
     );
@@ -306,6 +307,7 @@ export async function PATCH(request: Request) {
       payload.response === "accepted" && lobbyId
         ? `/?lobby=${lobbyId}`
         : `/?chat=${connection.id}`,
+      { type: "chat-refresh", connectionId: connection.id },
     ),
     "Play invite response push",
   );

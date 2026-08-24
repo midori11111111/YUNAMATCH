@@ -853,7 +853,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
 });
 
 test("keeps chat and recruiting responsive under load", async () => {
-  const [app, connectionsApi, messagesApi, applicationMessagesApi, applicationsApi, recruitsApi, background] =
+  const [app, connectionsApi, messagesApi, applicationMessagesApi, applicationsApi, recruitsApi, background, push, serviceWorker] =
     await Promise.all([
       readFile(new URL("app/match-app.tsx", root), "utf8"),
       readFile(new URL("app/api/connections/route.ts", root), "utf8"),
@@ -862,11 +862,14 @@ test("keeps chat and recruiting responsive under load", async () => {
       readFile(new URL("app/api/applications/route.ts", root), "utf8"),
       readFile(new URL("app/api/recruits/route.ts", root), "utf8"),
       readFile(new URL("lib/background.ts", root), "utf8"),
+      readFile(new URL("lib/push.ts", root), "utf8"),
+      readFile(new URL("public/sw.js", root), "utf8"),
     ]);
 
   assert.match(app, /delivery: "sending"/);
   assert.match(app, /送信失敗/);
-  assert.match(app, /setInterval\(refreshCurrentConversation, 15_000\)/);
+  assert.match(app, /pushState === "on" \? 60_000 : 15_000/);
+  assert.match(app, /setInterval\(\s*refreshCurrentConversation,\s*fallbackInterval/);
   assert.match(app, /setInterval\(refreshVisibleSummary, 60_000\)/);
   assert.match(app, /setInterval\(ping, 30_000\)/);
   assert.match(app, /document\.visibilityState !== "visible"/);
@@ -891,6 +894,18 @@ test("keeps chat and recruiting responsive under load", async () => {
   assert.match(app, /messageLoadRequestRef/);
   assert.match(app, /messageLoadInFlightRef/);
   assert.match(app, /pendingMessageLoadInFlightRef/);
+  assert.match(app, /navigator\.serviceWorker\.addEventListener\("message"/);
+  assert.match(app, /realtimeMessageRefreshPendingRef/);
+  assert.match(app, /activeConnection\?\.id === realtime\.connectionId/);
+  assert.match(app, /selectedPendingRef\.current\?\.notice\.id === applicationId/);
+  assert.match(push, /RealtimePushEvent/);
+  assert.match(push, /JSON\.stringify\(\{title,body,url,realtime\}\)/);
+  assert.match(messagesApi, /type: "chat-message", connectionId: connection\.id/);
+  assert.match(messagesApi, /type: "chat-refresh", connectionId: connection\.id/);
+  assert.match(applicationMessagesApi, /type: "application-message", applicationId/);
+  assert.match(serviceWorker, /self\.clients\.matchAll/);
+  assert.match(serviceWorker, /receiver\.postMessage/);
+  assert.match(serviceWorker, /windows\.some\(\(client\) => client\.focused\)/);
   assert.match(app, /setMessages\(\[\]\)/);
   assert.match(app, /メッセージを読み込めませんでした/);
   assert.match(connectionsApi, /connectionListLimit = 200/);

@@ -219,6 +219,16 @@ type Lobby = {
 type AppTab = "discover" | "recruit" | "chat" | "lobby" | "profile";
 type DiscoverMode = "recommended" | "received";
 type LoginIntent = "login" | "signup";
+type RealtimePushEvent =
+  | { type: "chat-message"; connectionId: number }
+  | { type: "chat-refresh"; connectionId: number }
+  | { type: "application-message"; applicationId: number }
+  | { type: "summary-refresh" };
+type RealtimePushMessage = {
+  type: "yunamatch-push";
+  notification?: { title?: string; body?: string; url?: string };
+  realtime?: RealtimePushEvent | null;
+};
 type PendingGuestAction = {
   type:
     | "like"
@@ -831,6 +841,8 @@ export default function MatchApp({
   const [matchHistoryOpen, setMatchHistoryOpen] = useState(false);
   const [selectedPending, setSelectedPending] =
     useState<PendingConversation | null>(null);
+  const selectedConnectionRef = useRef<Connection | null>(null);
+  const selectedPendingRef = useRef<PendingConversation | null>(null);
   const [pendingProfileView, setPendingProfileView] =
     useState<PendingMateProfile | null>(null);
   const [pendingGroupOpen, setPendingGroupOpen] = useState(false);
@@ -854,6 +866,8 @@ export default function MatchApp({
   const activeConnectionIdRef = useRef<number | null>(null);
   const messageLoadRequestRef = useRef(0);
   const messageLoadInFlightRef = useRef<number | null>(null);
+  const realtimeMessageRefreshPendingRef = useRef(new Set<number>());
+  const realtimePendingRefreshPendingRef = useRef(new Set<number>());
   const [pinUpdatingId, setPinUpdatingId] = useState<number | null>(null);
   const [messageText, setMessageText] = useState("");
   const messageTypingRef = useRef(false);
@@ -1492,7 +1506,7 @@ export default function MatchApp({
     connection: Connection,
     showLoading = false,
     loadOlder = false,
-  ) => {
+  ): Promise<void> => {
     if (
       !showLoading &&
       messageLoadInFlightRef.current === connection.id
@@ -1547,6 +1561,8 @@ export default function MatchApp({
       )
         setMessagesError(true);
     } finally {
+      const shouldReplayRealtimeRefresh =
+        realtimeMessageRefreshPendingRef.current.delete(connection.id);
       if (
         activeConnectionIdRef.current === connection.id &&
         requestId === messageLoadRequestRef.current
@@ -1554,6 +1570,17 @@ export default function MatchApp({
         messageLoadInFlightRef.current = null;
         setMessagesLoading(false);
         setMessagesLoadingOlder(false);
+      }
+      if (
+        shouldReplayRealtimeRefresh &&
+        activeConnectionIdRef.current === connection.id &&
+        requestId === messageLoadRequestRef.current
+      ) {
+        window.setTimeout(() => {
+          const activeConnection = selectedConnectionRef.current;
+          if (activeConnection?.id === connection.id)
+            void loadMessages(activeConnection);
+        }, 0);
       }
     }
   };
@@ -1576,10 +1603,88 @@ export default function MatchApp({
     } catch {
       /* 次の自動更新または再表示で再試行する */
     } finally {
+      const shouldReplayRealtimeRefresh =
+        realtimePendingRefreshPendingRef.current.delete(applicationId);
       if (requestId === pendingMessageLoadRequestRef.current)
         pendingMessageLoadInFlightRef.current = null;
+      if (
+        shouldReplayRealtimeRefresh &&
+        activeApplicationIdRef.current === applicationId &&
+        requestId === pendingMessageLoadRequestRef.current
+      ) {
+        window.setTimeout(() => {
+          if (selectedPendingRef.current?.notice.id === applicationId)
+            void loadPendingMessages(applicationId);
+        }, 0);
+      }
     }
   };
+
+  useEffect(() => {
+    selectedConnectionRef.current = selectedConnection;
+  }, [selectedConnection]);
+
+  useEffect(() => {
+    selectedPendingRef.current = selectedPending;
+  }, [selectedPending]);
+
+  useEffect(() => {
+    if (preview || !("serviceWorker" in navigator)) return;
+    const receivePushEvent = (event: MessageEvent<unknown>) => {
+      if (!event.data || typeof event.data !== "object") return;
+      const message = event.data as Partial<RealtimePushMessage>;
+      if (message.type !== "yunamatch-push") return;
+      const realtime = message.realtime;
+      const notificationBody = message.notification?.body;
+
+      if (guestMode) {
+        if (notificationBody) notify(notificationBody);
+        return;
+      }
+
+      if (
+        realtime?.type === "chat-message" ||
+        realtime?.type === "chat-refresh"
+      ) {
+        if (!Number.isInteger(realtime.connectionId) || realtime.connectionId <= 0)
+          return;
+        void loadConnections();
+        const activeConnection = selectedConnectionRef.current;
+        if (activeConnection?.id === realtime.connectionId) {
+          if (messageLoadInFlightRef.current === realtime.connectionId)
+            realtimeMessageRefreshPendingRef.current.add(realtime.connectionId);
+          else void loadMessages(activeConnection);
+        } else if (notificationBody) {
+          notify(notificationBody);
+        }
+        return;
+      }
+
+      if (realtime?.type === "application-message") {
+        if (!Number.isInteger(realtime.applicationId) || realtime.applicationId <= 0)
+          return;
+        void loadNotices();
+        if (activeApplicationIdRef.current === realtime.applicationId) {
+          if (pendingMessageLoadInFlightRef.current === realtime.applicationId)
+            realtimePendingRefreshPendingRef.current.add(realtime.applicationId);
+          else void loadPendingMessages(realtime.applicationId);
+        } else if (notificationBody) {
+          notify(notificationBody);
+        }
+        return;
+      }
+
+      if (realtime?.type === "summary-refresh") {
+        void loadNotices();
+        void loadConnections();
+        void loadLikes();
+      }
+      if (notificationBody) notify(notificationBody);
+    };
+    navigator.serviceWorker.addEventListener("message", receivePushEvent);
+    return () =>
+      navigator.serviceWorker.removeEventListener("message", receivePushEvent);
+  }, [preview, guestMode, selectedConnection, selectedPending, loadLikes]);
 
   useEffect(() => {
     if (sharedRecruitId) {
@@ -1978,9 +2083,13 @@ export default function MatchApp({
       if (selectedPending)
         void loadPendingMessages(selectedPending.notice.id);
     };
-    const timer = window.setInterval(refreshCurrentConversation, 15_000);
+    const fallbackInterval = pushState === "on" ? 60_000 : 15_000;
+    const timer = window.setInterval(
+      refreshCurrentConversation,
+      fallbackInterval,
+    );
     return () => window.clearInterval(timer);
-  }, [preview, guestMode, selectedConnection, selectedPending]);
+  }, [preview, guestMode, selectedConnection, selectedPending, pushState]);
 
   useEffect(() => {
     if (preview || guestMode) return;
