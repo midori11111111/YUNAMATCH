@@ -4567,6 +4567,16 @@ export default function MatchApp({
                   <span>D</span>
                   <small>Discord</small>
                 </button>
+                <a
+                  className="discoverOfficialX"
+                  href="https://x.com/Unimachis"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="YUNAMATCH公式Xを開く"
+                >
+                  <span>𝕏</span>
+                  <small>公式X</small>
+                </a>
                 <button
                   className="discoverHelp"
                   onClick={() => setTutorialOpen(true)}

@@ -1032,3 +1032,13 @@ test("removes matched, requested, and skipped people from received likes", async
   assert.match(app, /loadDiscover\(\), loadNotices\(\), loadLikes\(\)/);
   assert.match(app, /likes\.filter\(\(like\) => like\.senderId !== requestedProfileId\)/);
 });
+
+test("links prominently to the official YUNAMATCH X account", async () => {
+  const app = await readFile(new URL("app/match-app.tsx", root), "utf8");
+
+  assert.match(app, /https:\/\/x\.com\/Unimachis/);
+  assert.match(app, /YUNAMATCH公式Xを開く/);
+  assert.match(app, /<small>公式X<\/small>/);
+  assert.match(app, /target="_blank"/);
+  assert.match(app, /rel="noopener noreferrer"/);
+});

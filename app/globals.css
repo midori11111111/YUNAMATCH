@@ -209,6 +209,9 @@ button { cursor: pointer; }
 .discoverDiscord { width: 54px; height: 44px; flex: none; display: grid; grid-template-columns: 18px 1fr; align-items: center; gap: 3px; padding: 0 6px; border: 0; border-radius: 15px; color: #fff; background: linear-gradient(145deg,#5865f2,#785fe8); box-shadow: 0 8px 18px #5865f237; }
 .discoverDiscord span { width: 18px; height: 18px; display: grid; place-items: center; border-radius: 6px; color: #5865f2; background: #fff; font-size: 8px; font-weight: 950; }
 .discoverDiscord small { overflow: hidden; font-size: 6px; font-weight: 950; text-overflow: ellipsis; }
+.discoverOfficialX { width: 45px; height: 44px; flex: none; display: grid; place-items: center; align-content: center; gap: 1px; border-radius: 15px; color: #fff; background: #111; box-shadow: 0 8px 18px #1112; text-decoration: none; }
+.discoverOfficialX span { font-size: 14px; font-weight: 950; line-height: 1; }
+.discoverOfficialX small { font-size: 6px; font-weight: 950; white-space: nowrap; }
 .discoverHelp, .discoverFilter { height: 44px; flex: none; border: 1px solid #ece7f1; border-radius: 15px; color: #777080; background: #fff; box-shadow: 0 5px 15px #3c315c0c; }
 .discoverHelp { width: 49px; display: grid; place-items: center; align-content: center; gap: 1px; font-size: 6px; font-weight: 900; }
 .discoverHelp span { font-size: 13px; line-height: 1; }
