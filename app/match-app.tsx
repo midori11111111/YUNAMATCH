@@ -2336,7 +2336,6 @@ export default function MatchApp({
     (notice) => !dismissedNotificationSet.has(`request:${notice.id}`),
   );
   const pendingCount = visiblePendingIncoming.length;
-  const pendingConversationCount = pendingIncoming.length + pendingOutgoing.length;
   const visibleProfileLikes = profileLikes.filter(
     (like) => !dismissedNotificationSet.has(`like:${like.id}`),
   );
@@ -2794,6 +2793,30 @@ export default function MatchApp({
     setLikedProfileIds((ids) =>
       ids.includes(candidate.id) ? ids : [...ids, candidate.id],
     );
+    if (data.matched) {
+      const refreshedConnections = await loadConnections();
+      await Promise.all([loadLikes(), loadDiscover(), loadNotices()]);
+      const matchedConnection =
+        refreshedConnections.find(
+          (connection) => connection.id === Number(data.connectionId),
+        ) ||
+        refreshedConnections.find(
+          (connection) => connection.mateName === candidate.trainerName,
+        );
+      if (matchedConnection) {
+        setMatchResult({
+          connectionId: matchedConnection.id,
+          mateContact: matchedConnection.mateContact || null,
+          mateName: matchedConnection.mateName,
+          matePokemon: matchedConnection.matePokemon,
+        });
+        notify("💞 お互いにいいね！マッチしました");
+      } else {
+        notify("💞 お互いにいいね！マッチを準備しています");
+        window.setTimeout(() => void loadConnections(), 700);
+      }
+      return;
+    }
     notify(
       data.created
         ? `${candidate.trainerName}さんに「気になる」を通知しました。チャットはまだ始まりません`
@@ -6012,11 +6035,46 @@ export default function MatchApp({
                   outgoing.some((notice) => notice.status === "pending") ? (
                     <>
                       <p className="chatOverviewLead">
-                        マッチしたメイトとのチャットです。承認待ちはまとめて確認できます。
+                        マッチしたメイトとのチャットです。届いた申請は一番上で確認できます。
                       </p>
                       <div className="chatList">
-                        {pendingConversationCount > 0 && (
-                          <section className="pendingConversationGroup">
+                        {pendingIncoming.length > 0 && (
+                          <section className="receivedRequestsPanel">
+                            <header className="receivedRequestsHeader">
+                              <span>⚡</span>
+                              <div>
+                                <strong>届いたメイト申請</strong>
+                                <p>相手のプロフィールを見て、承認前に相談できます</p>
+                              </div>
+                              <i>{pendingIncoming.length}</i>
+                            </header>
+                            <div className="receivedRequestList">
+                              {pendingIncoming.map((notice) => (
+                                <button
+                                  key={`pending-incoming-${notice.id}`}
+                                  className="receivedRequestCard"
+                                  onClick={() =>
+                                    openPendingConversation(notice, "incoming")
+                                  }
+                                >
+                                  <UserAvatar
+                                    name={notice.applicantName || "メイト"}
+                                    src={notice.mateProfile?.avatarUrl}
+                                    className="chatMateAvatar"
+                                  />
+                                  <div>
+                                    <strong>{notice.applicantName}</strong>
+                                    <p>👋 あなたにメイト申請を送っています</p>
+                                    <small>タップしてプロフィール・一言を確認</small>
+                                  </div>
+                                  <b>確認する&nbsp;›</b>
+                                </button>
+                              ))}
+                            </div>
+                          </section>
+                        )}
+                        {pendingOutgoing.length > 0 && (
+                          <section className="pendingConversationGroup outgoingOnly">
                             <button
                               className="pendingGroupSummary"
                               onClick={() => setPendingGroupOpen((open) => !open)}
@@ -6024,45 +6082,14 @@ export default function MatchApp({
                             >
                               <span>◷</span>
                               <div>
-                                <strong>承認待ち</strong>
-                                <p>
-                                  {pendingIncoming.length
-                                    ? `届いた申請 ${pendingIncoming.length}件`
-                                    : "届いた申請なし"}
-                                  {pendingOutgoing.length
-                                    ? ` ・ 送った申請 ${pendingOutgoing.length}件`
-                                    : ""}
-                                </p>
+                                <strong>送った申請</strong>
+                                <p>{pendingOutgoing.length}件・相手の承認待ち</p>
                               </div>
-                              {pendingIncoming.length > 0 && (
-                                <i>{pendingIncoming.length}</i>
-                              )}
+                              <i>{pendingOutgoing.length}</i>
                               <b>{pendingGroupOpen ? "⌃" : "⌄"}</b>
                             </button>
                             {pendingGroupOpen && (
                               <div className="pendingGroupList">
-                                {pendingIncoming.map((notice) => (
-                                  <button
-                                    key={`pending-incoming-${notice.id}`}
-                                    className="chatListItem pending"
-                                    onClick={() =>
-                                      openPendingConversation(notice, "incoming")
-                                    }
-                                  >
-                                    <UserAvatar
-                                      name={notice.applicantName || "メイト"}
-                                      src={notice.mateProfile?.avatarUrl}
-                                      className="chatMateAvatar"
-                                    />
-                                    <div>
-                                      <strong>{notice.applicantName}</strong>
-                                      <p>👋 あなたに手を振っています</p>
-                                      <small>タップして確認</small>
-                                    </div>
-                                    <span className="unreadBadge">1</span>
-                                    <b>›</b>
-                                  </button>
-                                ))}
                                 {pendingOutgoing.map((notice) => (
                                   <button
                                     key={`pending-outgoing-${notice.id}`}

@@ -101,6 +101,47 @@ try {
     });
   }
 
+  // Reciprocal likes create exactly one connection, even when the same like is retried.
+  const mutualSender = reportTesters[2];
+  const mutualTarget = reportTesters[3];
+  const senderDiscover = await api("/api/discover", { user: mutualSender });
+  const targetInSenderDiscover = senderDiscover.profiles.find(
+    (row) => row.trainerName === "通報テスター4",
+  );
+  assert.ok(targetInSenderDiscover);
+  const firstHalf = await api("/api/likes", {
+    user: mutualSender,
+    method: "POST",
+    body: { targetId: targetInSenderDiscover.id },
+  });
+  assert.equal(firstHalf.matched, false);
+  const targetDiscover = await api("/api/discover", { user: mutualTarget });
+  const senderInTargetDiscover = targetDiscover.profiles.find(
+    (row) => row.trainerName === "通報テスター3",
+  );
+  assert.ok(senderInTargetDiscover);
+  const mutualResult = await api("/api/likes", {
+    user: mutualTarget,
+    method: "POST",
+    body: { targetId: senderInTargetDiscover.id },
+  });
+  assert.equal(mutualResult.matched, true);
+  assert.equal(typeof mutualResult.connectionId, "number");
+  const repeatedMutualLike = await api("/api/likes", {
+    user: mutualTarget,
+    method: "POST",
+    body: { targetId: senderInTargetDiscover.id },
+  });
+  assert.equal(repeatedMutualLike.connectionId, mutualResult.connectionId);
+  const [senderConnectionsAfterMutual, targetConnectionsAfterMutual] = await Promise.all([
+    api("/api/connections", { user: mutualSender }),
+    api("/api/connections", { user: mutualTarget }),
+  ]);
+  assert.equal(senderConnectionsAfterMutual.connections.length, 1);
+  assert.equal(targetConnectionsAfterMutual.connections.length, 1);
+  assert.equal(senderConnectionsAfterMutual.connections[0].id, mutualResult.connectionId);
+  assert.equal(targetConnectionsAfterMutual.connections[0].id, mutualResult.connectionId);
+
   const discoverBeforeLike = await api("/api/discover", { user: applicant });
   const zeroLikeProfile = discoverBeforeLike.profiles.find((row) => row.trainerName === "募集テスター");
   assert.ok(zeroLikeProfile);

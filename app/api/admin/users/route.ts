@@ -34,6 +34,7 @@ async function deleteAccount(userId: string) {
     d1.prepare("DELETE FROM presence WHERE user_id = ?").bind(userId),
     d1.prepare("DELETE FROM lobby_members WHERE user_id = ? OR lobby_id IN (SELECT id FROM lobbies WHERE owner_id = ?)").bind(userId, userId),
     d1.prepare("DELETE FROM lobbies WHERE owner_id = ?").bind(userId),
+    d1.prepare("DELETE FROM mutual_like_matches WHERE user_low_id = ? OR user_high_id = ? OR connection_id IN (SELECT id FROM connections WHERE user_a_id = ? OR user_b_id = ?)").bind(userId, userId, userId, userId),
     d1.prepare("DELETE FROM connections WHERE user_a_id = ? OR user_b_id = ?").bind(userId, userId),
     d1.prepare("DELETE FROM application_messages WHERE sender_id = ? OR application_id IN (SELECT applications.id FROM applications INNER JOIN recruits ON applications.recruit_id = recruits.id WHERE applications.applicant_id = ? OR recruits.owner_id = ?)").bind(userId, userId, userId),
     d1.prepare("DELETE FROM applications WHERE applicant_id = ? OR recruit_id IN (SELECT id FROM recruits WHERE owner_id = ?)").bind(userId, userId),

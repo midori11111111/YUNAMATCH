@@ -236,6 +236,20 @@ export const connections = sqliteTable(
   ],
 );
 
+export const mutualLikeMatches = sqliteTable(
+  "mutual_like_matches",
+  {
+    pairKey: text("pair_key").primaryKey(),
+    userLowId: text("user_low_id").notNull(),
+    userHighId: text("user_high_id").notNull(),
+    connectionId: integer("connection_id").references(() => connections.id),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [
+    index("idx_mutual_like_matches_connection").on(table.connectionId),
+  ],
+);
+
 export const messages = sqliteTable(
   "messages",
   {

@@ -514,12 +514,14 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /yunamatch-discover-tutorial-v1/);
   assert.doesNotMatch(app, /次の人/);
   assert.match(app, /まだやりとりがありません/);
-  assert.match(app, /承認待ちはまとめて確認できます/);
+  assert.match(app, /届いた申請は一番上で確認できます/);
+  assert.match(app, /届いたメイト申請/);
+  assert.match(app, /receivedRequestsPanel/);
   assert.match(app, /pendingConversationGroup/);
   assert.ok(
-    app.indexOf("{pendingConversationCount > 0") <
+    app.indexOf("{pendingIncoming.length > 0") <
       app.indexOf("{connections.map"),
-    "承認待ちのまとめをチャット一覧の先頭に表示する",
+    "届いた申請をチャット一覧の先頭に表示する",
   );
   assert.match(app, /yunamatch-chat-tutorial-v1/);
   assert.match(app, /次のプレイまで/);
@@ -638,7 +640,7 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(applicationsApi, /match-wave-/);
   assert.match(applicationsApi, /body:`👋 \$\{row\.applicationMessage\}`/);
   assert.match(app, /承認前のあいさつ/);
-  assert.match(app, /あなたに手を振っています/);
+  assert.match(app, /あなたにメイト申請を送っています/);
   assert.match(app, /相手と相談しながら承認を待てます/);
   assert.match(app, /shareMatchToX/);
   assert.match(app, /x\.com\/intent\/tweet/);
@@ -1053,6 +1055,29 @@ test("keeps the received-like total after matching or skipping a profile", async
   assert.match(app, /setReceivedLikeCount\(Number\(data\.receivedLikeCount\) \|\| 0\)/);
   assert.match(app, /<strong>\{receivedLikeCount\}<\/strong>/);
   assert.match(app, /profileLikes\.length > 0/);
+});
+
+test("automatically matches reciprocal likes exactly once", async () => {
+  const [app, likesApi, schema, migration, profileApi, adminUsersApi] = await Promise.all([
+    readFile(new URL("app/match-app.tsx", root), "utf8"),
+    readFile(new URL("app/api/likes/route.ts", root), "utf8"),
+    readFile(new URL("db/schema.ts", root), "utf8"),
+    readFile(new URL("drizzle/0035_glossy_jazinda.sql", root), "utf8"),
+    readFile(new URL("app/api/profile/route.ts", root), "utf8"),
+    readFile(new URL("app/api/admin/users/route.ts", root), "utf8"),
+  ]);
+
+  assert.match(schema, /mutualLikeMatches/);
+  assert.match(migration, /CREATE TABLE `mutual_like_matches`/);
+  assert.match(migration, /pair_key` text PRIMARY KEY/);
+  assert.match(migration, /PRAGMA optimize/);
+  assert.match(likesApi, /createMutualLikeMatch/);
+  assert.match(likesApi, /onConflictDoNothing/);
+  assert.match(likesApi, /reciprocalLike/);
+  assert.match(likesApi, /お互いにいいねしました。チャットが開通しました/);
+  assert.match(app, /お互いにいいね！マッチしました/);
+  assert.match(profileApi, /DELETE FROM mutual_like_matches/);
+  assert.match(adminUsersApi, /DELETE FROM mutual_like_matches/);
 });
 
 test("links prominently to the official YUNAMATCH X account", async () => {
