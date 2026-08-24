@@ -131,6 +131,7 @@ export type Profile = {
 };
 type Connection = {
   id: number;
+  createdAt: string;
   recruitId: number;
   mateId: string;
   mateName: string;
@@ -810,6 +811,7 @@ export default function MatchApp({
   const [selectedConnection, setSelectedConnection] =
     useState<Connection | null>(null);
   const [matchedProfile, setMatchedProfile] = useState<Connection | null>(null);
+  const [matchHistoryOpen, setMatchHistoryOpen] = useState(false);
   const [selectedPending, setSelectedPending] =
     useState<PendingConversation | null>(null);
   const [pendingProfileView, setPendingProfileView] =
@@ -2357,7 +2359,26 @@ export default function MatchApp({
       block: "center",
     });
   };
-  const mateCount = new Set(connections.map((connection) => connection.mateId)).size;
+  const matchHistory = [...connections]
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt || b.latestAt).getTime() -
+        new Date(a.createdAt || a.latestAt).getTime(),
+    )
+    .filter(
+      (connection, index, rows) =>
+        rows.findIndex((row) => row.mateId === connection.mateId) === index,
+    );
+  const mateCount = matchHistory.length;
+  const formatMatchDate = (connection: Connection) => {
+    const date = new Date(connection.createdAt || connection.latestAt);
+    if (Number.isNaN(date.getTime())) return "日時不明";
+    return new Intl.DateTimeFormat("ja-JP", {
+      year: date.getFullYear() === new Date().getFullYear() ? undefined : "numeric",
+      month: "short",
+      day: "numeric",
+    }).format(date);
+  };
 
   const moveCard = (step: -1 | 1) => {
     if (!current || animation) return;
@@ -6123,7 +6144,7 @@ export default function MatchApp({
                   </strong>
                   <small>申請中</small>
                 </button>
-                <button onClick={() => setTab("chat")}>
+                <button onClick={() => setMatchHistoryOpen(true)}>
                   <span>●</span>
                   <strong>{mateCount}</strong>
                   <small>メイト</small>
@@ -6140,6 +6161,60 @@ export default function MatchApp({
                   <small>プロフィール</small>
                 </button>
               </div>
+              <section className="profileMatchHistory" aria-labelledby="match-history-title">
+                <header>
+                  <div>
+                    <small>MATCH HISTORY</small>
+                    <h2 id="match-history-title">マッチした人一覧</h2>
+                  </div>
+                  {matchHistory.length > 0 && (
+                    <button type="button" onClick={() => setMatchHistoryOpen(true)}>
+                      すべて見る
+                    </button>
+                  )}
+                </header>
+                {matchHistory.length > 0 ? (
+                  <div className="profileMatchPreviewList">
+                    {matchHistory.slice(0, 3).map((connection) => (
+                      <article key={connection.mateId}>
+                        <button
+                          type="button"
+                          className="profileMatchPerson"
+                          onClick={() => setMatchedProfile(connection)}
+                        >
+                          <UserAvatar
+                            name={connection.mateName}
+                            src={connection.mateAvatarUrl}
+                            className="matchHistoryAvatar"
+                          />
+                          <span>
+                            <strong>{connection.mateName}</strong>
+                            <small>
+                              {connection.matePokemon || "使用ポケモン未設定"} ・ {formatMatchDate(connection)}
+                            </small>
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          className="profileMatchChat"
+                          onClick={() => void openChat(connection)}
+                          aria-label={`${connection.mateName}さんとのチャットを開く`}
+                        >
+                          💬
+                        </button>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="profileMatchEmpty">
+                    <span>⚡</span>
+                    <p>マッチが成立すると、ここに相手が残ります。</p>
+                    <button type="button" onClick={() => setTab("discover")}>
+                      メイトをさがす
+                    </button>
+                  </div>
+                )}
+              </section>
               <form
                 id="profile-edit-form"
                 className="profileForm profileEditCard"
@@ -7732,8 +7807,80 @@ export default function MatchApp({
               </div>
             </div>
             <button className="matchedProfileClose" onClick={() => setMatchedProfile(null)}>
-              チャットに戻る
+              閉じる
             </button>
+          </section>
+        </div>
+      )}
+
+      {matchHistoryOpen && (
+        <div className="modalBackdrop">
+          <button
+            className="backdropDismiss"
+            onClick={() => setMatchHistoryOpen(false)}
+            aria-label="マッチ履歴を閉じる"
+          />
+          <section className="sheetModal matchHistorySheet">
+            <div className="sheetHandle" />
+            <button className="closeButton" onClick={() => setMatchHistoryOpen(false)}>×</button>
+            <small className="modalKicker">MATCH HISTORY</small>
+            <h2>マッチした人一覧</h2>
+            <p className="matchHistoryLead">
+              過去にマッチしたメイトを、プロフィールやチャットから確認できます。
+            </p>
+            {matchHistory.length > 0 ? (
+              <div className="matchHistoryList">
+                {matchHistory.map((connection) => (
+                  <article key={connection.mateId}>
+                    <UserAvatar
+                      name={connection.mateName}
+                      src={connection.mateAvatarUrl}
+                      className="matchHistoryAvatar"
+                    />
+                    <div>
+                      <strong>{connection.mateName}</strong>
+                      <p>{connection.matePokemon || "使用ポケモン未設定"}</p>
+                      <small>{formatMatchDate(connection)}にマッチ</small>
+                    </div>
+                    <div className="matchHistoryActions">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMatchHistoryOpen(false);
+                          setMatchedProfile(connection);
+                        }}
+                      >
+                        プロフィール
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMatchHistoryOpen(false);
+                          void openChat(connection);
+                        }}
+                      >
+                        チャット
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="profileMatchEmpty compact">
+                <span>⚡</span>
+                <p>まだマッチ履歴がありません。</p>
+              </div>
+            )}
+            {connectionsHasMore && (
+              <button
+                type="button"
+                className="paginationButton matchHistoryMore"
+                onClick={() => void loadConnections(true)}
+                disabled={connectionsLoadingMore}
+              >
+                {connectionsLoadingMore ? "読み込み中…" : "過去のマッチをさらに読み込む"}
+              </button>
+            )}
           </section>
         </div>
       )}

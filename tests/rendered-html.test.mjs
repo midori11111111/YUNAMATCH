@@ -1042,3 +1042,17 @@ test("links prominently to the official YUNAMATCH X account", async () => {
   assert.match(app, /target="_blank"/);
   assert.match(app, /rel="noopener noreferrer"/);
 });
+
+test("shows a paginated history of matched people with profile and chat actions", async () => {
+  const [app, connectionsApi] = await Promise.all([
+    readFile(new URL("app/match-app.tsx", root), "utf8"),
+    readFile(new URL("app/api/connections/route.ts", root), "utf8"),
+  ]);
+
+  assert.match(app, /マッチした人一覧/);
+  assert.match(app, /過去のマッチをさらに読み込む/);
+  assert.match(app, /setMatchedProfile\(connection\)/);
+  assert.match(app, /openChat\(connection\)/);
+  assert.match(app, /formatMatchDate\(connection\)/);
+  assert.match(connectionsApi, /createdAt: row\.createdAt/);
+});

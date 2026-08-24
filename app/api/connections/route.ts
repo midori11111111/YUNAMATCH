@@ -349,6 +349,7 @@ export async function GET(request: Request) {
       }
       return {
         id: row.id,
+        createdAt: row.createdAt,
         recruitId: row.recruitId,
         mateId,
         mateName: isA ? row.userBName : row.userAName,
