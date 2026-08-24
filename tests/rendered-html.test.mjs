@@ -999,3 +999,19 @@ test("lets applicants cancel a pending mate request", async () => {
   assert.match(applicationsApi, /status:"cancelled"/);
   assert.match(applicationsApi, /申請が取り消されました/);
 });
+
+test("lets users swipe away a received like without blocking the sender", async () => {
+  const [app, likesApi] = await Promise.all([
+    readFile(new URL("app/match-app.tsx", root), "utf8"),
+    readFile(new URL("app/api/likes/route.ts", root), "utf8"),
+  ]);
+
+  assert.match(app, /左スワイプでスキップ/);
+  assert.match(app, /skipReceivedProfile/);
+  assert.match(app, /action: "skip", likeId: receivedLike\.id/);
+  assert.match(app, /この相手をスキップしました/);
+  assert.match(likesApi, /received-like:/);
+  assert.match(likesApi, /eq\(profileLikes\.recipientId,user\.userId\)/);
+  assert.match(likesApi, /notificationDismissals/);
+  assert.doesNotMatch(likesApi, /action==="skip"[\s\S]{0,1200}insert\(blocks\)/);
+});

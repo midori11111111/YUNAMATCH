@@ -1,5 +1,5 @@
 import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
-import { blocks, profileLikes, profiles } from "../../../db/schema";
+import { blocks, notificationDismissals, profileLikes, profiles } from "../../../db/schema";
 import { getDb } from "../../../db";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { profilePublicId, resolveProfilePublicId } from "../../../lib/profile-id";
@@ -16,7 +16,7 @@ export async function GET(){
   const user=await getChatGPTUser();
   if(!user)return Response.json({error:"ログインが必要です",signIn:"/login"},{status:401});
   const db=getDb();
-  const [received,sent,blockedByMe,blockedMe,likeCounts]=await Promise.all([
+  const [received,sent,blockedByMe,blockedMe,likeCounts,skippedRows]=await Promise.all([
     db.select({
       id:profileLikes.id,
       senderId:profileLikes.senderId,
@@ -40,9 +40,15 @@ export async function GET(){
     db.select({id:blocks.blockedId}).from(blocks).where(eq(blocks.blockerId,user.userId)),
     db.select({id:blocks.blockerId}).from(blocks).where(eq(blocks.blockedId,user.userId)),
     db.select({userId:profileLikes.recipientId,count:sql<number>`count(*)`}).from(profileLikes).groupBy(profileLikes.recipientId),
+    db.select({key:notificationDismissals.notificationKey}).from(notificationDismissals).where(eq(notificationDismissals.userId,user.userId)),
   ]);
+  const skippedLikeIds=new Set(skippedRows.flatMap(row=>{
+    const match=/^received-like:(\d+)$/.exec(row.key);
+    return match?[Number(match[1])]:[];
+  }));
   const hidden=new Set([...blockedByMe.map(row=>row.id),...blockedMe.map(row=>row.id)]);
   const visibleReceived=received.filter(row=>
+    !skippedLikeIds.has(row.id)&&
     !hidden.has(row.senderId)&&
     !row.senderSuspendedAt&&
     row.senderAgeConfirmed&&
@@ -104,10 +110,19 @@ export async function POST(request:Request){
   return Response.json({ok:true,created:Boolean(inserted.length)});
 }
 
-export async function PATCH(){
+export async function PATCH(request:Request){
   const user=await getChatGPTUser();
   if(!user)return Response.json({error:"ログインが必要です",signIn:"/login"},{status:401});
   const db=getDb();
+  const body=await request.json().catch(()=>({})) as {action?:string;likeId?:number};
+  if(body.action==="skip"){
+    const likeId=Number(body.likeId);
+    if(!Number.isInteger(likeId)||likeId<=0)return Response.json({error:"いいねを確認してください"},{status:400});
+    const [receivedLike]=await db.select({id:profileLikes.id}).from(profileLikes).where(and(eq(profileLikes.id,likeId),eq(profileLikes.recipientId,user.userId))).limit(1);
+    if(!receivedLike)return Response.json({error:"このいいねは見つかりません"},{status:404});
+    await db.insert(notificationDismissals).values({userId:user.userId,notificationKey:`received-like:${likeId}`,createdAt:new Date()}).onConflictDoNothing();
+    return Response.json({ok:true,skipped:true});
+  }
   await db.update(profileLikes).set({readAt:new Date()}).where(and(eq(profileLikes.recipientId,user.userId),isNull(profileLikes.readAt)));
   return Response.json({ok:true});
 }

@@ -747,6 +747,7 @@ export default function MatchApp({
   const [loading, setLoading] = useState(true);
   const [index, setIndex] = useState(0);
   const [animation, setAnimation] = useState<"" | "left" | "right">("");
+  const [receivedSkipBusy, setReceivedSkipBusy] = useState(false);
   const [dragStart, setDragStart] = useState<number | null>(null);
   const [pullDistance, setPullDistance] = useState(0);
   const [pullRefreshing, setPullRefreshing] = useState(false);
@@ -2374,11 +2375,59 @@ export default function MatchApp({
       setAnimation("");
     }, 220);
   };
+  const skipReceivedProfile = async () => {
+    if (!current || discoverMode !== "received" || receivedSkipBusy || animation)
+      return;
+    const skippedCandidate = current;
+    const receivedLike = profileLikes.find(
+      (like) => like.senderId === skippedCandidate.id,
+    );
+    if (!receivedLike) {
+      notify("このいいねは現在表示できません");
+      return;
+    }
+    setReceivedSkipBusy(true);
+    try {
+      const response = await fetch("/api/likes", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "skip", likeId: receivedLike.id }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        notify(data.error || "スキップできませんでした");
+        return;
+      }
+      setAnimation("left");
+      window.setTimeout(() => {
+        setReceivedProfileCandidates((rows) =>
+          rows.filter((person) => person.id !== skippedCandidate.id),
+        );
+        setProfileLikes((rows) =>
+          rows.filter((like) => like.senderId !== skippedCandidate.id),
+        );
+        setCandidateDetail((detail) =>
+          detail?.id === skippedCandidate.id ? null : detail,
+        );
+        setAnimation("");
+        notify("この相手をスキップしました");
+      }, 220);
+    } catch {
+      notify("通信が不安定です。もう一度お試しください");
+    } finally {
+      setReceivedSkipBusy(false);
+    }
+  };
   const handlePointerUp = (event: PointerEvent<HTMLElement>) => {
     if (dragStart === null) return;
     const distance = event.clientX - dragStart;
     setDragStart(null);
-    if (Math.abs(distance) >= 65) moveCard(distance > 0 ? -1 : 1);
+    if (Math.abs(distance) < 65) return;
+    if (discoverMode === "received" && distance < 0) {
+      void skipReceivedProfile();
+      return;
+    }
+    moveCard(distance > 0 ? -1 : 1);
   };
   const resetPullRefresh = () => {
     pullStartRef.current = null;
@@ -4578,6 +4627,9 @@ export default function MatchApp({
                     </span>
                     {guestMode && <b>ログインでプロフィールをすべて表示</b>}
                   </div>
+                  {discoverMode === "received" && (
+                    <div className="receivedSwipeHint">← 左スワイプでスキップ</div>
+                  )}
                   <button
                     className="cardTapZone previous"
                     onClick={() => moveCard(-1)}
@@ -4627,7 +4679,24 @@ export default function MatchApp({
                       タップでプロフィールを見る
                     </span>
                   </button>
-                  <div className="fullCardActions">
+                  <div
+                    className={`fullCardActions ${
+                      discoverMode === "received" ? "receivedActions" : ""
+                    }`}
+                  >
+                    {discoverMode === "received" && (
+                      <button
+                        className="fullSkipAction"
+                        onClick={() => void skipReceivedProfile()}
+                        disabled={receivedSkipBusy}
+                      >
+                        <span className="fullActionIcon">×</span>
+                        <span className="fullActionCopy">
+                          <small>{receivedSkipBusy ? "処理中" : "スキップ"}</small>
+                          <em>一覧から外す</em>
+                        </span>
+                      </button>
+                    )}
                     <button
                       className={`fullLikeAction ${likedProfileIds.includes(current.id) ? "liked" : ""}`}
                       onClick={sendProfileLike}
@@ -4772,7 +4841,7 @@ export default function MatchApp({
                     </div>
                     <div className="tutorialTips">
                       <strong>カードの見方</strong>
-                      <p>左右をタップで前・次へ／プロフィール部分をタップで詳細／「相手から」で自分にいいねした人を確認</p>
+                      <p>左右をタップで前・次へ／プロフィール部分をタップで詳細／「相手から」は左スワイプでブロックせずスキップ</p>
                     </div>
                   </div>
                   <button className="tutorialStart" onClick={closeTutorial}>
