@@ -2023,7 +2023,7 @@ export default function MatchApp({
         }).catch(() => undefined);
     };
     heartbeat();
-    const timer = window.setInterval(heartbeat, 60_000);
+    const timer = window.setInterval(heartbeat, 45_000);
     document.addEventListener("visibilitychange", heartbeat);
     return () => {
       window.clearInterval(timer);

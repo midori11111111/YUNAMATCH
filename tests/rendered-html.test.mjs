@@ -1103,3 +1103,20 @@ test("lets matched users share privacy-controlled play schedules", async () => {
   assert.match(availabilityApi, /allowedVisibility/);
   assert.match(availabilityApi, /export async function DELETE/);
 });
+
+test("keeps linked-account users online under their canonical profile", async () => {
+  const [app, presenceApi, discoverApi] = await Promise.all([
+    readFile(new URL("app/match-app.tsx", root), "utf8"),
+    readFile(new URL("app/api/presence/route.ts", root), "utf8"),
+    readFile(new URL("app/api/discover/route.ts", root), "utf8"),
+  ]);
+
+  assert.match(presenceApi, /identityAliases/);
+  assert.match(presenceApi, /canonicalUserId/);
+  assert.match(presenceApi, /inArray\(profiles\.userId, aliases\)/);
+  assert.match(presenceApi, /userId: identity\.canonicalUserId/);
+  assert.match(presenceApi, /payload\.connectionId[\s\S]+\{ lastSeenAt: now \}/);
+  assert.match(presenceApi, /online: age < 3 \* 60_000/);
+  assert.match(discoverApi, /Date\.now\(\) - 3 \* 60_000/);
+  assert.match(app, /setInterval\(heartbeat, 45_000\)/);
+});
