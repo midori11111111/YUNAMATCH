@@ -1056,3 +1056,26 @@ test("shows a paginated history of matched people with profile and chat actions"
   assert.match(app, /formatMatchDate\(connection\)/);
   assert.match(connectionsApi, /createdAt: row\.createdAt/);
 });
+
+test("lets either person hide and later restore a matched chat", async () => {
+  const [app, schema, connectionsApi, messagesApi, migration] = await Promise.all([
+    readFile(new URL("app/match-app.tsx", root), "utf8"),
+    readFile(new URL("db/schema.ts", root), "utf8"),
+    readFile(new URL("app/api/connections/route.ts", root), "utf8"),
+    readFile(new URL("app/api/messages/route.ts", root), "utf8"),
+    readFile(new URL("drizzle/0033_late_umar.sql", root), "utf8"),
+  ]);
+
+  assert.match(schema, /userAArchived/);
+  assert.match(schema, /userBArchived/);
+  assert.match(migration, /user_a_archived/);
+  assert.match(migration, /user_b_archived/);
+  assert.match(connectionsApi, /archivedOnly/);
+  assert.match(connectionsApi, /payload\.action === "archive" \|\| payload\.action === "restore"/);
+  assert.match(app, /マッチを解消/);
+  assert.match(app, /解消したマッチ/);
+  assert.match(app, /restoreConnection/);
+  assert.match(app, /マイページから復元できます/);
+  assert.match(messagesApi, /if \(!mateArchived\)/);
+  assert.match(messagesApi, /マイページからこのマッチを復元してください/);
+});

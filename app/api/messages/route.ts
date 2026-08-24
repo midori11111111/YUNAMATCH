@@ -132,6 +132,14 @@ export async function POST(request: Request) {
   const aliasSet = new Set(aliases);
   const connection = await getMembership(payload.connectionId, aliases);
   if (!connection) return Response.json({ error: "マッチが見つかりません" }, { status: 404 });
+  const archivedByMe = aliasSet.has(connection.userAId)
+    ? connection.userAArchived
+    : connection.userBArchived;
+  if (archivedByMe)
+    return Response.json(
+      { error: "マイページからこのマッチを復元してください" },
+      { status: 409 },
+    );
   const mateId = aliasSet.has(connection.userAId) ? connection.userBId : connection.userAId;
   if (await isBlocked(aliases, mateId)) return Response.json({ error: "この相手にはメッセージを送れません" }, { status: 403 });
   if (kind === "play_invite") {
@@ -169,17 +177,22 @@ export async function POST(request: Request) {
   if(!message)return Response.json({error:"送信結果を確認できませんでした"},{status:500});
   if(!createdMessage)return Response.json({ message: serializeMessage(message, aliasSet) });
   const senderName=aliasSet.has(connection.userAId)?connection.userAName:connection.userBName;
-  runInBackground(
-    sendPush(
-      mateId,
-      kind === "play_invite"
-        ? `${senderName}さんからプレイのお誘い`
-        : `${senderName}さんからメッセージ`,
-      body.slice(0,80),
-      `/?chat=${connection.id}`,
-    ),
-    "Message push",
-  );
+  const mateArchived = aliasSet.has(connection.userAId)
+    ? connection.userBArchived
+    : connection.userAArchived;
+  if (!mateArchived) {
+    runInBackground(
+      sendPush(
+        mateId,
+        kind === "play_invite"
+          ? `${senderName}さんからプレイのお誘い`
+          : `${senderName}さんからメッセージ`,
+        body.slice(0,80),
+        `/?chat=${connection.id}`,
+      ),
+      "Message push",
+    );
+  }
   return Response.json({ message: serializeMessage(message, aliasSet) }, { status: 201 });
 }
 

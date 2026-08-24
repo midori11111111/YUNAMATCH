@@ -136,6 +136,7 @@ export async function GET(request: Request) {
   const aliasSet = new Set(aliases);
   const beforeValue = Number(new URL(request.url).searchParams.get("before"));
   const before = Number.isInteger(beforeValue) && beforeValue > 0 ? beforeValue : null;
+  const archivedOnly = new URL(request.url).searchParams.get("archived") === "1";
   // 過去データ修復は通常の一覧取得では実行しない。毎回の結合検索が
   // 混雑時のD1負荷を大きくしていたため、明示した保守リクエストだけに限定する。
   if (new URL(request.url).searchParams.get("repair") === "1") {
@@ -166,8 +167,14 @@ export async function GET(request: Request) {
     .from(connections)
     .where(and(
       or(
-        inArray(connections.userAId, aliases),
-        inArray(connections.userBId, aliases),
+        and(
+          inArray(connections.userAId, aliases),
+          eq(connections.userAArchived, archivedOnly),
+        ),
+        and(
+          inArray(connections.userBId, aliases),
+          eq(connections.userBArchived, archivedOnly),
+        ),
       ),
       before ? lt(connections.id, before) : undefined,
     ))
@@ -350,6 +357,7 @@ export async function GET(request: Request) {
       return {
         id: row.id,
         createdAt: row.createdAt,
+        archived: isA ? row.userAArchived : row.userBArchived,
         recruitId: row.recruitId,
         mateId,
         mateName: isA ? row.userBName : row.userAName,
@@ -416,11 +424,11 @@ export async function PATCH(request: Request) {
   if (!rateLimit.allowed) return rateLimitResponse(rateLimit.retryAfter);
   const payload = (await request.json()) as {
     connectionId?: number;
-    action?: "again" | "played" | "share_contact" | "pin";
+    action?: "again" | "played" | "share_contact" | "pin" | "archive" | "restore";
   };
   if (
     !payload.connectionId ||
-    !["again", "played", "share_contact", "pin"].includes(payload.action || "")
+    !["again", "played", "share_contact", "pin", "archive", "restore"].includes(payload.action || "")
   ) {
     return Response.json({ error: "操作を確認してください" }, { status: 400 });
   }
@@ -429,6 +437,18 @@ export async function PATCH(request: Request) {
   if (!row)
     return Response.json({ error: "マッチが見つかりません" }, { status: 404 });
   const isA = aliases.includes(row.userAId);
+  if (payload.action === "archive" || payload.action === "restore") {
+    const archived = payload.action === "archive";
+    await getDb()
+      .update(connections)
+      .set(
+        isA
+          ? { userAArchived: archived, userAPinned: archived ? false : row.userAPinned }
+          : { userBArchived: archived, userBPinned: archived ? false : row.userBPinned },
+      )
+      .where(eq(connections.id, row.id));
+    return Response.json({ ok: true, archived });
+  }
   if (payload.action === "pin") {
     const pinned = !(isA ? row.userAPinned : row.userBPinned);
     await getDb()

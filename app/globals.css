@@ -659,6 +659,8 @@ button { cursor: pointer; }
 .accountOperations > button:first-child > span { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 11px; color: var(--purple); background: #eee9ff; font-weight: 950; }
 .accountOperations strong,.accountOperations small { display: block; }
 .blockedUserSettings { margin-top: 14px; padding: 20px; border: 1px solid var(--line); border-radius: 22px; background: #fff; }
+.archivedMatchSettings { border-color: #e1daf5; background: linear-gradient(145deg,#fff,#fbfaff); }
+.archivedConnectionList button { color: var(--purple); border-color: #ddd4f7; }
 .blockedUserList { display: grid; gap: 9px; margin-top: 14px; }
 .blockedUserList article { display: grid; grid-template-columns: 42px minmax(0,1fr) auto; align-items: center; gap: 11px; padding: 11px; border-radius: 15px; background: #f8f6fb; }
 .blockedUserAvatar { width: 42px; height: 42px; display: grid; place-items: center; overflow: hidden; border-radius: 50%; color: #fff; background: linear-gradient(145deg,#7655ee,#ff70a3); font-weight: 900; }
@@ -862,6 +864,8 @@ button { cursor: pointer; }
 .chatActionGrid button.pinned b { color: #d89f16; }
 .chatActionGrid button.voiceRoomCloseAction { color: #b94059; border-color: #f2cfd6; background: #fff4f6; }
 .chatActionGrid button.voiceRoomCloseAction b { color: #d34c65; }
+.chatActionGrid button.matchDissolveAction { color: #a6495e; border-color: #efd9df; background: #fff7f9; }
+.chatActionGrid button.matchDissolveAction b { color: #c95770; }
 .voiceRoomSetupModal { text-align: left; }
 .voiceRoomSetupModal > p { margin: 6px 0 18px; color: var(--muted); font-size: 13px; line-height: 1.7; }
 .voiceRoomLimitGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }

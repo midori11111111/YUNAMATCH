@@ -132,6 +132,7 @@ export type Profile = {
 type Connection = {
   id: number;
   createdAt: string;
+  archived?: boolean;
   recruitId: number;
   mateId: string;
   mateName: string;
@@ -908,6 +909,9 @@ export default function MatchApp({
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
   const [blockedUsersLoading, setBlockedUsersLoading] = useState(false);
   const [unblockingId, setUnblockingId] = useState<number | null>(null);
+  const [archivedConnections, setArchivedConnections] = useState<Connection[]>([]);
+  const [archivedConnectionsLoading, setArchivedConnectionsLoading] = useState(false);
+  const [archiveUpdatingId, setArchiveUpdatingId] = useState<number | null>(null);
   const defaultProfile: Profile = {
     trainerName: shortName,
     mainPokemon: [],
@@ -1371,9 +1375,28 @@ export default function MatchApp({
     }
   }, [preview, guestMode]);
 
+  const loadArchivedConnections = useCallback(async () => {
+    if (preview || guestMode) return;
+    setArchivedConnectionsLoading(true);
+    try {
+      const response = await fetch("/api/connections?archived=1", {
+        cache: "no-store",
+      });
+      const data = await response.json();
+      if (response.ok) setArchivedConnections(data.connections || []);
+    } catch {
+      /* マイページの他の設定は利用を続ける */
+    } finally {
+      setArchivedConnectionsLoading(false);
+    }
+  }, [preview, guestMode]);
+
   useEffect(() => {
-    if (tab === "profile") void loadBlockedUsers();
-  }, [tab, loadBlockedUsers]);
+    if (tab === "profile") {
+      void loadBlockedUsers();
+      void loadArchivedConnections();
+    }
+  }, [tab, loadBlockedUsers, loadArchivedConnections]);
   const loadConnections = async (append = false) => {
     if (append && connectionsLoadingMore) return [] as Connection[];
     if (append) setConnectionsLoadingMore(true);
@@ -1578,7 +1601,7 @@ export default function MatchApp({
   }, [preview, guestMode]);
 
   useEffect(() => {
-    if (preview || guestMode || !connections.length) return;
+    if (preview || guestMode || !connectionsLoaded) return;
     try {
       const safeCache = connections.slice(0, 200).map((connection) => ({
         ...connection,
@@ -1591,7 +1614,7 @@ export default function MatchApp({
     } catch {
       /* 容量制限中も通常のチャット表示は続ける */
     }
-  }, [preview, guestMode, connections]);
+  }, [preview, guestMode, connections, connectionsLoaded]);
 
   useEffect(() => {
     if (!selectedConnection || !messages.length) return;
@@ -4142,6 +4165,74 @@ export default function MatchApp({
       setUnblockingId(null);
     }
   };
+  const archiveConnection = async (connection: Connection) => {
+    if (archiveUpdatingId !== null) return;
+    if (
+      !window.confirm(
+        `${connection.mateName}さんとのマッチを解消しますか？\n\nあなたのチャット一覧とマッチ履歴から非表示になります。相手には通知されず、マイページから復元できます。`,
+      )
+    )
+      return;
+    setArchiveUpdatingId(connection.id);
+    try {
+      if (!preview) {
+        const response = await fetch("/api/connections", {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ connectionId: connection.id, action: "archive" }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          notify(data.error || "マッチを解消できませんでした");
+          return;
+        }
+      }
+      setConnections((rows) => rows.filter((row) => row.id !== connection.id));
+      setArchivedConnections((rows) => [
+        { ...connection, archived: true, pinned: false },
+        ...rows.filter((row) => row.id !== connection.id),
+      ]);
+      activeConnectionIdRef.current = null;
+      messageLoadRequestRef.current += 1;
+      messageLoadInFlightRef.current = null;
+      setSelectedConnection(null);
+      setMessages([]);
+      setMessagesHasMore(false);
+      setMessagesLoading(false);
+      setMessagesError(false);
+      setChatActionsOpen(false);
+      notify("マッチを解消し、やりとりを非表示にしました");
+    } catch {
+      notify("通信が不安定です。もう一度お試しください");
+    } finally {
+      setArchiveUpdatingId(null);
+    }
+  };
+  const restoreConnection = async (connection: Connection) => {
+    if (archiveUpdatingId !== null) return;
+    setArchiveUpdatingId(connection.id);
+    try {
+      const response = await fetch("/api/connections", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ connectionId: connection.id, action: "restore" }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        notify(data.error || "マッチを復元できませんでした");
+        return;
+      }
+      setArchivedConnections((rows) =>
+        rows.filter((row) => row.id !== connection.id),
+      );
+      await loadConnections();
+      notify(`${connection.mateName}さんとのやりとりを復元しました`);
+    } catch {
+      notify("通信が不安定です。もう一度お試しください");
+    } finally {
+      setArchiveUpdatingId(null);
+    }
+  };
   const submitSupport = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSending(true);
@@ -6445,6 +6536,43 @@ export default function MatchApp({
                   連携時は各サービスのアカウント選択画面が開きます。
                 </p>
               </section>
+              <section className="blockedUserSettings archivedMatchSettings">
+                <div className="profileSectionHeading">
+                  <small>HIDDEN MATCHES</small>
+                  <h2>解消したマッチ</h2>
+                  <p>
+                    非表示にした相手です。復元すると、チャットとマッチ履歴へ戻ります。
+                  </p>
+                </div>
+                {archivedConnectionsLoading ? (
+                  <p className="blockedUserEmpty">読み込み中…</p>
+                ) : archivedConnections.length ? (
+                  <div className="blockedUserList archivedConnectionList">
+                    {archivedConnections.map((connection) => (
+                      <article key={connection.id}>
+                        <UserAvatar
+                          name={connection.mateName}
+                          src={connection.mateAvatarUrl}
+                          className="blockedUserAvatar"
+                        />
+                        <div>
+                          <strong>{connection.mateName}</strong>
+                          <small>{formatMatchDate(connection)}にマッチ</small>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={archiveUpdatingId !== null}
+                          onClick={() => void restoreConnection(connection)}
+                        >
+                          {archiveUpdatingId === connection.id ? "復元中…" : "復元"}
+                        </button>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="blockedUserEmpty">解消したマッチはありません</p>
+                )}
+              </section>
               <section className="blockedUserSettings">
                 <div className="profileSectionHeading">
                   <small>SAFETY SETTINGS</small>
@@ -8482,6 +8610,16 @@ export default function MatchApp({
               >
                 <b>{selectedConnection.pinned ? "★" : "☆"}</b>
                 {selectedConnection.pinned ? "ピン留めを外す" : "チャットをピン留め"}
+              </button>
+              <button
+                className="matchDissolveAction"
+                onClick={() => void archiveConnection(selectedConnection)}
+                disabled={archiveUpdatingId === selectedConnection.id}
+              >
+                <b>−</b>
+                {archiveUpdatingId === selectedConnection.id
+                  ? "解消中…"
+                  : "マッチを解消"}
               </button>
             </div>
             <section className="chatReadReceiptSetting">

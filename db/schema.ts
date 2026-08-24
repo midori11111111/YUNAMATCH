@@ -219,6 +219,12 @@ export const connections = sqliteTable(
     userBPinned: integer("user_b_pinned", { mode: "boolean" })
       .notNull()
       .default(false),
+    userAArchived: integer("user_a_archived", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    userBArchived: integer("user_b_archived", { mode: "boolean" })
+      .notNull()
+      .default(false),
     userALastReadAt: integer("user_a_last_read_at", { mode: "timestamp_ms" }),
     userBLastReadAt: integer("user_b_last_read_at", { mode: "timestamp_ms" }),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
