@@ -1,10 +1,11 @@
-import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
-import { blocks, notificationDismissals, profileLikes, profiles } from "../../../db/schema";
+import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
+import { applications, blocks, connections, notificationDismissals, profileLikes, profiles, recruits } from "../../../db/schema";
 import { getDb } from "../../../db";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { profilePublicId, resolveProfilePublicId } from "../../../lib/profile-id";
 import { sendPush } from "../../../lib/push";
 import { normalizeRank } from "../../../lib/ranks";
+import { identityAliases } from "../../../lib/account-aliases";
 
 function parseList(value:string){
   try{const parsed=JSON.parse(value);if(Array.isArray(parsed))return parsed.filter((item):item is string=>typeof item==="string"&&Boolean(item.trim()))}
@@ -16,7 +17,9 @@ export async function GET(){
   const user=await getChatGPTUser();
   if(!user)return Response.json({error:"ログインが必要です",signIn:"/login"},{status:401});
   const db=getDb();
-  const [received,sent,blockedByMe,blockedMe,likeCounts,skippedRows]=await Promise.all([
+  const aliases=await identityAliases(user.userId,user.email);
+  const aliasSet=new Set(aliases);
+  const [received,sent,blockedByMe,blockedMe,likeCounts,skippedRows,matchedRows,pendingProfileRequests]=await Promise.all([
     db.select({
       id:profileLikes.id,
       senderId:profileLikes.senderId,
@@ -41,14 +44,24 @@ export async function GET(){
     db.select({id:blocks.blockerId}).from(blocks).where(eq(blocks.blockedId,user.userId)),
     db.select({userId:profileLikes.recipientId,count:sql<number>`count(*)`}).from(profileLikes).groupBy(profileLikes.recipientId),
     db.select({key:notificationDismissals.notificationKey}).from(notificationDismissals).where(eq(notificationDismissals.userId,user.userId)),
+    db.select({userAId:connections.userAId,userBId:connections.userBId}).from(connections).where(or(inArray(connections.userAId,aliases),inArray(connections.userBId,aliases))),
+    db.select({ownerId:recruits.ownerId}).from(applications).innerJoin(recruits,eq(applications.recruitId,recruits.id)).where(and(inArray(applications.applicantId,aliases),eq(recruits.kind,"profile"),eq(applications.status,"pending"))),
   ]);
   const skippedLikeIds=new Set(skippedRows.flatMap(row=>{
     const match=/^received-like:(\d+)$/.exec(row.key);
     return match?[Number(match[1])]:[];
   }));
   const hidden=new Set([...blockedByMe.map(row=>row.id),...blockedMe.map(row=>row.id)]);
+  const matchedUserIds=new Set(matchedRows.flatMap(row=>{
+    if(aliasSet.has(row.userAId))return [row.userBId];
+    if(aliasSet.has(row.userBId))return [row.userAId];
+    return [];
+  }));
+  const pendingTargetIds=new Set(pendingProfileRequests.map(row=>row.ownerId));
   const visibleReceived=received.filter(row=>
     !skippedLikeIds.has(row.id)&&
+    !matchedUserIds.has(row.senderId)&&
+    !pendingTargetIds.has(row.senderId)&&
     !hidden.has(row.senderId)&&
     !row.senderSuspendedAt&&
     row.senderAgeConfirmed&&

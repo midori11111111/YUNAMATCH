@@ -1015,3 +1015,20 @@ test("lets users swipe away a received like without blocking the sender", async 
   assert.match(likesApi, /notificationDismissals/);
   assert.doesNotMatch(likesApi, /action==="skip"[\s\S]{0,1200}insert\(blocks\)/);
 });
+
+test("removes matched, requested, and skipped people from received likes", async () => {
+  const [app, likesApi] = await Promise.all([
+    readFile(new URL("app/match-app.tsx", root), "utf8"),
+    readFile(new URL("app/api/likes/route.ts", root), "utf8"),
+  ]);
+
+  assert.match(likesApi, /matchedUserIds/);
+  assert.match(likesApi, /pendingTargetIds/);
+  assert.match(likesApi, /!matchedUserIds\.has\(row\.senderId\)/);
+  assert.match(likesApi, /!pendingTargetIds\.has\(row\.senderId\)/);
+  assert.match(likesApi, /!skippedLikeIds\.has\(row\.id\)/);
+  assert.match(likesApi, /eq\(recruits\.kind,"profile"\)/);
+  assert.match(likesApi, /identityAliases/);
+  assert.match(app, /loadDiscover\(\), loadNotices\(\), loadLikes\(\)/);
+  assert.match(app, /likes\.filter\(\(like\) => like\.senderId !== requestedProfileId\)/);
+});

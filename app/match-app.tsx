@@ -2624,8 +2624,14 @@ export default function MatchApp({
     setProfileCandidates((profiles) =>
       profiles.filter((candidate) => candidate.id !== requestedProfileId),
     );
+    setReceivedProfileCandidates((profiles) =>
+      profiles.filter((candidate) => candidate.id !== requestedProfileId),
+    );
+    setProfileLikes((likes) =>
+      likes.filter((like) => like.senderId !== requestedProfileId),
+    );
     notify("👋 手を振りました。承認前からやりとりで確認できます");
-    await Promise.all([loadDiscover(), loadNotices()]);
+    await Promise.all([loadDiscover(), loadNotices(), loadLikes()]);
   };
   const sendProfileLikeTo = async (candidate: ProfileCandidate) => {
     if (likedProfileIds.includes(candidate.id)) return;
@@ -3366,6 +3372,7 @@ export default function MatchApp({
       loadConnections(),
       loadRecruits(),
       loadDiscover(),
+      loadLikes(),
     ]);
     if (action === "accept" && data.connectionId) {
       const matchedConnection = refreshedConnections.find(
