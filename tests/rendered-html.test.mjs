@@ -970,3 +970,17 @@ test("lets administrators find and suspend any registered account", async () => 
   assert.match(usersApi, /DELETE FROM profiles WHERE user_id = \?/);
   assert.match(usersApi, /deleted: true/);
 });
+
+test("shows the other trainer's public profile before approving a chat request", async () => {
+  const [app, applicationsApi] = await Promise.all([
+    readFile(new URL("app/match-app.tsx", root), "utf8"),
+    readFile(new URL("app/api/applications/route.ts", root), "utf8"),
+  ]);
+
+  assert.match(app, /相手のプロフィールを見る/);
+  assert.match(app, /自己紹介・使うポケモン・ランク・遊べる時間帯/);
+  assert.match(app, /pendingProfileView/);
+  assert.match(applicationsApi, /mateProfile:publicProfile/);
+  assert.match(applicationsApi, /inArray\(profiles\.userId,mateIds\)/);
+  assert.doesNotMatch(app, /pendingProfileView\.contact/);
+});

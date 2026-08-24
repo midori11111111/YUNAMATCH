@@ -78,6 +78,17 @@ type BlockedUser = {
   avatarUrl: string;
   createdAt: string;
 };
+type PendingMateProfile = {
+  trainerName: string;
+  avatarUrl: string;
+  headerUrl: string;
+  bio: string;
+  mainPokemon: string[];
+  highestRate: string;
+  playTime: string[];
+  gender: string;
+  age: number | null;
+};
 type Notice = {
   id: number;
   recruitId?: number;
@@ -91,6 +102,7 @@ type Notice = {
   recruitPokemon?: string;
   ownerContact?: string | null;
   createdAt?: string;
+  mateProfile?: PendingMateProfile;
 };
 type PendingConversation = {
   notice: Notice;
@@ -799,6 +811,8 @@ export default function MatchApp({
   const [matchedProfile, setMatchedProfile] = useState<Connection | null>(null);
   const [selectedPending, setSelectedPending] =
     useState<PendingConversation | null>(null);
+  const [pendingProfileView, setPendingProfileView] =
+    useState<PendingMateProfile | null>(null);
   const [pendingGroupOpen, setPendingGroupOpen] = useState(false);
   const [pendingMessages, setPendingMessages] = useState<ApplicationMessage[]>([]);
   const activeApplicationIdRef = useRef<number | null>(null);
@@ -3352,6 +3366,27 @@ export default function MatchApp({
     setNotificationOpen(false);
     if (!preview) void loadPendingMessages(notice.id);
   };
+  const openPendingProfile = () => {
+    if (!selectedPending) return;
+    const notice = selectedPending.notice;
+    const fallbackName =
+      selectedPending.direction === "incoming"
+        ? notice.applicantName || "メイト"
+        : notice.trainerName || "メイト";
+    setPendingProfileView(
+      notice.mateProfile || {
+        trainerName: fallbackName,
+        avatarUrl: "",
+        headerUrl: "",
+        bio: "",
+        mainPokemon: notice.pokemon ? [notice.pokemon] : [],
+        highestRate: "未設定",
+        playTime: [],
+        gender: "",
+        age: null,
+      },
+    );
+  };
   const sendPendingMessage = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!selectedPending || pendingMessageSending) return;
@@ -5067,6 +5102,7 @@ export default function MatchApp({
                           ? selectedPending.notice.applicantName || "メイト"
                           : selectedPending.notice.trainerName || "メイト"
                       }
+                      src={selectedPending.notice.mateProfile?.avatarUrl}
                       className="chatMateAvatar"
                     />
                     <div>
@@ -5084,6 +5120,18 @@ export default function MatchApp({
                       ? "承認前でも、ロールや編成について相談できます"
                       : "承認前でも、ロールや編成について相談できます"}
                   </div>
+                  <button
+                    type="button"
+                    className="pendingProfileButton"
+                    onClick={openPendingProfile}
+                  >
+                    <span>👤</span>
+                    <div>
+                      <strong>相手のプロフィールを見る</strong>
+                      <small>自己紹介・使うポケモン・ランク・遊べる時間帯</small>
+                    </div>
+                    <b>›</b>
+                  </button>
                   <div className="messageThread">
                     <div
                       className={`messageBubble ${
@@ -5581,6 +5629,7 @@ export default function MatchApp({
                                   >
                                     <UserAvatar
                                       name={notice.applicantName || "メイト"}
+                                      src={notice.mateProfile?.avatarUrl}
                                       className="chatMateAvatar"
                                     />
                                     <div>
@@ -5602,6 +5651,7 @@ export default function MatchApp({
                                   >
                                     <UserAvatar
                                       name={notice.trainerName || "メイト"}
+                                      src={notice.mateProfile?.avatarUrl}
                                       className="chatMateAvatar"
                                     />
                                     <div>
@@ -7277,6 +7327,84 @@ export default function MatchApp({
                 {discoverTotal}人から探す
               </button>
             </div>
+          </section>
+        </div>
+      )}
+
+      {pendingProfileView && (
+        <div className="modalBackdrop">
+          <button
+            className="backdropDismiss"
+            onClick={() => setPendingProfileView(null)}
+            aria-label="相手のプロフィールを閉じる"
+          />
+          <section className="sheetModal pendingProfileSheet">
+            <div className="sheetHandle" />
+            <button
+              className="closeButton"
+              onClick={() => setPendingProfileView(null)}
+            >
+              ×
+            </button>
+            <div
+              className={`candidateDetailHero role-${pokemonRole(
+                pendingProfileView.mainPokemon[0] || "",
+              )} ${pendingProfileView.headerUrl ? "hasHeader" : ""}`}
+              style={
+                pendingProfileView.headerUrl
+                  ? {
+                      backgroundImage: `linear-gradient(90deg, #21143eaa, #21143e22), url(${pendingProfileView.headerUrl})`,
+                    }
+                  : undefined
+              }
+            >
+              <div className="candidateDetailPokemonName">
+                <small>MAIN POKÉMON</small>
+                <strong>{pendingProfileView.mainPokemon[0] || "未設定"}</strong>
+              </div>
+              <UserAvatar
+                name={pendingProfileView.trainerName}
+                src={pendingProfileView.avatarUrl}
+                className="candidateDetailAvatar"
+              />
+            </div>
+            <small className="modalKicker">PENDING MATE PROFILE</small>
+            <h2>{pendingProfileView.trainerName}</h2>
+            <p className="candidateDetailRank">
+              {pendingProfileView.highestRate}
+              {pendingProfileView.gender && ` ・ ${pendingProfileView.gender}`}
+              {pendingProfileView.age !== null && ` ・ ${pendingProfileView.age}歳`}
+            </p>
+            <div className="candidateBio">
+              <small>自己紹介</small>
+              <p>{pendingProfileView.bio || "自己紹介は未設定です"}</p>
+            </div>
+            <div className="profilePokemonList">
+              <small>使うポケモン</small>
+              <div>
+                {pendingProfileView.mainPokemon.length ? (
+                  pendingProfileView.mainPokemon.map((name) => (
+                    <PokemonLabel key={name} name={name} />
+                  ))
+                ) : (
+                  <span className="pendingProfileEmpty">未設定</span>
+                )}
+              </div>
+            </div>
+            <div className="timeChip">
+              <span>◷</span>
+              <div>
+                <small>遊べる時間帯</small>
+                <strong>
+                  {pendingProfileView.playTime.length
+                    ? pendingProfileView.playTime.join("・")
+                    : "未設定"}
+                </strong>
+              </div>
+            </div>
+            <p className="pendingProfilePrivacy">
+              連絡先はマッチ成立後、相手が共有を選んだ場合のみ表示されます
+            </p>
           </section>
         </div>
       )}

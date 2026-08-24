@@ -783,6 +783,17 @@ button { cursor: pointer; }
 .chatHeader .chatSafety { font-size: 9px; letter-spacing: 1px; }
 .pendingChatHeader > span { width: 34px; }
 .pendingChatNotice { margin: 12px 0 2px; padding: 10px 12px; border-radius: 12px; color: #735e91; background: #f2edff; font-size: 8px; font-weight: 850; text-align: center; }
+.pendingProfileButton { width: 100%; display: grid; grid-template-columns: 34px minmax(0,1fr) auto; align-items: center; gap: 9px; margin: 8px 0 2px; padding: 10px 12px; border: 1px solid #e6def7; border-radius: 14px; color: #4a3d62; background: linear-gradient(135deg,#fff,#faf7ff); text-align: left; box-shadow: 0 6px 16px #49356c0b; }
+.pendingProfileButton > span { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 11px; background: #eee8ff; font-size: 14px; }
+.pendingProfileButton > div { min-width: 0; }
+.pendingProfileButton strong, .pendingProfileButton small { display: block; }
+.pendingProfileButton strong { font-size: 9px; }
+.pendingProfileButton small { margin-top: 3px; overflow: hidden; color: #8b8297; font-size: 6px; text-overflow: ellipsis; white-space: nowrap; }
+.pendingProfileButton > b { color: var(--purple); font-size: 17px; }
+.pendingProfileSheet { max-height: min(760px, 90dvh); overflow-y: auto; }
+.pendingProfileSheet h2 { margin-bottom: 6px; }
+.pendingProfileEmpty { color: #91899a; font-size: 8px; font-weight: 850; }
+.pendingProfilePrivacy { margin: 13px 0 2px; padding: 10px 12px; border-radius: 12px; color: #81788d; background: #f5f2f7; font-size: 7px; font-weight: 800; line-height: 1.6; text-align: center; }
 .pendingChatActions { display: grid; grid-template-columns: .8fr 1.2fr; gap: 8px; padding: 11px 0 8px; border-top: 1px solid var(--line); }
 .pendingChatActions.threeActions { grid-template-columns: .8fr .8fr 1.2fr; }
 .pendingChatActions button { min-height: 44px; border: 1px solid #e3dde8; border-radius: 14px; color: #837b8b; background: #fff; font-size: 9px; font-weight: 950; }

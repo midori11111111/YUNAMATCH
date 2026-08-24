@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, lt, ne } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, lt, ne } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { applicationMessages, applications, connections, lobbies, lobbyMembers, messages, profiles, recruits } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
@@ -15,6 +15,29 @@ function cursor(value: string | null) {
  return Number.isInteger(parsed)&&parsed>0?parsed:null;
 }
 
+function parseList(value: string) {
+ try {
+  const parsed=JSON.parse(value);
+  return Array.isArray(parsed)?parsed.filter((item):item is string=>typeof item==="string"):[];
+ } catch {
+  return value?[value]:[];
+ }
+}
+
+function publicProfile(row: typeof profiles.$inferSelect | undefined, fallbackName: string) {
+ return {
+  trainerName:row?.trainerName||fallbackName,
+  avatarUrl:row?.avatarUrl||"",
+  headerUrl:row?.headerUrl||"",
+  bio:row?.bio||"",
+  mainPokemon:row?parseList(row.mainPokemon):[],
+  highestRate:row?.highestRate||"未設定",
+  playTime:row?parseList(row.playTime):[],
+  gender:row?.gender||"",
+  age:row?.age??null,
+ };
+}
+
 export async function GET(request:Request){
  const user=await getChatGPTUser();
  if(!user)return Response.json({error:"ログインが必要です",signIn},{status:401});
@@ -22,8 +45,8 @@ export async function GET(request:Request){
  const params=new URL(request.url).searchParams;
  const beforeIncoming=cursor(params.get("beforeIncoming"));
  const beforeOutgoing=cursor(params.get("beforeOutgoing"));
- const incomingFields={id:applications.id,recruitId:applications.recruitId,applicantName:applications.applicantName,pokemon:applications.pokemon,message:applications.message,status:applications.status,decisionMessage:applications.decisionMessage,recruitPokemon:recruits.pokemon,createdAt:applications.createdAt};
- const outgoingFields={id:applications.id,recruitId:applications.recruitId,trainerName:recruits.trainerName,pokemon:applications.pokemon,message:applications.message,status:applications.status,decisionMessage:applications.decisionMessage,recruitPokemon:recruits.pokemon,createdAt:applications.createdAt};
+ const incomingFields={id:applications.id,recruitId:applications.recruitId,applicantId:applications.applicantId,applicantName:applications.applicantName,pokemon:applications.pokemon,message:applications.message,status:applications.status,decisionMessage:applications.decisionMessage,recruitPokemon:recruits.pokemon,createdAt:applications.createdAt};
+ const outgoingFields={id:applications.id,recruitId:applications.recruitId,ownerId:recruits.ownerId,trainerName:recruits.trainerName,pokemon:applications.pokemon,message:applications.message,status:applications.status,decisionMessage:applications.decisionMessage,recruitPokemon:recruits.pokemon,createdAt:applications.createdAt};
  const [pendingIncoming,pendingOutgoing,incomingHistoryRows,outgoingHistoryRows]=await Promise.all([
   db.select(incomingFields).from(applications).innerJoin(recruits,eq(applications.recruitId,recruits.id)).where(and(eq(recruits.ownerId,user.userId),eq(applications.status,"pending"))).orderBy(desc(applications.createdAt),desc(applications.id)),
   db.select(outgoingFields).from(applications).innerJoin(recruits,eq(applications.recruitId,recruits.id)).where(and(eq(applications.applicantId,user.userId),eq(applications.status,"pending"))).orderBy(desc(applications.createdAt),desc(applications.id)),
@@ -32,9 +55,21 @@ export async function GET(request:Request){
  ]);
  const incomingHistory=incomingHistoryRows.slice(0,historyPageSize);
  const outgoingHistory=outgoingHistoryRows.slice(0,historyPageSize);
+ const mateIds=[...new Set([
+  ...pendingIncoming.map((row)=>row.applicantId),
+  ...pendingOutgoing.map((row)=>row.ownerId),
+ ])];
+ const mateProfiles=mateIds.length?await db.select().from(profiles).where(inArray(profiles.userId,mateIds)):[];
+ const profileByUserId=new Map(mateProfiles.map((row)=>[row.userId,row]));
  return Response.json({
-  incoming:[...pendingIncoming,...incomingHistory],
-  outgoing:[...pendingOutgoing,...outgoingHistory],
+  incoming:[
+   ...pendingIncoming.map((row)=>({...row,mateProfile:publicProfile(profileByUserId.get(row.applicantId),row.applicantName)})),
+   ...incomingHistory,
+  ],
+  outgoing:[
+   ...pendingOutgoing.map((row)=>({...row,mateProfile:publicProfile(profileByUserId.get(row.ownerId),row.trainerName)})),
+   ...outgoingHistory,
+  ],
   hasMoreIncoming:incomingHistoryRows.length>historyPageSize,
   hasMoreOutgoing:outgoingHistoryRows.length>historyPageSize,
   nextIncomingCursor:incomingHistory.at(-1)?.id??null,
