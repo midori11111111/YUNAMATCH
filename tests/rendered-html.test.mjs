@@ -1156,3 +1156,16 @@ test("promotes the YUNAMATCH Cup with clear entry details", async () => {
   assert.match(app, /profileAnnouncementButton/);
   assert.match(app, /📣 お知らせ/);
 });
+
+test("shows the tournament first and recent fixes in the announcement center", async () => {
+  const app = await readFile(new URL("app/match-app.tsx", root), "utf8");
+
+  assert.match(app, /announcementCenterOpen/);
+  assert.match(app, /YUNAMATCH NEWS/);
+  assert.match(app, /最新アップデート/);
+  assert.match(app, /直近の修正内容/);
+  assert.match(app, /アカウント連携を解除できるようになりました/);
+  assert.match(app, /オンライン表示の不具合を修正しました/);
+  assert.match(app, /マッチ後のプレイ予定共有を追加しました/);
+  assert.match(app, /setAnnouncementCenterOpen\(false\);[\s\S]+setTournamentOpen\(true\)/);
+});

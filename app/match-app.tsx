@@ -793,6 +793,7 @@ export default function MatchApp({
   const [discoverMode, setDiscoverMode] = useState<DiscoverMode>("recommended");
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [tutorialChecked, setTutorialChecked] = useState(false);
+  const [announcementCenterOpen, setAnnouncementCenterOpen] = useState(false);
   const [tournamentOpen, setTournamentOpen] = useState(false);
   const [tournamentChecked, setTournamentChecked] = useState(false);
   const [chatTutorialOpen, setChatTutorialOpen] = useState(false);
@@ -6416,9 +6417,9 @@ export default function MatchApp({
                   </button>
                   <button
                     className="profileAnnouncementButton"
-                    onClick={() => setTournamentOpen(true)}
+                    onClick={() => setAnnouncementCenterOpen(true)}
                   >
-                    <span>1</span> 📣 お知らせ
+                    <span>4</span> 📣 お知らせ
                   </button>
                 </div>
               </div>
@@ -7231,6 +7232,84 @@ export default function MatchApp({
               {sending ? "登録しています…" : "登録してメイトを探す"}
             </button>
           </form>
+        </div>
+      )}
+
+      {announcementCenterOpen && (
+        <div className="modalBackdrop announcementCenterBackdrop">
+          <button
+            type="button"
+            className="backdropDismiss"
+            onClick={() => setAnnouncementCenterOpen(false)}
+            aria-label="お知らせを閉じる"
+          />
+          <section
+            className="announcementCenter"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="announcement-center-title"
+          >
+            <header className="announcementCenterHeader">
+              <div>
+                <small>YUNAMATCH NEWS</small>
+                <h2 id="announcement-center-title">お知らせ</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAnnouncementCenterOpen(false)}
+                aria-label="お知らせを閉じる"
+              >
+                ×
+              </button>
+            </header>
+
+            <article className="announcementFeatured">
+              <div className="announcementFeaturedTop">
+                <span>大会</span>
+                <time dateTime="2026-08-24">2026.08.24</time>
+              </div>
+              <div className="announcementFeaturedMark">⚡</div>
+              <h3>ユナマッチ杯を開催します！</h3>
+              <p>8月30日 12:00〜｜優勝10,000円・準優勝5,000円</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setAnnouncementCenterOpen(false);
+                  setTournamentOpen(true);
+                }}
+              >
+                詳しく見る <span>→</span>
+              </button>
+            </article>
+
+            <div className="announcementUpdates">
+              <div className="announcementUpdatesHeading">
+                <h3>最新アップデート</h3>
+                <span>直近の修正内容</span>
+              </div>
+              <article>
+                <time dateTime="2026-08-24">08.24</time>
+                <div>
+                  <h4>アカウント連携を解除できるようになりました</h4>
+                  <p>マイページの設定から、使わなくなったログインアカウントの連携を安全に解除できます。</p>
+                </div>
+              </article>
+              <article>
+                <time dateTime="2026-08-24">08.24</time>
+                <div>
+                  <h4>オンライン表示の不具合を修正しました</h4>
+                  <p>ユナマッチを開いているのに、相手からオフラインに見える問題を改善しました。</p>
+                </div>
+              </article>
+              <article>
+                <time dateTime="2026-08-24">08.24</time>
+                <div>
+                  <h4>マッチ後のプレイ予定共有を追加しました</h4>
+                  <p>遊べる日や時間を共有できます。公開範囲は、メイト・お気に入り限定・自分だけから選べます。</p>
+                </div>
+              </article>
+            </div>
+          </section>
         </div>
       )}
 

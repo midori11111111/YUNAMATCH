@@ -1257,6 +1257,30 @@ button { cursor: pointer; }
 }
 
 .modalBackdrop { position: fixed; z-index: 30; inset: 0; display: grid; place-items: center; padding: 18px; background: #211b36b8; backdrop-filter: blur(7px); }
+.announcementCenterBackdrop { z-index: 105; }
+.announcementCenter { width: min(430px, 100%); max-height: 92dvh; position: relative; z-index: 1; overflow: auto; padding: 25px 22px 23px; border-radius: 28px; color: var(--ink); background: #fff; box-shadow: 0 30px 90px #17112566; }
+.announcementCenterHeader { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.announcementCenterHeader small { color: var(--purple); font-size: 6px; font-weight: 950; letter-spacing: 1.8px; }
+.announcementCenterHeader h2 { margin: 3px 0 0; font-size: 25px; letter-spacing: -1px; }
+.announcementCenterHeader > button { width: 35px; height: 35px; border: 0; border-radius: 50%; color: #817989; background: #f3f0f5; font-size: 19px; }
+.announcementFeatured { position: relative; overflow: hidden; padding: 18px; border-radius: 22px; color: #fff; background: radial-gradient(circle at 86% 8%, #ff8eb9, transparent 27%), linear-gradient(135deg, #3f26a7, #7350ef 58%, #e54d94); box-shadow: 0 17px 35px #6740d733; isolation: isolate; }
+.announcementFeatured:before { content: ""; position: absolute; z-index: -1; inset: 0; opacity: .14; background-image: radial-gradient(#fff 1.2px, transparent 1.2px); background-size: 16px 16px; }
+.announcementFeaturedTop { display: flex; align-items: center; justify-content: space-between; }
+.announcementFeaturedTop span { padding: 5px 9px; border-radius: 99px; color: #5f36c8; background: #fff; font-size: 7px; font-weight: 950; }
+.announcementFeaturedTop time { color: #e9dfff; font-size: 7px; font-weight: 850; }
+.announcementFeaturedMark { position: absolute; right: 17px; top: 42px; color: #ffffff2b; font-size: 76px; line-height: 1; transform: rotate(8deg); }
+.announcementFeatured h3 { margin: 24px 0 5px; font-size: 20px; letter-spacing: -.8px; }
+.announcementFeatured p { margin: 0 0 15px; color: #eee8ff; font-size: 8px; font-weight: 800; }
+.announcementFeatured > button { min-height: 39px; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 0 15px; border: 0; border-radius: 12px; color: #4226a5; background: #fff; font-size: 8px; font-weight: 950; }
+.announcementFeatured > button span { font-size: 12px; }
+.announcementUpdates { display: grid; gap: 0; margin-top: 21px; }
+.announcementUpdatesHeading { display: flex; align-items: baseline; justify-content: space-between; padding: 0 2px 9px; }
+.announcementUpdatesHeading h3 { margin: 0; font-size: 13px; }
+.announcementUpdatesHeading span { color: #a29baa; font-size: 7px; font-weight: 800; }
+.announcementUpdates > article { display: grid; grid-template-columns: 45px 1fr; gap: 11px; padding: 14px 2px; border-top: 1px solid #eeeaf1; }
+.announcementUpdates time { color: var(--purple); font-size: 8px; font-weight: 950; letter-spacing: .4px; }
+.announcementUpdates h4 { margin: -2px 0 4px; font-size: 10px; line-height: 1.45; }
+.announcementUpdates p { margin: 0; color: #7d7684; font-size: 8px; line-height: 1.65; }
 .tournamentBackdrop { position: fixed; z-index: 110; inset: 0; display: grid; place-items: center; padding: 18px; background: #150d2bd9; backdrop-filter: blur(12px); }
 .tournamentModal { width: min(410px, 100%); max-height: 94dvh; position: relative; z-index: 1; overflow: auto; border: 1px solid #ffffff24; border-radius: 30px; color: var(--ink); background: #fff; box-shadow: 0 35px 100px #0e071f99; }
 .tournamentClose { width: 36px; height: 36px; position: absolute; z-index: 3; top: 13px; right: 13px; border: 1px solid #ffffff55; border-radius: 50%; color: #fff; background: #1f12425c; font-size: 19px; backdrop-filter: blur(8px); }
@@ -1478,6 +1502,7 @@ button { cursor: pointer; }
   .discoverCard { margin: 0 13px; }
   .stateCard { min-height: 50dvh; }
   .modalBackdrop { place-items: end center; padding: 0; }
+  .announcementCenter { width: 100%; max-height: 92dvh; border-radius: 28px 28px 0 0; padding-bottom: max(25px, env(safe-area-inset-bottom)); }
   .tournamentBackdrop { place-items: end center; padding: 0; }
   .tournamentModal { width: 100%; max-height: 95dvh; border-radius: 30px 30px 0 0; padding-bottom: env(safe-area-inset-bottom); }
   .guestLoginBackdrop { place-items: end center; padding: 0; }
