@@ -1040,6 +1040,21 @@ test("removes matched, requested, and skipped people from received likes", async
   assert.match(app, /likes\.filter\(\(like\) => like\.senderId !== requestedProfileId\)/);
 });
 
+test("keeps the received-like total after matching or skipping a profile", async () => {
+  const [app, likesApi] = await Promise.all([
+    readFile(new URL("app/match-app.tsx", root), "utf8"),
+    readFile(new URL("app/api/likes/route.ts", root), "utf8"),
+  ]);
+
+  assert.match(likesApi, /receivedLikeCountRow/);
+  assert.match(likesApi, /count\(\*\)/);
+  assert.match(likesApi, /receivedLikeCount:Number\(receivedLikeCountRow\?\.count\)\|\|0/);
+  assert.match(app, /const \[receivedLikeCount, setReceivedLikeCount\]/);
+  assert.match(app, /setReceivedLikeCount\(Number\(data\.receivedLikeCount\) \|\| 0\)/);
+  assert.match(app, /<strong>\{receivedLikeCount\}<\/strong>/);
+  assert.match(app, /profileLikes\.length > 0/);
+});
+
 test("links prominently to the official YUNAMATCH X account", async () => {
   const app = await readFile(new URL("app/match-app.tsx", root), "utf8");
 

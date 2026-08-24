@@ -19,7 +19,7 @@ export async function GET(){
   const db=getDb();
   const aliases=await identityAliases(user.userId,user.email);
   const aliasSet=new Set(aliases);
-  const [received,sent,blockedByMe,blockedMe,likeCounts,skippedRows,matchedRows,pendingProfileRequests]=await Promise.all([
+  const [received,sent,blockedByMe,blockedMe,likeCounts,skippedRows,matchedRows,pendingProfileRequests,[receivedLikeCountRow]]=await Promise.all([
     db.select({
       id:profileLikes.id,
       senderId:profileLikes.senderId,
@@ -46,6 +46,7 @@ export async function GET(){
     db.select({key:notificationDismissals.notificationKey}).from(notificationDismissals).where(eq(notificationDismissals.userId,user.userId)),
     db.select({userAId:connections.userAId,userBId:connections.userBId}).from(connections).where(or(inArray(connections.userAId,aliases),inArray(connections.userBId,aliases))),
     db.select({ownerId:recruits.ownerId}).from(applications).innerJoin(recruits,eq(applications.recruitId,recruits.id)).where(and(inArray(applications.applicantId,aliases),eq(recruits.kind,"profile"),eq(applications.status,"pending"))),
+    db.select({count:sql<number>`count(*)`}).from(profileLikes).where(eq(profileLikes.recipientId,user.userId)),
   ]);
   const skippedLikeIds=new Set(skippedRows.flatMap(row=>{
     const match=/^received-like:(\d+)$/.exec(row.key);
@@ -96,7 +97,12 @@ export async function GET(){
     };
   }));
   const likedProfileIds=await Promise.all(sent.map(row=>profilePublicId(row.recipientId)));
-  return Response.json({incoming,profiles:receivedProfiles,likedProfileIds});
+  return Response.json({
+    incoming,
+    profiles:receivedProfiles,
+    likedProfileIds,
+    receivedLikeCount:Number(receivedLikeCountRow?.count)||0,
+  });
 }
 
 export async function POST(request:Request){

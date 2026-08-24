@@ -811,6 +811,7 @@ export default function MatchApp({
   const noticesNextOutgoingRef = useRef<number | null>(null);
   const noticesLoadedOlderRef = useRef(false);
   const [profileLikes, setProfileLikes] = useState<ProfileLikeNotice[]>([]);
+  const [receivedLikeCount, setReceivedLikeCount] = useState(0);
   const [receivedProfileCandidates, setReceivedProfileCandidates] = useState<
     ProfileCandidate[]
   >([]);
@@ -1381,6 +1382,7 @@ export default function MatchApp({
       setProfileLikes(data.incoming || []);
       setReceivedProfileCandidates(data.profiles || []);
       setLikedProfileIds(data.likedProfileIds || []);
+      setReceivedLikeCount(Number(data.receivedLikeCount) || 0);
     } catch {
       /* 検索画面は利用を続ける */
     }
@@ -1820,6 +1822,7 @@ export default function MatchApp({
             incoming?: ProfileLikeNotice[];
             profiles?: ProfileCandidate[];
             likedProfileIds?: string[];
+            receivedLikeCount?: number;
           }>("/api/likes", 1_100)
         : Promise.resolve(null),
       authenticated
@@ -1871,6 +1874,7 @@ export default function MatchApp({
             setProfileLikes(likeData.incoming || []);
             setReceivedProfileCandidates(likeData.profiles || []);
             setLikedProfileIds(likeData.likedProfileIds || []);
+            setReceivedLikeCount(Number(likeData.receivedLikeCount) || 0);
           }
           if (notificationData)
             setDismissedNotificationKeys(
@@ -6438,7 +6442,7 @@ export default function MatchApp({
                   }}
                 >
                   <span>♥</span>
-                  <strong>{profileLikes.length}</strong>
+                  <strong>{receivedLikeCount}</strong>
                   <small>もらったいいね</small>
                 </button>
                 <button onClick={openNotifications}>

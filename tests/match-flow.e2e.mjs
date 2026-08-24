@@ -209,6 +209,9 @@ try {
   assert.equal(accepted.applicantContact, null);
   assert.equal(accepted.mateName, "申請テスター");
   assert.equal(accepted.matePokemon, "指定なし");
+  const likesAfterMatch = await api("/api/likes", { user: owner });
+  assert.equal(likesAfterMatch.incoming.length, 0);
+  assert.equal(likesAfterMatch.receivedLikeCount, 1);
 
   let ownerConnections = await api("/api/connections", { user: owner });
   let applicantConnections = await api("/api/connections", { user: applicant });
