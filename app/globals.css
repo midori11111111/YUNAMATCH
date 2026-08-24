@@ -866,6 +866,37 @@ button { cursor: pointer; }
 .chatActionGrid button.voiceRoomCloseAction b { color: #d34c65; }
 .chatActionGrid button.matchDissolveAction { color: #a6495e; border-color: #efd9df; background: #fff7f9; }
 .chatActionGrid button.matchDissolveAction b { color: #c95770; }
+.chatActionGrid button.availabilityAction { color: #4a55be; border-color: #d8dcff; background: #f4f5ff; }
+.chatActionGrid button.availabilityAction b { color: #5865e8; }
+.availabilitySheet { max-height: min(780px,92dvh); }
+.availabilitySheet > h2 { margin-bottom: 8px; padding-right: 28px; }
+.availabilityLead { margin: 0 0 16px; color: #817989; font-size: 9px; line-height: 1.65; }
+.availabilityLoading,.availabilityEmpty { padding: 17px; border-radius: 14px; color: #938b9b; background: #f7f5f9; font-size: 9px; text-align: center; }
+.availabilityMatchNotice { display: grid; grid-template-columns: 42px 1fr; align-items: center; gap: 10px; margin-bottom: 12px; padding: 12px; border: 1px solid #d8eee6; border-radius: 16px; background: #eefaf6; }
+.availabilityMatchNotice > span { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; color: #fff; background: #23aa82; font-size: 18px; }
+.availabilityMatchNotice strong { color: #16795f; font-size: 10px; }
+.availabilityMatchNotice p { margin: 3px 0 0; color: #639082; font-size: 8px; }
+.availabilitySection { margin-top: 12px; padding: 14px; border: 1px solid #ebe5f0; border-radius: 18px; background: #fff; }
+.mateAvailabilitySection { background: linear-gradient(145deg,#fff,#f8f7ff); }
+.availabilitySection > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.availabilitySection > header small,.availabilityFormHeading small { color: var(--purple); font-size: 6px; font-weight: 950; letter-spacing: 1.2px; }
+.availabilitySection > header h3,.availabilityFormHeading h3 { margin: 3px 0 0; color: #342b43; font-size: 13px; }
+.availabilitySection > header > span { min-width: 30px; padding: 5px 7px; border-radius: 99px; color: var(--purple); background: #eeeaff; font-size: 7px; font-weight: 950; text-align: center; }
+.availabilityList { display: grid; gap: 7px; }
+.availabilityList article { display: grid; grid-template-columns: 66px minmax(0,1fr); align-items: center; gap: 10px; padding: 10px; border-radius: 13px; background: #f7f5f9; }
+.availabilityList article.overlap { box-shadow: inset 3px 0 #23aa82; background: #f0faf7; }
+.availabilityList time { color: #58496c; font-size: 8px; font-weight: 950; }
+.availabilityList article > div { min-width: 0; }
+.availabilityList strong,.availabilityList small { display: block; }
+.availabilityList strong { color: #332a42; font-size: 10px; }
+.availabilityList small { margin-top: 2px; color: #8f8798; font-size: 7px; }
+.availabilityList p { margin: 5px 0 0; color: #6f6777; font-size: 8px; overflow-wrap: anywhere; }
+.ownAvailabilityList article { grid-template-columns: 66px minmax(0,1fr) auto; }
+.ownAvailabilityList article > button { border: 0; border-radius: 9px; padding: 7px 8px; color: #aa5064; background: #fff0f4; font-size: 7px; font-weight: 900; }
+.availabilityForm { display: grid; gap: 10px; margin-top: 12px; padding: 15px; border-radius: 18px; background: #f6f3ff; }
+.availabilityForm label { display: grid; gap: 5px; color: #61596b; font-size: 8px; font-weight: 900; }
+.availabilityForm input,.availabilityForm select { width: 100%; min-height: 42px; border: 1px solid #ddd6e8; border-radius: 11px; padding: 9px 10px; color: #30283d; background: #fff; font-size: 16px; }
+.availabilityPrivacyNote { margin: -1px 0 0; color: #8d8497; font-size: 7px; line-height: 1.55; }
 .voiceRoomSetupModal { text-align: left; }
 .voiceRoomSetupModal > p { margin: 6px 0 18px; color: var(--muted); font-size: 13px; line-height: 1.7; }
 .voiceRoomLimitGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }

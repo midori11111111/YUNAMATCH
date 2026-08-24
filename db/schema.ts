@@ -456,6 +456,24 @@ export const recruitAlerts = sqliteTable(
   (table) => [index("idx_recruit_alerts_enabled").on(table.enabled)],
 );
 
+export const availabilitySlots = sqliteTable(
+  "availability_slots",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: text("user_id").notNull(),
+    day: text("day").notNull(),
+    startTime: text("start_time").notNull(),
+    endTime: text("end_time").notNull(),
+    matchType: text("match_type").notNull(),
+    visibility: text("visibility").notNull().default("mates"),
+    note: text("note").notNull().default(""),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [
+    index("idx_availability_slots_user_day").on(table.userId, table.day),
+  ],
+);
+
 export const presence = sqliteTable("presence", {
   userId: text("user_id").primaryKey(),
   connectionId: integer("connection_id"),

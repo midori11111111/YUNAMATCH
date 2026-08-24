@@ -1079,3 +1079,27 @@ test("lets either person hide and later restore a matched chat", async () => {
   assert.match(messagesApi, /if \(!mateArchived\)/);
   assert.match(messagesApi, /マイページからこのマッチを復元してください/);
 });
+
+test("lets matched users share privacy-controlled play schedules", async () => {
+  const [app, schema, availabilityApi, migration] = await Promise.all([
+    readFile(new URL("app/match-app.tsx", root), "utf8"),
+    readFile(new URL("db/schema.ts", root), "utf8"),
+    readFile(new URL("app/api/availability/route.ts", root), "utf8"),
+    readFile(new URL("drizzle/0034_wide_joystick.sql", root), "utf8"),
+  ]);
+
+  assert.match(schema, /availabilitySlots/);
+  assert.match(migration, /CREATE TABLE `availability_slots`/);
+  assert.match(migration, /idx_availability_slots_user_day/);
+  assert.match(app, /プレイ予定/);
+  assert.match(app, /時間が合いそうです/);
+  assert.match(app, /すべてのメイト/);
+  assert.match(app, /お気に入り限定/);
+  assert.match(app, /自分だけ/);
+  assert.match(app, /ownSlot\.matchType === mateSlot\.matchType/);
+  assert.match(availabilityApi, /matePinnedThisChat/);
+  assert.match(availabilityApi, /\["mates", "favorites"\]/);
+  assert.match(availabilityApi, /visibility, "mates"/);
+  assert.match(availabilityApi, /allowedVisibility/);
+  assert.match(availabilityApi, /export async function DELETE/);
+});
