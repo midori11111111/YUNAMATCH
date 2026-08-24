@@ -186,6 +186,7 @@ const chatNotificationKey = (connection: Connection) =>
   `chat:${connection.id}:${connection.latestMessageId ?? 0}`;
 type SafetyTarget = { name: string; recruitId?: number; connectionId?: number; messageId?: number; messageBody?: string };
 type LinkedAccount = {
+  id: number;
   provider: string;
   label: string;
   contactId: string;
@@ -912,6 +913,7 @@ export default function MatchApp({
     preview
       ? [
           {
+            id: 1,
             provider: "discord",
             label: "Discord",
             contactId: "preview_trainer",
@@ -922,6 +924,7 @@ export default function MatchApp({
       : [],
   );
   const [linkedAccountsLoaded, setLinkedAccountsLoaded] = useState(preview);
+  const [unlinkingAccountId, setUnlinkingAccountId] = useState<number | null>(null);
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
   const [blockedUsersLoading, setBlockedUsersLoading] = useState(false);
   const [unblockingId, setUnblockingId] = useState<number | null>(null);
@@ -4365,6 +4368,38 @@ export default function MatchApp({
         : "お問い合わせを受け付けました。原則24時間以内に確認します",
     );
   };
+  const unlinkAccount = async (account: LinkedAccount) => {
+    if (unlinkingAccountId !== null) return;
+    if (account.isCurrent) {
+      notify("ログイン中のアカウントは解除できません。別の連携アカウントでログインし直してください");
+      return;
+    }
+    if (
+      !window.confirm(
+        `${account.label}との連携を解除しますか？\n解除後は、このアカウントから現在のプロフィールへログインできなくなります。`,
+      )
+    )
+      return;
+    setUnlinkingAccountId(account.id);
+    try {
+      const response = await fetch("/api/account-links", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ accountId: account.id }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        notify(data.error || "アカウント連携を解除できませんでした");
+        return;
+      }
+      setLinkedAccounts(data.accounts ?? []);
+      notify(`${account.label}との連携を解除しました`);
+    } catch {
+      notify("通信が不安定です。もう一度お試しください");
+    } finally {
+      setUnlinkingAccountId(null);
+    }
+  };
   const deleteAccount = async () => {
     if (deletionText !== "退会する") return;
     setSending(true);
@@ -6633,8 +6668,17 @@ export default function MatchApp({
                               : "未連携"}
                           </small>
                         </div>
-                        {linked ? (
-                          <b>{linked.isCurrent ? "ログイン中" : "連携済み"}</b>
+                        {linked?.isCurrent ? (
+                          <b>ログイン中</b>
+                        ) : linked ? (
+                          <button
+                            type="button"
+                            className="unlinkAccountButton"
+                            disabled={unlinkingAccountId !== null}
+                            onClick={() => void unlinkAccount(linked)}
+                          >
+                            {unlinkingAccountId === linked.id ? "解除中…" : "連携解除"}
+                          </button>
                         ) : (
                           <a href={`/api/link/${provider.id}`}>連携する</a>
                         )}
@@ -6643,7 +6687,7 @@ export default function MatchApp({
                   })}
                 </div>
                 <p className="accountChoiceNote">
-                  連携時は各サービスのアカウント選択画面が開きます。
+                  連携時は各サービスのアカウント選択画面が開きます。ログイン中のアカウントを解除する場合は、先に別の連携アカウントでログインし直してください。
                 </p>
               </section>
               <section className="blockedUserSettings archivedMatchSettings">

@@ -639,9 +639,11 @@ button { cursor: pointer; }
 .linkedAccountList article > div { min-width: 0; display: grid; gap: 3px; }
 .linkedAccountList strong { font-size: 9px; }
 .linkedAccountList small { overflow: hidden; color: #98919f; font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
-.linkedAccountList b, .linkedAccountList a { border-radius: 9px; padding: 7px 9px; font-size: 7px; font-weight: 900; text-decoration: none; }
+.linkedAccountList b, .linkedAccountList a, .linkedAccountList button { border-radius: 9px; padding: 7px 9px; font-size: 7px; font-weight: 900; text-decoration: none; }
 .linkedAccountList b { color: #6d5edb; background: #ebe7ff; }
 .linkedAccountList a { color: #fff; background: var(--purple); }
+.linkedAccountList button { border: 1px solid #dfd8e6; color: #7d7482; background: #fff; cursor: pointer; }
+.linkedAccountList button:disabled { opacity: .55; cursor: wait; }
 .accountChoiceNote { margin: 11px 3px 0; color: #9a93a2; font-size: 7px; line-height: 1.5; }
 .signOutLink { display: block; margin: 23px auto 0; text-align: center; color: #9f99a7; font-size: 8px; }
 .fanNote { text-align: center; color: #b1abb7; font-size: 7px; line-height: 1.6; margin: 25px 30px; }

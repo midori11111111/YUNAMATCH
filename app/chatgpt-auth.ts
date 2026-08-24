@@ -27,6 +27,16 @@ const canonicalUserCache = new Map<
 >();
 const canonicalUserCacheTtlMs = 5 * 60_000;
 
+export function invalidateCanonicalUser(
+  provider: string,
+  providerAccountId: string,
+) {
+  const prefix = `${provider}:${providerAccountId}:`;
+  for (const key of canonicalUserCache.keys()) {
+    if (key.startsWith(prefix)) canonicalUserCache.delete(key);
+  }
+}
+
 function trimCanonicalUserCache() {
   if (canonicalUserCache.size < 2_500) return;
   const now = Date.now();
@@ -53,34 +63,40 @@ async function resolveCanonicalUserId(
   if (cached && cached.expiresAt > Date.now()) return cached.userId;
 
   try {
-    const [{ and, asc, eq }, { getDb }, { accountLinks, profiles }] = await Promise.all([
+    const [{ and, asc, eq, notLike }, { getDb }, { accountLinks, profiles }] = await Promise.all([
       import("drizzle-orm"),
       import("../db"),
       import("../db/schema"),
     ]);
     let resolvedUserId = fallbackUserId;
-    if (normalizedEmail && ["google", "discord"].includes(provider)) {
+    const [linkedAccount] = await getDb()
+      .select({ canonicalUserId: accountLinks.canonicalUserId })
+      .from(accountLinks)
+      .where(
+        and(
+          eq(accountLinks.provider, provider),
+          eq(accountLinks.providerAccountId, providerAccountId),
+        ),
+      )
+      .limit(1);
+    if (linkedAccount?.canonicalUserId.startsWith("detached:")) {
+      resolvedUserId = `oauth:${provider}:${providerAccountId}`;
+    } else if (linkedAccount) {
+      resolvedUserId = linkedAccount.canonicalUserId;
+    } else if (normalizedEmail && ["google", "discord"].includes(provider)) {
       const [oldestProfile] = await getDb()
         .select({ canonicalUserId: accountLinks.canonicalUserId })
         .from(accountLinks)
         .innerJoin(profiles, eq(accountLinks.canonicalUserId, profiles.userId))
-        .where(eq(accountLinks.email, normalizedEmail))
+        .where(
+          and(
+            eq(accountLinks.email, normalizedEmail),
+            notLike(accountLinks.canonicalUserId, "detached:%"),
+          ),
+        )
         .orderBy(asc(profiles.createdAt), asc(profiles.userId))
         .limit(1);
       if (oldestProfile) resolvedUserId = oldestProfile.canonicalUserId;
-    }
-    if (resolvedUserId === fallbackUserId) {
-      const [linkedAccount] = await getDb()
-        .select({ canonicalUserId: accountLinks.canonicalUserId })
-        .from(accountLinks)
-        .where(
-          and(
-            eq(accountLinks.provider, provider),
-            eq(accountLinks.providerAccountId, providerAccountId),
-          ),
-        )
-        .limit(1);
-      resolvedUserId = linkedAccount?.canonicalUserId || fallbackUserId;
     }
     trimCanonicalUserCache();
     canonicalUserCache.set(cacheKey, {

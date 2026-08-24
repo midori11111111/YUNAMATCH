@@ -1120,3 +1120,24 @@ test("keeps linked-account users online under their canonical profile", async ()
   assert.match(discoverApi, /Date\.now\(\) - 3 \* 60_000/);
   assert.match(app, /setInterval\(heartbeat, 45_000\)/);
 });
+
+test("lets users safely unlink a non-current login account", async () => {
+  const [app, accountLinksApi, internalLinksApi, auth, aliases] = await Promise.all([
+    readFile(new URL("app/match-app.tsx", root), "utf8"),
+    readFile(new URL("app/api/account-links/route.ts", root), "utf8"),
+    readFile(new URL("app/api/account-links/internal/route.ts", root), "utf8"),
+    readFile(new URL("app/chatgpt-auth.ts", root), "utf8"),
+    readFile(new URL("lib/account-aliases.ts", root), "utf8"),
+  ]);
+
+  assert.match(app, /連携解除/);
+  assert.match(app, /unlinkAccount/);
+  assert.match(app, /別の連携アカウントでログインし直してください/);
+  assert.match(accountLinksApi, /export async function DELETE/);
+  assert.match(accountLinksApi, /detached:\$\{target\.provider\}/);
+  assert.match(accountLinksApi, /最後のアカウントは解除できません/);
+  assert.match(accountLinksApi, /target\.providerAccountId===user\.providerAccountId/);
+  assert.match(internalLinksApi, /canonicalUserId\.startsWith\("detached:"\)/);
+  assert.match(auth, /linkedAccount\?\.canonicalUserId\.startsWith\("detached:"\)/);
+  assert.match(aliases, /detachedMarker/);
+});

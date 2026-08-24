@@ -26,6 +26,17 @@ export async function identityAliases(userId: string, email: string) {
   const cacheKey = `${userId}:${normalizedEmail}`;
   const cached = aliasCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.aliases;
+  const detachedMarker = userId.startsWith("oauth:")
+    ? `detached:${userId.slice("oauth:".length)}`
+    : "";
+  if (detachedMarker) {
+    const [detached] = await getDb()
+      .select({ id: accountLinks.id })
+      .from(accountLinks)
+      .where(eq(accountLinks.canonicalUserId, detachedMarker))
+      .limit(1);
+    if (detached) return [userId];
+  }
   let rows: { canonicalUserId: string }[];
   try {
     rows = await getDb()
@@ -65,4 +76,12 @@ export async function identityAliases(userId: string, email: string) {
     expiresAt: Date.now() + aliasCacheTtlMs,
   });
   return aliases;
+}
+
+export function invalidateIdentityAliases(userId: string) {
+  for (const [key, value] of aliasCache) {
+    if (key.startsWith(`${userId}:`) || value.aliases.includes(userId)) {
+      aliasCache.delete(key);
+    }
+  }
 }

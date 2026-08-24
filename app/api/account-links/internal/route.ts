@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, notLike } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { accountLinks, profiles } from "../../../../db/schema";
 
@@ -17,7 +17,7 @@ async function findOldestProfileByEmail(email:string){
     .select({canonicalUserId:accountLinks.canonicalUserId,createdAt:profiles.createdAt})
     .from(accountLinks)
     .innerJoin(profiles,eq(accountLinks.canonicalUserId,profiles.userId))
-    .where(eq(accountLinks.email,normalized))
+    .where(and(eq(accountLinks.email,normalized),notLike(accountLinks.canonicalUserId,"detached:%")))
     .limit(20);
   const profilesById=new Map<string,number>();
   for(const row of rows){
@@ -42,6 +42,13 @@ export async function POST(request:Request){
   if(!provider||!providerAccountId)return Response.json({error:"invalid account"},{status:400});
   const db=getDb();
   const [existing]=await db.select().from(accountLinks).where(and(eq(accountLinks.provider,provider),eq(accountLinks.providerAccountId,providerAccountId))).limit(1);
+  if(existing?.canonicalUserId.startsWith("detached:")){
+    const userId=requestedCanonicalId||`oauth:${provider}:${providerAccountId}`;
+    if(requestedCanonicalId){
+      await db.update(accountLinks).set({canonicalUserId:requestedCanonicalId,contactId,displayName,email}).where(eq(accountLinks.id,existing.id));
+    }
+    return Response.json({userId,linked:Boolean(requestedCanonicalId),relinked:Boolean(requestedCanonicalId)});
+  }
   if(existing&&requestedCanonicalId&&existing.canonicalUserId!==requestedCanonicalId)return Response.json({error:"このアカウントは別のプロフィールに連携されています"},{status:409});
   if(existing){
     const recoveredUserId=!requestedCanonicalId&&email&&["google","discord"].includes(provider)
