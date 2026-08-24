@@ -6407,12 +6407,20 @@ export default function MatchApp({
                     </>
                   )}
                 </div>
-                <button
-                  className="shareCardButton"
-                  onClick={() => setShareOpen(true)}
-                >
-                  𝕏 トレーナーカードを共有
-                </button>
+                <div className="profileHeroActions">
+                  <button
+                    className="shareCardButton"
+                    onClick={() => setShareOpen(true)}
+                  >
+                    𝕏 トレーナーカードを共有
+                  </button>
+                  <button
+                    className="profileAnnouncementButton"
+                    onClick={() => setTournamentOpen(true)}
+                  >
+                    <span>1</span> 📣 お知らせ
+                  </button>
+                </div>
               </div>
               <div className="profileQuickStats">
                 <button

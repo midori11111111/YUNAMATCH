@@ -1153,4 +1153,6 @@ test("promotes the YUNAMATCH Cup with clear entry details", async () => {
   assert.match(app, /1人・デュオ・トリオ・フルパ/);
   assert.match(app, /ユナマッチのアカウントを持っていること/);
   assert.match(app, /tournamentAnnouncementKey/);
+  assert.match(app, /profileAnnouncementButton/);
+  assert.match(app, /📣 お知らせ/);
 });
