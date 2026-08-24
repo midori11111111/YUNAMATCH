@@ -475,6 +475,8 @@ button { cursor: pointer; }
 .recruitProfileSheet { text-align: center; }
 .recruitProfileSheet > h2 { margin: 13px 0 4px; font-size: 22px; }
 .recruitProfileHero { height: 270px; display: grid; place-items: center; overflow: hidden; margin: 18px 0 0; border-radius: 22px; }
+.recruitProfileHero.hasHeader { background-position: center; background-size: cover; }
+.recruitProfileHero.hasHeader .recruitProfileLarge { width: 112px; height: 112px; border: 4px solid #fff; border-radius: 50%; box-shadow: 0 12px 32px #21143e55; }
 .recruitProfileLarge { width: 100%; height: 100%; display: grid; place-items: center; overflow: hidden; color: #fff; background: linear-gradient(145deg, #745af0, #ff6da3); font-size: 82px; font-weight: 950; }
 .recruitProfileMissing { margin: 0 0 10px; color: #948d99; font-size: 8px; }
 .recruitProfileMeta { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 7px; margin: 12px 0; }

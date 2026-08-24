@@ -1238,3 +1238,21 @@ test("shows the tournament first and recent fixes in the announcement center", a
   assert.match(app, /マッチ後のプレイ予定共有を追加しました/);
   assert.match(app, /setAnnouncementCenterOpen\(false\);[\s\S]+setTournamentOpen\(true\)/);
 });
+
+test("shows uploaded profile headers to other signed-in users across profile surfaces", async () => {
+  const [app, likesApi, connectionsApi, recruitsApi] = await Promise.all([
+    readFile(new URL("app/match-app.tsx", root), "utf8"),
+    readFile(new URL("app/api/likes/route.ts", root), "utf8"),
+    readFile(new URL("app/api/connections/route.ts", root), "utf8"),
+    readFile(new URL("app/api/recruits/route.ts", root), "utf8"),
+  ]);
+
+  assert.match(likesApi, /senderHeaderUrl:profiles\.headerUrl/);
+  assert.match(likesApi, /headerUrl:row\.senderHeaderUrl\|\|""/);
+  assert.match(connectionsApi, /headerUrl: profiles\.headerUrl/);
+  assert.match(connectionsApi, /mateHeaderUrl: mateProfile\?\.headerUrl \|\| ""/);
+  assert.match(recruitsApi, /headerUrl:profiles\.headerUrl/);
+  assert.match(recruitsApi, /headerUrl:row\.headerUrl\|\|""/);
+  assert.match(app, /recruitProfileView\.headerUrl/);
+  assert.match(app, /matchedProfile\.mateHeaderUrl/);
+});

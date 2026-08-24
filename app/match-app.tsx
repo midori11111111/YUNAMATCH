@@ -34,6 +34,7 @@ type Recruit = {
   playTime: string;
   note: string;
   avatarUrl?: string;
+  headerUrl?: string;
   bio: string;
   createdAt: string;
   startAt: string;
@@ -137,6 +138,7 @@ type Connection = {
   mateId: string;
   mateName: string;
   mateAvatarUrl?: string;
+  mateHeaderUrl?: string;
   matePokemon: string;
   mateContact: string | null;
   mateContactShared: boolean;
@@ -8410,7 +8412,16 @@ export default function MatchApp({
               ×
             </button>
             <small className="modalKicker">RECRUITING TRAINER</small>
-            <div className={`recruitProfileHero ${roleTone(recruitProfileView.role)}`}>
+            <div
+              className={`recruitProfileHero ${roleTone(recruitProfileView.role)} ${recruitProfileView.headerUrl ? "hasHeader" : ""}`}
+              style={
+                recruitProfileView.headerUrl
+                  ? {
+                      backgroundImage: `linear-gradient(90deg, #21143e88, #21143e22), url(${recruitProfileView.headerUrl})`,
+                    }
+                  : undefined
+              }
+            >
               <UserAvatar
                 name={recruitProfileView.trainerName}
                 src={recruitProfileView.avatarUrl}
@@ -8462,7 +8473,14 @@ export default function MatchApp({
             <div
               className={`candidateDetailHero role-${pokemonRole(
                 matchedProfile.mateMainPokemon[0] || matchedProfile.matePokemon,
-              )}`}
+              )} ${matchedProfile.mateHeaderUrl ? "hasHeader" : ""}`}
+              style={
+                matchedProfile.mateHeaderUrl
+                  ? {
+                      backgroundImage: `linear-gradient(90deg, #21143eaa, #21143e22), url(${matchedProfile.mateHeaderUrl})`,
+                    }
+                  : undefined
+              }
             >
               <div className="candidateDetailPokemonName">
                 <small>MAIN POKÉMON</small>

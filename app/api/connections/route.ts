@@ -206,6 +206,7 @@ export async function GET(request: Request) {
           .select({
             userId: profiles.userId,
             avatarUrl: profiles.avatarUrl,
+            headerUrl: profiles.headerUrl,
             contact: profiles.contact,
             trainerName: profiles.trainerName,
             mainPokemon: profiles.mainPokemon,
@@ -362,6 +363,7 @@ export async function GET(request: Request) {
         mateId,
         mateName: isA ? row.userBName : row.userAName,
         mateAvatarUrl: mateAvatars.get(mateId) || "",
+        mateHeaderUrl: mateProfile?.headerUrl || "",
         matePokemon: isA ? row.userBPokemon : row.userAPokemon,
         mateContact: (isA ? row.userBShareContact : row.userAShareContact)
           ? mateContacts.get(mateId) || null
