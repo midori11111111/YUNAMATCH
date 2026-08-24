@@ -866,9 +866,12 @@ test("keeps chat and recruiting responsive under load", async () => {
 
   assert.match(app, /delivery: "sending"/);
   assert.match(app, /送信失敗/);
-  assert.match(app, /setInterval\(refreshCurrentConversation, 5000\)/);
-  assert.match(app, /setInterval\(refreshVisibleSummary, 45000\)/);
-  assert.match(app, /setInterval\(ping, 6000\)/);
+  assert.match(app, /setInterval\(refreshCurrentConversation, 15_000\)/);
+  assert.match(app, /setInterval\(refreshVisibleSummary, 60_000\)/);
+  assert.match(app, /setInterval\(ping, 30_000\)/);
+  assert.match(app, /document\.visibilityState !== "visible"/);
+  assert.match(app, /messageTypingRef/);
+  assert.match(app, /\}, \[preview, selectedConnection\]\);\s*\n\s*useEffect\(\(\) => \{/);
   assert.match(connectionsApi, /groupBy\(messages\.connectionId\)/);
   assert.match(connectionsApi, /unreadCountByConnection/);
   assert.match(connectionsApi, /innerJoin\(connections/);
@@ -1165,7 +1168,7 @@ test("keeps linked-account users online under their canonical profile", async ()
   assert.match(presenceApi, /payload\.connectionId[\s\S]+\{ lastSeenAt: now \}/);
   assert.match(presenceApi, /online: age < 3 \* 60_000/);
   assert.match(discoverApi, /Date\.now\(\) - 3 \* 60_000/);
-  assert.match(app, /setInterval\(heartbeat, 45_000\)/);
+  assert.match(app, /setInterval\(heartbeat, 60_000\)/);
 });
 
 test("lets users safely unlink a non-current login account", async () => {

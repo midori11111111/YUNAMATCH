@@ -856,6 +856,7 @@ export default function MatchApp({
   const messageLoadInFlightRef = useRef<number | null>(null);
   const [pinUpdatingId, setPinUpdatingId] = useState<number | null>(null);
   const [messageText, setMessageText] = useState("");
+  const messageTypingRef = useRef(false);
   const [messageSending, setMessageSending] = useState(false);
   const [playInviteSending, setPlayInviteSending] = useState(false);
   const [respondingInviteId, setRespondingInviteId] = useState<number | null>(
@@ -1977,7 +1978,7 @@ export default function MatchApp({
       if (selectedPending)
         void loadPendingMessages(selectedPending.notice.id);
     };
-    const timer = window.setInterval(refreshCurrentConversation, 5000);
+    const timer = window.setInterval(refreshCurrentConversation, 15_000);
     return () => window.clearInterval(timer);
   }, [preview, guestMode, selectedConnection, selectedPending]);
 
@@ -1990,7 +1991,7 @@ export default function MatchApp({
       if (tab === "chat") void loadConnections();
       if (tab === "lobby") void loadLobbies();
     };
-    const timer = window.setInterval(refreshVisibleSummary, 45000);
+    const timer = window.setInterval(refreshVisibleSummary, 60_000);
     return () => window.clearInterval(timer);
   }, [preview, guestMode, tab, loadLikes]);
 
@@ -2035,7 +2036,7 @@ export default function MatchApp({
         }).catch(() => undefined);
     };
     heartbeat();
-    const timer = window.setInterval(heartbeat, 45_000);
+    const timer = window.setInterval(heartbeat, 60_000);
     document.addEventListener("visibilitychange", heartbeat);
     return () => {
       window.clearInterval(timer);
@@ -2151,12 +2152,13 @@ export default function MatchApp({
     if (preview || !selectedConnection) return;
     let active = true;
     const ping = async () => {
+      if (document.visibilityState !== "visible") return;
       await fetch("/api/presence", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           connectionId: selectedConnection.id,
-          typing: Boolean(messageText.trim()),
+          typing: messageTypingRef.current,
         }),
       });
       const response = await fetch(
@@ -2165,10 +2167,14 @@ export default function MatchApp({
       if (active && response.ok) setMatePresence(await response.json());
     };
     ping();
-    const timer = window.setInterval(ping, 6000);
-    return () => {
-      active = false;
-      window.clearInterval(timer);
+    const timer = window.setInterval(ping, 30_000);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void ping();
+        return;
+      }
+      if (!messageTypingRef.current) return;
+      messageTypingRef.current = false;
       fetch("/api/presence", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -2178,6 +2184,54 @@ export default function MatchApp({
         }),
       }).catch(() => undefined);
     };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      active = false;
+      messageTypingRef.current = false;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      fetch("/api/presence", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          connectionId: selectedConnection.id,
+          typing: false,
+        }),
+      }).catch(() => undefined);
+    };
+  }, [preview, selectedConnection]);
+
+  useEffect(() => {
+    if (preview || !selectedConnection) return;
+    const hasText = Boolean(messageText.trim());
+    if (hasText && !messageTypingRef.current) {
+      messageTypingRef.current = true;
+      if (document.visibilityState === "visible")
+        fetch("/api/presence", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            connectionId: selectedConnection.id,
+            typing: true,
+          }),
+        }).catch(() => undefined);
+    }
+
+    const timer = window.setTimeout(() => {
+      if (!messageTypingRef.current) return;
+      messageTypingRef.current = false;
+      if (document.visibilityState === "visible")
+        fetch("/api/presence", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            connectionId: selectedConnection.id,
+            typing: false,
+          }),
+        }).catch(() => undefined);
+    }, hasText ? 1_500 : 0);
+
+    return () => window.clearTimeout(timer);
   }, [preview, selectedConnection, messageText]);
 
   useEffect(() => {
