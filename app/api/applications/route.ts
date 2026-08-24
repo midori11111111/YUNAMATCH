@@ -1,6 +1,6 @@
 import { and, desc, eq, gt, inArray, lt, ne } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { applicationMessages, applications, connections, lobbies, lobbyMembers, messages, profiles, recruits } from "../../../db/schema";
+import { applicationMessages, applications, connections, messages, profiles, recruits } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { sendPush } from "../../../lib/push";
 import { checkRateLimit, rateLimitResponse } from "../../../lib/rate-limit";
@@ -130,11 +130,8 @@ export async function PATCH(request:Request){
    const preChat=(await db.select().from(applicationMessages).where(eq(applicationMessages.applicationId,row.id)).orderBy(desc(applicationMessages.createdAt),desc(applicationMessages.id)).limit(100)).reverse();
    for(const item of preChat)await db.insert(messages).values({connectionId:savedConnection.id,senderId:item.senderId,clientId:`application-chat-${item.id}`,body:item.body,createdAt:item.createdAt}).onConflictDoNothing();
   }
-  let [lobby]=await db.select().from(lobbies).where(eq(lobbies.recruitId,row.recruitId)).limit(1);
-  if(!lobby){[lobby]=await db.insert(lobbies).values({recruitId:row.recruitId,ownerId:row.ownerId,status:"forming",scheduledAt:row.startAt,createdAt:now}).returning();await db.insert(lobbyMembers).values({lobbyId:lobby.id,userId:row.ownerId,trainerName:row.ownerName,pokemon:row.ownerPokemon,contact:"",joinedAt:now}).onConflictDoNothing()}
-  await db.insert(lobbyMembers).values({lobbyId:lobby.id,userId:row.applicantId,applicationId:row.id,connectionId:savedConnection?.id,trainerName:row.applicantName,pokemon:row.applicantPokemon,contact:"",joinedAt:now}).onConflictDoNothing();
-  runInBackground(sendPush(row.applicantId,"マッチ成立！",`${row.ownerName}さんの集合ロビーに参加しました`,`/?lobby=${lobby.id}`),"Application accepted push");
-  return Response.json({ok:true,status,applicantContact:null,connectionId:savedConnection?.id,lobbyId:lobby.id,mateName:row.applicantName,matePokemon:row.applicantPokemon});
+  runInBackground(sendPush(row.applicantId,"マッチ成立！",`${row.ownerName}さんとのチャットが開通しました`,`/?chat=${savedConnection?.id}`),"Application accepted push");
+  return Response.json({ok:true,status,applicantContact:null,connectionId:savedConnection?.id,mateName:row.applicantName,matePokemon:row.applicantPokemon});
  }
  runInBackground(sendPush(row.applicantId,"申請についてお知らせ",finalDecisionMessage,"/"),"Application declined push");
  return Response.json({ok:true,status,decisionMessage:finalDecisionMessage,applicantContact:null});

@@ -1,6 +1,6 @@
 import { and, desc, eq, lt, or } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { applications, blocks, lobbies, lobbyMembers, profiles, recruitAlerts, recruits } from "../../../db/schema";
+import { applications, blocks, lobbies, profiles, recruitAlerts, recruits } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { checkRateLimit, rateLimitResponse } from "../../../lib/rate-limit";
 import { containsProhibitedContent, prohibitedContentMessage } from "../../../lib/content-policy";
@@ -64,8 +64,6 @@ export async function POST(request:Request) {
   const desiredPokemon=typeof p.desiredPokemon==="string"&&p.desiredPokemon.trim()?p.desiredPokemon.trim().slice(0,30):"すべて";
   const desiredRole=typeof p.desiredRole==="string"&&p.desiredRole.trim()?p.desiredRole.trim().slice(0,30):"指定なし";
   const [row]=await db.insert(recruits).values({ownerId:user.userId,trainerName:profile.trainerName,gender:profile.gender,pokemon,role,matches:Math.round(matches),winRate,rank:normalizeRank(profile.highestRate),playTime:profilePlayTimes.filter(Boolean).join("・")||profile.playTime,note,contact:"",startAt,startTimeUndecided,expiresAt,partySize,desiredPokemon,desiredRole,matchType,createdAt:now}).returning();
-  const [lobby]=await db.insert(lobbies).values({recruitId:row.id,ownerId:user.userId,status:"forming",scheduledAt:startAt,createdAt:now}).returning();
-  await db.insert(lobbyMembers).values({lobbyId:lobby.id,userId:user.userId,trainerName:profile.trainerName,pokemon:row.pokemon,contact:"",joinedAt:now});
   const [alertRows, blockRows] = await Promise.all([
     db.select({ userId: recruitAlerts.userId }).from(recruitAlerts).where(eq(recruitAlerts.enabled, true)),
     db.select({ blockerId: blocks.blockerId, blockedId: blocks.blockedId }).from(blocks).where(or(eq(blocks.blockerId, user.userId), eq(blocks.blockedId, user.userId))),

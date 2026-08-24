@@ -45,7 +45,17 @@ async function api(path, { user, method = "GET", body } = {}) {
     headers: { ...(user ?? {}), ...(body ? { "content-type": "application/json" } : {}) },
     body: body ? JSON.stringify(body) : undefined,
   });
-  const data = response.status === 204 ? null : await response.json();
+  const raw = response.status === 204 ? "" : await response.text();
+  let data = null;
+  if (raw) {
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      throw new Error(`${method} ${path}: ${response.status} returned invalid JSON: ${raw.slice(0, 200)}`);
+    }
+  }
+  if (!raw && response.status !== 204)
+    throw new Error(`${method} ${path}: ${response.status} returned an empty response`);
   assert.ok(response.ok, `${method} ${path}: ${response.status} ${JSON.stringify(data)}`);
   return data;
 }
@@ -195,7 +205,7 @@ try {
   assert.equal(pendingOutgoing.outgoing[0].message, "参加します");
   assert.equal(pendingOutgoing.outgoing[0].recruitId, created.recruit.id);
   const accepted = await api("/api/applications", { user: owner, method: "PATCH", body: { applicationId: notices.incoming[0].id, action: "accept" } });
-  assert.ok(accepted.lobbyId);
+  assert.equal(accepted.lobbyId, undefined);
   assert.equal(accepted.applicantContact, null);
   assert.equal(accepted.mateName, "申請テスター");
   assert.equal(accepted.matePokemon, "指定なし");
@@ -306,6 +316,7 @@ try {
     body: { messageId: incomingInvite.id, response: "accepted" },
   });
   assert.equal(acceptedInvite.message.response, "accepted");
+  assert.ok(acceptedInvite.lobbyId);
   const applicantInviteThread = await api(`/api/messages?connectionId=${connectionId}`, { user: applicant });
   assert.equal(applicantInviteThread.messages.at(-1).response, "accepted");
   assert.equal(applicantInviteThread.messages.at(-1).canRespond, false);

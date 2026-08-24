@@ -3825,9 +3825,13 @@ export default function MatchApp({
       );
       notify(
         responseValue === "accepted"
-          ? "一緒にプレイすることになりました！"
+          ? "集合ロビーを作成しました！"
           : "今回は見送りました",
       );
+      if (responseValue === "accepted" && data.lobbyId) {
+        await loadLobbies();
+        setTab("lobby");
+      }
     } catch {
       notify("通信が不安定です。もう一度お試しください");
     } finally {
@@ -5145,7 +5149,7 @@ export default function MatchApp({
                         <b>＋</b>
                         <div>
                           <strong>募集</strong>
-                          <p>今から遊びたい時に条件を公開。参加申請やDMが届き、承認するとロビーへ進みます。</p>
+                          <p>今から遊びたい時に条件を公開。参加申請を承認するとチャットが開通します。</p>
                         </div>
                       </article>
                       <article>
@@ -5158,8 +5162,8 @@ export default function MatchApp({
                       <article>
                         <b>🎮</b>
                         <div>
-                          <strong>一緒にプレイ</strong>
-                          <p>チャットから誘い、相手が「はい」を押したらDiscord VCを作って合流できます。</p>
+                          <strong>ロビーを作成して一緒にプレイ</strong>
+                          <p>チャットから誘い、相手が「はい」を押した時に集合ロビーが作られます。</p>
                         </div>
                       </article>
                       <article>
@@ -5715,7 +5719,13 @@ export default function MatchApp({
                       disabled={playInviteSending}
                     >
                       <span>🎮</span>
-                      {playInviteSending ? "送信中" : "一緒にプレイ"}
+                      <b>
+                        {playInviteSending ? (
+                          "送信中"
+                        ) : (
+                          <>ロビーを作成して<br />一緒にプレイ</>
+                        )}
+                      </b>
                     </button>
                     <button
                       className="chatSafety"
@@ -5813,18 +5823,14 @@ export default function MatchApp({
                             )}
                             {message.response === "accepted" && (
                               <div className="playInviteAccepted">
-                                <p>✓ 一緒にプレイすることになりました</p>
+                                <p>✓ 集合ロビーが作成されました</p>
                                 <button
-                                  onClick={() =>
-                                    setVoiceRoomSetup({
-                                      connectionId: selectedConnection.id,
-                                    })
-                                  }
-                                  disabled={voiceRoomLoading}
+                                  onClick={async () => {
+                                    await loadLobbies();
+                                    setTab("lobby");
+                                  }}
                                 >
-                                  {voiceRoomLoading
-                                    ? "VCを準備中…"
-                                    : "Discord VCを作る"}
+                                  ロビーを見る
                                 </button>
                               </div>
                             )}
@@ -6312,9 +6318,9 @@ export default function MatchApp({
                   })
                 ) : (
                   <div className="noticeEmpty">
-                    マッチが成立すると、ここに集合ロビーが作られます。
+                    チャットの「ロビーを作成して一緒にプレイ」で誘い、
                     <br />
-                    まずは募集またはプレイ申請をしてみましょう。
+                    相手が承認すると、ここに集合ロビーが作られます。
                   </div>
                 )}
               </div>

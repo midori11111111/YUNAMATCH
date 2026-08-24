@@ -327,7 +327,7 @@ test("explains what happens after likes and mate requests", async () => {
   assert.match(app, /メイト成立にもならない/);
   assert.match(app, /「やりとり」の承認待ちで相談できる/);
   assert.match(app, /承認されるとメイト成立・通常チャット開始/);
-  assert.match(app, /参加申請やDMが届き、承認するとロビーへ進みます/);
+  assert.match(app, /参加申請を承認するとチャットが開通します/);
   assert.match(app, /連絡先は自動公開されません/);
 });
 
@@ -622,7 +622,9 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(recruitAlertsMigration, /idx_recruit_alerts_enabled/);
   assert.match(recruitAlertsMigration, /PRAGMA optimize/);
   assert.match(app, /一緒にプレイしませんか/);
-  assert.match(app, /Discord VCを作る/);
+  assert.match(app, /ロビーを作成して/);
+  assert.match(app, /相手が「はい」を押した時に集合ロビーが作られます/);
+  assert.match(app, /ロビーを見る/);
   assert.match(app, /respondPlayInvite/);
   assert.match(app, /className="chatPlayInvite"/);
   assert.doesNotMatch(app, /playInviteComposerButton/);
@@ -646,6 +648,11 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /このマッチをシェア/);
   assert.match(app, /マッチをシェア/);
   assert.match(applicationsApi, /matePokemon:row\.applicantPokemon/);
+  assert.doesNotMatch(applicationsApi, /insert\(lobbies\)/);
+  assert.doesNotMatch(recruitsApi, /insert\(lobbies\)/);
+  assert.match(messagesApi, /payload\.response === "accepted"/);
+  assert.match(messagesApi, /db\.insert\(lobbies\)/);
+  assert.match(messagesApi, /集合ロビーを作成しました/);
   assert.match(discoverApi, /kind:\s*"profile"/);
   assert.match(discoverApi, /requestedRows/);
   assert.doesNotMatch(discoverApi, /eq\(applications\.status, "pending"\),\s*eq\(recruits\.kind, "profile"\)/);

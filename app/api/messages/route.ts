@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray, isNull, lt, or } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { blocks, connections, messages, profiles } from "../../../db/schema";
+import { blocks, connections, lobbies, lobbyMembers, messages, profiles } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { sendPush } from "../../../lib/push";
 import { isSuspended } from "../../../lib/safety";
@@ -215,12 +215,77 @@ export async function PATCH(request: Request) {
   }
   const [invite] = await getDb().select().from(messages).where(eq(messages.id, payload.messageId!)).limit(1);
   if (!invite || invite.kind !== "play_invite") return Response.json({ error: "プレイ招待が見つかりません" }, { status: 404 });
+  if (invite.response) return Response.json({ error: "この招待には回答済みです" }, { status: 409 });
   const aliases = await identityAliases(user.userId, user.email);
   const aliasSet = new Set(aliases);
   const connection = await getMembership(invite.connectionId, aliases);
   if (!connection) return Response.json({ error: "マッチが見つかりません" }, { status: 404 });
   if (aliasSet.has(invite.senderId)) return Response.json({ error: "送信者は回答できません" }, { status: 403 });
   if (await isBlocked(aliases, invite.senderId)) return Response.json({ error: "この招待には回答できません" }, { status: 403 });
+  let lobbyId: number | null = null;
+  if (payload.response === "accepted") {
+    const db = getDb();
+    const now = new Date();
+    let [lobby] = await db.select().from(lobbies).where(eq(lobbies.recruitId, connection.recruitId)).limit(1);
+    if (!lobby) {
+      try {
+        [lobby] = await db.insert(lobbies).values({
+          recruitId: connection.recruitId,
+          ownerId: invite.senderId,
+          status: "forming",
+          scheduledAt: now,
+          createdAt: now,
+        }).returning();
+      } catch {
+        [lobby] = await db.select().from(lobbies).where(eq(lobbies.recruitId, connection.recruitId)).limit(1);
+      }
+    }
+    if (!lobby) return Response.json({ error: "ロビーを作成できませんでした" }, { status: 500 });
+    if (!["forming", "ready", "playing"].includes(lobby.status)) {
+      await db.update(lobbies).set({
+        ownerId: invite.senderId,
+        status: "forming",
+        scheduledAt: now,
+        finishedAt: null,
+      }).where(eq(lobbies.id, lobby.id));
+    }
+    const members = [
+      {
+        userId: connection.userAId,
+        trainerName: connection.userAName,
+        pokemon: connection.userAPokemon,
+      },
+      {
+        userId: connection.userBId,
+        trainerName: connection.userBName,
+        pokemon: connection.userBPokemon,
+      },
+    ];
+    for (const member of members) {
+      await db.insert(lobbyMembers).values({
+        lobbyId: lobby.id,
+        userId: member.userId,
+        connectionId: connection.id,
+        trainerName: member.trainerName,
+        pokemon: member.pokemon,
+        contact: "",
+        ready: false,
+        status: "active",
+        joinedAt: now,
+      }).onConflictDoUpdate({
+        target: [lobbyMembers.lobbyId, lobbyMembers.userId],
+        set: {
+          connectionId: connection.id,
+          trainerName: member.trainerName,
+          pokemon: member.pokemon,
+          ready: false,
+          status: "active",
+          joinedAt: now,
+        },
+      });
+    }
+    lobbyId = lobby.id;
+  }
   const [updated] = await getDb().update(messages).set({
     response: payload.response!,
     respondedAt: new Date(),
@@ -236,11 +301,13 @@ export async function PATCH(request: Request) {
         ? `${responderName}さんがプレイ招待を承認しました`
         : `${responderName}さんがプレイ招待を見送りました`,
       payload.response === "accepted"
-        ? "チャットからDiscordへ合流できます"
+        ? "集合ロビーを作成しました"
         : "また都合のいい時に誘ってみましょう",
-      `/?chat=${connection.id}`,
+      payload.response === "accepted" && lobbyId
+        ? `/?lobby=${lobbyId}`
+        : `/?chat=${connection.id}`,
     ),
     "Play invite response push",
   );
-  return Response.json({ message: serializeMessage(updated, aliasSet) });
+  return Response.json({ message: serializeMessage(updated, aliasSet), lobbyId });
 }
