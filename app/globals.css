@@ -812,6 +812,9 @@ button { cursor: pointer; }
 .declineReasonPanel > button { min-height: 42px; border: 0; border-radius: 12px; color: #fff; background: #615763; font-size: 8px; font-weight: 950; }
 .pendingChatWaiting { min-height: 52px; display: flex; align-items: center; justify-content: center; gap: 7px; margin: 0 -4px; border-top: 1px solid var(--line); color: #81798a; background: #fbfafc; font-size: 9px; font-weight: 900; }
 .pendingChatWaiting span { color: var(--purple); font-size: 13px; }
+.pendingChatWaitingCancelable { justify-content: space-between; padding: 8px 4px 8px 10px; }
+.pendingChatWaitingCancelable > div { display: flex; align-items: center; gap: 7px; }
+.pendingChatWaitingCancelable > button { min-height: 36px; border: 1px solid #eadde3; border-radius: 11px; padding: 0 11px; color: #b14f70; background: #fff7fa; font-size: 7px; font-weight: 950; white-space: nowrap; }
 .contactPrivateBox { margin: 12px 0; padding: 14px; border-radius: 13px; color: #7d7585; background: #f3f0f5; font-size: 9px; font-weight: 800; text-align: center; }
 .chatActionsSheet { max-height: min(680px, 88dvh); overflow-y: auto; }
 .chatActionsSheet h2 { margin-bottom: 16px; padding-right: 34px; font-size: 20px; }

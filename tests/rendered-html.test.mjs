@@ -984,3 +984,18 @@ test("shows the other trainer's public profile before approving a chat request",
   assert.match(applicationsApi, /inArray\(profiles\.userId,mateIds\)/);
   assert.doesNotMatch(app, /pendingProfileView\.contact/);
 });
+
+test("lets applicants cancel a pending mate request", async () => {
+  const [app, applicationsApi] = await Promise.all([
+    readFile(new URL("app/match-app.tsx", root), "utf8"),
+    readFile(new URL("app/api/applications/route.ts", root), "utf8"),
+  ]);
+
+  assert.match(app, /申請を取り消す/);
+  assert.match(app, /cancelSelectedApplication/);
+  assert.match(app, /decide\(selectedPending\.notice\.id, "cancel"\)/);
+  assert.match(applicationsApi, /p\.action==="cancel"/);
+  assert.match(applicationsApi, /eq\(applications\.applicantId,user\.userId\)/);
+  assert.match(applicationsApi, /status:"cancelled"/);
+  assert.match(applicationsApi, /申請が取り消されました/);
+});

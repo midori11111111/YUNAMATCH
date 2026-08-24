@@ -3277,7 +3277,7 @@ export default function MatchApp({
   };
   const decide = async (
     applicationId: number,
-    action: "accept" | "decline",
+    action: "accept" | "decline" | "cancel",
     decisionMessage = "",
   ) => {
     const response = await fetch("/api/applications", {
@@ -3308,7 +3308,9 @@ export default function MatchApp({
     notify(
       action === "accept"
         ? "マッチ成立！チャットが開通しました"
-        : "今回は見送りました",
+        : action === "cancel"
+          ? "メイト申請を取り消しました"
+          : "今回は見送りました",
     );
     const [, refreshedConnections] = await Promise.all([
       loadNotices(),
@@ -3323,6 +3325,11 @@ export default function MatchApp({
       if (matchedConnection) await openChat(matchedConnection);
       else setTab("chat");
     }
+  };
+  const cancelSelectedApplication = async () => {
+    if (!selectedPending || selectedPending.direction !== "outgoing") return;
+    if (!window.confirm("このメイト申請を取り消しますか？\n承認前のやりとりも一覧から消えます。")) return;
+    await decide(selectedPending.notice.id, "cancel");
   };
   const openChat = async (connection: Connection) => {
     activeApplicationIdRef.current = null;
@@ -5241,9 +5248,14 @@ export default function MatchApp({
                     )}
                     </>
                   ) : (
-                    <div className="pendingChatWaiting">
-                      <span>💬</span>
-                      相手と相談しながら承認を待てます
+                    <div className="pendingChatWaiting pendingChatWaitingCancelable">
+                      <div>
+                        <span>💬</span>
+                        相手と相談しながら承認を待てます
+                      </div>
+                      <button type="button" onClick={cancelSelectedApplication}>
+                        申請を取り消す
+                      </button>
                     </div>
                   )}
                 </>

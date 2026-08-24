@@ -100,11 +100,20 @@ export async function POST(request:Request){
 
 export async function PATCH(request:Request){
  const user=await getChatGPTUser();if(!user)return Response.json({error:"ログインが必要です",signIn},{status:401});
- const p=await request.json() as {applicationId?:number;action?:"accept"|"decline";decisionMessage?:string};
- if(!p.applicationId||!p.action)return Response.json({error:"操作を確認してください"},{status:400});
+ const p=await request.json() as {applicationId?:number;action?:"accept"|"decline"|"cancel";decisionMessage?:string};
+ if(!p.applicationId||!p.action||!["accept","decline","cancel"].includes(p.action))return Response.json({error:"操作を確認してください"},{status:400});
  const decisionMessage=typeof p.decisionMessage==="string"?p.decisionMessage.trim().slice(0,180):"";
  if(p.action==="decline"&&containsProhibitedContent(decisionMessage))return Response.json({error:prohibitedContentMessage},{status:400});
- const db=getDb();const [row]=await db.select({id:applications.id,recruitId:applications.recruitId,applicantId:applications.applicantId,applicantName:applications.applicantName,applicantPokemon:applications.pokemon,applicationMessage:applications.message,applicationCreatedAt:applications.createdAt,ownerId:recruits.ownerId,ownerName:recruits.trainerName,ownerPokemon:recruits.pokemon,partySize:recruits.partySize,acceptedCount:recruits.acceptedCount,startAt:recruits.startAt}).from(applications).innerJoin(recruits,eq(applications.recruitId,recruits.id)).where(and(eq(applications.id,p.applicationId),eq(recruits.ownerId,user.userId),eq(applications.status,"pending"))).limit(1);
+ const db=getDb();
+ if(p.action==="cancel"){
+  const [row]=await db.select({id:applications.id,applicantName:applications.applicantName,ownerId:recruits.ownerId,ownerName:recruits.trainerName}).from(applications).innerJoin(recruits,eq(applications.recruitId,recruits.id)).where(and(eq(applications.id,p.applicationId),eq(applications.applicantId,user.userId),eq(applications.status,"pending"))).limit(1);
+  if(!row)return Response.json({error:"申請が見つからないか、すでに処理されています"},{status:404});
+  const cancelled=await db.update(applications).set({status:"cancelled",decisionMessage:"申請者が取り消しました"}).where(and(eq(applications.id,row.id),eq(applications.applicantId,user.userId),eq(applications.status,"pending"))).returning({id:applications.id});
+  if(!cancelled.length)return Response.json({error:"この申請はすでに処理されています"},{status:409});
+  runInBackground(sendPush(row.ownerId,"申請が取り消されました",`${row.applicantName}さんがメイト申請を取り消しました`,"/"),"Application cancelled push");
+  return Response.json({ok:true,status:"cancelled"});
+ }
+ const [row]=await db.select({id:applications.id,recruitId:applications.recruitId,applicantId:applications.applicantId,applicantName:applications.applicantName,applicantPokemon:applications.pokemon,applicationMessage:applications.message,applicationCreatedAt:applications.createdAt,ownerId:recruits.ownerId,ownerName:recruits.trainerName,ownerPokemon:recruits.pokemon,partySize:recruits.partySize,acceptedCount:recruits.acceptedCount,startAt:recruits.startAt}).from(applications).innerJoin(recruits,eq(applications.recruitId,recruits.id)).where(and(eq(applications.id,p.applicationId),eq(recruits.ownerId,user.userId),eq(applications.status,"pending"))).limit(1);
  if(!row)return Response.json({error:"申請が見つからないか、処理済みです"},{status:404});
  if(p.action==="accept"&&row.acceptedCount>=row.partySize-1)return Response.json({error:"すでに募集人数に達しています"},{status:409});
  const status=p.action==="accept"?"accepted":"declined";
