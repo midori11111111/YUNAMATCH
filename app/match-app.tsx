@@ -429,6 +429,8 @@ const mateRatingLabels = [
   "最高だった",
 ];
 const discordInviteUrl = "https://discord.gg/sRxr8fD8Z6";
+const tournamentUrl = "https://tonamel.com/competition/Lus8q";
+const tournamentAnnouncementKey = "yunamatch-cup-2026-08-30-seen";
 const loginProviders = [
   { id: "google", label: "Google", mark: "G" },
   { id: "line", label: "LINE", mark: "LINE" },
@@ -791,6 +793,8 @@ export default function MatchApp({
   const [discoverMode, setDiscoverMode] = useState<DiscoverMode>("recommended");
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [tutorialChecked, setTutorialChecked] = useState(false);
+  const [tournamentOpen, setTournamentOpen] = useState(false);
+  const [tournamentChecked, setTournamentChecked] = useState(false);
   const [chatTutorialOpen, setChatTutorialOpen] = useState(false);
   const [chatTutorialChecked, setChatTutorialChecked] = useState(false);
   const [chatTutorialStep, setChatTutorialStep] = useState<0 | 1>(0);
@@ -2035,7 +2039,29 @@ export default function MatchApp({
   }, [preview, guestMode, profileReady, onboardingOpen, selectedConnection]);
 
   useEffect(() => {
-    if (!profileReady || onboardingOpen || tutorialChecked) return;
+    if (!profileReady || onboardingOpen || tournamentChecked) return;
+    const timer = window.setTimeout(() => {
+      let seen = false;
+      try {
+        seen = window.localStorage.getItem(tournamentAnnouncementKey) === "seen";
+      } catch {
+        /* 保存できない環境では告知を表示 */
+      }
+      setTournamentChecked(true);
+      if (!seen) setTournamentOpen(true);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [profileReady, onboardingOpen, tournamentChecked]);
+
+  useEffect(() => {
+    if (
+      !profileReady ||
+      onboardingOpen ||
+      !tournamentChecked ||
+      tournamentOpen ||
+      tutorialChecked
+    )
+      return;
     const timer = window.setTimeout(() => {
       let seen = false;
       try {
@@ -2049,7 +2075,13 @@ export default function MatchApp({
       if (!seen) setTutorialOpen(true);
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [profileReady, onboardingOpen, tutorialChecked]);
+  }, [
+    profileReady,
+    onboardingOpen,
+    tournamentChecked,
+    tournamentOpen,
+    tutorialChecked,
+  ]);
 
   useEffect(() => {
     if (tab !== "chat" || chatTutorialChecked) return;
@@ -2577,6 +2609,14 @@ export default function MatchApp({
       return;
     }
     setCompose(true);
+  };
+  const closeTournament = () => {
+    try {
+      window.localStorage.setItem(tournamentAnnouncementKey, "seen");
+    } catch {
+      /* 次回も表示されるだけなので利用は続ける */
+    }
+    setTournamentOpen(false);
   };
   const closeTutorial = () => {
     try {
@@ -4785,6 +4825,22 @@ export default function MatchApp({
           onTouchEnd={handlePullEnd}
           onTouchCancel={resetPullRefresh}
         >
+          {(tab === "discover" || tab === "recruit") && (
+            <button
+              type="button"
+              className="tournamentStrip"
+              onClick={() => setTournamentOpen(true)}
+              aria-label="ユナマッチ杯の大会詳細を見る"
+            >
+              <span>📣</span>
+              <div>
+                <small>大会開催のお知らせ</small>
+                <strong>8/30 12:00〜 ユナマッチ杯</strong>
+                <p>優勝10,000円・1人から参加できます</p>
+              </div>
+              <em>見る</em>
+            </button>
+          )}
           {guestMode && (
             <div className="guestBrowseBanner">
               <span>見るだけなら登録不要</span>
@@ -7167,6 +7223,79 @@ export default function MatchApp({
               {sending ? "登録しています…" : "登録してメイトを探す"}
             </button>
           </form>
+        </div>
+      )}
+
+      {tournamentOpen && (
+        <div className="tournamentBackdrop">
+          <button
+            type="button"
+            className="backdropDismiss"
+            onClick={closeTournament}
+            aria-label="大会告知を閉じる"
+          />
+          <section
+            className="tournamentModal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="tournament-title"
+          >
+            <button
+              type="button"
+              className="tournamentClose"
+              onClick={closeTournament}
+              aria-label="大会告知を閉じる"
+            >
+              ×
+            </button>
+            <div className="tournamentBody">
+              <div className="tournamentHeading">
+                <small>大会開催のお知らせ</small>
+                <h2 id="tournament-title">ユナマッチ杯を開催します！</h2>
+              </div>
+              <div className="tournamentMessage">
+                <p>
+                  ユナマッチをご利用いただいている皆さんに向けて、ポケモンユナイトの大会を開催します。
+                </p>
+                <dl>
+                  <div><dt>開催日時</dt><dd>8月30日 12:00〜</dd></div>
+                  <div><dt>優勝賞金</dt><dd>10,000円</dd></div>
+                  <div><dt>準優勝賞金</dt><dd>5,000円</dd></div>
+                  <div><dt>参加方法</dt><dd>1人・デュオ・トリオ・フルパ</dd></div>
+                </dl>
+                <p>
+                  1人での参加も可能です。もちろん、普段一緒に遊んでいるデュオ・トリオ・フルパでの参加も歓迎します！
+                </p>
+              </div>
+              <p className="tournamentCondition">
+                <b>参加条件</b><br />ユナマッチのアカウントを持っていること
+              </p>
+              <a
+                className="tournamentEntryButton"
+                href={tournamentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={closeTournament}
+              >
+                大会詳細・エントリーへ <span>↗</span>
+              </a>
+              {guestMode && (
+                <button
+                  type="button"
+                  className="tournamentSignupButton"
+                  onClick={() => {
+                    closeTournament();
+                    requestLogin({ type: "received", label: "ユナマッチ杯に参加する" });
+                  }}
+                >
+                  ユナマッチのアカウントを作る
+                </button>
+              )}
+              <button type="button" className="tournamentLater" onClick={closeTournament}>
+                あとで見る
+              </button>
+            </div>
+          </section>
         </div>
       )}
 

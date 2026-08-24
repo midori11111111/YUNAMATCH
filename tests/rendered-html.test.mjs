@@ -1141,3 +1141,16 @@ test("lets users safely unlink a non-current login account", async () => {
   assert.match(auth, /linkedAccount\?\.canonicalUserId\.startsWith\("detached:"\)/);
   assert.match(aliases, /detachedMarker/);
 });
+
+test("promotes the YUNAMATCH Cup with clear entry details", async () => {
+  const app = await readFile(new URL("app/match-app.tsx", root), "utf8");
+
+  assert.match(app, /https:\/\/tonamel\.com\/competition\/Lus8q/);
+  assert.match(app, /ユナマッチ杯を開催します/);
+  assert.match(app, /8月30日 12:00〜/);
+  assert.match(app, /10,000円/);
+  assert.match(app, /5,000円/);
+  assert.match(app, /1人・デュオ・トリオ・フルパ/);
+  assert.match(app, /ユナマッチのアカウントを持っていること/);
+  assert.match(app, /tournamentAnnouncementKey/);
+});
