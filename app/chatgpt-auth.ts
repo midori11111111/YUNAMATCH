@@ -58,7 +58,10 @@ async function resolveCanonicalUserId(
 ): Promise<string> {
   if (!providerAccountId) return fallbackUserId;
   const normalizedEmail = email?.trim().toLowerCase() || "";
-  const cacheKey = `${provider}:${providerAccountId}:${normalizedEmail}`;
+  // The JWT user id changes after an OAuth account is explicitly moved to the
+  // current profile. Including it prevents another isolate's pre-link cache
+  // from temporarily resolving the new session back to the old profile.
+  const cacheKey = `${provider}:${providerAccountId}:${normalizedEmail}:${fallbackUserId}`;
   const cached = canonicalUserCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.userId;
 

@@ -1203,7 +1203,11 @@ test("lets users safely unlink a non-current login account", async () => {
   assert.match(accountLinksApi, /最後のアカウントは解除できません/);
   assert.match(accountLinksApi, /target\.providerAccountId===user\.providerAccountId/);
   assert.match(internalLinksApi, /canonicalUserId\.startsWith\("detached:"\)/);
+  assert.match(internalLinksApi, /transferred:true/);
+  assert.match(internalLinksApi, /previousCanonicalUserId/);
+  assert.match(internalLinksApi, /invalidateCanonicalUser\(provider,providerAccountId\)/);
   assert.match(auth, /linkedAccount\?\.canonicalUserId\.startsWith\("detached:"\)/);
+  assert.match(auth, /normalizedEmail\}:\$\{fallbackUserId\}/);
   assert.match(aliases, /detachedMarker/);
 });
 

@@ -1,6 +1,8 @@
 import { and, eq, notLike } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { accountLinks, profiles } from "../../../../db/schema";
+import { invalidateIdentityAliases } from "../../../../lib/account-aliases";
+import { invalidateCanonicalUser } from "../../../chatgpt-auth";
 
 function secretsMatch(received:string,expected:string){
   if(!received||received.length!==expected.length)return false;
@@ -46,10 +48,23 @@ export async function POST(request:Request){
     const userId=requestedCanonicalId||`oauth:${provider}:${providerAccountId}`;
     if(requestedCanonicalId){
       await db.update(accountLinks).set({canonicalUserId:requestedCanonicalId,contactId,displayName,email}).where(eq(accountLinks.id,existing.id));
+      invalidateCanonicalUser(provider,providerAccountId);
+      invalidateIdentityAliases(requestedCanonicalId);
     }
     return Response.json({userId,linked:Boolean(requestedCanonicalId),relinked:Boolean(requestedCanonicalId)});
   }
-  if(existing&&requestedCanonicalId&&existing.canonicalUserId!==requestedCanonicalId)return Response.json({error:"このアカウントは別のプロフィールに連携されています"},{status:409});
+  if(existing&&requestedCanonicalId&&existing.canonicalUserId!==requestedCanonicalId){
+    // This endpoint is only called by the auth gateway after both the current
+    // YUNAMATCH session and the new OAuth account have been authenticated. A
+    // previously-created duplicate profile must not turn that explicit link
+    // operation into an Auth.js callback error and send the user to /login.
+    const previousCanonicalUserId=existing.canonicalUserId;
+    await db.update(accountLinks).set({canonicalUserId:requestedCanonicalId,contactId,displayName,email}).where(eq(accountLinks.id,existing.id));
+    invalidateCanonicalUser(provider,providerAccountId);
+    invalidateIdentityAliases(previousCanonicalUserId);
+    invalidateIdentityAliases(requestedCanonicalId);
+    return Response.json({userId:requestedCanonicalId,linked:true,transferred:true});
+  }
   if(existing){
     const recoveredUserId=!requestedCanonicalId&&email&&["google","discord"].includes(provider)
       ?await findOldestProfileByEmail(email)
