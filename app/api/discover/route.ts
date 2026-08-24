@@ -53,6 +53,7 @@ function discoverQuery(request: Request) {
   const requestedMinLikes = Number(searchParams.get("minLikes"));
   const requestedMaxLikes = Number(searchParams.get("maxLikes"));
   const requestedRole = searchParams.get("role") || "";
+  const requestedActivity = searchParams.get("activity") || "";
   const validRoles = new Set(pokemonRoleOptions.map((option) => option.value));
   return {
     offset:
@@ -88,6 +89,12 @@ function discoverQuery(request: Request) {
     role: validRoles.has(requestedRole as PokemonRole)
       ? (requestedRole as PokemonRole)
       : "",
+    activity:
+      requestedActivity === "online" ||
+      requestedActivity === "3h" ||
+      requestedActivity === "24h"
+        ? requestedActivity
+        : "",
     likedOnly: searchParams.get("likedOnly") === "1",
     hideLiked: searchParams.get("hideLiked") === "1",
     rotationSeed: normalizeRotationSeed(searchParams.get("seed") || ""),
@@ -322,13 +329,22 @@ export async function GET(request: Request) {
       (query.maxLikes === null || likeCount <= query.maxLikes);
     const roleMatches =
       !query.role || mainPokemon.some((name) => pokemonRole(name) === query.role);
+    const lastActiveAt = activityAt(row).getTime();
+    const activityMatches =
+      !query.activity ||
+      (query.activity === "online" && isOnline(row.userId)) ||
+      (query.activity === "3h" &&
+        lastActiveAt >= Date.now() - 3 * 60 * 60_000) ||
+      (query.activity === "24h" &&
+        lastActiveAt >= Date.now() - 24 * 60 * 60_000);
     return (
       pokemonMatches &&
       trainerMatches &&
       genderMatches &&
       timeMatches &&
       likesMatch &&
-      roleMatches
+      roleMatches &&
+      activityMatches
     );
   });
   const prioritized = rankDiscoverCandidates(
@@ -349,6 +365,11 @@ export async function GET(request: Request) {
       rotationSeed: query.rotationSeed,
     },
   );
+  if (query.activity)
+    prioritized.sort(
+      (left, right) =>
+        right.lastActiveAt.getTime() - left.lastActiveAt.getTime(),
+    );
   const pageRows = prioritized.slice(
     query.offset,
     query.offset + discoverPageSize,

@@ -64,10 +64,11 @@ test("keeps discover results inside every selected filter", async () => {
   const { filterDiscoverCandidates } = await import(
     new URL("../lib/discover-filter.ts", import.meta.url)
   );
+  const now = Date.now();
   const candidates = [
-    { trainerName: "みどり", mainPokemon: ["ミュウ"], gender: "女性", playTime: ["平日 夜（18〜22時）"], likeCount: 3 },
-    { trainerName: "みどり2", mainPokemon: ["ミュウツーX"], gender: "男性", playTime: ["平日 夜（18〜22時）"], likeCount: 12 },
-    { trainerName: "あお", mainPokemon: ["ミュウツーY"], gender: "女性", playTime: ["土日 朝・昼"], likeCount: 24 },
+    { trainerName: "みどり", mainPokemon: ["ミュウ"], gender: "女性", playTime: ["平日 夜（18〜22時）"], likeCount: 3, online: true, lastActiveAt: new Date(now - 60_000).toISOString() },
+    { trainerName: "みどり2", mainPokemon: ["ミュウツーX"], gender: "男性", playTime: ["平日 夜（18〜22時）"], likeCount: 12, online: false, lastActiveAt: new Date(now - 2 * 60 * 60_000).toISOString() },
+    { trainerName: "あお", mainPokemon: ["ミュウツーY"], gender: "女性", playTime: ["土日 朝・昼"], likeCount: 24, online: false, lastActiveAt: new Date(now - 30 * 60 * 60_000).toISOString() },
   ];
   const baseFilters = {
     trainerQuery: "",
@@ -76,6 +77,7 @@ test("keeps discover results inside every selected filter", async () => {
     minLikes: null,
     maxLikes: null,
     role: "",
+    activity: "",
     myPlayTime: ["平日 夜（18〜22時）"],
     officialPokemon: ["ミュウ", "ミュウツーX", "ミュウツーY"],
   };
@@ -103,6 +105,30 @@ test("keeps discover results inside every selected filter", async () => {
     filterDiscoverCandidates(candidates, { ...baseFilters, pokemonQuery: "", role: "attack" }).map((person) => person.trainerName),
     ["みどり", "あお"],
   );
+  assert.deepEqual(
+    filterDiscoverCandidates(candidates, { ...baseFilters, pokemonQuery: "", activity: "online" }).map((person) => person.trainerName),
+    ["みどり"],
+  );
+  assert.deepEqual(
+    filterDiscoverCandidates(candidates, { ...baseFilters, pokemonQuery: "", activity: "3h" }).map((person) => person.trainerName),
+    ["みどり", "みどり2"],
+  );
+});
+
+test("filters and sorts discovery by recent online activity", async () => {
+  const [app, discoverApi] = await Promise.all([
+    readFile(new URL("app/match-app.tsx", root), "utf8"),
+    readFile(new URL("app/api/discover/route.ts", root), "utf8"),
+  ]);
+  assert.match(app, /最終オンライン/);
+  assert.match(app, /オンライン中/);
+  assert.match(app, /3時間以内/);
+  assert.match(app, /24時間以内/);
+  assert.match(app, /params\.set\("activity", activityFilter\)/);
+  assert.match(discoverApi, /requestedActivity === "online"/);
+  assert.match(discoverApi, /Date\.now\(\) - 3 \* 60 \* 60_000/);
+  assert.match(discoverApi, /Date\.now\(\) - 24 \* 60 \* 60_000/);
+  assert.match(discoverApi, /right\.lastActiveAt\.getTime\(\) - left\.lastActiveAt\.getTime\(\)/);
 });
 
 test("resolves profiles beyond the former 300-account action limit", async () => {

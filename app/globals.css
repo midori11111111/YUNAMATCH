@@ -1203,6 +1203,10 @@ button { cursor: pointer; }
 .discoverFilterSheet { display: grid; gap: 13px; }
 .discoverFilterSheet > h2 { margin-bottom: 2px; }
 .discoverGenderFilter { grid-template-columns: repeat(3, 1fr); }
+.activityFilter { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; padding: 12px; border: 1px solid #e8e2ed; border-radius: 14px; background: #faf8fc; }
+.activityFilter legend { padding: 0 5px; color: #625c6a; font-size: 8px; font-weight: 900; }
+.activityFilter button { min-height: 39px; border: 1px solid #e1dbe7; border-radius: 11px; color: #706878; background: #fff; font-size: 8px; font-weight: 900; }
+.activityFilter button.selected { color: #fff; border-color: transparent; background: linear-gradient(135deg,#5f47d8,#8b6af0); box-shadow: 0 7px 17px #5e47d526; }
 .pokemonRoleFilter { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; padding: 0; border: 0; }
 .pokemonRoleFilter legend { margin-bottom: 7px; color: #625c6a; font-size: 8px; font-weight: 900; }
 .pokemonRoleFilter button { min-height: 38px; border: 1px solid #e3dce9; border-radius: 11px; color: #706878; background: #fff; font-size: 7px; font-weight: 900; }

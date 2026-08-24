@@ -13,7 +13,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { filterDiscoverCandidates } from "../lib/discover-filter";
+import { filterDiscoverCandidates, type DiscoverActivityFilter } from "../lib/discover-filter";
 import { rankOptions } from "../lib/ranks";
 import {
   pokemonRole,
@@ -748,6 +748,7 @@ export default function MatchApp({
   const [minLikes, setMinLikes] = useState("");
   const [maxLikes, setMaxLikes] = useState("");
   const [roleFilter, setRoleFilter] = useState<PokemonRole | "">("");
+  const [activityFilter, setActivityFilter] = useState<DiscoverActivityFilter>("");
   const [showLikedProfilesOnly, setShowLikedProfilesOnly] = useState(false);
   const [hideLikedProfiles, setHideLikedProfiles] = useState(false);
   const [discoverFiltersReady, setDiscoverFiltersReady] = useState(false);
@@ -1238,6 +1239,7 @@ export default function MatchApp({
     if (minLikes !== "") params.set("minLikes", minLikes);
     if (maxLikes !== "") params.set("maxLikes", maxLikes);
     if (roleFilter) params.set("role", roleFilter);
+    if (activityFilter) params.set("activity", activityFilter);
     if (showLikedProfilesOnly) params.set("likedOnly", "1");
     if (hideLikedProfiles) params.set("hideLiked", "1");
     if (append) discoverLoadingMoreRef.current = true;
@@ -1287,6 +1289,7 @@ export default function MatchApp({
     minLikes,
     maxLikes,
     roleFilter,
+    activityFilter,
     showLikedProfilesOnly,
     hideLikedProfiles,
   ]);
@@ -1600,6 +1603,7 @@ export default function MatchApp({
           minLikes?: unknown;
           maxLikes?: unknown;
           roleFilter?: unknown;
+          activityFilter?: unknown;
           showLikedProfilesOnly?: unknown;
           hideLikedProfiles?: unknown;
         };
@@ -1624,6 +1628,13 @@ export default function MatchApp({
           pokemonRoleOptions.some((option) => option.value === filters.roleFilter)
         )
           setRoleFilter(filters.roleFilter as PokemonRole | "");
+        if (
+          filters.activityFilter === "" ||
+          filters.activityFilter === "online" ||
+          filters.activityFilter === "3h" ||
+          filters.activityFilter === "24h"
+        )
+          setActivityFilter(filters.activityFilter);
         if (typeof filters.showLikedProfilesOnly === "boolean")
           setShowLikedProfilesOnly(filters.showLikedProfilesOnly);
         if (typeof filters.hideLikedProfiles === "boolean")
@@ -1652,6 +1663,7 @@ export default function MatchApp({
           minLikes,
           maxLikes,
           roleFilter,
+          activityFilter,
           showLikedProfilesOnly,
           hideLikedProfiles,
         }),
@@ -1668,6 +1680,7 @@ export default function MatchApp({
     minLikes,
     maxLikes,
     roleFilter,
+    activityFilter,
     showLikedProfilesOnly,
     hideLikedProfiles,
   ]);
@@ -2176,6 +2189,7 @@ export default function MatchApp({
         minLikes: minLikes === "" ? null : Number(minLikes),
         maxLikes: maxLikes === "" ? null : Number(maxLikes),
         role: roleFilter,
+        activity: activityFilter,
         myPlayTime: profile.playTime,
         officialPokemon: pokemon,
       }),
@@ -2188,6 +2202,7 @@ export default function MatchApp({
       minLikes,
       maxLikes,
       roleFilter,
+      activityFilter,
       profile.playTime,
     ],
   );
@@ -2211,6 +2226,7 @@ export default function MatchApp({
     Number(sharedTimeOnly) +
     Number(minLikes !== "" || maxLikes !== "") +
     Number(Boolean(roleFilter)) +
+    Number(Boolean(activityFilter)) +
     Number(showLikedProfilesOnly) +
     Number(hideLikedProfiles);
   const current = cards.length
@@ -7120,6 +7136,27 @@ export default function MatchApp({
               />
               <span>自分と遊べる時間帯が合う人だけ</span>
             </label>
+            <fieldset className="activityFilter">
+              <legend>最終オンライン</legend>
+              {([
+                ["", "指定なし"],
+                ["online", "オンライン中"],
+                ["3h", "3時間以内"],
+                ["24h", "24時間以内"],
+              ] as const).map(([value, label]) => (
+                <button
+                  type="button"
+                  key={value || "all"}
+                  className={activityFilter === value ? "selected" : ""}
+                  onClick={() => {
+                    setActivityFilter(value);
+                    setIndex(0);
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </fieldset>
             {!guestMode && (
               <div className="likedFilterChoices">
                 <label className="toggleRow">
@@ -7155,6 +7192,7 @@ export default function MatchApp({
                 className={roleFilter === "" ? "selected" : ""}
                 onClick={() => {
                   setRoleFilter("");
+                  setActivityFilter("");
                   setIndex(0);
                 }}
               >

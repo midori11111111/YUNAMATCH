@@ -6,7 +6,11 @@ export type DiscoverFilterCandidate = {
   gender: string;
   playTime: string[];
   likeCount: number;
+  lastActiveAt: string;
+  online: boolean;
 };
+
+export type DiscoverActivityFilter = "" | "online" | "3h" | "24h";
 
 type DiscoverFilters = {
   pokemonQuery: string;
@@ -16,6 +20,7 @@ type DiscoverFilters = {
   minLikes: number | null;
   maxLikes: number | null;
   role: PokemonRole | "";
+  activity: DiscoverActivityFilter;
   myPlayTime: string[];
   officialPokemon: string[];
 };
@@ -41,7 +46,8 @@ export function filterDiscoverCandidates<T extends DiscoverFilterCandidate>(
       (person) => normalizeSearchText(person.trainerName) === trainerQuery,
     );
 
-  return candidates.filter((person) => {
+  const now = Date.now();
+  const filtered = candidates.filter((person) => {
     const pokemonMatches =
       !pokemonQuery ||
       person.mainPokemon.some((name) => {
@@ -67,13 +73,27 @@ export function filterDiscoverCandidates<T extends DiscoverFilterCandidate>(
       (filters.maxLikes === null || person.likeCount <= filters.maxLikes);
     const roleMatches =
       !filters.role || person.mainPokemon.some((name) => pokemonRole(name) === filters.role);
+    const lastActiveAt = new Date(person.lastActiveAt).getTime();
+    const activityMatches =
+      !filters.activity ||
+      (filters.activity === "online" && person.online) ||
+      (filters.activity === "3h" && lastActiveAt >= now - 3 * 60 * 60_000) ||
+      (filters.activity === "24h" && lastActiveAt >= now - 24 * 60 * 60_000);
     return (
       pokemonMatches &&
       trainerMatches &&
       genderMatches &&
       timeMatches &&
       likesMatch &&
-      roleMatches
+      roleMatches &&
+      activityMatches
     );
   });
+  return filters.activity
+    ? filtered.sort(
+        (left, right) =>
+          new Date(right.lastActiveAt).getTime() -
+          new Date(left.lastActiveAt).getTime(),
+      )
+    : filtered;
 }
