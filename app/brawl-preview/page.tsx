@@ -3,6 +3,7 @@ import { FormEvent, useEffect, useState } from "react";
 import styles from "./brawl-preview.module.css";
 import ServiceOnboarding from "../service-onboarding";
 import ServiceReportButton from "../service-report-button";
+import ServiceAccountSafety from "../service-account-safety";
 type Tab = "find" | "team" | "chat" | "me";
 type Profile = {
   id?: number;
@@ -361,11 +362,11 @@ export default function BrawlPreview() {
                         {current.gender || `${current.age}歳`}
                       </p>
                     </div>
-                      <ServiceReportButton
-                        service="stamate"
-                        targetProfileId={current.id}
-                        onNotice={notify}
-                      />
+                    <ServiceReportButton
+                      service="stamate"
+                      targetProfileId={current.id}
+                      onNotice={notify}
+                    />
                   </div>
                   <div className={styles.tags}>
                     {current.roles.map((x) => (
@@ -517,6 +518,7 @@ export default function BrawlPreview() {
             >
               ログアウト
             </a>
+            <ServiceAccountSafety service="stamate" onNotice={notify} />
           </section>
         )}
       </section>
@@ -553,6 +555,10 @@ export default function BrawlPreview() {
             targetProfileId={activeChat.other.id}
             connectionId={activeChat.id}
             onNotice={notify}
+            onBlocked={() => {
+              setActiveChat(null);
+              void load();
+            }}
           />
           {messages.map((item) => (
             <p

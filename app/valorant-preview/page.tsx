@@ -3,6 +3,7 @@ import { FormEvent, useEffect, useState } from "react";
 import styles from "./valorant-preview.module.css";
 import ServiceOnboarding from "../service-onboarding";
 import ServiceReportButton from "../service-report-button";
+import ServiceAccountSafety from "../service-account-safety";
 type Provider = "discord" | "x" | "line" | "riot";
 type Tab = "discover" | "recruit" | "chat" | "profile";
 type Profile = {
@@ -573,6 +574,7 @@ export default function ValorantPreviewPage() {
             >
               ログアウト
             </a>
+            <ServiceAccountSafety service="valomatch" onNotice={notify} />
           </section>
         )}
       </section>
@@ -609,6 +611,10 @@ export default function ValorantPreviewPage() {
             targetProfileId={activeChat.other.id}
             connectionId={activeChat.id}
             onNotice={notify}
+            onBlocked={() => {
+              setActiveChat(null);
+              void load();
+            }}
           />
           {messages.map((item) => (
             <p

@@ -546,19 +546,30 @@ export const serviceProfiles = sqliteTable(
     playTimes: text("play_times").notNull().default("[]"),
     age: integer("age").notNull(),
     gender: text("gender").notNull().default(""),
-    showGender: integer("show_gender", { mode: "boolean" }).notNull().default(false),
+    showGender: integer("show_gender", { mode: "boolean" })
+      .notNull()
+      .default(false),
     bio: text("bio").notNull().default(""),
     avatarUrl: text("avatar_url").notNull().default(""),
     status: text("status").notNull().default("active"),
     termsVersion: text("terms_version").notNull(),
-    termsAcceptedAt: integer("terms_accepted_at", { mode: "timestamp_ms" }).notNull(),
+    termsAcceptedAt: integer("terms_accepted_at", {
+      mode: "timestamp_ms",
+    }).notNull(),
     suspendedAt: integer("suspended_at", { mode: "timestamp_ms" }),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
   },
   (table) => [
-    uniqueIndex("idx_service_profiles_service_user").on(table.serviceId, table.userId),
-    index("idx_service_profiles_service_status_updated").on(table.serviceId, table.status, table.updatedAt),
+    uniqueIndex("idx_service_profiles_service_user").on(
+      table.serviceId,
+      table.userId,
+    ),
+    index("idx_service_profiles_service_status_updated").on(
+      table.serviceId,
+      table.status,
+      table.updatedAt,
+    ),
   ],
 );
 
@@ -567,7 +578,9 @@ export const serviceRecruits = sqliteTable(
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
     serviceId: text("service_id").notNull(),
-    ownerProfileId: integer("owner_profile_id").notNull().references(() => serviceProfiles.id),
+    ownerProfileId: integer("owner_profile_id")
+      .notNull()
+      .references(() => serviceProfiles.id),
     mode: text("mode").notNull(),
     partySize: integer("party_size").notNull(),
     desiredRoles: text("desired_roles").notNull().default("[]"),
@@ -579,8 +592,15 @@ export const serviceRecruits = sqliteTable(
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
   },
   (table) => [
-    index("idx_service_recruits_service_status_created").on(table.serviceId, table.status, table.createdAt),
-    index("idx_service_recruits_owner_created").on(table.ownerProfileId, table.createdAt),
+    index("idx_service_recruits_service_status_created").on(
+      table.serviceId,
+      table.status,
+      table.createdAt,
+    ),
+    index("idx_service_recruits_owner_created").on(
+      table.ownerProfileId,
+      table.createdAt,
+    ),
   ],
 );
 
@@ -590,18 +610,36 @@ export const serviceConnections = sqliteTable(
     id: integer("id").primaryKey({ autoIncrement: true }),
     serviceId: text("service_id").notNull(),
     pairKey: text("pair_key").notNull(),
-    requesterProfileId: integer("requester_profile_id").notNull().references(() => serviceProfiles.id),
-    userAProfileId: integer("user_a_profile_id").notNull().references(() => serviceProfiles.id),
-    userBProfileId: integer("user_b_profile_id").notNull().references(() => serviceProfiles.id),
+    requesterProfileId: integer("requester_profile_id")
+      .notNull()
+      .references(() => serviceProfiles.id),
+    userAProfileId: integer("user_a_profile_id")
+      .notNull()
+      .references(() => serviceProfiles.id),
+    userBProfileId: integer("user_b_profile_id")
+      .notNull()
+      .references(() => serviceProfiles.id),
     status: text("status").notNull().default("active"),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     endedAt: integer("ended_at", { mode: "timestamp_ms" }),
   },
   (table) => [
-    uniqueIndex("idx_service_connections_service_pair").on(table.serviceId, table.pairKey),
-    index("idx_service_connections_service_created").on(table.serviceId, table.createdAt),
-    index("idx_service_connections_user_a").on(table.userAProfileId, table.createdAt),
-    index("idx_service_connections_user_b").on(table.userBProfileId, table.createdAt),
+    uniqueIndex("idx_service_connections_service_pair").on(
+      table.serviceId,
+      table.pairKey,
+    ),
+    index("idx_service_connections_service_created").on(
+      table.serviceId,
+      table.createdAt,
+    ),
+    index("idx_service_connections_user_a").on(
+      table.userAProfileId,
+      table.createdAt,
+    ),
+    index("idx_service_connections_user_b").on(
+      table.userBProfileId,
+      table.createdAt,
+    ),
   ],
 );
 
@@ -610,14 +648,27 @@ export const serviceLikes = sqliteTable(
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
     serviceId: text("service_id").notNull(),
-    senderProfileId: integer("sender_profile_id").notNull().references(() => serviceProfiles.id),
-    recipientProfileId: integer("recipient_profile_id").notNull().references(() => serviceProfiles.id),
+    senderProfileId: integer("sender_profile_id")
+      .notNull()
+      .references(() => serviceProfiles.id),
+    recipientProfileId: integer("recipient_profile_id")
+      .notNull()
+      .references(() => serviceProfiles.id),
     status: text("status").notNull().default("active"),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   },
   (table) => [
-    uniqueIndex("idx_service_likes_service_pair").on(table.serviceId, table.senderProfileId, table.recipientProfileId),
-    index("idx_service_likes_recipient_status_created").on(table.serviceId, table.recipientProfileId, table.status, table.createdAt),
+    uniqueIndex("idx_service_likes_service_pair").on(
+      table.serviceId,
+      table.senderProfileId,
+      table.recipientProfileId,
+    ),
+    index("idx_service_likes_recipient_status_created").on(
+      table.serviceId,
+      table.recipientProfileId,
+      table.status,
+      table.createdAt,
+    ),
   ],
 );
 
@@ -626,17 +677,30 @@ export const serviceMessages = sqliteTable(
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
     serviceId: text("service_id").notNull(),
-    connectionId: integer("connection_id").notNull().references(() => serviceConnections.id),
-    senderProfileId: integer("sender_profile_id").notNull().references(() => serviceProfiles.id),
+    connectionId: integer("connection_id")
+      .notNull()
+      .references(() => serviceConnections.id),
+    senderProfileId: integer("sender_profile_id")
+      .notNull()
+      .references(() => serviceProfiles.id),
     clientId: text("client_id").notNull(),
     body: text("body").notNull(),
     deletedAt: integer("deleted_at", { mode: "timestamp_ms" }),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   },
   (table) => [
-    uniqueIndex("idx_service_messages_sender_client").on(table.senderProfileId, table.clientId),
-    index("idx_service_messages_connection_created").on(table.connectionId, table.createdAt),
-    index("idx_service_messages_service_created").on(table.serviceId, table.createdAt),
+    uniqueIndex("idx_service_messages_sender_client").on(
+      table.senderProfileId,
+      table.clientId,
+    ),
+    index("idx_service_messages_connection_created").on(
+      table.connectionId,
+      table.createdAt,
+    ),
+    index("idx_service_messages_service_created").on(
+      table.serviceId,
+      table.createdAt,
+    ),
   ],
 );
 
@@ -645,9 +709,15 @@ export const serviceReports = sqliteTable(
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
     serviceId: text("service_id").notNull(),
-    reporterProfileId: integer("reporter_profile_id").notNull().references(() => serviceProfiles.id),
-    targetProfileId: integer("target_profile_id").notNull().references(() => serviceProfiles.id),
-    connectionId: integer("connection_id").references(() => serviceConnections.id),
+    reporterProfileId: integer("reporter_profile_id")
+      .notNull()
+      .references(() => serviceProfiles.id),
+    targetProfileId: integer("target_profile_id")
+      .notNull()
+      .references(() => serviceProfiles.id),
+    connectionId: integer("connection_id").references(
+      () => serviceConnections.id,
+    ),
     messageId: integer("message_id").references(() => serviceMessages.id),
     reason: text("reason").notNull(),
     details: text("details").notNull().default(""),
@@ -658,7 +728,63 @@ export const serviceReports = sqliteTable(
     resolvedAt: integer("resolved_at", { mode: "timestamp_ms" }),
   },
   (table) => [
-    index("idx_service_reports_service_status_created").on(table.serviceId, table.status, table.createdAt),
-    index("idx_service_reports_target_created").on(table.targetProfileId, table.createdAt),
+    index("idx_service_reports_service_status_created").on(
+      table.serviceId,
+      table.status,
+      table.createdAt,
+    ),
+    index("idx_service_reports_target_created").on(
+      table.targetProfileId,
+      table.createdAt,
+    ),
+  ],
+);
+
+export const serviceBlocks = sqliteTable(
+  "service_blocks",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    serviceId: text("service_id").notNull(),
+    blockerProfileId: integer("blocker_profile_id")
+      .notNull()
+      .references(() => serviceProfiles.id),
+    blockedProfileId: integer("blocked_profile_id")
+      .notNull()
+      .references(() => serviceProfiles.id),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("idx_service_blocks_service_pair").on(
+      table.serviceId,
+      table.blockerProfileId,
+      table.blockedProfileId,
+    ),
+    index("idx_service_blocks_blocker_created").on(
+      table.blockerProfileId,
+      table.createdAt,
+    ),
+    index("idx_service_blocks_blocked_created").on(
+      table.blockedProfileId,
+      table.createdAt,
+    ),
+  ],
+);
+
+export const serviceAdminAuditLogs = sqliteTable(
+  "service_admin_audit_logs",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    serviceId: text("service_id").notNull(),
+    action: text("action").notNull(),
+    targetProfileId: integer("target_profile_id"),
+    reportId: integer("report_id"),
+    detail: text("detail").notNull().default(""),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [
+    index("idx_service_admin_audit_service_created").on(
+      table.serviceId,
+      table.createdAt,
+    ),
   ],
 );

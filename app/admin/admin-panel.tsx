@@ -132,6 +132,15 @@ type ServiceReport = {
   createdAt: string;
   resolvedAt: string | null;
 };
+type ServiceAuditLog = {
+  id: number;
+  serviceId: string;
+  action: string;
+  targetProfileId: number | null;
+  reportId: number | null;
+  detail: string;
+  createdAt: string;
+};
 
 const rate = (value: number) => `${value.toFixed(1)}%`;
 const ageHours = (value: string) =>
@@ -146,7 +155,8 @@ export default function AdminPanel() {
     [showResolved, setShowResolved] = useState(false);
   const [serviceStats, setServiceStats] = useState<ServiceStat[]>([]),
     [serviceSchemaReady, setServiceSchemaReady] = useState(false);
-  const [serviceReports, setServiceReports] = useState<ServiceReport[]>([]);
+  const [serviceReports, setServiceReports] = useState<ServiceReport[]>([]),
+    [serviceAuditLogs, setServiceAuditLogs] = useState<ServiceAuditLog[]>([]);
   const [userQuery, setUserQuery] = useState(""),
     [userResults, setUserResults] = useState<AdminUser[]>([]),
     [userSearchLoading, setUserSearchLoading] = useState(false),
@@ -170,6 +180,9 @@ export default function AdminPanel() {
       fetch("/api/admin/service-reports", { cache: "no-store" }).then(
         (response) => response.json(),
       ),
+      fetch("/api/admin/service-audit", { cache: "no-store" }).then(
+        (response) => response.json(),
+      ),
     ])
       .then(
         ([
@@ -178,6 +191,7 @@ export default function AdminPanel() {
           statsData,
           serviceData,
           serviceReportData,
+          serviceAuditData,
         ]) => {
           setReports(reportData.reports || []);
           setFlaggedUsers(reportData.flaggedUsers || []);
@@ -186,6 +200,7 @@ export default function AdminPanel() {
           setServiceStats(serviceData.services || []);
           setServiceSchemaReady(Boolean(serviceData.schemaReady));
           setServiceReports(serviceReportData.reports || []);
+          setServiceAuditLogs(serviceAuditData.logs || []);
         },
       )
       .finally(() => setLoading(false));
@@ -467,7 +482,13 @@ export default function AdminPanel() {
         </div>
         <div className="adminQueueSummary">
           <span>
-            未対応 <b>{serviceReports.filter((item) => item.status !== "resolved").length}</b>
+            未対応{" "}
+            <b>
+              {
+                serviceReports.filter((item) => item.status !== "resolved")
+                  .length
+              }
+            </b>
           </span>
           <small>通報された範囲だけを運営が確認します</small>
         </div>
@@ -493,7 +514,11 @@ export default function AdminPanel() {
                     {new Date(report.createdAt).toLocaleString("ja-JP")}
                   </small>
                 </div>
-                <em className={report.status === "resolved" ? "resolved" : "onTime"}>
+                <em
+                  className={
+                    report.status === "resolved" ? "resolved" : "onTime"
+                  }
+                >
                   {report.status === "resolved" ? "対応済み" : "未対応"}
                 </em>
               </div>
@@ -507,15 +532,24 @@ export default function AdminPanel() {
               )}
               <div>
                 {report.status !== "resolved" && (
-                  <button onClick={() => actServiceReport(report, "resolve")}>対応済みにする</button>
+                  <button onClick={() => actServiceReport(report, "resolve")}>
+                    対応済みにする
+                  </button>
                 )}
                 {report.targetAvatarUrl && (
-                  <button onClick={() => actServiceReport(report, "removeImage")}>画像を削除</button>
+                  <button
+                    onClick={() => actServiceReport(report, "removeImage")}
+                  >
+                    画像を削除
+                  </button>
                 )}
                 <button
                   className="danger"
                   onClick={() =>
-                    actServiceReport(report, report.targetSuspendedAt ? "restore" : "suspend")
+                    actServiceReport(
+                      report,
+                      report.targetSuspendedAt ? "restore" : "suspend",
+                    )
                   }
                 >
                   {report.targetSuspendedAt ? "停止を解除" : "アカウント停止"}
@@ -524,6 +558,27 @@ export default function AdminPanel() {
             </article>
           ))}
         {!serviceReports.length && <p>3サービスからの通報はありません。</p>}
+      </section>
+      <section>
+        <div className="adminSectionTitle">
+          <div>
+            <small>ADMIN AUDIT</small>
+            <h2>3サービスの管理操作ログ</h2>
+          </div>
+          <button onClick={load}>更新</button>
+        </div>
+        {serviceAuditLogs.slice(0, 100).map((log) => (
+          <article key={`service-audit-${log.id}`}>
+            <strong>{log.action}</strong>
+            <p>{log.detail}</p>
+            <small>
+              {log.serviceId}・対象 #{log.targetProfileId || "-"}・通報 #
+              {log.reportId || "-"}・
+              {new Date(log.createdAt).toLocaleString("ja-JP")}
+            </small>
+          </article>
+        ))}
+        {!serviceAuditLogs.length && <p>管理操作ログはまだありません。</p>}
       </section>
       <section className="adminAnalytics">
         <div className="adminSectionTitle">

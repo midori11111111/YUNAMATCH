@@ -5,15 +5,18 @@ export default function ServiceReportButton({
   targetProfileId,
   connectionId,
   onNotice,
+  onBlocked,
   className = "",
 }: {
   service: string;
   targetProfileId: number;
   connectionId?: number;
   onNotice: (text: string) => void;
+  onBlocked?: () => void;
   className?: string;
 }) {
   const [sending, setSending] = useState(false);
+  const [blocking, setBlocking] = useState(false);
   async function report() {
     const reason = prompt(
       "通報理由を入力してください\n例：暴言、なりすまし、不適切な募集、連絡先の強要",
@@ -43,14 +46,47 @@ export default function ServiceReportButton({
       setSending(false);
     }
   }
+  async function block() {
+    if (
+      !confirm(
+        "この相手をブロックしますか？\n検索・募集・申請・チャットでお互いに表示されなくなります。",
+      )
+    )
+      return;
+    setBlocking(true);
+    try {
+      const response = await fetch(`/api/services/${service}/safety`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ targetProfileId }),
+        }),
+        data = await response.json();
+      if (response.ok) {
+        onNotice("ブロックしました。設定から解除できます");
+        onBlocked?.();
+      } else onNotice(data.error || "ブロックできませんでした");
+    } finally {
+      setBlocking(false);
+    }
+  }
   return (
-    <button
-      type="button"
-      className={className}
-      disabled={sending}
-      onClick={report}
-    >
-      {sending ? "送信中…" : "通報"}
-    </button>
+    <span style={{ display: "inline-flex", gap: 8 }}>
+      <button
+        type="button"
+        className={className}
+        disabled={sending}
+        onClick={report}
+      >
+        {sending ? "送信中…" : "通報"}
+      </button>
+      <button
+        type="button"
+        className={className}
+        disabled={blocking}
+        onClick={block}
+      >
+        {blocking ? "処理中…" : "ブロック"}
+      </button>
+    </span>
   );
 }

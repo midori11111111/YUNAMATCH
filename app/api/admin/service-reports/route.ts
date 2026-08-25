@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import {
+  serviceAdminAuditLogs,
   serviceProfiles,
   serviceRecruits,
   serviceReports,
@@ -81,6 +82,14 @@ export async function PATCH(request: Request) {
           eq(serviceReports.serviceId, service),
         ),
       );
+    await db.insert(serviceAdminAuditLogs).values({
+      serviceId: service,
+      action: "resolve-report",
+      reportId,
+      targetProfileId: targetProfileId || null,
+      detail: "通報を解決済みに変更",
+      createdAt: now,
+    });
     return Response.json({ ok: true });
   }
   if (
@@ -128,5 +137,13 @@ export async function PATCH(request: Request) {
           eq(serviceProfiles.serviceId, service),
         ),
       );
+  await db.insert(serviceAdminAuditLogs).values({
+    serviceId: service,
+    action,
+    targetProfileId,
+    reportId: reportId || null,
+    detail: `管理画面から${action}を実行`,
+    createdAt: new Date(),
+  });
   return Response.json({ ok: true });
 }

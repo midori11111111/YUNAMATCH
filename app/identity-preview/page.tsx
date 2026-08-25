@@ -3,6 +3,7 @@ import { FormEvent, useEffect, useState } from "react";
 import styles from "./identity-preview.module.css";
 import ServiceOnboarding from "../service-onboarding";
 import ServiceReportButton from "../service-report-button";
+import ServiceAccountSafety from "../service-account-safety";
 type Tab = "find" | "recruit" | "chat" | "profile";
 type Profile = {
   id?: number;
@@ -497,6 +498,7 @@ export default function IdentityPreview() {
               <a href="/api/auth/signout?callbackUrl=%2Fidentity-preview">
                 ログアウト
               </a>
+              <ServiceAccountSafety service="shoenmate" onNotice={say} />
             </article>
           </>
         )}
@@ -527,13 +529,17 @@ export default function IdentityPreview() {
             }}
           >
             <button onClick={() => setActiveChat(null)}>← 戻る</button>
-          <h2>{activeChat.other.displayName}</h2>
-          <ServiceReportButton
-            service="shoenmate"
-            targetProfileId={activeChat.other.id}
-            connectionId={activeChat.id}
-            onNotice={say}
-          />
+            <h2>{activeChat.other.displayName}</h2>
+            <ServiceReportButton
+              service="shoenmate"
+              targetProfileId={activeChat.other.id}
+              connectionId={activeChat.id}
+              onNotice={say}
+              onBlocked={() => {
+                setActiveChat(null);
+                void load();
+              }}
+            />
             {messages.map((item) => (
               <p
                 key={item.id}
