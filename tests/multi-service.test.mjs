@@ -42,6 +42,17 @@ test("uses real account login and persistent onboarding in Stamate",async()=>{
  assert.match(page,/act\(item\.id,"cancel"\)/);
 });
 
+test("uses real account login and matching APIs in Valomatch",async()=>{
+ const page=await read("app/valorant-preview/page.tsx");
+ assert.match(page,/fetch\("\/api\/services\/valomatch\/profile"\)/);
+ assert.match(page,/ServiceOnboarding service="valomatch"/);
+ assert.match(page,/fetch\("\/api\/services\/valomatch\/discover"\)/);
+ assert.match(page,/fetch\("\/api\/services\/valomatch\/likes"/);
+ assert.match(page,/fetch\("\/api\/services\/valomatch\/connections"/);
+ assert.match(page,/Riot連携（審査中）/);
+ assert.doesNotMatch(page,/連携しました（デモ）/);
+});
+
 test("keeps legal acceptance and minor gender privacy service scoped",async()=>{
  const [schema,profile]=await Promise.all([read("db/schema.ts"),read("app/api/services/[service]/profile/route.ts")]);
  assert.match(schema,/termsVersion: text\("terms_version"\)\.notNull\(\)/);
