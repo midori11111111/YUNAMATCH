@@ -14,6 +14,16 @@ test("isolates every new profile and recruit by service id",async()=>{
  assert.match(recruits,/serviceId:ctx\.service/);
 });
 
+test("discovers only active profiles from the selected service",async()=>{
+ const discover=await read("app/api/services/[service]/discover/route.ts");
+ assert.match(discover,/eq\(serviceProfiles\.serviceId,service\)/);
+ assert.match(discover,/eq\(serviceProfiles\.status,"active"\)/);
+ assert.match(discover,/isNull\(serviceProfiles\.suspendedAt\)/);
+ assert.match(discover,/row\.showGender&&row\.age>=18\?row\.gender:""/);
+ assert.match(discover,/eq\(serviceConnections\.serviceId,service\)/);
+ assert.match(discover,/or\(eq\(serviceConnections\.userAProfileId,own\.id\),eq\(serviceConnections\.userBProfileId,own\.id\)\)/);
+});
+
 test("keeps legal acceptance and minor gender privacy service scoped",async()=>{
  const [schema,profile]=await Promise.all([read("db/schema.ts"),read("app/api/services/[service]/profile/route.ts")]);
  assert.match(schema,/termsVersion: text\("terms_version"\)\.notNull\(\)/);
