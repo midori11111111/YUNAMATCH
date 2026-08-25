@@ -260,6 +260,13 @@
       "when": 1787658695793,
       "tag": "0036_big_madame_hydra",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "6",
+      "when": 1787666815710,
+      "tag": "0037_past_catseye",
+      "breakpoints": true
     }
   ]
 }

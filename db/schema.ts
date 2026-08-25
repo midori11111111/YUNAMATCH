@@ -529,3 +529,114 @@ export const dailyVisitors = sqliteTable(
     index("idx_daily_visitors_day").on(table.day),
   ],
 );
+
+// Shared, service-scoped foundation for VALOMATCH, STAMATE and SHOEN MATE.
+// The existing YUNAMATCH tables stay untouched so a new service can never read
+// or mutate production Unite data by mistake.
+export const serviceProfiles = sqliteTable(
+  "service_profiles",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    serviceId: text("service_id").notNull(),
+    userId: text("user_id").notNull(),
+    displayName: text("display_name").notNull(),
+    gameIdentity: text("game_identity").notNull().default(""),
+    skillTier: text("skill_tier").notNull().default(""),
+    roles: text("roles").notNull().default("[]"),
+    playTimes: text("play_times").notNull().default("[]"),
+    bio: text("bio").notNull().default(""),
+    avatarUrl: text("avatar_url").notNull().default(""),
+    status: text("status").notNull().default("active"),
+    termsVersion: text("terms_version").notNull(),
+    termsAcceptedAt: integer("terms_accepted_at", { mode: "timestamp_ms" }).notNull(),
+    suspendedAt: integer("suspended_at", { mode: "timestamp_ms" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("idx_service_profiles_service_user").on(table.serviceId, table.userId),
+    index("idx_service_profiles_service_status_updated").on(table.serviceId, table.status, table.updatedAt),
+  ],
+);
+
+export const serviceRecruits = sqliteTable(
+  "service_recruits",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    serviceId: text("service_id").notNull(),
+    ownerProfileId: integer("owner_profile_id").notNull().references(() => serviceProfiles.id),
+    mode: text("mode").notNull(),
+    partySize: integer("party_size").notNull(),
+    desiredRoles: text("desired_roles").notNull().default("[]"),
+    startAt: integer("start_at", { mode: "timestamp_ms" }),
+    note: text("note").notNull().default(""),
+    status: text("status").notNull().default("open"),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [
+    index("idx_service_recruits_service_status_created").on(table.serviceId, table.status, table.createdAt),
+    index("idx_service_recruits_owner_created").on(table.ownerProfileId, table.createdAt),
+  ],
+);
+
+export const serviceConnections = sqliteTable(
+  "service_connections",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    serviceId: text("service_id").notNull(),
+    userAProfileId: integer("user_a_profile_id").notNull().references(() => serviceProfiles.id),
+    userBProfileId: integer("user_b_profile_id").notNull().references(() => serviceProfiles.id),
+    status: text("status").notNull().default("active"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+    endedAt: integer("ended_at", { mode: "timestamp_ms" }),
+  },
+  (table) => [
+    index("idx_service_connections_service_created").on(table.serviceId, table.createdAt),
+    index("idx_service_connections_user_a").on(table.userAProfileId, table.createdAt),
+    index("idx_service_connections_user_b").on(table.userBProfileId, table.createdAt),
+  ],
+);
+
+export const serviceMessages = sqliteTable(
+  "service_messages",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    serviceId: text("service_id").notNull(),
+    connectionId: integer("connection_id").notNull().references(() => serviceConnections.id),
+    senderProfileId: integer("sender_profile_id").notNull().references(() => serviceProfiles.id),
+    clientId: text("client_id").notNull(),
+    body: text("body").notNull(),
+    deletedAt: integer("deleted_at", { mode: "timestamp_ms" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("idx_service_messages_sender_client").on(table.senderProfileId, table.clientId),
+    index("idx_service_messages_connection_created").on(table.connectionId, table.createdAt),
+    index("idx_service_messages_service_created").on(table.serviceId, table.createdAt),
+  ],
+);
+
+export const serviceReports = sqliteTable(
+  "service_reports",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    serviceId: text("service_id").notNull(),
+    reporterProfileId: integer("reporter_profile_id").notNull().references(() => serviceProfiles.id),
+    targetProfileId: integer("target_profile_id").notNull().references(() => serviceProfiles.id),
+    connectionId: integer("connection_id").references(() => serviceConnections.id),
+    messageId: integer("message_id").references(() => serviceMessages.id),
+    reason: text("reason").notNull(),
+    details: text("details").notNull().default(""),
+    reportedContent: text("reported_content").notNull().default(""),
+    conversationContext: text("conversation_context").notNull().default("[]"),
+    status: text("status").notNull().default("open"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+    resolvedAt: integer("resolved_at", { mode: "timestamp_ms" }),
+  },
+  (table) => [
+    index("idx_service_reports_service_status_created").on(table.serviceId, table.status, table.createdAt),
+    index("idx_service_reports_target_created").on(table.targetProfileId, table.createdAt),
+  ],
+);

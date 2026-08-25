@@ -1209,6 +1209,9 @@ button { cursor: pointer; }
 .adminServiceGrid article.beta { border-color: #9dc3ef; }.adminServiceGrid article.beta header > b { background: #2874c8; }.adminServiceGrid article.beta header em { color: #1761ac; background: #e3f0ff; }
 .adminServiceGrid article.waiting { border-color: #d4b982; }.adminServiceGrid article.waiting header > b { background: #55404a; color: #e3c38b; }.adminServiceGrid article.waiting header em { color: #7b5713; background: #fff1cf; }
 .adminServiceGrid article p { min-height: 42px; font-size: 12px; line-height: 1.55; }
+.adminServiceMetrics { display: grid; gap: 7px; margin-top: 11px; }
+.adminPage .adminServiceMetrics article { display: grid; grid-template-columns: 1.4fr repeat(5,1fr); align-items: center; gap: 7px; padding: 11px 14px; }
+.adminServiceMetrics strong { font-size: 11px; }.adminServiceMetrics span { color: #7e7684; font-size: 9px; }.adminServiceMetrics span.alert { color: #c62f4e; font-weight: 900; }
 .adminPage > section + section { margin-top: 34px; }
 .adminSectionTitle { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
 .adminSectionTitle small { color: var(--purple); font-size: 9px; font-weight: 950; letter-spacing: 1.4px; }
@@ -1298,6 +1301,7 @@ button { cursor: pointer; }
   .adminPage > header nav { align-items: flex-end; flex-direction: column; }
   .adminPage header h1 { font-size: 22px; }
   .adminServiceGrid { grid-template-columns: 1fr; }
+  .adminPage .adminServiceMetrics article { grid-template-columns: 1fr 1fr 1fr; }.adminServiceMetrics strong { grid-column: 1/-1; }
   .adminStatGrid { grid-template-columns: 1fr 1fr; }
   .adminStatGrid article { min-height: 125px; }
   .adminStatGrid article > strong { font-size: 28px; }
