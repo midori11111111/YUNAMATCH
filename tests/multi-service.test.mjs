@@ -24,6 +24,16 @@ test("discovers only active profiles from the selected service",async()=>{
  assert.match(discover,/or\(eq\(serviceConnections\.userAProfileId,own\.id\),eq\(serviceConnections\.userBProfileId,own\.id\)\)/);
 });
 
+test("uses real account login and persistent onboarding in Stamate",async()=>{
+ const [page,onboarding]=await Promise.all([read("app/brawl-preview/page.tsx"),read("app/service-onboarding.tsx")]);
+ assert.match(page,/fetch\("\/api\/services\/stamate\/profile"\)/);
+ assert.match(page,/\/api\/login\/\$\{x\[2\]\}\?returnTo=/);
+ assert.match(page,/ServiceOnboarding service="stamate"/);
+ assert.match(onboarding,/method:"PUT"/);
+ assert.match(onboarding,/termsAccepted:terms/);
+ assert.match(onboarding,/age>=18&&gender/);
+});
+
 test("keeps legal acceptance and minor gender privacy service scoped",async()=>{
  const [schema,profile]=await Promise.all([read("db/schema.ts"),read("app/api/services/[service]/profile/route.ts")]);
  assert.match(schema,/termsVersion: text\("terms_version"\)\.notNull\(\)/);
