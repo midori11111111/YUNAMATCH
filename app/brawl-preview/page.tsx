@@ -255,6 +255,7 @@ export default function BrawlPreview({
         identityLabel="プレイヤー名・タグ"
         tiers={tiers}
         roles={roles}
+        returnPath={basePath}
         onComplete={(value) => {
           setProfile(value as Profile);
           setAuth("ready");

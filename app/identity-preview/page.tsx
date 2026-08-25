@@ -248,6 +248,7 @@ export default function IdentityPreview({
         identityLabel="ゲーム内プレイヤー名・ID"
         tiers={tiers}
         roles={roles}
+        returnPath={basePath}
         onComplete={(value) => {
           setMe(value as Profile);
           setAuth("ready");

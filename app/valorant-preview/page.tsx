@@ -298,6 +298,7 @@ export default function ValorantPreviewPage({
           "センチネル",
           "指定なし",
         ]}
+        returnPath={basePath}
         onComplete={(value) => {
           setProfileData(value as Profile);
           setAuth("ready");

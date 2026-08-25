@@ -9,6 +9,7 @@ type Props = {
   identityLabel: string;
   tiers: string[];
   roles: string[];
+  returnPath: string;
   onComplete: (profile: unknown) => void;
 };
 const playTimes = [
@@ -28,6 +29,7 @@ export default function ServiceOnboarding({
   identityLabel,
   tiers,
   roles,
+  returnPath,
   onComplete,
 }: Props) {
   const [displayName, setDisplayName] = useState(suggestedName),
@@ -225,7 +227,7 @@ export default function ServiceOnboarding({
           </button>
           <a
             className={styles.signout}
-            href={`/api/auth/signout?callbackUrl=${encodeURIComponent(`/${service === "stamate" ? "brawl-preview" : service === "valomatch" ? "valorant-preview" : "identity-preview"}`)}`}
+            href={`/api/auth/signout?callbackUrl=${encodeURIComponent(returnPath)}`}
           >
             別のアカウントでログイン
           </a>
