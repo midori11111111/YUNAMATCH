@@ -9,6 +9,7 @@ export default function Terms() {
         <nav className="legalNav" aria-label="サービス情報">
           <Link href="/">← サービスへ戻る</Link>
           <Link href="/privacy">プライバシーポリシー</Link>
+          <Link href="/community-guidelines">コミュニティガイドライン</Link>
           <Link href="/legal">規約・安全センター</Link>
           <Link href="/contact">お問い合わせ</Link>
         </nav>

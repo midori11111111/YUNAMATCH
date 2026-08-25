@@ -306,6 +306,7 @@ export default function BrawlPreview() {
           <p className={styles.terms}>
             続けることで<a href="/legal?service=stamate">利用条件・安全方針</a>
             と<a href="/privacy">プライバシーポリシー</a>に同意します。
+            <a href="/community-guidelines">コミュニティガイドライン</a>も確認してください。
           </p>
           <footer>UNOFFICIAL COMMUNITY SERVICE · BY YUNAMATCH</footer>
         </section>

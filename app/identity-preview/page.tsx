@@ -293,6 +293,7 @@ export default function IdentityPreview() {
               続けることで
               <a href="/legal?service=shoenmate">利用条件・安全方針</a>と
               <a href="/privacy">プライバシーポリシー</a>に同意します。
+              <a href="/community-guidelines">コミュニティガイドライン</a>も確認してください。
             </p>
           </section>
         </div>

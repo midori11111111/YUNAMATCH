@@ -168,6 +168,7 @@ export default function LegalCenter() {
           <p>
             <Link href="/terms">共通利用規約</Link>{" "}
             <Link href="/privacy">プライバシーポリシー</Link>{" "}
+            <Link href="/community-guidelines">コミュニティガイドライン</Link>{" "}
             <Link href="/contact">お問い合わせ</Link>
           </p>
           <p className={styles.note}>

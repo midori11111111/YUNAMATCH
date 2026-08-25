@@ -65,3 +65,13 @@ test("admin launch readiness exposes booleans without leaking configured values"
   assert.doesNotMatch(source, /value:process\.env/);
   assert.match(await read("app/admin/admin-panel.tsx"), /公開準備チェック/);
 });
+
+test("community safety rules and moderation appeals are publicly documented", async () => {
+  const source = await read("app/community-guidelines/page.tsx");
+  assert.match(source, /恋愛、異性交際、面会、性的な目的では利用できません/);
+  assert.match(source, /18歳未満の利用者へ外部連絡先や面会を求めてはいけません/);
+  assert.match(source, /通報された発言と確認に必要な前後の範囲だけを確認/);
+  assert.match(source, /違反時の対応と異議申立て/);
+  for (const page of ["app/legal/page.tsx", "app/terms/page.tsx", "app/privacy/page.tsx"])
+    assert.match(await read(page), /community-guidelines/);
+});

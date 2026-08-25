@@ -357,7 +357,7 @@ export default function ValorantPreviewPage() {
             続けることで、
             <a href="/legal?service=valomatch">利用条件・安全方針</a>と
             <a href="/privacy">プライバシーポリシー</a>
-            に同意します。Riot連携は審査承認後、本人が許可した情報だけを取得します。
+            に同意します。<a href="/community-guidelines">コミュニティガイドライン</a>も確認してください。Riot連携は審査承認後、本人が許可した情報だけを取得します。
           </p>
           <div className={styles.unofficial}>
             非公式コミュニティサービス · BY YUNAMATCH
