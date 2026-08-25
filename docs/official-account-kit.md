@@ -12,6 +12,14 @@
 
 IDの空き状況と商標・各社ポリシーは作成直前に再確認する。ゲーム名や権利者名をID・ロゴに直接含めず、プロフィールで「非公式」と明記する。バロマッチの表示名・IDはRiotの審査回答を優先し、回答前に固定しない。
 
+## 独自アイコン候補
+
+- バロマッチ: `public/brand/valomatch-social-avatar.png`
+- スタメイト: `public/brand/stamate-social-avatar.png`
+- 荘園メイト: `public/brand/shoenmate-social-avatar.png`
+
+いずれもゲーム公式素材・公式ロゴ・キャラクターを入力に使わず生成した候補。実際のアカウント設定前に、縮小表示と各社ポリシーを運営者が最終確認する。
+
 ## 共通プロフィール文
 
 ```text
