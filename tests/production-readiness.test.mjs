@@ -107,3 +107,19 @@ test("public service portal exposes launch state and only allowlisted social lin
   assert.match(source, /恋愛・異性交際目的の利用を禁止/);
   assert.match(source, /公式サービスではありません/);
 });
+
+test("material terms updates require every existing service profile to consent again", async () => {
+  const profileRoute = compact(
+      await read("app/api/services/[service]/profile/route.ts"),
+    ),
+    gate = compact(await read("app/service-terms-gate.tsx")),
+    config = await read("lib/service-config.ts");
+  assert.match(profileRoute, /termsCurrent:/);
+  assert.match(profileRoute, /row\.termsVersion===serviceConfig\[ctx\.service\]\.termsVersion/);
+  assert.match(profileRoute, /exportasyncfunctionPATCH/);
+  assert.match(profileRoute, /termsAcceptedAt:now/);
+  assert.match(gate, /method:"PATCH"/);
+  assert.match(gate, /更新された利用条件とプライバシーポリシーに同意します/);
+  for (const service of ["valomatch", "stamate", "shoenmate"])
+    assert.match(config, new RegExp(`${service}:\\{name:.*termsVersion:"2026-08-26-v2"`));
+});

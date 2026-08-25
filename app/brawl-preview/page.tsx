@@ -2,6 +2,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import styles from "./brawl-preview.module.css";
 import ServiceOnboarding from "../service-onboarding";
+import ServiceTermsGate from "../service-terms-gate";
 import ServiceReportButton from "../service-report-button";
 import ServiceAccountSafety from "../service-account-safety";
 import ServiceDiscordLink from "../service-discord-link";
@@ -62,7 +63,7 @@ export default function BrawlPreview({
   basePath?: string;
 }) {
   const [auth, setAuth] = useState<
-      "checking" | "guest" | "onboarding" | "ready"
+      "checking" | "guest" | "onboarding" | "consent" | "ready"
     >("checking"),
     [profile, setProfile] = useState<Profile | null>(null),
     [suggestedName, setSuggestedName] = useState(""),
@@ -114,7 +115,7 @@ export default function BrawlPreview({
         setSuggestedName(data.suggestedName || "");
         if (data.profile) {
           setProfile(data.profile);
-          setAuth("ready");
+          setAuth(data.termsCurrent ? "ready" : "consent");
         } else setAuth("onboarding");
       })
       .catch(() => live && setAuth("guest"));
@@ -258,6 +259,14 @@ export default function BrawlPreview({
           setProfile(value as Profile);
           setAuth("ready");
         }}
+      />
+    );
+  if (auth === "consent")
+    return (
+      <ServiceTermsGate
+        service="stamate"
+        name="スタメイト"
+        onComplete={() => setAuth("ready")}
       />
     );
   if (auth === "guest")

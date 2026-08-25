@@ -69,7 +69,47 @@ export async function GET(
   return Response.json({
     profile: row ? output(row) : null,
     suggestedName: ctx.user.displayName,
+    termsCurrent:
+      !row || row.termsVersion === serviceConfig[ctx.service].termsVersion,
   });
+}
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ service: string }> },
+) {
+  const ctx = await context(params);
+  if (!ctx)
+    return Response.json(
+      { error: "ログインまたはサービスIDを確認してください" },
+      { status: 401 },
+    );
+  const body = (await request.json().catch(() => ({}))) as {
+    termsAccepted?: unknown;
+  };
+  if (body.termsAccepted !== true)
+    return Response.json(
+      { error: "最新の利用条件への同意が必要です" },
+      { status: 400 },
+    );
+  const now = new Date(),
+    [row] = await getDb()
+      .update(serviceProfiles)
+      .set({
+        termsVersion: serviceConfig[ctx.service].termsVersion,
+        termsAcceptedAt: now,
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(serviceProfiles.serviceId, ctx.service),
+          eq(serviceProfiles.userId, ctx.user.userId),
+        ),
+      )
+      .returning();
+  if (!row)
+    return Response.json({ error: "プロフィールがありません" }, { status: 404 });
+  return Response.json({ profile: output(row), termsCurrent: true });
 }
 
 export async function PUT(

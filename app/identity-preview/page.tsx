@@ -2,6 +2,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import styles from "./identity-preview.module.css";
 import ServiceOnboarding from "../service-onboarding";
+import ServiceTermsGate from "../service-terms-gate";
 import ServiceReportButton from "../service-report-button";
 import ServiceAccountSafety from "../service-account-safety";
 import ServiceDiscordLink from "../service-discord-link";
@@ -54,7 +55,7 @@ export default function IdentityPreview({
   basePath?: string;
 }) {
   const [auth, setAuth] = useState<
-      "checking" | "guest" | "onboarding" | "ready"
+      "checking" | "guest" | "onboarding" | "consent" | "ready"
     >("checking"),
     [me, setMe] = useState<Profile | null>(null),
     [suggestedName, setSuggestedName] = useState(""),
@@ -100,7 +101,7 @@ export default function IdentityPreview({
         setSuggestedName(data.suggestedName || "");
         if (data.profile) {
           setMe(data.profile);
-          setAuth("ready");
+          setAuth(data.termsCurrent ? "ready" : "consent");
         } else setAuth("onboarding");
       })
       .catch(() => live && setAuth("guest"));
@@ -251,6 +252,14 @@ export default function IdentityPreview({
           setMe(value as Profile);
           setAuth("ready");
         }}
+      />
+    );
+  if (auth === "consent")
+    return (
+      <ServiceTermsGate
+        service="shoenmate"
+        name="荘園メイト"
+        onComplete={() => setAuth("ready")}
       />
     );
   if (auth === "guest")
