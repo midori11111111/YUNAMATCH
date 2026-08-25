@@ -1,172 +1,29 @@
 "use client";
-
-import { useState } from "react";
+import {useState} from "react";
 import styles from "./valorant-preview.module.css";
-
-const flows = [
-  { id: "connect", label: "1. Riot連携" },
-  { id: "profile", label: "2. プロフィール" },
-  { id: "discover", label: "3. 仲間を探す" },
-  { id: "match", label: "4. マッチ後" },
-] as const;
-
-type Flow = (typeof flows)[number]["id"];
-
-const player = {
-  name: "Sora#JP1",
-  rank: "ゴールド 2",
-  roles: ["コントローラー", "センチネル"],
-  modes: ["コンペティティブ", "スイフトプレイ"],
-  times: ["平日 21〜24時", "土日 夜"],
-};
-
-export default function ValorantPreviewPage() {
-  const [flow, setFlow] = useState<Flow>("connect");
-  const [notice, setNotice] = useState("");
-
-  const move = (next: Flow, message = "") => {
-    setFlow(next);
-    setNotice(message);
-  };
-
-  return (
-    <main className={styles.page}>
-      <header className={styles.header}>
-        <a className={styles.brand} href="#top" aria-label="V-MATCH prototype top">
-          <span className={styles.mark}>⚡</span>
-          <span>
-            <strong>V-MATCH</strong>
-            <small>バロマッチ · BY YUNAMATCH</small>
-          </span>
-        </a>
-        <span className={styles.reviewBadge}>RIOT REVIEW BUILD</span>
-      </header>
-
-      <section className={styles.hero} id="top">
-        <div>
-          <p className={styles.eyebrow}>FIND THE RIGHT TEAMMATE</p>
-          <h1>ランクだけではなく、<br />プレイスタイルでつながる。</h1>
-          <p className={styles.lead}>
-            VALORANTを一緒にプレイする仲間を、ランク・ロール・モード・時間帯・VC方針から探す非公式LFGサービスです。
-          </p>
-        </div>
-        <div className={styles.safetyCard}>
-          <span>設計原則</span>
-          <strong>Opt-in only</strong>
-          <p>個人戦績は、本人がRiotアカウントを連携し、公開に同意した場合だけ表示します。</p>
-        </div>
-      </section>
-
-      <nav className={styles.flowNav} aria-label="審査用ユーザーフロー">
-        {flows.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={flow === item.id ? styles.activeFlow : ""}
-            onClick={() => move(item.id)}
-          >
-            {item.label}
-          </button>
-        ))}
-      </nav>
-
-      <section className={styles.demoShell} aria-live="polite">
-        <div className={styles.phone}>
-          <div className={styles.phoneTop}><span>9:41</span><span>● ●●</span></div>
-
-          {flow === "connect" && (
-            <div className={styles.screen}>
-              <p className={styles.screenKicker}>STEP 1</p>
-              <h2>Riotアカウントを連携</h2>
-              <p className={styles.screenText}>ランクや戦績をプロフィールに表示するには、本人の許可が必要です。</p>
-              <div className={styles.consentBox}>
-                <strong>連携によって公開される情報</strong>
-                <ul>
-                  <li>Riot ID・現在のランク</li>
-                  <li>本人が公開を選んだ戦績</li>
-                  <li>最終更新日時</li>
-                </ul>
-                <p>連携はいつでも設定から解除でき、解除後は戦績を非公開にします。</p>
-              </div>
-              <button className={styles.primary} type="button" onClick={() => move("profile", "デモ：本人がデータ公開に同意しました")}>Riotアカウントで続ける</button>
-              <button className={styles.textButton} type="button" onClick={() => move("profile", "デモ：戦績を連携せずに続行します")}>戦績を連携せずに続ける</button>
-            </div>
-          )}
-
-          {flow === "profile" && (
-            <div className={styles.screen}>
-              <p className={styles.screenKicker}>STEP 2</p>
-              <h2>プレイスタイルを登録</h2>
-              <div className={styles.formGrid}>
-                <label>Riot ID<input value={player.name} readOnly /></label>
-                <label>ランク<input value={player.rank} readOnly /></label>
-                <fieldset><legend>よく使うロール</legend>{player.roles.map((v) => <span key={v} className={styles.selectedChip}>{v}</span>)}</fieldset>
-                <fieldset><legend>遊びたいモード</legend>{player.modes.map((v) => <span key={v} className={styles.selectedChip}>{v}</span>)}</fieldset>
-                <label>ひとこと<textarea value="雰囲気よく報告しながら上達したいです。負けても引きずりません。" readOnly /></label>
-              </div>
-              <button className={styles.primary} type="button" onClick={() => move("discover", "プロフィールを保存しました")}>保存して仲間を探す</button>
-            </div>
-          )}
-
-          {flow === "discover" && (
-            <div className={styles.screen}>
-              <div className={styles.screenHeading}><div><p className={styles.screenKicker}>DISCOVER</p><h2>おすすめ</h2></div><button type="button" className={styles.filter}>絞り込み</button></div>
-              <article className={styles.playerCard}>
-                <div className={styles.cardVisual}><span className={styles.avatar}>RN</span><div><strong>Rin#TOKYO</strong><small>最終オンライン 12分前</small></div><b>82%</b></div>
-                <div className={styles.cardBody}>
-                  <div className={styles.metaRow}><span>プラチナ 1</span><span>VCあり</span><span>成人</span></div>
-                  <h3>デュエリスト / イニシエーター</h3>
-                  <p>コンペ中心。報告はしっかり、雰囲気は柔らかく遊びたいです。</p>
-                  <div className={styles.chips}><span>平日夜</span><span>コンペ</span><span>固定希望</span></div>
-                  <small className={styles.verified}>✓ Riot連携済み・本人の同意によりランク表示</small>
-                </div>
-              </article>
-              <div className={styles.actions}>
-                <button type="button" className={styles.secondary} onClick={() => setNotice("次の候補を表示します")}>次の人</button>
-                <button type="button" className={styles.like} onClick={() => setNotice("いいねを送りました。相互いいねになるとマッチします")}>♡ いいね</button>
-                <button type="button" className={styles.primary} onClick={() => move("match", "デモ：相互いいねでマッチしました")}>メイト申請</button>
-              </div>
-            </div>
-          )}
-
-          {flow === "match" && (
-            <div className={styles.screen}>
-              <p className={styles.screenKicker}>MATCHED</p>
-              <div className={styles.matchHero}><span className={styles.avatarLarge}>SO</span><span className={styles.matchBolt}>⚡</span><span className={styles.avatarLarge}>RN</span></div>
-              <h2>Rinさんとマッチしました</h2>
-              <p className={styles.screenText}>承認後にサイト内チャットが開きます。ゲームアカウントのログイン情報を要求することはありません。</p>
-              <div className={styles.chatCard}>
-                <div><span className={styles.avatarSmall}>RN</span><p><strong>Rin</strong><br />はじめまして！今夜コンペどうですか？</p></div>
-                <div className={styles.chatActions}><button type="button">プロフィール</button><button type="button">通報・ブロック</button></div>
-              </div>
-              <button className={styles.primary} type="button" onClick={() => setNotice("デモ：チャット画面へ進みます")}>チャットを開く</button>
-              <button className={styles.textButton} type="button" onClick={() => move("discover")}>仲間探しに戻る</button>
-            </div>
-          )}
-
-          {notice && <div className={styles.toast} role="status">{notice}</div>}
-        </div>
-
-        <aside className={styles.reviewPanel}>
-          <p className={styles.eyebrow}>REVIEW NOTES</p>
-          <h2>審査で確認できること</h2>
-          <ol>
-            <li><strong>明示的な同意</strong><span>戦績公開前にRSOによる本人のオプトインを求めます。</span></li>
-            <li><strong>目的を限定</strong><span>ゲーム仲間探しに限定し、対戦中の優位性を与える機能は提供しません。</span></li>
-            <li><strong>公平な検索</strong><span>公式ランク、ロール、時間帯、モード、VC方針で候補を提示します。</span></li>
-            <li><strong>安全な交流</strong><span>通報、ブロック、申請取消、連携解除、アカウント削除を提供します。</span></li>
-          </ol>
-          <div className={styles.notProvided}>
-            <strong>提供しない機能</strong>
-            <p>非公式MMR、試合前の相手調査、リアルタイム助言、ゲームクライアント改変、非公開プレイヤー情報の表示、賭博。</p>
-          </div>
-        </aside>
-      </section>
-
-      <footer className={styles.footer}>
-        <strong>V-MATCH（バロマッチ）｜非公式プロトタイプ</strong>
-        <p>このページはRiot Gamesへの製品登録・審査説明を目的とした試作品です。V-MATCHはYUNAMATCHが運営を予定する非公式LFGサービスです。Riot Gamesは本サービスを承認・支援していません。公式素材は使用していません。</p>
-      </footer>
-    </main>
-  );
+type Provider="discord"|"x"|"line"|"riot"; type Tab="discover"|"recruit"|"chat"|"profile";
+const providers:{id:Provider;name:string;mark:string;note:string}[]=[
+ {id:"riot",name:"Riot Games",mark:"R",note:"戦績・ランクを本人確認付きで表示"},
+ {id:"discord",name:"Discord",mark:"D",note:"VCや普段使うアカウントで続ける"},
+ {id:"x",name:"X",mark:"𝕏",note:"Xのアカウントで続ける"},
+ {id:"line",name:"LINE",mark:"L",note:"LINEのアカウントで続ける"}];
+const tabs:{id:Tab;icon:string;label:string}[]=[{id:"discover",icon:"⌕",label:"さがす"},{id:"recruit",icon:"+",label:"募集"},{id:"chat",icon:"□",label:"やりとり"},{id:"profile",icon:"○",label:"マイページ"}];
+export default function ValorantPreviewPage(){
+ const[signedIn,setSignedIn]=useState(false),[provider,setProvider]=useState<Provider|null>(null),[tab,setTab]=useState<Tab>("discover"),[toast,setToast]=useState(""),[liked,setLiked]=useState(false);
+ const notify=(m:string)=>{setToast(m);window.setTimeout(()=>setToast(""),2600)};
+ const connect=(id:Provider)=>{setProvider(id);setSignedIn(true);setTab("discover");notify(`${providers.find(x=>x.id===id)?.name}で連携しました（デモ）`)};
+ if(!signedIn)return <main className={styles.loginPage}>
+  <section className={styles.loginHero}><div className={styles.logoMark}>V</div><p className={styles.logo}>V-MATCH <small>バロマッチ</small></p><h1>一緒に勝ちたい人が、<br/>ちゃんと見つかる。</h1><p>ランク・ロール・時間帯から、VALORANTを一緒に遊ぶ仲間を探せます。</p><div className={styles.previewFaces}><span>SO</span><span>RN</span><span>YU</span><b>1,200+ PLAYERS</b></div></section>
+  <section className={styles.loginSheet}><span className={styles.sheetHandle}/><p className={styles.kicker}>SELECT ACCOUNT</p><h2>アカウントを選んで続ける</h2><p className={styles.loginCopy}>登録済みの方は同じアカウントを選ぶと、以前のプロフィールを引き継げます。</p><div className={styles.providerGrid}>{providers.map(x=><button key={x.id} className={`${styles.provider} ${styles[x.id]}`} onClick={()=>connect(x.id)}><span>{x.mark}</span><div><strong>{x.name}で続ける</strong><small>{x.note}</small></div><b>›</b></button>)}</div><p className={styles.consent}>続けることで、<a href="/terms">利用規約</a>と<a href="/privacy">プライバシーポリシー</a>に同意します。Riot連携は本人が許可した情報だけを取得し、設定から解除できます。</p><div className={styles.unofficial}>非公式コミュニティサービス · BY YUNAMATCH</div></section>
+ </main>;
+ return <main className={styles.appPage}>
+  <header className={styles.appHeader}><button className={styles.miniAvatar} onClick={()=>setTab("profile")}>SO</button><div className={styles.appBrand}><span>V</span><div><strong>V-MATCH</strong><small>PLAY TOGETHER</small></div></div><button className={styles.bell} onClick={()=>notify("新しいいいねが2件あります")}>♢<b>2</b></button></header>
+  <section className={styles.appContent}>
+  {tab==="discover"&&<><div className={styles.discoverTop}><div><p>あなたへのおすすめ</p><h1>プレイヤーを探す</h1></div><button onClick={()=>notify("ランク・ロール・時間帯で絞り込めます")}>☷ 絞り込み</button></div><article className={styles.profileCard}><div className={styles.cardTop}><span className={styles.online}>● オンライン</span><b>相性 88%</b></div><div className={styles.agentShape}><span>RN</span><i/><i/><i/></div><div className={styles.cardInfo}><div className={styles.playerTitle}><span>RN</span><div><h2>Rin#TOKYO</h2><p>プラチナ 1 · 20代 · VCあり</p></div><button aria-label="プロフィール詳細">ⓘ</button></div><div className={styles.roleTags}><span>コントローラー</span><span>センチネル</span><span>平日夜</span></div><p className={styles.bio}>コンペ中心。報告はしっかり、雰囲気は柔らかく遊びたいです。負けても引きずりません。</p><small className={styles.riotVerified}>✓ Riot連携済み · 本人の同意によりランク表示</small></div><div className={styles.cardActions}><button onClick={()=>notify("次のプレイヤーを表示します")}>× 次の人</button><button className={liked?styles.liked:""} onClick={()=>{setLiked(true);notify("いいねを送りました。相互いいねでマッチします")}}>♡ {liked?"送信済み":"いいね"}</button><button onClick={()=>{setTab("chat");notify("メイト申請を送りました")}}>⚡ メイト申請</button></div></article></>}
+  {tab==="recruit"&&<section className={styles.simpleScreen}><p className={styles.kicker}>FIND A PARTY</p><h1>今すぐ遊べる募集</h1><article className={styles.recruitCard}><div><span>コンペティティブ</span><small>3分前</small></div><h2>あと2人でスタート</h2><p>募集者：ゴールド 2 · コントローラー<br/>開始：今から · VC：Discord</p><button onClick={()=>notify("募集へ参加申請しました")}>この募集に参加</button></article><button className={styles.createRecruit} onClick={()=>notify("募集作成画面を開きます")}>＋ 募集を作成</button></section>}
+  {tab==="chat"&&<section className={styles.simpleScreen}><p className={styles.kicker}>MESSAGES</p><h1>やりとり</h1><article className={styles.matchNotice}><span>⚡</span><div><strong>Rinさんへ申請中</strong><p>承認されるとチャットが始まります</p></div><button onClick={()=>notify("申請をキャンセルできます")}>•••</button></article><article className={styles.messageRow}><span>YU</span><div><strong>Yuta#JP1</strong><p>今日21時からコンペ行けます！</p></div><time>12:40</time></article><article className={styles.messageRow}><span>MI</span><div><strong>Mio#GG</strong><p>昨日はありがとうございました</p></div><time>昨日</time></article></section>}
+  {tab==="profile"&&<section className={styles.simpleScreen}><div className={styles.profileHero}><span>SO</span><p className={styles.kicker}>MY PROFILE</p><h1>Sora#JP1</h1><p>ゴールド 2 · コントローラー / センチネル</p></div><div className={styles.stats}><article><b>12</b><small>もらったいいね</small></article><article><b>4</b><small>メイト</small></article><article><b>87%</b><small>プロフィール</small></article></div><article className={styles.accountPanel}><div><strong>連携アカウント</strong><small>{providers.find(x=>x.id===provider)?.name}でログイン中</small></div><button onClick={()=>{setSignedIn(false);setProvider(null)}}>ログアウト</button></article><p className={styles.reviewNote}>審査用デモのため、外部サービスへの実際の認証通信は行いません。</p></section>}
+  </section>
+  <nav className={styles.bottomNav}>{tabs.map(x=><button key={x.id} className={tab===x.id?styles.activeTab:""} onClick={()=>setTab(x.id)}><b>{x.icon}</b><span>{x.label}</span></button>)}</nav>{toast&&<div className={styles.toast}>{toast}</div>}
+ </main>
 }
