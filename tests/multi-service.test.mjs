@@ -4,6 +4,7 @@ import test from "node:test";
 
 const root=new URL("../",import.meta.url);
 const read=path=>readFile(new URL(path,root),"utf8");
+const compact=value=>value.replace(/\s+/g,"");
 
 test("isolates every new profile and recruit by service id",async()=>{
  const [schema,profile,recruits]=await Promise.all([read("db/schema.ts"),read("app/api/services/[service]/profile/route.ts"),read("app/api/services/[service]/recruits/route.ts")]);
@@ -25,10 +26,10 @@ test("discovers only active profiles from the selected service",async()=>{
 });
 
 test("uses real account login and persistent onboarding in Stamate",async()=>{
- const [page,onboarding]=await Promise.all([read("app/brawl-preview/page.tsx"),read("app/service-onboarding.tsx")]);
+ const [rawPage,onboarding]=await Promise.all([read("app/brawl-preview/page.tsx"),read("app/service-onboarding.tsx")]),page=compact(rawPage);
  assert.match(page,/fetch\("\/api\/services\/stamate\/profile"\)/);
  assert.match(page,/\/api\/login\/\$\{x\[2\]\}\?returnTo=/);
- assert.match(page,/ServiceOnboarding service="stamate"/);
+ assert.match(page,/ServiceOnboardingservice="stamate"/);
  assert.match(onboarding,/method:"PUT"/);
  assert.match(onboarding,/termsAccepted:terms/);
  assert.match(onboarding,/age>=18&&gender/);
@@ -43,9 +44,9 @@ test("uses real account login and persistent onboarding in Stamate",async()=>{
 });
 
 test("uses real account login and matching APIs in Valomatch",async()=>{
- const page=await read("app/valorant-preview/page.tsx");
+ const page=compact(await read("app/valorant-preview/page.tsx"));
  assert.match(page,/fetch\("\/api\/services\/valomatch\/profile"\)/);
- assert.match(page,/ServiceOnboarding service="valomatch"/);
+ assert.match(page,/ServiceOnboardingservice="valomatch"/);
  assert.match(page,/fetch\("\/api\/services\/valomatch\/discover"\)/);
  assert.match(page,/fetch\("\/api\/services\/valomatch\/likes"/);
  assert.match(page,/fetch\("\/api\/services\/valomatch\/connections"/);
@@ -60,15 +61,15 @@ test("uses real account login and matching APIs in Valomatch",async()=>{
 });
 
 test("keeps Shoenmate functional but separately scoped while approval is pending",async()=>{
- const page=await read("app/identity-preview/page.tsx");
+ const page=compact(await read("app/identity-preview/page.tsx"));
  assert.match(page,/fetch\("\/api\/services\/shoenmate\/profile"\)/);
- assert.match(page,/ServiceOnboarding service="shoenmate"/);
+ assert.match(page,/ServiceOnboardingservice="shoenmate"/);
  assert.match(page,/fetch\("\/api\/services\/shoenmate\/discover"\)/);
  assert.match(page,/fetch\("\/api\/services\/shoenmate\/likes"/);
  assert.match(page,/fetch\("\/api\/services\/shoenmate\/connections"/);
  assert.match(page,/fetch\("\/api\/services\/shoenmate\/recruits"/);
  assert.match(page,/fetch\("\/api\/services\/shoenmate\/messages"/);
- assert.match(page,/本サービスはNetEase GamesおよびIdentity V／第五人格の公式サービスではありません/);
+ assert.match(page,/本サービスはNetEaseGamesおよびIdentityV／第五人格の公式サービスではありません/);
  assert.doesNotMatch(page,/setLogged\(true\)/);
 });
 
@@ -114,4 +115,21 @@ test("keeps mate requests pending until the recipient acts",async()=>{
  assert.match(connections,/action==="accept"&&incoming/);
  assert.match(connections,/action==="decline"&&incoming/);
  assert.match(connections,/action==="cancel"&&!incoming/);
+});
+
+test("supports scoped reporting and administrator moderation for all three services",async()=>{
+ const [reportApi,adminApi,adminPage,brawl,valo,identity]=await Promise.all([
+  read("app/api/services/[service]/reports/route.ts"),read("app/api/admin/service-reports/route.ts"),read("app/admin/admin-panel.tsx"),read("app/brawl-preview/page.tsx"),read("app/valorant-preview/page.tsx"),read("app/identity-preview/page.tsx")
+ ]);
+ const reportSource=compact(reportApi),adminSource=compact(adminApi);
+ assert.match(reportSource,/eq\(serviceProfiles\.serviceId,service\)/);
+ assert.match(reportSource,/eq\(serviceConnections\.serviceId,service\)/);
+ assert.match(reportSource,/selected\.senderProfileId!==target\.id/);
+ assert.match(reportSource,/conversationContext=JSON\.stringify/);
+ assert.match(adminSource,/requireAdmin/);
+ assert.match(adminSource,/action==="suspend"/);
+ assert.match(adminSource,/action==="restore"/);
+ assert.match(adminSource,/action==="removeImage"/);
+ assert.match(adminPage,/\/api\/admin\/service-reports/);
+ for(const page of [brawl,valo,identity])assert.match(page,/ServiceReportButton/);
 });
