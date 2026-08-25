@@ -59,6 +59,19 @@ test("uses real account login and matching APIs in Valomatch",async()=>{
  assert.doesNotMatch(page,/連携しました（デモ）/);
 });
 
+test("keeps Shoenmate functional but separately scoped while approval is pending",async()=>{
+ const page=await read("app/identity-preview/page.tsx");
+ assert.match(page,/fetch\("\/api\/services\/shoenmate\/profile"\)/);
+ assert.match(page,/ServiceOnboarding service="shoenmate"/);
+ assert.match(page,/fetch\("\/api\/services\/shoenmate\/discover"\)/);
+ assert.match(page,/fetch\("\/api\/services\/shoenmate\/likes"/);
+ assert.match(page,/fetch\("\/api\/services\/shoenmate\/connections"/);
+ assert.match(page,/fetch\("\/api\/services\/shoenmate\/recruits"/);
+ assert.match(page,/fetch\("\/api\/services\/shoenmate\/messages"/);
+ assert.match(page,/本サービスはNetEase GamesおよびIdentity V／第五人格の公式サービスではありません/);
+ assert.doesNotMatch(page,/setLogged\(true\)/);
+});
+
 test("keeps legal acceptance and minor gender privacy service scoped",async()=>{
  const [schema,profile]=await Promise.all([read("db/schema.ts"),read("app/api/services/[service]/profile/route.ts")]);
  assert.match(schema,/termsVersion: text\("terms_version"\)\.notNull\(\)/);
