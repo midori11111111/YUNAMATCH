@@ -8,6 +8,7 @@ const services = [
     x: "VALOMATCH_X_URL",
     discord: "NEXT_PUBLIC_VALOMATCH_DISCORD_URL",
     approval: "VALOMATCH_PUBLIC_RELEASE_APPROVED",
+    reference: "VALOMATCH_APPROVAL_REFERENCE",
     approvalLabel: "Riot公開範囲の確認",
   },
   {
@@ -17,6 +18,7 @@ const services = [
     x: "STAMATE_X_URL",
     discord: "NEXT_PUBLIC_STAMATE_DISCORD_URL",
     approval: "STAMATE_PUBLIC_RELEASE_APPROVED",
+    reference: "STAMATE_APPROVAL_REFERENCE",
     approvalLabel: "Supercellファンコンテンツ方針の最終確認",
   },
   {
@@ -26,6 +28,7 @@ const services = [
     x: "SHOENMATE_X_URL",
     discord: "NEXT_PUBLIC_SHOENMATE_DISCORD_URL",
     approval: "SHOENMATE_PUBLIC_RELEASE_APPROVED",
+    reference: "SHOENMATE_APPROVAL_REFERENCE",
     approvalLabel: "NetEase回答・公開範囲の確認",
   },
 ] as const;
@@ -47,7 +50,11 @@ export async function GET() {
     ["認証シークレット", Boolean(process.env.AUTH_SECRET)],
     ["管理者パスワード", Boolean(process.env.ADMIN_PASSWORD)],
     ["問い合わせメール送信", Boolean(process.env.RESEND_API_KEY && process.env.FEEDBACK_FROM_EMAIL)],
-    ["電気通信事業の追加サービス確認", process.env.TELECOM_SERVICES_CONFIRMED === "true"],
+    [
+      "電気通信事業の追加サービス確認・証跡保存",
+      process.env.TELECOM_SERVICES_CONFIRMED === "true" &&
+        Boolean(process.env.TELECOM_CONFIRMATION_REFERENCE),
+    ],
   ].map(([label, ready]) => ({ label: String(label), ready: Boolean(ready) }));
 
   return Response.json({
@@ -59,7 +66,9 @@ export async function GET() {
         { label: "公式Discord", ready: isHttpsUrl(process.env[service.discord]) },
         {
           label: service.approvalLabel,
-          ready: process.env[service.approval] === "true",
+          ready:
+            process.env[service.approval] === "true" &&
+            Boolean(process.env[service.reference]),
         },
       ];
       return {

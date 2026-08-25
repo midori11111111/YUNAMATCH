@@ -57,10 +57,12 @@ test("admin launch readiness exposes booleans without leaking configured values"
   const source = compact(await read("app/api/admin/readiness/route.ts"));
   assert.match(source, /requireAdmin\(\)/);
   assert.match(source, /TELECOM_SERVICES_CONFIRMED/);
+  assert.match(source, /TELECOM_CONFIRMATION_REFERENCE/);
   for (const service of ["VALOMATCH", "STAMATE", "SHOENMATE"]) {
     assert.match(source, new RegExp(`${service}_SITE_URL`));
     assert.match(source, new RegExp(`${service}_X_URL`));
     assert.match(source, new RegExp(`${service}_PUBLIC_RELEASE_APPROVED`));
+    assert.match(source, new RegExp(`${service}_APPROVAL_REFERENCE`));
   }
   assert.doesNotMatch(source, /value:process\.env/);
   assert.match(await read("app/admin/admin-panel.tsx"), /公開準備チェック/);
