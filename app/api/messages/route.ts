@@ -39,7 +39,8 @@ function serializeMessage(
   return {
     id: row.id,
     clientId: row.clientId,
-    body: row.body,
+    body: row.deletedAt ? "メッセージの送信を取り消しました" : row.body,
+    deleted: Boolean(row.deletedAt),
     sender: userIds.has(row.senderId) ? "me" : "mate",
     kind: row.kind === "play_invite" ? "play_invite" : "text",
     response: row.response,
@@ -312,4 +313,69 @@ export async function PATCH(request: Request) {
     "Play invite response push",
   );
   return Response.json({ message: serializeMessage(updated, aliasSet), lobbyId });
+}
+
+export async function DELETE(request: Request) {
+  const user = await getChatGPTUser();
+  if (!user)
+    return Response.json({ error: "ログインが必要です", signIn }, { status: 401 });
+  if (await isSuspended(user.userId))
+    return Response.json(
+      { error: "このアカウントは現在利用できません" },
+      { status: 403 },
+    );
+  const rateLimit = await checkRateLimit(user.userId, {
+    action: "message-delete",
+    limit: 20,
+    windowMs: 60_000,
+  });
+  if (!rateLimit.allowed) return rateLimitResponse(rateLimit.retryAfter);
+  const payload = (await request.json()) as { messageId?: number };
+  if (!Number.isInteger(payload.messageId) || !payload.messageId)
+    return Response.json(
+      { error: "取り消すメッセージを選んでください" },
+      { status: 400 },
+    );
+  const aliases = await identityAliases(user.userId, user.email);
+  const aliasSet = new Set(aliases);
+  const [message] = await getDb()
+    .select()
+    .from(messages)
+    .where(eq(messages.id, payload.messageId))
+    .limit(1);
+  if (
+    !message ||
+    message.kind !== "text" ||
+    !aliasSet.has(message.senderId)
+  )
+    return Response.json(
+      { error: "このメッセージは取り消せません" },
+      { status: 403 },
+    );
+  const connection = await getMembership(message.connectionId, aliases);
+  if (!connection)
+    return Response.json({ error: "マッチが見つかりません" }, { status: 404 });
+  if (message.deletedAt)
+    return Response.json({ message: serializeMessage(message, aliasSet) });
+  const [updated] = await getDb()
+    .update(messages)
+    .set({ deletedAt: new Date() })
+    .where(and(eq(messages.id, message.id), isNull(messages.deletedAt)))
+    .returning();
+  if (!updated)
+    return Response.json({ error: "取消結果を確認できませんでした" }, { status: 409 });
+  const mateId = aliasSet.has(connection.userAId)
+    ? connection.userBId
+    : connection.userAId;
+  runInBackground(
+    sendPush(
+      mateId,
+      "メッセージが取り消されました",
+      "チャットの表示を更新しました",
+      `/?chat=${connection.id}`,
+      { type: "chat-refresh", connectionId: connection.id },
+    ),
+    "Message deletion refresh",
+  );
+  return Response.json({ message: serializeMessage(updated, aliasSet) });
 }

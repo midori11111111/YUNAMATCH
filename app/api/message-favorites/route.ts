@@ -1,4 +1,4 @@
-import { and, desc, eq, or } from "drizzle-orm";
+import { and, desc, eq, isNull, or } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { connections, messageFavorites, messages } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
@@ -39,6 +39,7 @@ export async function GET(request: Request) {
     .where(and(
       eq(messageFavorites.userId, user.userId),
       eq(messageFavorites.connectionId, connectionId),
+      isNull(messages.deletedAt),
     ))
     .orderBy(desc(messageFavorites.createdAt))
     .limit(100);
@@ -68,7 +69,7 @@ export async function POST(request: Request) {
     .from(messages)
     .where(eq(messages.id, payload.messageId))
     .limit(1);
-  if (!message)
+  if (!message || message.deletedAt)
     return Response.json({ error: "メッセージが見つかりません" }, { status: 404 });
   const connection = await getMembership(message.connectionId, user.userId);
   if (!connection)

@@ -938,6 +938,31 @@ test("keeps chat and recruiting responsive under load", async () => {
   assert.match(background, /context\.waitUntil/);
 });
 
+test("lets senders retract text messages for both chat participants", async () => {
+  const [app, messagesApi, connectionsApi, favoritesApi, schema, migration] =
+    await Promise.all([
+      readFile(new URL("app/match-app.tsx", root), "utf8"),
+      readFile(new URL("app/api/messages/route.ts", root), "utf8"),
+      readFile(new URL("app/api/connections/route.ts", root), "utf8"),
+      readFile(new URL("app/api/message-favorites/route.ts", root), "utf8"),
+      readFile(new URL("db/schema.ts", root), "utf8"),
+      readFile(new URL("drizzle/0036_big_madame_hydra.sql", root), "utf8"),
+    ]);
+
+  assert.match(schema, /deletedAt: integer\("deleted_at"/);
+  assert.match(migration, /ALTER TABLE `messages` ADD `deleted_at` integer/);
+  assert.match(messagesApi, /export async function DELETE/);
+  assert.match(messagesApi, /!aliasSet\.has\(message\.senderId\)/);
+  assert.match(messagesApi, /message\.kind !== "text"/);
+  assert.match(messagesApi, /メッセージの送信を取り消しました/);
+  assert.match(messagesApi, /type: "chat-refresh"/);
+  assert.match(connectionsApi, /latest\.deletedAt/);
+  assert.match(favoritesApi, /isNull\(messages\.deletedAt\)/);
+  assert.match(app, /className="cancelMessageButton"/);
+  assert.match(app, /相手側からも本文が見えなくなります/);
+  assert.match(app, /message\.deleted/);
+});
+
 test("reduces repeated identity and chat database work during traffic spikes", async () => {
   const [schema, migration, aliases, auth, accountLinks] = await Promise.all([
     readFile(new URL("db/schema.ts", root), "utf8"),

@@ -981,6 +981,9 @@ button { cursor: pointer; }
 .messageBubble.me .messageUtilityActions { justify-content: flex-end; }
 .reportMessageButton { border: 0; padding: 3px 0; color: #a39ba8; background: transparent; font-size: 7px; font-weight: 800; }
 .reportMessageButton { text-decoration: underline; text-underline-offset: 2px; }
+.cancelMessageButton { border: 0; padding: 3px 0; color: #928a99; background: transparent; font-size: 7px; font-weight: 800; text-decoration: underline; text-underline-offset: 2px; }
+.cancelMessageButton:disabled { opacity: .55; }
+.messageBubble.me p.deletedMessageBody { color: #958e9b; border: 1px solid #ddd7e2; background: #f7f5f8; font-style: italic; }
 .playInviteMessage .messageUtilityActions { justify-content: flex-end; margin-right: 0; }
 .playInviteMessage { width: min(88%, 330px); flex-shrink: 0; align-self: flex-start; overflow: hidden; border: 1px solid #e2dcf3; border-radius: 18px; padding: 13px; background: linear-gradient(145deg,#fff,#f7f3ff); box-shadow: 0 8px 20px #49367112; }
 .playInviteMessage.me { align-self: flex-end; }

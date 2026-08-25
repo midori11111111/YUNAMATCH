@@ -263,6 +263,7 @@ export const messages = sqliteTable(
     kind: text("kind").notNull().default("text"),
     response: text("response"),
     respondedAt: integer("responded_at", { mode: "timestamp_ms" }),
+    deletedAt: integer("deleted_at", { mode: "timestamp_ms" }),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   },
   (table) => [

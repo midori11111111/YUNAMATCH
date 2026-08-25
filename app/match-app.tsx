@@ -188,6 +188,7 @@ type ChatMessage = {
   canRespond?: boolean;
   createdAt: string;
   read?: boolean;
+  deleted?: boolean;
   delivery?: "sending" | "failed";
 };
 const chatNotificationKey = (connection: Connection) =>
@@ -880,6 +881,9 @@ export default function MatchApp({
   const [messageText, setMessageText] = useState("");
   const messageTypingRef = useRef(false);
   const [messageSending, setMessageSending] = useState(false);
+  const [messageCancellingId, setMessageCancellingId] = useState<number | null>(
+    null,
+  );
   const [playInviteSending, setPlayInviteSending] = useState(false);
   const [respondingInviteId, setRespondingInviteId] = useState<number | null>(
     null,
@@ -3950,6 +3954,41 @@ export default function MatchApp({
       setMessageSending(false);
     }
   };
+  const cancelMessage = async (message: ChatMessage) => {
+    if (
+      !selectedConnection ||
+      message.sender !== "me" ||
+      message.kind === "play_invite" ||
+      message.deleted ||
+      message.id < 1 ||
+      messageCancellingId !== null
+    )
+      return;
+    if (!window.confirm("このメッセージの送信を取り消しますか？\n相手側からも本文が見えなくなります。"))
+      return;
+    setMessageCancellingId(message.id);
+    try {
+      const response = await fetch("/api/messages", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ messageId: message.id }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        notify(data.error || "メッセージを取り消せませんでした");
+        return;
+      }
+      setMessages((rows) =>
+        rows.map((row) => (row.id === message.id ? data.message : row)),
+      );
+      void loadConnections();
+      notify("メッセージの送信を取り消しました");
+    } catch {
+      notify("通信が不安定です。もう一度お試しください");
+    } finally {
+      setMessageCancellingId(null);
+    }
+  };
   const sendPlayInvite = async () => {
     const connectionId = selectedConnection?.id;
     if (!connectionId || playInviteSending) return;
@@ -6106,7 +6145,9 @@ export default function MatchApp({
                             id={`message-${message.id}`}
                             className={`messageBubble ${message.sender}`}
                           >
-                            <p>{message.body}</p>
+                            <p className={message.deleted ? "deletedMessageBody" : ""}>
+                              {message.body}
+                            </p>
                             <small>
                               {new Date(message.createdAt).toLocaleString(
                                 "ja-JP",
@@ -6139,6 +6180,23 @@ export default function MatchApp({
                                 再入力
                               </button>
                             )}
+                            {message.sender === "me" &&
+                              !message.delivery &&
+                              !message.deleted &&
+                              message.id > 0 && (
+                                <div className="messageUtilityActions">
+                                  <button
+                                    type="button"
+                                    className="cancelMessageButton"
+                                    onClick={() => void cancelMessage(message)}
+                                    disabled={messageCancellingId === message.id}
+                                  >
+                                    {messageCancellingId === message.id
+                                      ? "取消中…"
+                                      : "送信取消"}
+                                  </button>
+                                </div>
+                              )}
                             {message.sender === "mate" && (
                               <div className="messageUtilityActions">
                               <button

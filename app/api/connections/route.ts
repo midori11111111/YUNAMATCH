@@ -303,6 +303,7 @@ export async function GET(request: Request) {
           .select({
             id: messages.id,
             body: messages.body,
+            deletedAt: messages.deletedAt,
             createdAt: messages.createdAt,
           })
           .from(messages)
@@ -391,8 +392,11 @@ export async function GET(request: Request) {
         pinned: isA ? row.userAPinned : row.userBPinned,
         myRatingScore: myRating?.score || 0,
         myRatingTags,
-        latestMessage:
-          latest?.body ?? "マッチ成立！最初のメッセージを送りましょう",
+        latestMessage: latest
+          ? latest.deletedAt
+            ? "メッセージの送信を取り消しました"
+            : latest.body
+          : "マッチ成立！最初のメッセージを送りましょう",
         latestMessageId: latest?.id ?? null,
         latestAt: latest?.createdAt ?? row.createdAt,
         unreadCount: Math.min(99, unreadCountByConnection.get(row.id) || 0),
