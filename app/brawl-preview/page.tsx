@@ -4,6 +4,7 @@ import styles from "./brawl-preview.module.css";
 import ServiceOnboarding from "../service-onboarding";
 import ServiceReportButton from "../service-report-button";
 import ServiceAccountSafety from "../service-account-safety";
+import ServiceDiscordLink from "../service-discord-link";
 type Tab = "find" | "team" | "chat" | "me";
 type Profile = {
   id?: number;
@@ -512,6 +513,7 @@ export default function BrawlPreview() {
               </div>
               <button onClick={() => setAuth("onboarding")}>編集</button>
             </article>
+            <ServiceDiscordLink service="stamate" />
             <a
               className={styles.logout}
               href="/api/auth/signout?callbackUrl=%2Fbrawl-preview"

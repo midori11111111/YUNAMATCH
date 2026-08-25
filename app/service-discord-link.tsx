@@ -1,0 +1,53 @@
+"use client";
+
+import type { ServiceId } from "@/lib/service-config";
+
+const inviteUrls: Record<ServiceId, string | undefined> = {
+  valomatch: process.env.NEXT_PUBLIC_VALOMATCH_DISCORD_URL,
+  stamate: process.env.NEXT_PUBLIC_STAMATE_DISCORD_URL,
+  shoenmate: process.env.NEXT_PUBLIC_SHOENMATE_DISCORD_URL,
+};
+
+export function isDiscordInviteUrl(value: string | undefined) {
+  if (!value) return false;
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === "https:" &&
+      (url.hostname === "discord.gg" || url.hostname === "discord.com") &&
+      (url.hostname === "discord.gg" || url.pathname.startsWith("/invite/"))
+    );
+  } catch {
+    return false;
+  }
+}
+
+export default function ServiceDiscordLink({ service }: { service: ServiceId }) {
+  const url = inviteUrls[service];
+  if (!isDiscordInviteUrl(url)) return null;
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 9,
+        width: "100%",
+        boxSizing: "border-box",
+        marginTop: 14,
+        padding: "14px 16px",
+        borderRadius: 14,
+        background: "#5865f2",
+        color: "#fff",
+        textDecoration: "none",
+        fontWeight: 900,
+        fontSize: 13,
+      }}
+    >
+      <span aria-hidden="true">D</span> 公式Discordに参加
+    </a>
+  );
+}

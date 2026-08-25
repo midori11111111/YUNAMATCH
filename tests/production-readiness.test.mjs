@@ -40,3 +40,15 @@ test("administrator backup retains core relationship and privacy tables", async 
     assert.match(source, new RegExp(`db\\.select\\(\\)\\.from\\(${table}\\)`));
   }
 });
+
+test("service Discord links are allowlisted and hidden until configured", async () => {
+  const source = compact(await read("app/service-discord-link.tsx"));
+  assert.match(source, /url\.protocol==="https:"/);
+  assert.match(source, /url\.hostname==="discord\.gg"/);
+  assert.match(source, /url\.hostname==="discord\.com"/);
+  assert.match(source, /url\.pathname\.startsWith\("\/invite\/"\)/);
+  assert.match(source, /if\(!isDiscordInviteUrl\(url\)\)returnnull/);
+  for (const page of ["valorant-preview", "brawl-preview", "identity-preview"]) {
+    assert.match(await read(`app/${page}/page.tsx`), /<ServiceDiscordLink service=/);
+  }
+});

@@ -4,6 +4,7 @@ import styles from "./valorant-preview.module.css";
 import ServiceOnboarding from "../service-onboarding";
 import ServiceReportButton from "../service-report-button";
 import ServiceAccountSafety from "../service-account-safety";
+import ServiceDiscordLink from "../service-discord-link";
 type Provider = "discord" | "x" | "line" | "riot";
 type Tab = "discover" | "recruit" | "chat" | "profile";
 type Profile = {
@@ -568,6 +569,7 @@ export default function ValorantPreviewPage() {
               </div>
               <button onClick={() => setAuth("onboarding")}>編集</button>
             </article>
+            <ServiceDiscordLink service="valomatch" />
             <a
               className={styles.reviewNote}
               href="/api/auth/signout?callbackUrl=%2Fvalorant-preview"

@@ -4,6 +4,7 @@ import styles from "./identity-preview.module.css";
 import ServiceOnboarding from "../service-onboarding";
 import ServiceReportButton from "../service-report-button";
 import ServiceAccountSafety from "../service-account-safety";
+import ServiceDiscordLink from "../service-discord-link";
 type Tab = "find" | "recruit" | "chat" | "profile";
 type Profile = {
   id?: number;
@@ -496,6 +497,7 @@ export default function IdentityPreview() {
               >
                 プロフィールを編集
               </button>
+              <ServiceDiscordLink service="shoenmate" />
               <a href="/api/auth/signout?callbackUrl=%2Fidentity-preview">
                 ログアウト
               </a>
