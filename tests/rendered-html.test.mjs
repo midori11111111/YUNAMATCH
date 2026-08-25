@@ -1292,3 +1292,20 @@ test("shows uploaded profile headers to other signed-in users across profile sur
   assert.match(app, /recruitProfileView\.headerUrl/);
   assert.match(app, /matchedProfile\.mateHeaderUrl/);
 });
+
+test("shows the latest trainer name to existing matched mates", async () => {
+  const [connectionsApi, availabilityApi] = await Promise.all([
+    readFile(new URL("app/api/connections/route.ts", root), "utf8"),
+    readFile(new URL("app/api/availability/route.ts", root), "utf8"),
+  ]);
+
+  assert.match(
+    connectionsApi,
+    /mateName:\s*mateProfile\?\.trainerName \|\|\s*\(isA \? row\.userBName : row\.userAName\)/,
+  );
+  assert.match(availabilityApi, /trainerName: profiles\.trainerName/);
+  assert.match(
+    availabilityApi,
+    /profileByMate\.get\(relation\.mateId\)\?\.trainerName \|\| relation\.mateName/,
+  );
+});

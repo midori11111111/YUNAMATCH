@@ -141,14 +141,18 @@ export async function GET(request: Request) {
       Promise.all(
         chunked(mateIds).map((ids) =>
           db
-            .select({ userId: profiles.userId, avatarUrl: profiles.avatarUrl })
+            .select({
+              userId: profiles.userId,
+              trainerName: profiles.trainerName,
+              avatarUrl: profiles.avatarUrl,
+            })
             .from(profiles)
             .where(inArray(profiles.userId, ids)),
         ),
       ),
     ]);
-    const avatarByMate = new Map(
-      profileGroups.flat().map((row) => [row.userId, row.avatarUrl || ""]),
+    const profileByMate = new Map(
+      profileGroups.flat().map((row) => [row.userId, row]),
     );
     const mates = slotGroups
       .flat()
@@ -164,8 +168,9 @@ export async function GET(request: Request) {
           ...serialize(slot),
           connectionId: relation.connectionId,
           mateId: relation.mateId,
-          mateName: relation.mateName,
-          mateAvatarUrl: avatarByMate.get(relation.mateId) || "",
+          mateName:
+            profileByMate.get(relation.mateId)?.trainerName || relation.mateName,
+          mateAvatarUrl: profileByMate.get(relation.mateId)?.avatarUrl || "",
         }];
       })
       .slice(0, 200);

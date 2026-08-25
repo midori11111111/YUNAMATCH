@@ -362,7 +362,9 @@ export async function GET(request: Request) {
         archived: isA ? row.userAArchived : row.userBArchived,
         recruitId: row.recruitId,
         mateId,
-        mateName: isA ? row.userBName : row.userAName,
+        mateName:
+          mateProfile?.trainerName ||
+          (isA ? row.userBName : row.userAName),
         mateAvatarUrl: mateAvatars.get(mateId) || "",
         mateHeaderUrl: mateProfile?.headerUrl || "",
         matePokemon: isA ? row.userBPokemon : row.userAPokemon,
