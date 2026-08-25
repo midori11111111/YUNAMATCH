@@ -1,6 +1,6 @@
-import { and, asc, eq, gte, inArray, or } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, or } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { availabilitySlots, connections, profiles } from "../../../db/schema";
+import { availabilitySlots, blocks, connections, profiles } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { identityAliases } from "../../../lib/account-aliases";
 import { checkRateLimit, rateLimitResponse } from "../../../lib/rate-limit";
@@ -10,6 +10,14 @@ const allowedMatchTypes = new Set(["ランクマッチ", "カジュアル"]);
 const allowedVisibility = new Set(["mates", "favorites", "private"]);
 const dayPattern = /^\d{4}-\d{2}-\d{2}$/;
 const timePattern = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+const queryChunkSize = 80;
+
+function chunked<T>(values: T[], size = queryChunkSize) {
+  const groups: T[][] = [];
+  for (let index = 0; index < values.length; index += size)
+    groups.push(values.slice(index, index + size));
+  return groups;
+}
 
 function todayInJapan() {
   return new Date(Date.now() + 9 * 60 * 60_000).toISOString().slice(0, 10);
@@ -37,6 +45,7 @@ export async function GET(request: Request) {
   const connectionId = Number(
     new URL(request.url).searchParams.get("connectionId"),
   );
+  const scope = new URL(request.url).searchParams.get("scope");
   const [profile] = await db
     .select({ userId: profiles.userId })
     .from(profiles)
@@ -54,6 +63,114 @@ export async function GET(request: Request) {
     )
     .orderBy(asc(availabilitySlots.day), asc(availabilitySlots.startTime))
     .limit(40);
+
+  if (scope === "mates") {
+    const [connectionRows, blockRows] = await Promise.all([
+      db
+        .select({
+          id: connections.id,
+          userAId: connections.userAId,
+          userBId: connections.userBId,
+          userAName: connections.userAName,
+          userBName: connections.userBName,
+          userAPinned: connections.userAPinned,
+          userBPinned: connections.userBPinned,
+          userAArchived: connections.userAArchived,
+          userBArchived: connections.userBArchived,
+        })
+        .from(connections)
+        .where(
+          or(
+            inArray(connections.userAId, aliases),
+            inArray(connections.userBId, aliases),
+          ),
+        )
+        .orderBy(desc(connections.id))
+        .limit(300),
+      db
+        .select({ blockerId: blocks.blockerId, blockedId: blocks.blockedId })
+        .from(blocks)
+        .where(
+          or(
+            inArray(blocks.blockerId, aliases),
+            inArray(blocks.blockedId, aliases),
+          ),
+        ),
+    ]);
+    const hidden = new Set(
+      blockRows.map((row) =>
+        aliasSet.has(row.blockerId) ? row.blockedId : row.blockerId,
+      ),
+    );
+    const relationByMate = new Map<
+      string,
+      { connectionId: number; mateId: string; mateName: string; favoriteViewer: boolean }
+    >();
+    for (const row of connectionRows) {
+      const isA = aliasSet.has(row.userAId);
+      const mateId = isA ? row.userBId : row.userAId;
+      const archived = isA ? row.userAArchived : row.userBArchived;
+      if (archived || hidden.has(mateId) || relationByMate.has(mateId)) continue;
+      relationByMate.set(mateId, {
+        connectionId: row.id,
+        mateId,
+        mateName: isA ? row.userBName : row.userAName,
+        // お気に入り限定は、予定の持ち主が閲覧者をピン留めしている場合だけ見せる。
+        favoriteViewer: isA ? row.userBPinned : row.userAPinned,
+      });
+    }
+    const mateIds = [...relationByMate.keys()];
+    if (!mateIds.length)
+      return Response.json({ own: own.map(serialize), mates: [] });
+    const [slotGroups, profileGroups] = await Promise.all([
+      Promise.all(
+        chunked(mateIds).map((ids) =>
+          db
+            .select()
+            .from(availabilitySlots)
+            .where(
+              and(
+                inArray(availabilitySlots.userId, ids),
+                gte(availabilitySlots.day, todayInJapan()),
+              ),
+            )
+            .orderBy(asc(availabilitySlots.day), asc(availabilitySlots.startTime))
+            .limit(200),
+        ),
+      ),
+      Promise.all(
+        chunked(mateIds).map((ids) =>
+          db
+            .select({ userId: profiles.userId, avatarUrl: profiles.avatarUrl })
+            .from(profiles)
+            .where(inArray(profiles.userId, ids)),
+        ),
+      ),
+    ]);
+    const avatarByMate = new Map(
+      profileGroups.flat().map((row) => [row.userId, row.avatarUrl || ""]),
+    );
+    const mates = slotGroups
+      .flat()
+      .flatMap((slot) => {
+        const relation = relationByMate.get(slot.userId);
+        if (
+          !relation ||
+          slot.visibility === "private" ||
+          (slot.visibility === "favorites" && !relation.favoriteViewer)
+        )
+          return [];
+        return [{
+          ...serialize(slot),
+          connectionId: relation.connectionId,
+          mateId: relation.mateId,
+          mateName: relation.mateName,
+          mateAvatarUrl: avatarByMate.get(relation.mateId) || "",
+        }];
+      })
+      .slice(0, 200);
+    return Response.json({ own: own.map(serialize), mates });
+  }
 
   if (!Number.isInteger(connectionId) || connectionId < 1)
     return Response.json({ own: own.map(serialize), mate: [] });

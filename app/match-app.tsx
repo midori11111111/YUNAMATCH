@@ -172,6 +172,12 @@ type AvailabilitySlot = {
   visibility: "mates" | "favorites" | "private";
   note: string;
 };
+type MateAvailabilitySlot = AvailabilitySlot & {
+  connectionId: number;
+  mateId: string;
+  mateName: string;
+  mateAvatarUrl: string;
+};
 type ChatMessage = {
   id: number;
   clientId?: string | null;
@@ -914,9 +920,11 @@ export default function MatchApp({
     userLimit: number;
   } | null>(null);
   const [availabilityOpen, setAvailabilityOpen] = useState(false);
+  const [availabilityHubOpen, setAvailabilityHubOpen] = useState(false);
   const [availabilityTarget, setAvailabilityTarget] = useState<Connection | null>(null);
   const [ownAvailability, setOwnAvailability] = useState<AvailabilitySlot[]>([]);
   const [mateAvailability, setMateAvailability] = useState<AvailabilitySlot[]>([]);
+  const [allMateAvailability, setAllMateAvailability] = useState<MateAvailabilitySlot[]>([]);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [availabilitySaving, setAvailabilitySaving] = useState(false);
   const [availabilityDeletingId, setAvailabilityDeletingId] = useState<number | null>(null);
@@ -4536,12 +4544,37 @@ export default function MatchApp({
     setAvailabilityOpen(true);
     void loadAvailability(connection);
   };
+  const loadAvailabilityHub = async () => {
+    setAvailabilityLoading(true);
+    try {
+      const response = await fetch("/api/availability?scope=mates", {
+        cache: "no-store",
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        notify(data.error || "プレイ予定を読み込めませんでした");
+        return;
+      }
+      setOwnAvailability(data.own || []);
+      setAllMateAvailability(data.mates || []);
+    } catch {
+      notify("通信が不安定です。もう一度お試しください");
+    } finally {
+      setAvailabilityLoading(false);
+    }
+  };
+  const openAvailabilityHub = () => {
+    setAvailabilityTarget(null);
+    setAvailabilityHubOpen(true);
+    void loadAvailabilityHub();
+  };
   const submitAvailability = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!availabilityTarget || availabilitySaving) return;
+    if ((!availabilityTarget && !availabilityHubOpen) || availabilitySaving) return;
+    const form = event.currentTarget;
     setAvailabilitySaving(true);
     try {
-      const body = Object.fromEntries(new FormData(event.currentTarget));
+      const body = Object.fromEntries(new FormData(form));
       const response = await fetch("/api/availability", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -4552,8 +4585,9 @@ export default function MatchApp({
         notify(data.error || "プレイ予定を登録できませんでした");
         return;
       }
-      event.currentTarget.reset();
-      await loadAvailability(availabilityTarget);
+      form.reset();
+      if (availabilityTarget) await loadAvailability(availabilityTarget);
+      else await loadAvailabilityHub();
       notify("プレイ予定を共有しました");
     } catch {
       notify("通信が不安定です。もう一度お試しください");
@@ -4562,7 +4596,7 @@ export default function MatchApp({
     }
   };
   const deleteAvailability = async (slot: AvailabilitySlot) => {
-    if (!availabilityTarget || availabilityDeletingId !== null) return;
+    if (availabilityDeletingId !== null) return;
     setAvailabilityDeletingId(slot.id);
     try {
       const response = await fetch("/api/availability", {
@@ -6164,6 +6198,18 @@ export default function MatchApp({
                       </button>
                     </div>
                   </div>
+                  <button
+                    type="button"
+                    className="chatScheduleEntry"
+                    onClick={openAvailabilityHub}
+                  >
+                    <span>▦</span>
+                    <div>
+                      <strong>みんなのプレイ予定</strong>
+                      <p>自分の予定を追加・メイトの空いている時間を一覧で確認</p>
+                    </div>
+                    <b>見る&nbsp;›</b>
+                  </button>
                   {connectionsError && connections.length > 0 && (
                     <div className="chatSyncWarning">
                       <span>直前に読み込んだやりとりを表示しています</span>
@@ -9280,6 +9326,183 @@ export default function MatchApp({
             >
               通報・ブロック
             </button>
+          </section>
+        </div>
+      )}
+
+      {availabilityHubOpen && (
+        <div className="modalBackdrop">
+          <button
+            className="backdropDismiss"
+            onClick={() => setAvailabilityHubOpen(false)}
+            aria-label="みんなのプレイ予定を閉じる"
+          />
+          <section className="sheetModal availabilitySheet availabilityHubSheet">
+            <div className="sheetHandle" />
+            <button
+              type="button"
+              className="closeButton"
+              onClick={() => setAvailabilityHubOpen(false)}
+            >
+              ×
+            </button>
+            <small className="modalKicker">MATE SCHEDULES</small>
+            <h2>みんなのプレイ予定</h2>
+            <p className="availabilityLead">
+              メイトが共有している予定をまとめて確認できます。予定の追加もここだけで完了します。
+            </p>
+            {availabilityLoading ? (
+              <div className="availabilityLoading">予定を読み込み中…</div>
+            ) : (
+              <>
+                <section className="availabilitySection allMateAvailabilitySection">
+                  <header>
+                    <div>
+                      <small>MATES</small>
+                      <h3>メイトの予定一覧</h3>
+                    </div>
+                    <span>{allMateAvailability.length}件</span>
+                  </header>
+                  {allMateAvailability.length ? (
+                    <div className="allMateAvailabilityList">
+                      {allMateAvailability.map((slot) => (
+                        <article key={`${slot.mateId}-${slot.id}`}>
+                          <UserAvatar
+                            name={slot.mateName}
+                            src={slot.mateAvatarUrl}
+                            className="availabilityMateAvatar"
+                          />
+                          <div>
+                            <strong>{slot.mateName}</strong>
+                            <time>
+                              {formatAvailabilityDay(slot.day)} {slot.startTime}〜{slot.endTime}
+                            </time>
+                            <small>{slot.matchType}</small>
+                            {slot.note && <p>{slot.note}</p>}
+                          </div>
+                          {connections.some((row) => row.id === slot.connectionId) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const connection = connections.find(
+                                  (row) => row.id === slot.connectionId,
+                                );
+                                if (!connection) return;
+                                setAvailabilityHubOpen(false);
+                                openAvailability(connection);
+                              }}
+                            >
+                              詳細
+                            </button>
+                          )}
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="availabilityEmpty">
+                      メイトが共有している予定はまだありません。
+                    </p>
+                  )}
+                </section>
+                <section className="availabilitySection">
+                  <header>
+                    <div>
+                      <small>MY SCHEDULE</small>
+                      <h3>あなたの共有予定</h3>
+                    </div>
+                    <span>{ownAvailability.length}件</span>
+                  </header>
+                  {ownAvailability.length ? (
+                    <div className="availabilityList ownAvailabilityList">
+                      {ownAvailability.map((slot) => (
+                        <article key={slot.id}>
+                          <time>{formatAvailabilityDay(slot.day)}</time>
+                          <div>
+                            <strong>{slot.startTime}〜{slot.endTime}</strong>
+                            <small>
+                              {slot.matchType} ・ {slot.visibility === "mates"
+                                ? "全メイト"
+                                : slot.visibility === "favorites"
+                                  ? "お気に入り限定"
+                                  : "自分だけ"}
+                            </small>
+                            {slot.note && <p>{slot.note}</p>}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => void deleteAvailability(slot)}
+                            disabled={availabilityDeletingId === slot.id}
+                          >
+                            {availabilityDeletingId === slot.id ? "…" : "削除"}
+                          </button>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="availabilityEmpty">予定を登録してみましょう。</p>
+                  )}
+                </section>
+                <form className="availabilityForm" onSubmit={submitAvailability}>
+                  <div className="availabilityFormHeading">
+                    <small>ADD SCHEDULE</small>
+                    <h3>新しいプレイ予定</h3>
+                  </div>
+                  <label>
+                    遊べる日
+                    <input
+                      type="date"
+                      name="day"
+                      min={availabilityToday}
+                      max={availabilityMaxDay}
+                      defaultValue={availabilityToday}
+                      required
+                    />
+                  </label>
+                  <div className="twoFields">
+                    <label>
+                      開始
+                      <input type="time" name="startTime" defaultValue="20:00" required />
+                    </label>
+                    <label>
+                      終了
+                      <input type="time" name="endTime" defaultValue="22:00" required />
+                    </label>
+                  </div>
+                  <div className="twoFields">
+                    <label>
+                      遊びたいモード
+                      <select name="matchType" defaultValue="ランクマッチ">
+                        <option>ランクマッチ</option>
+                        <option>カジュアル</option>
+                      </select>
+                    </label>
+                    <label>
+                      公開範囲
+                      <select name="visibility" defaultValue="mates">
+                        <option value="mates">すべてのメイト</option>
+                        <option value="favorites">お気に入り限定</option>
+                        <option value="private">自分だけ</option>
+                      </select>
+                    </label>
+                  </div>
+                  <label>
+                    ひとこと <small>任意</small>
+                    <input
+                      type="text"
+                      name="note"
+                      maxLength={80}
+                      placeholder="例：デュオでランク行きたいです"
+                    />
+                  </label>
+                  <p className="availabilityPrivacyNote">
+                    「お気に入り限定」は、あなたが★でピン留めしたメイトだけに表示されます。
+                  </p>
+                  <button className="primaryButton" disabled={availabilitySaving}>
+                    {availabilitySaving ? "登録中…" : "この予定を共有する"}
+                  </button>
+                </form>
+              </>
+            )}
           </section>
         </div>
       )}
