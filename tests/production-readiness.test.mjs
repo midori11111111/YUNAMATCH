@@ -123,3 +123,13 @@ test("material terms updates require every existing service profile to consent a
   for (const service of ["valomatch", "stamate", "shoenmate"])
     assert.match(config, new RegExp(`${service}:\\{name:.*termsVersion:"2026-08-26-v2"`));
 });
+
+test("publishes a traceable privacy request process", async () => {
+  const privacy = await read("app/privacy/page.tsx"),
+    contact = await read("app/contact/page.tsx"),
+    endpoint = await read("app/api/public-support/route.ts");
+  assert.match(privacy, /開示等の請求手続/);
+  assert.match(privacy, /受付番号/);
+  assert.match(contact, /受付番号/);
+  assert.match(endpoint, /ticketId: ticket\.id/);
+});
