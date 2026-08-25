@@ -407,7 +407,88 @@ try {
   const connectionsAfterDeletion = await api("/api/connections", { user: applicant });
   assert.equal(connectionsAfterDeletion.connections.length, 0);
 
-  console.log("✓ 登録→募集→申請→承認→チャット→プレイ招待→回答→プレイ完了→ブロック→退会を確認しました");
+  // The same safety and matching lifecycle must work independently in all
+  // three new services, not only in the original YUNAMATCH tables.
+  const serviceCases = [
+    { id: "valomatch", tier: "ゴールド", role: "コントローラー", mode: "アンレート" },
+    { id: "stamate", tier: "ゴールド", role: "サポート", mode: "トロフィー" },
+    { id: "shoenmate", tier: "サバイバー3段", role: "救助", mode: "マルチ戦" },
+  ];
+  for (const serviceCase of serviceCases) {
+    const first = userHeaders(`e2e-${serviceCase.id}-a`, `${serviceCase.id}-a@example.test`);
+    const second = userHeaders(`e2e-${serviceCase.id}-b`, `${serviceCase.id}-b@example.test`);
+    const serviceProfile = (name) => ({
+      displayName: name,
+      gameIdentity: `${name}#JP1`,
+      skillTier: serviceCase.tier,
+      roles: [serviceCase.role],
+      playTimes: ["平日夜"],
+      age: 20,
+      gender: "回答しない",
+      showGender: false,
+      bio: "通しテスト用プロフィール",
+      avatarUrl: "",
+      termsAccepted: true,
+    });
+    await api(`/api/services/${serviceCase.id}/profile`, {
+      user: first,
+      method: "PUT",
+      body: serviceProfile(`${serviceCase.id}-A`),
+    });
+    await api(`/api/services/${serviceCase.id}/profile`, {
+      user: second,
+      method: "PUT",
+      body: serviceProfile(`${serviceCase.id}-B`),
+    });
+    const discoveredByFirst = await api(`/api/services/${serviceCase.id}/discover`, { user: first });
+    const discoveredBySecond = await api(`/api/services/${serviceCase.id}/discover`, { user: second });
+    const target = discoveredByFirst.profiles.find((row) => row.displayName === `${serviceCase.id}-B`);
+    const reverseTarget = discoveredBySecond.profiles.find((row) => row.displayName === `${serviceCase.id}-A`);
+    assert.ok(target);
+    assert.ok(reverseTarget);
+    await api(`/api/services/${serviceCase.id}/likes`, {
+      user: first,
+      method: "POST",
+      body: { targetProfileId: target.id },
+    });
+    const matched = await api(`/api/services/${serviceCase.id}/likes`, {
+      user: second,
+      method: "POST",
+      body: { targetProfileId: reverseTarget.id },
+    });
+    assert.equal(matched.matched, true);
+    await api(`/api/services/${serviceCase.id}/messages`, {
+      user: first,
+      method: "POST",
+      body: { connectionId: matched.connection.id, body: "よろしくお願いします", clientId: `${serviceCase.id}-message-1` },
+    });
+    const serviceThread = await api(
+      `/api/services/${serviceCase.id}/messages?connectionId=${matched.connection.id}`,
+      { user: second },
+    );
+    assert.equal(serviceThread.messages.at(-1).body, "よろしくお願いします");
+    await api(`/api/services/${serviceCase.id}/safety`, {
+      user: second,
+      method: "POST",
+      body: { targetProfileId: reverseTarget.id },
+    });
+    const hiddenAfterBlock = await api(`/api/services/${serviceCase.id}/connections`, { user: second });
+    assert.equal(hiddenAfterBlock.connections.length, 0);
+    await api(`/api/services/${serviceCase.id}/safety`, {
+      user: second,
+      method: "DELETE",
+      body: { targetProfileId: reverseTarget.id },
+    });
+    await api(`/api/services/${serviceCase.id}/profile`, {
+      user: first,
+      method: "DELETE",
+      body: { confirmation: "削除" },
+    });
+    const deletedServiceProfile = await api(`/api/services/${serviceCase.id}/profile`, { user: first });
+    assert.equal(deletedServiceProfile.profile, null);
+  }
+
+  console.log("✓ YUNAMATCHと3サービスで登録→マッチ→チャット→ブロック→解除→退会を確認しました");
 } finally {
   if (server) server.kill("SIGTERM");
   await rm(temporary, { recursive: true, force: true });
