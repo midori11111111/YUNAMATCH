@@ -32,6 +32,14 @@ test("uses real account login and persistent onboarding in Stamate",async()=>{
  assert.match(onboarding,/method:"PUT"/);
  assert.match(onboarding,/termsAccepted:terms/);
  assert.match(onboarding,/age>=18&&gender/);
+ assert.match(page,/fetch\("\/api\/services\/stamate\/discover"\)/);
+ assert.match(page,/fetch\("\/api\/services\/stamate\/likes"/);
+ assert.match(page,/fetch\("\/api\/services\/stamate\/connections"/);
+ assert.match(page,/fetch\("\/api\/services\/stamate\/recruits"/);
+ assert.match(page,/fetch\("\/api\/services\/stamate\/messages"/);
+ assert.match(page,/act\(item\.id,"accept"\)/);
+ assert.match(page,/act\(item\.id,"decline"\)/);
+ assert.match(page,/act\(item\.id,"cancel"\)/);
 });
 
 test("keeps legal acceptance and minor gender privacy service scoped",async()=>{
