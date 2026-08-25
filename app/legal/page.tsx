@@ -73,6 +73,9 @@ export default function LegalCenter() {
         <Link className={styles.back} href="/">
           ← サービスへ戻る
         </Link>
+        <Link className={styles.back} href="/services">
+          ゲーム別サービス一覧
+        </Link>
         <section className={styles.hero}>
           <small>LEGAL & SAFETY CENTER</small>
           <h1>規約・安全センター</h1>

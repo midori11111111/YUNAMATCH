@@ -97,3 +97,13 @@ test("canonical public service routes preserve their own OAuth return path", asy
     "24e56a35-28ce-467c-8f35-ff6ee089ffd2",
   );
 });
+
+test("public service portal exposes launch state and only allowlisted social links", async () => {
+  const source = compact(await read("app/services/page.tsx"));
+  for (const route of ["/valomatch", "/stamate", "/shoenmate"])
+    assert.match(source, new RegExp(`href:"${route}"`));
+  assert.match(source, /allowedHosts\.includes\(url\.hostname\)/);
+  assert.match(source, /url\.protocol==="https:"/);
+  assert.match(source, /恋愛・異性交際目的の利用を禁止/);
+  assert.match(source, /公式サービスではありません/);
+});

@@ -12,6 +12,7 @@ export default function Privacy() {
           <Link href="/community-guidelines">コミュニティガイドライン</Link>
           <Link href="/legal">規約・安全センター</Link>
           <Link href="/contact">お問い合わせ</Link>
+          <Link href="/services">ゲーム別サービス</Link>
         </nav>
         <h1>プライバシーポリシー</h1>
         <p>最終更新日：2026年8月25日</p>
