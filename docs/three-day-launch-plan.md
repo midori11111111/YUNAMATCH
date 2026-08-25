@@ -33,6 +33,8 @@
 - [ ] iPhone / Android / PCで新規登録、再ログイン、チャット、退会を確認
 - [ ] OAuthのコールバックURL、Cookie、独自ドメインを確認
 
+実機結果は `docs/real-device-release-checklist.md`、外部確認は `docs/external-approval-evidence.md` に記録する。
+
 管理画面の「公開準備チェック」は、サービス別の本番URL・公式X・公式Discord・権利確認と、共通の認証・管理・メール・電気通信事業確認を表示する。秘密情報の値自体は表示しない。
 
 ## 3日目 — 段階公開
