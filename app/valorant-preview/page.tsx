@@ -32,11 +32,11 @@ export default function ValorantPreviewPage() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <a className={styles.brand} href="#top" aria-label="YUNAMATCH VALORANT prototype top">
+        <a className={styles.brand} href="#top" aria-label="V-MATCH prototype top">
           <span className={styles.mark}>⚡</span>
           <span>
-            <strong>YUNAMATCH</strong>
-            <small>VALORANT LFG PROTOTYPE</small>
+            <strong>V-MATCH</strong>
+            <small>バロマッチ · BY YUNAMATCH</small>
           </span>
         </a>
         <span className={styles.reviewBadge}>RIOT REVIEW BUILD</span>
@@ -164,8 +164,8 @@ export default function ValorantPreviewPage() {
       </section>
 
       <footer className={styles.footer}>
-        <strong>非公式プロトタイプ</strong>
-        <p>このページはRiot Gamesへの製品登録・審査説明を目的とした試作品です。Riot Gamesは本サービスを承認・支援していません。公式素材は使用していません。</p>
+        <strong>V-MATCH（バロマッチ）｜非公式プロトタイプ</strong>
+        <p>このページはRiot Gamesへの製品登録・審査説明を目的とした試作品です。V-MATCHはYUNAMATCHが運営を予定する非公式LFGサービスです。Riot Gamesは本サービスを承認・支援していません。公式素材は使用していません。</p>
       </footer>
     </main>
   );

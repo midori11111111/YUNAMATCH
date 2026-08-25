@@ -2,7 +2,7 @@
 
 ## Product name
 
-YUNAMATCH for VALORANT
+V-MATCH (Japanese service name: バロマッチ) by YUNAMATCH
 
 ## Product URL
 
@@ -10,7 +10,7 @@ YUNAMATCH for VALORANT
 
 ## Product description
 
-YUNAMATCH for VALORANT is an unofficial Japanese LFG and teammate discovery service. It helps players find suitable teammates using Riot rank, preferred roles, game modes, available play times, voice-chat preferences, and self-described play style.
+V-MATCH, known in Japanese as バロマッチ, is an unofficial Japanese LFG and teammate discovery service operated under the YUNAMATCH brand. It helps players find suitable teammates using Riot rank, preferred roles, game modes, available play times, voice-chat preferences, and self-described play style.
 
 The product is designed for finding people to play VALORANT with. It is not a dating service and does not promote in-person meetings. Players can create a profile, browse compatible players, send a like or teammate request, match by mutual interest, and communicate through an in-service chat with reporting and blocking controls.
 
@@ -69,11 +69,11 @@ The service uses its own name, logo, user interface, and original visual assets.
 
 The following disclaimer is shown conspicuously:
 
-> YUNAMATCH for VALORANT is an unofficial fan-made LFG service. Riot Games does not endorse or sponsor this project.
+> V-MATCH is an unofficial fan-made LFG service operated by YUNAMATCH. Riot Games does not endorse or sponsor this project.
 
 ## Privacy
 
-Riot-derived data is used only for the purposes explained to the user. API credentials and RSO client secrets are held only on the server. Users can unlink their Riot account and request deletion of their YUNAMATCH account and associated data.
+Riot-derived data is used only for the purposes explained to the user. API credentials and RSO client secrets are held only on the server. Users can unlink their Riot account and request deletion of their V-MATCH account and associated data.
 
 ## Review prototype
 
