@@ -4585,9 +4585,16 @@ export default function MatchApp({
         notify(data.error || "プレイ予定を登録できませんでした");
         return;
       }
+      const savedSlot = data.slot as AvailabilitySlot | undefined;
+      if (savedSlot) {
+        setOwnAvailability((slots) =>
+          [...slots.filter((slot) => slot.id !== savedSlot.id), savedSlot].sort(
+            (a, b) =>
+              `${a.day}T${a.startTime}`.localeCompare(`${b.day}T${b.startTime}`),
+          ),
+        );
+      }
       form.reset();
-      if (availabilityTarget) await loadAvailability(availabilityTarget);
-      else await loadAvailabilityHub();
       notify("プレイ予定を共有しました");
     } catch {
       notify("通信が不安定です。もう一度お試しください");

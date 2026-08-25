@@ -1159,8 +1159,11 @@ test("lets matched users share privacy-controlled play schedules", async () => {
   assert.match(app, /プレイ予定/);
   assert.match(app, /みんなのプレイ予定/);
   assert.match(app, /メイトの予定一覧/);
+  assert.match(app, /className="chatScheduleEntry"/);
   assert.match(app, /openAvailabilityHub/);
   assert.match(app, /const form = event\.currentTarget/);
+  assert.match(app, /setOwnAvailability\(\(slots\) =>/);
+  assert.doesNotMatch(app, /if \(availabilityTarget\) await loadAvailability/);
   assert.match(app, /form\.reset\(\)/);
   assert.match(app, /時間が合いそうです/);
   assert.match(app, /すべてのメイト/);
