@@ -526,7 +526,7 @@ export default function AdminPanel() {
             <p>
               実データ基盤への接続済み。Riot連携だけ審査完了後に有効化します。
             </p>
-            <Link href="/valorant-preview">確認する</Link>
+            <Link href="/valomatch">確認する</Link>
           </article>
           <article className="beta">
             <header>
@@ -538,7 +538,7 @@ export default function AdminPanel() {
               <em>BETA</em>
             </header>
             <p>Supercell非公式表記を掲載し、独立データ基盤へ接続済みです。</p>
-            <Link href="/brawl-preview">確認する</Link>
+            <Link href="/stamate">確認する</Link>
           </article>
           <article className="waiting">
             <header>
@@ -550,7 +550,7 @@ export default function AdminPanel() {
               <em>HOLD</em>
             </header>
             <p>機能実装済み。書面回答待ちのため一般公開は停止しています。</p>
-            <Link href="/identity-preview">確認する</Link>
+            <Link href="/shoenmate">確認する</Link>
           </article>
         </div>
         {serviceStats.length > 0 && (

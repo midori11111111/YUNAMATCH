@@ -48,7 +48,11 @@ const tiers = [
     "ハンター6段以上",
   ],
   roles = ["救助", "牽制", "補助", "解読", "ハンター", "指定なし"];
-export default function IdentityPreview() {
+export default function IdentityPreview({
+  basePath = "/identity-preview",
+}: {
+  basePath?: string;
+}) {
   const [auth, setAuth] = useState<
       "checking" | "guest" | "onboarding" | "ready"
     >("checking"),
@@ -278,7 +282,7 @@ export default function IdentityPreview() {
               <button
                 key={item[1]}
                 onClick={() => {
-                  location.href = `/api/login/${item[2]}?returnTo=${encodeURIComponent("/identity-preview")}`;
+                  location.href = `/api/login/${item[2]}?returnTo=${encodeURIComponent(basePath)}`;
                 }}
               >
                 <b style={{ background: item[3] }}>{item[0]}</b>
@@ -499,7 +503,7 @@ export default function IdentityPreview() {
                 プロフィールを編集
               </button>
               <ServiceDiscordLink service="shoenmate" />
-              <a href="/api/auth/signout?callbackUrl=%2Fidentity-preview">
+              <a href={`/api/auth/signout?callbackUrl=${encodeURIComponent(basePath)}`}>
                 ログアウト
               </a>
               <ServiceAccountSafety service="shoenmate" onNotice={say} />

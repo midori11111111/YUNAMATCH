@@ -62,7 +62,11 @@ const tabs: { id: Tab; icon: string; label: string }[] = [
   { id: "chat", icon: "□", label: "やりとり" },
   { id: "profile", icon: "○", label: "マイページ" },
 ];
-export default function ValorantPreviewPage() {
+export default function ValorantPreviewPage({
+  basePath = "/valorant-preview",
+}: {
+  basePath?: string;
+}) {
   const [auth, setAuth] = useState<
       "checking" | "guest" | "onboarding" | "ready"
     >("checking"),
@@ -127,7 +131,7 @@ export default function ValorantPreviewPage() {
       return;
     }
     const authProvider = id === "x" ? "twitter" : id;
-    location.href = `/api/login/${authProvider}?returnTo=${encodeURIComponent("/valorant-preview")}`;
+    location.href = `/api/login/${authProvider}?returnTo=${encodeURIComponent(basePath)}`;
   };
   const current = profiles[0],
     removeCurrent = () => setProfiles((value) => value.slice(1));
@@ -572,7 +576,7 @@ export default function ValorantPreviewPage() {
             <ServiceDiscordLink service="valomatch" />
             <a
               className={styles.reviewNote}
-              href="/api/auth/signout?callbackUrl=%2Fvalorant-preview"
+              href={`/api/auth/signout?callbackUrl=${encodeURIComponent(basePath)}`}
             >
               ログアウト
             </a>

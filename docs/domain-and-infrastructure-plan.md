@@ -6,11 +6,13 @@
 
 新しい独立ドメインを急いで3個購入せず、まず既存の `yunamatch.com` と同じ認証・データ基盤で限定公開する。
 
-- バロマッチ: `https://yunamatch.com/valorant-preview`
-- スタメイト: `https://yunamatch.com/brawl-preview`
-- 荘園メイト: `https://yunamatch.com/identity-preview`（権利者回答前はプレビューのみ）
+- バロマッチ: `https://yunamatch.com/valomatch`
+- スタメイト: `https://yunamatch.com/stamate`
+- 荘園メイト: `https://yunamatch.com/shoenmate`（権利者回答前はプレビューのみ）
 - 共通規約・安全センター: `https://yunamatch.com/legal`
 - 共通運営画面: `https://yunamatch.com/admin`
+
+従来の `/valorant-preview`、`/brawl-preview`、`/identity-preview` も審査URL・既存リンク互換のため残す。新規告知では正式URLだけを使用する。
 
 理由:
 
@@ -79,4 +81,3 @@ Cloudflare Registrarはレジストリ原価で購入・更新できるが、登
 - [ ] 荘園メイトは回答が来るまで一般登録を開かない
 - [ ] バロマッチはRiotの製品ステータスと許可機能を確認
 - [ ] スタメイトは公式素材・広告・有料機能がないことを確認
-

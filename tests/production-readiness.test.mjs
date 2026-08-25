@@ -77,3 +77,23 @@ test("community safety rules and moderation appeals are publicly documented", as
   for (const page of ["app/legal/page.tsx", "app/terms/page.tsx", "app/privacy/page.tsx"])
     assert.match(await read(page), /community-guidelines/);
 });
+
+test("canonical public service routes preserve their own OAuth return path", async () => {
+  const routes = [
+    ["valomatch", "ValorantPreviewPage"],
+    ["stamate", "BrawlPreview"],
+    ["shoenmate", "IdentityPreview"],
+  ];
+  for (const [route, component] of routes) {
+    const source = compact(await read(`app/${route}/page.tsx`));
+    assert.match(source, new RegExp(`<${component}basePath="/${route}"/>`));
+  }
+  for (const page of ["valorant-preview", "brawl-preview", "identity-preview"]) {
+    const source = await read(`app/${page}/page.tsx`);
+    assert.match(source, /encodeURIComponent\(basePath\)/);
+  }
+  assert.equal(
+    (await read("public/valomatch/riot.txt")).trim(),
+    "24e56a35-28ce-467c-8f35-ff6ee089ffd2",
+  );
+});

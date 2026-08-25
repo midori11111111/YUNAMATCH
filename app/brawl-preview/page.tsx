@@ -56,7 +56,11 @@ const tiers = [
     "マスター",
   ],
   roles = ["アタッカー", "タンク", "サポート", "コントロール", "指定なし"];
-export default function BrawlPreview() {
+export default function BrawlPreview({
+  basePath = "/brawl-preview",
+}: {
+  basePath?: string;
+}) {
   const [auth, setAuth] = useState<
       "checking" | "guest" | "onboarding" | "ready"
     >("checking"),
@@ -292,7 +296,7 @@ export default function BrawlPreview() {
             <button
               key={x[1]}
               onClick={() => {
-                location.href = `/api/login/${x[2]}?returnTo=${encodeURIComponent("/brawl-preview")}`;
+                location.href = `/api/login/${x[2]}?returnTo=${encodeURIComponent(basePath)}`;
               }}
             >
               <b style={{ background: x[3] }}>{x[0]}</b>
@@ -517,7 +521,7 @@ export default function BrawlPreview() {
             <ServiceDiscordLink service="stamate" />
             <a
               className={styles.logout}
-              href="/api/auth/signout?callbackUrl=%2Fbrawl-preview"
+              href={`/api/auth/signout?callbackUrl=${encodeURIComponent(basePath)}`}
             >
               ログアウト
             </a>
