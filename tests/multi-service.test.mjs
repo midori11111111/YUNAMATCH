@@ -49,6 +49,12 @@ test("uses real account login and matching APIs in Valomatch",async()=>{
  assert.match(page,/fetch\("\/api\/services\/valomatch\/discover"\)/);
  assert.match(page,/fetch\("\/api\/services\/valomatch\/likes"/);
  assert.match(page,/fetch\("\/api\/services\/valomatch\/connections"/);
+ assert.match(page,/fetch\("\/api\/services\/valomatch\/recruits"/);
+ assert.match(page,/fetch\(`\/api\/services\/valomatch\/messages\?connectionId=/);
+ assert.match(page,/fetch\("\/api\/services\/valomatch\/messages"/);
+ assert.match(page,/act\(item\.id,"accept"\)/);
+ assert.match(page,/act\(item\.id,"decline"\)/);
+ assert.match(page,/act\(item\.id,"cancel"\)/);
  assert.match(page,/Riot連携（審査中）/);
  assert.doesNotMatch(page,/連携しました（デモ）/);
 });
