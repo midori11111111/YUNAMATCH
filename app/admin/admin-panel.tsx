@@ -141,6 +141,17 @@ type ServiceAuditLog = {
   detail: string;
   createdAt: string;
 };
+type ServiceAdminUser = {
+  id: number;
+  serviceId: string;
+  displayName: string;
+  gameIdentity: string;
+  skillTier: string;
+  avatarUrl: string;
+  age: number;
+  suspendedAt: string | null;
+  reportCount: number;
+};
 
 const rate = (value: number) => `${value.toFixed(1)}%`;
 const ageHours = (value: string) =>
@@ -157,6 +168,13 @@ export default function AdminPanel() {
     [serviceSchemaReady, setServiceSchemaReady] = useState(false);
   const [serviceReports, setServiceReports] = useState<ServiceReport[]>([]),
     [serviceAuditLogs, setServiceAuditLogs] = useState<ServiceAuditLog[]>([]);
+  const [serviceUserQuery, setServiceUserQuery] = useState(""),
+    [serviceUserFilter, setServiceUserFilter] = useState(""),
+    [serviceUserResults, setServiceUserResults] = useState<ServiceAdminUser[]>(
+      [],
+    ),
+    [serviceUserNotice, setServiceUserNotice] = useState(""),
+    [serviceUserBusy, setServiceUserBusy] = useState(0);
   const [userQuery, setUserQuery] = useState(""),
     [userResults, setUserResults] = useState<AdminUser[]>([]),
     [userSearchLoading, setUserSearchLoading] = useState(false),
@@ -255,6 +273,70 @@ export default function AdminPanel() {
         action,
       }),
     });
+    load();
+  };
+  const searchServiceUsers = async () => {
+    const query = serviceUserQuery.trim();
+    if (!query)
+      return setServiceUserNotice("表示名またはゲームIDを入力してください");
+    setServiceUserNotice("");
+    const params = new URLSearchParams({ q: query });
+    if (serviceUserFilter) params.set("service", serviceUserFilter);
+    const response = await fetch(`/api/admin/service-users?${params}`, {
+        cache: "no-store",
+      }),
+      data = await response.json();
+    if (!response.ok)
+      return setServiceUserNotice(data.error || "検索できませんでした");
+    setServiceUserResults(data.users || []);
+  };
+  const actServiceUser = async (
+    target: ServiceAdminUser,
+    action: "suspend" | "restore" | "delete",
+  ) => {
+    let confirmation: string | undefined;
+    if (action === "delete") {
+      const entered = window.prompt(
+        `${target.displayName}さんの${target.serviceId}内データを完全に削除します。\n続けるには表示名を入力してください。`,
+      );
+      if (entered === null) return;
+      confirmation = entered;
+    } else if (
+      action === "suspend" &&
+      !window.confirm(
+        `${target.displayName}さんを停止し、公開中の募集を終了しますか？`,
+      )
+    )
+      return;
+    setServiceUserBusy(target.id);
+    setServiceUserNotice("");
+    const response = await fetch("/api/admin/service-users", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          service: target.serviceId,
+          profileId: target.id,
+          action,
+          confirmation,
+        }),
+      }),
+      data = await response.json();
+    setServiceUserBusy(0);
+    if (!response.ok)
+      return setServiceUserNotice(data.error || "操作できませんでした");
+    setServiceUserResults((rows) =>
+      action === "delete"
+        ? rows.filter((row) => row.id !== target.id)
+        : rows.map((row) =>
+            row.id === target.id
+              ? {
+                  ...row,
+                  suspendedAt: action === "suspend" ? data.suspendedAt : null,
+                }
+              : row,
+          ),
+    );
+    setServiceUserNotice(`${target.displayName}さんの操作を完了しました`);
     load();
   };
   const searchUsers = async () => {
@@ -471,6 +553,79 @@ export default function AdminPanel() {
             ))}
           </div>
         )}
+      </section>
+      <section>
+        <div className="adminSectionTitle">
+          <div>
+            <small>MULTI SERVICE USERS</small>
+            <h2>3サービスのユーザー検索</h2>
+          </div>
+        </div>
+        <div className="adminUserSearchForm">
+          <select
+            value={serviceUserFilter}
+            onChange={(event) => setServiceUserFilter(event.target.value)}
+            aria-label="サービス"
+          >
+            <option value="">全サービス</option>
+            <option value="valomatch">バロマッチ</option>
+            <option value="stamate">スタメイト</option>
+            <option value="shoenmate">荘園メイト</option>
+          </select>
+          <input
+            value={serviceUserQuery}
+            onChange={(event) => setServiceUserQuery(event.target.value)}
+            onKeyDown={(event) =>
+              event.key === "Enter" && void searchServiceUsers()
+            }
+            placeholder="表示名またはゲームID"
+          />
+          <button onClick={() => void searchServiceUsers()}>検索</button>
+        </div>
+        {serviceUserNotice && <p>{serviceUserNotice}</p>}
+        <div className="adminUserSearchResults">
+          {serviceUserResults.map((user) => (
+            <article key={`${user.serviceId}-${user.id}`}>
+              <div className="adminReportUser">
+                {user.avatarUrl ? (
+                  <img src={user.avatarUrl} alt="" />
+                ) : (
+                  <span>{user.displayName.slice(0, 1)}</span>
+                )}
+                <div>
+                  <strong>{user.displayName}</strong>
+                  <small>
+                    {user.serviceId}・{user.gameIdentity}・{user.skillTier}
+                    ・通報 {user.reportCount}
+                  </small>
+                </div>
+                <em className={user.suspendedAt ? "alert" : "onTime"}>
+                  {user.suspendedAt ? "停止中" : "利用中"}
+                </em>
+              </div>
+              <div>
+                <button
+                  disabled={serviceUserBusy === user.id}
+                  onClick={() =>
+                    void actServiceUser(
+                      user,
+                      user.suspendedAt ? "restore" : "suspend",
+                    )
+                  }
+                >
+                  {user.suspendedAt ? "停止を解除" : "アカウント停止"}
+                </button>
+                <button
+                  className="danger"
+                  disabled={serviceUserBusy === user.id}
+                  onClick={() => void actServiceUser(user, "delete")}
+                >
+                  アカウント削除
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
       </section>
       <section>
         <div className="adminSectionTitle">

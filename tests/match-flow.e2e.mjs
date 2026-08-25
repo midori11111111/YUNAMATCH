@@ -440,6 +440,28 @@ try {
       method: "PUT",
       body: serviceProfile(`${serviceCase.id}-B`),
     });
+    const serviceAdminSearch = await fetch(
+      `${base}/api/admin/service-users?q=${encodeURIComponent(`${serviceCase.id}-B`)}&service=${serviceCase.id}`,
+      { headers: { cookie: adminCookie } },
+    );
+    assert.equal(serviceAdminSearch.status, 200);
+    const serviceAdminUsers = await serviceAdminSearch.json();
+    assert.equal(serviceAdminUsers.users.length, 1);
+    assert.equal(serviceAdminUsers.users[0].serviceId, serviceCase.id);
+    if (serviceCase.id === "valomatch") {
+      for (const action of ["suspend", "restore"]) {
+        const moderation = await fetch(`${base}/api/admin/service-users`, {
+          method: "PATCH",
+          headers: { cookie: adminCookie, "content-type": "application/json" },
+          body: JSON.stringify({
+            service: serviceCase.id,
+            profileId: serviceAdminUsers.users[0].id,
+            action,
+          }),
+        });
+        assert.equal(moderation.status, 200);
+      }
+    }
     const discoveredByFirst = await api(`/api/services/${serviceCase.id}/discover`, { user: first });
     const discoveredBySecond = await api(`/api/services/${serviceCase.id}/discover`, { user: second });
     const target = discoveredByFirst.profiles.find((row) => row.displayName === `${serviceCase.id}-B`);

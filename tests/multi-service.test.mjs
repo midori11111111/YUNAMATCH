@@ -172,3 +172,20 @@ test("supports service-scoped account deletion and audited moderation",async()=>
  assert.match(safetyUi,/ブロックを解除しました/);
  assert.match(safetyUi,/このサービスから退会/);
 });
+
+test("lets administrators search and moderate every service account",async()=>{
+ const [api,admin]=(
+  await Promise.all([
+   read("app/api/admin/service-users/route.ts"),
+   read("app/admin/admin-panel.tsx")
+  ])
+ ).map(compact);
+ assert.match(api,/requireAdmin/);
+ assert.match(api,/like\(serviceProfiles\.displayName/);
+ assert.match(api,/like\(serviceProfiles\.gameIdentity/);
+ assert.match(api,/\["suspend","restore","delete"\]\.includes\(action\)/);
+ assert.match(api,/db\.insert\(serviceAdminAuditLogs\)/);
+ assert.match(admin,/\/api\/admin\/service-users/);
+ assert.match(admin,/3サービスのユーザー検索/);
+ assert.match(admin,/アカウント削除/);
+});
