@@ -281,6 +281,13 @@
       "when": 1787667137163,
       "tag": "0039_flippant_the_leader",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "6",
+      "when": 1787667380889,
+      "tag": "0040_lying_black_cat",
+      "breakpoints": true
     }
   ]
 }

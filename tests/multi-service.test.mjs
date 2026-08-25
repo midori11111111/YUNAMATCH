@@ -37,10 +37,23 @@ test("scopes connections and messages to both the service and a participant",asy
  assert.match(messages,/or\(eq\(serviceConnections\.userAProfileId,profile\.id\),eq\(serviceConnections\.userBProfileId,profile\.id\)\)/);
 });
 
-test("deduplicates matches and client message retries",async()=>{
- const [schema,connections,messages]=await Promise.all([read("db/schema.ts"),read("app/api/services/[service]/connections/route.ts"),read("app/api/services/[service]/messages/route.ts")]);
+test("deduplicates likes, matches, requests, and client message retries",async()=>{
+ const [schema,connections,likes,messages]=await Promise.all([read("db/schema.ts"),read("app/api/services/[service]/connections/route.ts"),read("app/api/services/[service]/likes/route.ts"),read("app/api/services/[service]/messages/route.ts")]);
  assert.match(schema,/uniqueIndex\("idx_service_connections_service_pair"\)/);
+ assert.match(schema,/uniqueIndex\("idx_service_likes_service_pair"\)/);
  assert.match(schema,/uniqueIndex\("idx_service_messages_sender_client"\)/);
- assert.match(connections,/onConflictDoNothing\(\{target:\[serviceConnections\.serviceId,serviceConnections\.pairKey\]\}\)/);
+ assert.match(connections,/onConflictDoUpdate\(\{target:\[serviceConnections\.serviceId,serviceConnections\.pairKey\]/);
+ assert.match(likes,/onConflictDoUpdate\(\{\s*target:\[serviceLikes\.serviceId,serviceLikes\.senderProfileId,serviceLikes\.recipientProfileId\]/);
+ assert.match(likes,/eq\(serviceLikes\.senderProfileId,target\.id\).*eq\(serviceLikes\.recipientProfileId,ctx\.profile\.id\)/s);
+ assert.match(likes,/matched:true,connection/);
  assert.match(messages,/onConflictDoNothing\(\{target:\[serviceMessages\.senderProfileId,serviceMessages\.clientId\]\}\)/);
+});
+
+test("keeps mate requests pending until the recipient acts",async()=>{
+ const connections=await read("app/api/services/[service]/connections/route.ts");
+ assert.match(connections,/requesterProfileId:ctx\.profile\.id/);
+ assert.match(connections,/status:"pending"/);
+ assert.match(connections,/action==="accept"&&incoming/);
+ assert.match(connections,/action==="decline"&&incoming/);
+ assert.match(connections,/action==="cancel"&&!incoming/);
 });

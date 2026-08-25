@@ -590,6 +590,7 @@ export const serviceConnections = sqliteTable(
     id: integer("id").primaryKey({ autoIncrement: true }),
     serviceId: text("service_id").notNull(),
     pairKey: text("pair_key").notNull(),
+    requesterProfileId: integer("requester_profile_id").notNull().references(() => serviceProfiles.id),
     userAProfileId: integer("user_a_profile_id").notNull().references(() => serviceProfiles.id),
     userBProfileId: integer("user_b_profile_id").notNull().references(() => serviceProfiles.id),
     status: text("status").notNull().default("active"),
@@ -601,6 +602,22 @@ export const serviceConnections = sqliteTable(
     index("idx_service_connections_service_created").on(table.serviceId, table.createdAt),
     index("idx_service_connections_user_a").on(table.userAProfileId, table.createdAt),
     index("idx_service_connections_user_b").on(table.userBProfileId, table.createdAt),
+  ],
+);
+
+export const serviceLikes = sqliteTable(
+  "service_likes",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    serviceId: text("service_id").notNull(),
+    senderProfileId: integer("sender_profile_id").notNull().references(() => serviceProfiles.id),
+    recipientProfileId: integer("recipient_profile_id").notNull().references(() => serviceProfiles.id),
+    status: text("status").notNull().default("active"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("idx_service_likes_service_pair").on(table.serviceId, table.senderProfileId, table.recipientProfileId),
+    index("idx_service_likes_recipient_status_created").on(table.serviceId, table.recipientProfileId, table.status, table.createdAt),
   ],
 );
 
