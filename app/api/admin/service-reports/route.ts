@@ -38,7 +38,9 @@ export async function GET() {
       try {
         const parsed = JSON.parse(row.conversationContext);
         if (Array.isArray(parsed)) context = parsed;
-      } catch {}
+      } catch {
+        // Invalid legacy context is treated as an empty, non-viewable excerpt.
+      }
       return {
         ...row,
         targetName: target?.displayName || "退会ユーザー",

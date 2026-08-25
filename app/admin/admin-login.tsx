@@ -42,11 +42,12 @@ export default function AdminLogin() {
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             autoComplete="current-password"
-            autoFocus
             required
           />
           {error && <p className="adminLoginError">{error}</p>}
-          <button disabled={sending}>{sending ? "確認中…" : "管理画面を開く"}</button>
+          <button disabled={sending}>
+            {sending ? "確認中…" : "管理画面を開く"}
+          </button>
         </form>
         <Link href="/">YUNAMATCHへ戻る</Link>
       </section>

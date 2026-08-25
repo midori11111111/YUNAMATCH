@@ -166,8 +166,8 @@ export default function LegalCenter() {
         <section className={styles.card}>
           <h2>正式文書とお問い合わせ</h2>
           <p>
-            <Link href="/terms">共通利用規約</Link>　
-            <Link href="/privacy">プライバシーポリシー</Link>　
+            <Link href="/terms">共通利用規約</Link>{" "}
+            <Link href="/privacy">プライバシーポリシー</Link>{" "}
             <Link href="/contact">お問い合わせ</Link>
           </p>
           <p className={styles.note}>

@@ -26,7 +26,7 @@ test("discovers only active profiles from the selected service",async()=>{
 });
 
 test("uses real account login and persistent onboarding in Stamate",async()=>{
- const [rawPage,onboarding]=await Promise.all([read("app/brawl-preview/page.tsx"),read("app/service-onboarding.tsx")]),page=compact(rawPage);
+ const [rawPage,rawOnboarding]=await Promise.all([read("app/brawl-preview/page.tsx"),read("app/service-onboarding.tsx")]),page=compact(rawPage),onboarding=compact(rawOnboarding);
  assert.match(page,/fetch\("\/api\/services\/stamate\/profile"\)/);
  assert.match(page,/\/api\/login\/\$\{x\[2\]\}\?returnTo=/);
  assert.match(page,/ServiceOnboardingservice="stamate"/);

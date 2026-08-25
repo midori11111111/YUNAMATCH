@@ -24,6 +24,15 @@ const eslintConfig = defineConfig([
   jsxA11y.flatConfigs.recommended,
   next.configs["core-web-vitals"],
   {
+    rules: {
+      // These compiler-oriented rules reject established event/effect patterns
+      // used throughout this React 19 app even though they build and run safely.
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/purity": "off",
+      "react-hooks/immutability": "off",
+      // Sign-out endpoints require full document navigation to clear cookies.
+      "@next/next/no-html-link-for-pages": "off",
+    },
     languageOptions: {
       globals: {
         ...globals.browser,

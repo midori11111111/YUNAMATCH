@@ -13,7 +13,10 @@ import {
   useRef,
   useState,
 } from "react";
-import { filterDiscoverCandidates, type DiscoverActivityFilter } from "../lib/discover-filter";
+import {
+  filterDiscoverCandidates,
+  type DiscoverActivityFilter,
+} from "../lib/discover-filter";
 import { rankOptions } from "../lib/ranks";
 import {
   pokemonRole,
@@ -193,7 +196,13 @@ type ChatMessage = {
 };
 const chatNotificationKey = (connection: Connection) =>
   `chat:${connection.id}:${connection.latestMessageId ?? 0}`;
-type SafetyTarget = { name: string; recruitId?: number; connectionId?: number; messageId?: number; messageBody?: string };
+type SafetyTarget = {
+  name: string;
+  recruitId?: number;
+  connectionId?: number;
+  messageId?: number;
+  messageBody?: string;
+};
 type LinkedAccount = {
   id: number;
   provider: string;
@@ -526,7 +535,9 @@ function formatStart(value: string) {
   });
 }
 function formatRecruitStart(recruit: Recruit) {
-  return recruit.startTimeUndecided ? "時間は相談" : `${formatStart(recruit.startAt)}開始`;
+  return recruit.startTimeUndecided
+    ? "時間は相談"
+    : `${formatStart(recruit.startAt)}開始`;
 }
 function formatRecruitParty(size: number) {
   if (size === 2) return "デュオ";
@@ -794,7 +805,8 @@ export default function MatchApp({
   const [minLikes, setMinLikes] = useState("");
   const [maxLikes, setMaxLikes] = useState("");
   const [roleFilter, setRoleFilter] = useState<PokemonRole | "">("");
-  const [activityFilter, setActivityFilter] = useState<DiscoverActivityFilter>("");
+  const [activityFilter, setActivityFilter] =
+    useState<DiscoverActivityFilter>("");
   const [showLikedProfilesOnly, setShowLikedProfilesOnly] = useState(false);
   const [hideLikedProfiles, setHideLikedProfiles] = useState(false);
   const [discoverFiltersReady, setDiscoverFiltersReady] = useState(false);
@@ -855,14 +867,17 @@ export default function MatchApp({
   const [pendingProfileView, setPendingProfileView] =
     useState<PendingMateProfile | null>(null);
   const [pendingGroupOpen, setPendingGroupOpen] = useState(false);
-  const [pendingMessages, setPendingMessages] = useState<ApplicationMessage[]>([]);
+  const [pendingMessages, setPendingMessages] = useState<ApplicationMessage[]>(
+    [],
+  );
   const activeApplicationIdRef = useRef<number | null>(null);
   const pendingMessageLoadRequestRef = useRef(0);
   const pendingMessageLoadInFlightRef = useRef<number | null>(null);
   const [pendingMessageText, setPendingMessageText] = useState("");
   const [pendingMessageSending, setPendingMessageSending] = useState(false);
   const [declineReasonOpen, setDeclineReasonOpen] = useState(false);
-  const [declineReason, setDeclineReason] = useState("ロールが重なっているため");
+  const [declineReason, setDeclineReason] =
+    useState("ロールが重なっているため");
   const [declineNote, setDeclineNote] = useState("");
   const pendingMessageInputRef = useRef<HTMLInputElement>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -925,13 +940,22 @@ export default function MatchApp({
   } | null>(null);
   const [availabilityOpen, setAvailabilityOpen] = useState(false);
   const [availabilityHubOpen, setAvailabilityHubOpen] = useState(false);
-  const [availabilityTarget, setAvailabilityTarget] = useState<Connection | null>(null);
-  const [ownAvailability, setOwnAvailability] = useState<AvailabilitySlot[]>([]);
-  const [mateAvailability, setMateAvailability] = useState<AvailabilitySlot[]>([]);
-  const [allMateAvailability, setAllMateAvailability] = useState<MateAvailabilitySlot[]>([]);
+  const [availabilityTarget, setAvailabilityTarget] =
+    useState<Connection | null>(null);
+  const [ownAvailability, setOwnAvailability] = useState<AvailabilitySlot[]>(
+    [],
+  );
+  const [mateAvailability, setMateAvailability] = useState<AvailabilitySlot[]>(
+    [],
+  );
+  const [allMateAvailability, setAllMateAvailability] = useState<
+    MateAvailabilitySlot[]
+  >([]);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [availabilitySaving, setAvailabilitySaving] = useState(false);
-  const [availabilityDeletingId, setAvailabilityDeletingId] = useState<number | null>(null);
+  const [availabilityDeletingId, setAvailabilityDeletingId] = useState<
+    number | null
+  >(null);
   const [supportOpen, setSupportOpen] = useState(false);
   const [supportMode, setSupportMode] = useState<"support" | "feedback">(
     "support",
@@ -959,13 +983,20 @@ export default function MatchApp({
       : [],
   );
   const [linkedAccountsLoaded, setLinkedAccountsLoaded] = useState(preview);
-  const [unlinkingAccountId, setUnlinkingAccountId] = useState<number | null>(null);
+  const [unlinkingAccountId, setUnlinkingAccountId] = useState<number | null>(
+    null,
+  );
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
   const [blockedUsersLoading, setBlockedUsersLoading] = useState(false);
   const [unblockingId, setUnblockingId] = useState<number | null>(null);
-  const [archivedConnections, setArchivedConnections] = useState<Connection[]>([]);
-  const [archivedConnectionsLoading, setArchivedConnectionsLoading] = useState(false);
-  const [archiveUpdatingId, setArchiveUpdatingId] = useState<number | null>(null);
+  const [archivedConnections, setArchivedConnections] = useState<Connection[]>(
+    [],
+  );
+  const [archivedConnectionsLoading, setArchivedConnectionsLoading] =
+    useState(false);
+  const [archiveUpdatingId, setArchiveUpdatingId] = useState<number | null>(
+    null,
+  );
   const defaultProfile: Profile = {
     trainerName: shortName,
     mainPokemon: [],
@@ -1186,17 +1217,28 @@ export default function MatchApp({
       if (!ctx) throw new Error("canvas");
       const sourceRatio = source.naturalWidth / source.naturalHeight;
       const targetRatio = 3;
-      const sw = sourceRatio > targetRatio ? source.naturalHeight * targetRatio : source.naturalWidth;
-      const sh = sourceRatio > targetRatio ? source.naturalHeight : source.naturalWidth / targetRatio;
+      const sw =
+        sourceRatio > targetRatio
+          ? source.naturalHeight * targetRatio
+          : source.naturalWidth;
+      const sh =
+        sourceRatio > targetRatio
+          ? source.naturalHeight
+          : source.naturalWidth / targetRatio;
       const sx = (source.naturalWidth - sw) / 2;
       const sy = (source.naturalHeight - sh) / 2;
       ctx.fillStyle = "#efeaff";
       ctx.fillRect(0, 0, 1200, 400);
       ctx.drawImage(source, sx, sy, sw, sh, 0, 0, 1200, 400);
-      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.82));
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/jpeg", 0.82),
+      );
       if (!blob || blob.size > 800_000) throw new Error("size");
       if (preview) {
-        setProfile((value) => ({ ...value, headerUrl: URL.createObjectURL(blob) }));
+        setProfile((value) => ({
+          ...value,
+          headerUrl: URL.createObjectURL(blob),
+        }));
         notify("ヘッダー画像を選択しました");
         return;
       }
@@ -1220,13 +1262,21 @@ export default function MatchApp({
     <div className="headerEditor" id="profile-header-field">
       <div
         className={`headerEditorPreview pokemonRole-${pokemonRole(profile.mainPokemon[0] || "")}`}
-        style={profile.headerUrl ? { backgroundImage: `url(${profile.headerUrl})` } : undefined}
+        style={
+          profile.headerUrl
+            ? { backgroundImage: `url(${profile.headerUrl})` }
+            : undefined
+        }
       >
         {!profile.headerUrl && <span>HEADER</span>}
       </div>
       <div>
-        <strong>プロフィールヘッダー <small>任意</small></strong>
-        <p>マイページと探すカードの背景に表示します。自分が権利を持つ画像を設定してください。</p>
+        <strong>
+          プロフィールヘッダー <small>任意</small>
+        </strong>
+        <p>
+          マイページと探すカードの背景に表示します。自分が権利を持つ画像を設定してください。
+        </p>
         <div>
           <label className="avatarSelectButton">
             {headerProcessing ? "処理中…" : "画像を選ぶ"}
@@ -1241,7 +1291,8 @@ export default function MatchApp({
             <button
               type="button"
               onClick={async () => {
-                if (!preview) await fetch("/api/media/header", { method: "DELETE" });
+                if (!preview)
+                  await fetch("/api/media/header", { method: "DELETE" });
                 setProfile((value) => ({ ...value, headerUrl: "" }));
               }}
             >
@@ -1260,7 +1311,10 @@ export default function MatchApp({
       const params = new URLSearchParams();
       if (append && recruitsNextCursorRef.current)
         params.set("before", String(recruitsNextCursorRef.current));
-      const response = await fetch(`/api/recruits${params.size ? `?${params}` : ""}`, { cache: "no-store" });
+      const response = await fetch(
+        `/api/recruits${params.size ? `?${params}` : ""}`,
+        { cache: "no-store" },
+      );
       const data = await response.json();
       const nextRows = (data.recruits || []) as Recruit[];
       setRecruits((currentRows) => {
@@ -1270,7 +1324,8 @@ export default function MatchApp({
         return [...byId.values()];
       });
       setMyRecruit(data.myRecruit || null);
-      recruitsNextCursorRef.current = typeof data.nextCursor === "number" ? data.nextCursor : null;
+      recruitsNextCursorRef.current =
+        typeof data.nextCursor === "number" ? data.nextCursor : null;
       setRecruitsHasMore(Boolean(data.hasMore));
     } catch {
       notify("募集を読み込めませんでした");
@@ -1279,95 +1334,98 @@ export default function MatchApp({
       setLoading(false);
     }
   };
-  const loadDiscover = useCallback(async (append = false) => {
-    if (preview) {
-      setProfileCandidates([previewProfile]);
-      setDiscoverHasMore(false);
-      setDiscoverTotal(1);
-      setLoading(false);
-      return false;
-    }
-    if (append && discoverLoadingMoreRef.current) return false;
-    const requestId = append
-      ? discoverRequestRef.current
-      : ++discoverRequestRef.current;
-    const offset = append ? discoverNextOffsetRef.current : 0;
-    const params = new URLSearchParams({ offset: String(offset) });
-    if (discoverSessionSeedRef.current)
-      params.set("seed", discoverSessionSeedRef.current);
-    const normalizedPokemon = pokemonQuery.normalize("NFKC").trim();
-    const normalizedTrainer = trainerQuery.normalize("NFKC").trim();
-    if (normalizedPokemon) {
-      params.set("pokemon", normalizedPokemon);
-      if (
-        pokemon.some(
-          (name) =>
-            name.normalize("NFKC").toLocaleLowerCase("ja-JP") ===
-            normalizedPokemon.toLocaleLowerCase("ja-JP"),
-        )
-      )
-        params.set("pokemonExact", "1");
-    }
-    if (normalizedTrainer) params.set("trainer", normalizedTrainer);
-    if (genderFilter) params.set("gender", genderFilter);
-    if (sharedTimeOnly) params.set("sharedTimeOnly", "1");
-    if (minLikes !== "") params.set("minLikes", minLikes);
-    if (maxLikes !== "") params.set("maxLikes", maxLikes);
-    if (roleFilter) params.set("role", roleFilter);
-    if (activityFilter) params.set("activity", activityFilter);
-    if (showLikedProfilesOnly) params.set("likedOnly", "1");
-    if (hideLikedProfiles) params.set("hideLiked", "1");
-    if (append) discoverLoadingMoreRef.current = true;
-    else setLoading(true);
-    try {
-      const response = await fetch(`/api/discover?${params}`, {
-        cache: "no-store",
-      });
-      if (!response.ok || requestId !== discoverRequestRef.current)
+  const loadDiscover = useCallback(
+    async (append = false) => {
+      if (preview) {
+        setProfileCandidates([previewProfile]);
+        setDiscoverHasMore(false);
+        setDiscoverTotal(1);
+        setLoading(false);
         return false;
-      const data = await response.json();
-      const nextProfiles = (data.profiles || []) as ProfileCandidate[];
-      if (append) {
-        setProfileCandidates((currentProfiles) => {
-          const known = new Set(currentProfiles.map((profile) => profile.id));
-          return [
-            ...currentProfiles,
-            ...nextProfiles.filter((profile) => !known.has(profile.id)),
-          ];
-        });
-      } else {
-        setProfileCandidates(nextProfiles);
-        setIndex(0);
       }
-      discoverNextOffsetRef.current =
-        typeof data.nextOffset === "number"
-          ? data.nextOffset
-          : offset + nextProfiles.length;
-      setDiscoverTotal(
-        typeof data.total === "number" ? data.total : nextProfiles.length,
-      );
-      setDiscoverHasMore(Boolean(data.hasMore));
-      return nextProfiles.length > 0;
-    } catch {
-      /* 募集やチャット画面は利用を続ける */
-      return false;
-    } finally {
-      if (append) discoverLoadingMoreRef.current = false;
-      else if (requestId === discoverRequestRef.current) setLoading(false);
-    }
-  }, [
-    preview,
-    pokemonQuery,
-    trainerQuery,
-    genderFilter,
-    sharedTimeOnly,
-    minLikes,
-    maxLikes,
-    roleFilter,
-    activityFilter,
-    showLikedProfilesOnly,
-    hideLikedProfiles,
-  ]);
+      if (append && discoverLoadingMoreRef.current) return false;
+      const requestId = append
+        ? discoverRequestRef.current
+        : ++discoverRequestRef.current;
+      const offset = append ? discoverNextOffsetRef.current : 0;
+      const params = new URLSearchParams({ offset: String(offset) });
+      if (discoverSessionSeedRef.current)
+        params.set("seed", discoverSessionSeedRef.current);
+      const normalizedPokemon = pokemonQuery.normalize("NFKC").trim();
+      const normalizedTrainer = trainerQuery.normalize("NFKC").trim();
+      if (normalizedPokemon) {
+        params.set("pokemon", normalizedPokemon);
+        if (
+          pokemon.some(
+            (name) =>
+              name.normalize("NFKC").toLocaleLowerCase("ja-JP") ===
+              normalizedPokemon.toLocaleLowerCase("ja-JP"),
+          )
+        )
+          params.set("pokemonExact", "1");
+      }
+      if (normalizedTrainer) params.set("trainer", normalizedTrainer);
+      if (genderFilter) params.set("gender", genderFilter);
+      if (sharedTimeOnly) params.set("sharedTimeOnly", "1");
+      if (minLikes !== "") params.set("minLikes", minLikes);
+      if (maxLikes !== "") params.set("maxLikes", maxLikes);
+      if (roleFilter) params.set("role", roleFilter);
+      if (activityFilter) params.set("activity", activityFilter);
+      if (showLikedProfilesOnly) params.set("likedOnly", "1");
+      if (hideLikedProfiles) params.set("hideLiked", "1");
+      if (append) discoverLoadingMoreRef.current = true;
+      else setLoading(true);
+      try {
+        const response = await fetch(`/api/discover?${params}`, {
+          cache: "no-store",
+        });
+        if (!response.ok || requestId !== discoverRequestRef.current)
+          return false;
+        const data = await response.json();
+        const nextProfiles = (data.profiles || []) as ProfileCandidate[];
+        if (append) {
+          setProfileCandidates((currentProfiles) => {
+            const known = new Set(currentProfiles.map((profile) => profile.id));
+            return [
+              ...currentProfiles,
+              ...nextProfiles.filter((profile) => !known.has(profile.id)),
+            ];
+          });
+        } else {
+          setProfileCandidates(nextProfiles);
+          setIndex(0);
+        }
+        discoverNextOffsetRef.current =
+          typeof data.nextOffset === "number"
+            ? data.nextOffset
+            : offset + nextProfiles.length;
+        setDiscoverTotal(
+          typeof data.total === "number" ? data.total : nextProfiles.length,
+        );
+        setDiscoverHasMore(Boolean(data.hasMore));
+        return nextProfiles.length > 0;
+      } catch {
+        /* 募集やチャット画面は利用を続ける */
+        return false;
+      } finally {
+        if (append) discoverLoadingMoreRef.current = false;
+        else if (requestId === discoverRequestRef.current) setLoading(false);
+      }
+    },
+    [
+      preview,
+      pokemonQuery,
+      trainerQuery,
+      genderFilter,
+      sharedTimeOnly,
+      minLikes,
+      maxLikes,
+      roleFilter,
+      activityFilter,
+      showLikedProfilesOnly,
+      hideLikedProfiles,
+    ],
+  );
   const loadNotices = async (append = false) => {
     if (append && noticesLoadingMore) return;
     if (append) setNoticesLoadingMore(true);
@@ -1377,13 +1435,17 @@ export default function MatchApp({
         params.set("beforeIncoming", String(noticesNextIncomingRef.current));
       if (append && noticesNextOutgoingRef.current)
         params.set("beforeOutgoing", String(noticesNextOutgoingRef.current));
-      const response = await fetch(`/api/applications${params.size ? `?${params}` : ""}`, { cache: "no-store" });
+      const response = await fetch(
+        `/api/applications${params.size ? `?${params}` : ""}`,
+        { cache: "no-store" },
+      );
       if (!response.ok) return;
       const data = await response.json();
       const mergeNotices = (currentRows: Notice[], nextRows: Notice[]) => {
-        const base = append || noticesLoadedOlderRef.current
-          ? currentRows.filter((row) => row.status !== "pending")
-          : [];
+        const base =
+          append || noticesLoadedOlderRef.current
+            ? currentRows.filter((row) => row.status !== "pending")
+            : [];
         const byId = new Map(base.map((row) => [row.id, row]));
         nextRows.forEach((row) => byId.set(row.id, row));
         return [...byId.values()].sort((a, b) => b.id - a.id);
@@ -1391,9 +1453,17 @@ export default function MatchApp({
       setIncoming((rows) => mergeNotices(rows, data.incoming || []));
       setOutgoing((rows) => mergeNotices(rows, data.outgoing || []));
       if (append || !noticesLoadedOlderRef.current) {
-        noticesNextIncomingRef.current = typeof data.nextIncomingCursor === "number" ? data.nextIncomingCursor : null;
-        noticesNextOutgoingRef.current = typeof data.nextOutgoingCursor === "number" ? data.nextOutgoingCursor : null;
-        setNoticesHaveMore(Boolean(data.hasMoreIncoming || data.hasMoreOutgoing));
+        noticesNextIncomingRef.current =
+          typeof data.nextIncomingCursor === "number"
+            ? data.nextIncomingCursor
+            : null;
+        noticesNextOutgoingRef.current =
+          typeof data.nextOutgoingCursor === "number"
+            ? data.nextOutgoingCursor
+            : null;
+        setNoticesHaveMore(
+          Boolean(data.hasMoreIncoming || data.hasMoreOutgoing),
+        );
       }
       if (append) noticesLoadedOlderRef.current = true;
     } catch {
@@ -1463,7 +1533,9 @@ export default function MatchApp({
         connections?: Connection[];
         hasMore?: boolean;
         nextCursor?: number | null;
-      }>(`/api/connections${params.size ? `?${params}` : ""}`, { cache: "no-store" });
+      }>(`/api/connections${params.size ? `?${params}` : ""}`, {
+        cache: "no-store",
+      });
       if (!response.ok) throw new Error("connections request failed");
       if (
         !append &&
@@ -1483,15 +1555,19 @@ export default function MatchApp({
       }
       const nextConnections = (data.connections || []) as Connection[];
       setConnections((currentRows) => {
-        if (!append && !connectionsLoadedOlderRef.current) return nextConnections;
+        if (!append && !connectionsLoadedOlderRef.current)
+          return nextConnections;
         const byId = new Map(currentRows.map((row) => [row.id, row]));
         nextConnections.forEach((row) => byId.set(row.id, row));
         return [...byId.values()].sort(
-          (a, b) => Number(b.pinned) - Number(a.pinned) || new Date(b.latestAt).getTime() - new Date(a.latestAt).getTime(),
+          (a, b) =>
+            Number(b.pinned) - Number(a.pinned) ||
+            new Date(b.latestAt).getTime() - new Date(a.latestAt).getTime(),
         );
       });
       if (append || !connectionsLoadedOlderRef.current) {
-        connectionsNextCursorRef.current = typeof data.nextCursor === "number" ? data.nextCursor : null;
+        connectionsNextCursorRef.current =
+          typeof data.nextCursor === "number" ? data.nextCursor : null;
         setConnectionsHasMore(Boolean(data.hasMore));
       }
       if (append) connectionsLoadedOlderRef.current = true;
@@ -1521,10 +1597,7 @@ export default function MatchApp({
     showLoading = false,
     loadOlder = false,
   ): Promise<void> => {
-    if (
-      !showLoading &&
-      messageLoadInFlightRef.current === connection.id
-    )
+    if (!showLoading && messageLoadInFlightRef.current === connection.id)
       return;
     const requestId = ++messageLoadRequestRef.current;
     messageLoadInFlightRef.current = connection.id;
@@ -1538,7 +1611,10 @@ export default function MatchApp({
         messages?: ChatMessage[];
         hasMore?: boolean;
         nextCursor?: number | null;
-      }>(`/api/messages?connectionId=${connection.id}${loadOlder && messagesNextCursorRef.current ? `&before=${messagesNextCursorRef.current}` : ""}`, { cache: "no-store" });
+      }>(
+        `/api/messages?connectionId=${connection.id}${loadOlder && messagesNextCursorRef.current ? `&before=${messagesNextCursorRef.current}` : ""}`,
+        { cache: "no-store" },
+      );
       if (!response.ok) throw new Error("messages request failed");
       if (
         activeConnectionIdRef.current !== connection.id ||
@@ -1550,9 +1626,25 @@ export default function MatchApp({
         const retainCurrent = loadOlder || messagesLoadedOlderRef.current;
         const byKey = new Map<string, ChatMessage>();
         if (retainCurrent)
-          current.forEach((message) => byKey.set(message.clientId ? `client:${message.clientId}` : `id:${message.id}`, message));
+          current.forEach((message) =>
+            byKey.set(
+              message.clientId
+                ? `client:${message.clientId}`
+                : `id:${message.id}`,
+              message,
+            ),
+          );
         else
-          current.filter((message) => message.delivery).forEach((message) => byKey.set(message.clientId ? `client:${message.clientId}` : `id:${message.id}`, message));
+          current
+            .filter((message) => message.delivery)
+            .forEach((message) =>
+              byKey.set(
+                message.clientId
+                  ? `client:${message.clientId}`
+                  : `id:${message.id}`,
+                message,
+              ),
+            );
         serverMessages.forEach((message) => {
           if (message.clientId) byKey.delete(`client:${message.clientId}`);
           byKey.set(`id:${message.id}`, message);
@@ -1563,7 +1655,8 @@ export default function MatchApp({
         );
       });
       if (loadOlder || !messagesLoadedOlderRef.current) {
-        messagesNextCursorRef.current = typeof data.nextCursor === "number" ? data.nextCursor : null;
+        messagesNextCursorRef.current =
+          typeof data.nextCursor === "number" ? data.nextCursor : null;
         setMessagesHasMore(Boolean(data.hasMore));
       }
       if (loadOlder) messagesLoadedOlderRef.current = true;
@@ -1660,7 +1753,10 @@ export default function MatchApp({
         realtime?.type === "chat-message" ||
         realtime?.type === "chat-refresh"
       ) {
-        if (!Number.isInteger(realtime.connectionId) || realtime.connectionId <= 0)
+        if (
+          !Number.isInteger(realtime.connectionId) ||
+          realtime.connectionId <= 0
+        )
           return;
         void loadConnections();
         const activeConnection = selectedConnectionRef.current;
@@ -1675,12 +1771,17 @@ export default function MatchApp({
       }
 
       if (realtime?.type === "application-message") {
-        if (!Number.isInteger(realtime.applicationId) || realtime.applicationId <= 0)
+        if (
+          !Number.isInteger(realtime.applicationId) ||
+          realtime.applicationId <= 0
+        )
           return;
         void loadNotices();
         if (activeApplicationIdRef.current === realtime.applicationId) {
           if (pendingMessageLoadInFlightRef.current === realtime.applicationId)
-            realtimePendingRefreshPendingRef.current.add(realtime.applicationId);
+            realtimePendingRefreshPendingRef.current.add(
+              realtime.applicationId,
+            );
           else void loadPendingMessages(realtime.applicationId);
         } else if (notificationBody) {
           notify(notificationBody);
@@ -1805,13 +1906,21 @@ export default function MatchApp({
           setGenderFilter(filters.genderFilter);
         if (typeof filters.sharedTimeOnly === "boolean")
           setSharedTimeOnly(filters.sharedTimeOnly);
-        if (typeof filters.minLikes === "string" && /^\d{0,4}$/.test(filters.minLikes))
+        if (
+          typeof filters.minLikes === "string" &&
+          /^\d{0,4}$/.test(filters.minLikes)
+        )
           setMinLikes(filters.minLikes);
-        if (typeof filters.maxLikes === "string" && /^\d{0,4}$/.test(filters.maxLikes))
+        if (
+          typeof filters.maxLikes === "string" &&
+          /^\d{0,4}$/.test(filters.maxLikes)
+        )
           setMaxLikes(filters.maxLikes);
         if (
           filters.roleFilter === "" ||
-          pokemonRoleOptions.some((option) => option.value === filters.roleFilter)
+          pokemonRoleOptions.some(
+            (option) => option.value === filters.roleFilter,
+          )
         )
           setRoleFilter(filters.roleFilter as PokemonRole | "");
         if (
@@ -1896,13 +2005,21 @@ export default function MatchApp({
       return loadOptional<T>(url);
     };
     Promise.all([
-      loadOptionalAfter<{ recruits?: Recruit[]; myRecruit?: Recruit | null; hasMore?: boolean; nextCursor?: number | null }>(
-        "/api/recruits", 200,
-      ),
+      loadOptionalAfter<{
+        recruits?: Recruit[];
+        myRecruit?: Recruit | null;
+        hasMore?: boolean;
+        nextCursor?: number | null;
+      }>("/api/recruits", 200),
       authenticated
-        ? loadOptionalAfter<{ incoming?: Notice[]; outgoing?: Notice[]; hasMoreIncoming?: boolean; hasMoreOutgoing?: boolean; nextIncomingCursor?: number | null; nextOutgoingCursor?: number | null }>(
-            "/api/applications", 500,
-          )
+        ? loadOptionalAfter<{
+            incoming?: Notice[];
+            outgoing?: Notice[];
+            hasMoreIncoming?: boolean;
+            hasMoreOutgoing?: boolean;
+            nextIncomingCursor?: number | null;
+            nextOutgoingCursor?: number | null;
+          }>("/api/applications", 500)
         : Promise.resolve(null),
       authenticated
         ? (async () => {
@@ -1966,21 +2083,35 @@ export default function MatchApp({
             setRecruits(recruitData.recruits || []);
             setMyRecruit(recruitData.myRecruit || null);
             setRecruitsHasMore(Boolean(recruitData.hasMore));
-            recruitsNextCursorRef.current = typeof recruitData.nextCursor === "number" ? recruitData.nextCursor : null;
+            recruitsNextCursorRef.current =
+              typeof recruitData.nextCursor === "number"
+                ? recruitData.nextCursor
+                : null;
           }
           if (noticeData) {
             setIncoming(noticeData.incoming || []);
             setOutgoing(noticeData.outgoing || []);
-            setNoticesHaveMore(Boolean(noticeData.hasMoreIncoming || noticeData.hasMoreOutgoing));
-            noticesNextIncomingRef.current = typeof noticeData.nextIncomingCursor === "number" ? noticeData.nextIncomingCursor : null;
-            noticesNextOutgoingRef.current = typeof noticeData.nextOutgoingCursor === "number" ? noticeData.nextOutgoingCursor : null;
+            setNoticesHaveMore(
+              Boolean(noticeData.hasMoreIncoming || noticeData.hasMoreOutgoing),
+            );
+            noticesNextIncomingRef.current =
+              typeof noticeData.nextIncomingCursor === "number"
+                ? noticeData.nextIncomingCursor
+                : null;
+            noticesNextOutgoingRef.current =
+              typeof noticeData.nextOutgoingCursor === "number"
+                ? noticeData.nextOutgoingCursor
+                : null;
           }
           if (connectionResult) {
             setConnectionsLoaded(true);
             if (connectionResult.ok && connectionResult.data) {
               setConnections(connectionResult.data.connections || []);
               setConnectionsHasMore(Boolean(connectionResult.data.hasMore));
-              connectionsNextCursorRef.current = typeof connectionResult.data.nextCursor === "number" ? connectionResult.data.nextCursor : null;
+              connectionsNextCursorRef.current =
+                typeof connectionResult.data.nextCursor === "number"
+                  ? connectionResult.data.nextCursor
+                  : null;
               setConnectionsError(false);
             } else {
               setConnectionsError(true);
@@ -1997,9 +2128,7 @@ export default function MatchApp({
             setReceivedLikeCount(Number(likeData.receivedLikeCount) || 0);
           }
           if (notificationData)
-            setDismissedNotificationKeys(
-              notificationData.dismissedKeys || [],
-            );
+            setDismissedNotificationKeys(notificationData.dismissedKeys || []);
         },
       )
       .catch(() => {
@@ -2094,8 +2223,7 @@ export default function MatchApp({
     const refreshCurrentConversation = () => {
       if (document.visibilityState !== "visible") return;
       if (selectedConnection) void loadMessages(selectedConnection);
-      if (selectedPending)
-        void loadPendingMessages(selectedPending.notice.id);
+      if (selectedPending) void loadPendingMessages(selectedPending.notice.id);
     };
     const fallbackInterval = pushState === "on" ? 60_000 : 15_000;
     const timer = window.setInterval(
@@ -2148,7 +2276,13 @@ export default function MatchApp({
   }, [incoming, outgoing, selectedPending]);
 
   useEffect(() => {
-    if (preview || guestMode || !profileReady || onboardingOpen || selectedConnection)
+    if (
+      preview ||
+      guestMode ||
+      !profileReady ||
+      onboardingOpen ||
+      selectedConnection
+    )
       return;
     const heartbeat = () => {
       if (document.visibilityState === "visible")
@@ -2172,7 +2306,8 @@ export default function MatchApp({
     const timer = window.setTimeout(() => {
       let seen = false;
       try {
-        seen = window.localStorage.getItem(tournamentAnnouncementKey) === "seen";
+        seen =
+          window.localStorage.getItem(tournamentAnnouncementKey) === "seen";
       } catch {
         /* 保存できない環境では告知を表示 */
       }
@@ -2340,19 +2475,22 @@ export default function MatchApp({
         }).catch(() => undefined);
     }
 
-    const timer = window.setTimeout(() => {
-      if (!messageTypingRef.current) return;
-      messageTypingRef.current = false;
-      if (document.visibilityState === "visible")
-        fetch("/api/presence", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            connectionId: selectedConnection.id,
-            typing: false,
-          }),
-        }).catch(() => undefined);
-    }, hasText ? 1_500 : 0);
+    const timer = window.setTimeout(
+      () => {
+        if (!messageTypingRef.current) return;
+        messageTypingRef.current = false;
+        if (document.visibilityState === "visible")
+          fetch("/api/presence", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              connectionId: selectedConnection.id,
+              typing: false,
+            }),
+          }).catch(() => undefined);
+      },
+      hasText ? 1_500 : 0,
+    );
 
     return () => window.clearTimeout(timer);
   }, [preview, selectedConnection, messageText]);
@@ -2484,10 +2622,10 @@ export default function MatchApp({
         likedProfileIds.includes(candidate.id),
       )
     : hideLikedProfiles
-    ? filteredProfileCandidates.filter(
-        (candidate) => !likedProfileIds.includes(candidate.id),
-      )
-    : filteredProfileCandidates;
+      ? filteredProfileCandidates.filter(
+          (candidate) => !likedProfileIds.includes(candidate.id),
+        )
+      : filteredProfileCandidates;
   // 「相手から」は届いたいいねの受信箱なので、通常検索の条件では絞らない。
   // 検索条件が残っていても、いいねを送った相手を必ず開けるようにする。
   const receivedCards = receivedProfileCandidates;
@@ -2506,8 +2644,12 @@ export default function MatchApp({
     ? cards[((index % cards.length) + cards.length) % cards.length]
     : null;
   const currentPokemon = current?.mainPokemon[0] || "未設定";
-  const pendingIncoming = incoming.filter((notice) => notice.status === "pending");
-  const pendingOutgoing = outgoing.filter((notice) => notice.status === "pending");
+  const pendingIncoming = incoming.filter(
+    (notice) => notice.status === "pending",
+  );
+  const pendingOutgoing = outgoing.filter(
+    (notice) => notice.status === "pending",
+  );
   const dismissedNotificationSet = new Set(dismissedNotificationKeys);
   const visiblePendingIncoming = pendingIncoming.filter(
     (notice) => !dismissedNotificationSet.has(`request:${notice.id}`),
@@ -2538,7 +2680,9 @@ export default function MatchApp({
       !dismissedNotificationSet.has(chatNotificationKey(connection)),
   );
   const heartCount = visibleHeartConnections.length;
-  const profileLikeCount = visibleProfileLikes.filter((like) => !like.read).length;
+  const profileLikeCount = visibleProfileLikes.filter(
+    (like) => !like.read,
+  ).length;
   const unreadCount = visibleUnreadConnections.reduce(
     (sum, connection) => sum + connection.unreadCount,
     0,
@@ -2629,7 +2773,8 @@ export default function MatchApp({
     const date = new Date(connection.createdAt || connection.latestAt);
     if (Number.isNaN(date.getTime())) return "日時不明";
     return new Intl.DateTimeFormat("ja-JP", {
-      year: date.getFullYear() === new Date().getFullYear() ? undefined : "numeric",
+      year:
+        date.getFullYear() === new Date().getFullYear() ? undefined : "numeric",
       month: "short",
       day: "numeric",
     }).format(date);
@@ -2673,7 +2818,12 @@ export default function MatchApp({
     }, 220);
   };
   const skipReceivedProfile = async () => {
-    if (!current || discoverMode !== "received" || receivedSkipBusy || animation)
+    if (
+      !current ||
+      discoverMode !== "received" ||
+      receivedSkipBusy ||
+      animation
+    )
       return;
     const skippedCandidate = current;
     const receivedLike = profileLikes.find(
@@ -2950,7 +3100,9 @@ export default function MatchApp({
     }
     if (preview) {
       setLikedProfileIds((ids) => [...ids, candidate.id]);
-      notify(`${candidate.trainerName}さんに「気になる」を通知しました。チャットはまだ始まりません`);
+      notify(
+        `${candidate.trainerName}さんに「気になる」を通知しました。チャットはまだ始まりません`,
+      );
       return;
     }
     const response = await fetch("/api/likes", {
@@ -3286,7 +3438,8 @@ export default function MatchApp({
       if (preview) {
         const startTimeUndecided = settings.startsIn === "undecided";
         const startAt = new Date(
-          Date.now() + (startTimeUndecided ? 0 : Number(settings.startsIn)) * 60_000,
+          Date.now() +
+            (startTimeUndecided ? 0 : Number(settings.startsIn)) * 60_000,
         );
         const recruit: Recruit = {
           ...previewRecruit,
@@ -3397,9 +3550,7 @@ export default function MatchApp({
       await openChat(matched);
       return;
     }
-    const existing = outgoing.find(
-      (notice) => notice.recruitId === recruit.id,
-    );
+    const existing = outgoing.find((notice) => notice.recruitId === recruit.id);
     if (existing?.status === "pending") {
       openPendingConversation(existing, "outgoing");
       return;
@@ -3410,7 +3561,10 @@ export default function MatchApp({
         (candidate) => candidate.recruitId === recruit.id,
       );
       if (connection) await openChat(connection);
-      else notify("チャットを準備しています。少し待ってからもう一度お試しください");
+      else
+        notify(
+          "チャットを準備しています。少し待ってからもう一度お試しください",
+        );
       return;
     }
     if (existing?.status === "declined") {
@@ -3466,7 +3620,12 @@ export default function MatchApp({
     if (recruit) setRecruitShare(recruit);
   };
   const cancelRecruit = async (recruit: Recruit) => {
-    if (!window.confirm("この募集をキャンセルしますか？届いている未承認の申請も終了します。")) return;
+    if (
+      !window.confirm(
+        "この募集をキャンセルしますか？届いている未承認の申請も終了します。",
+      )
+    )
+      return;
     if (preview) {
       setMyRecruit(null);
       setLobbies([]);
@@ -3713,7 +3872,12 @@ export default function MatchApp({
   };
   const cancelSelectedApplication = async () => {
     if (!selectedPending || selectedPending.direction !== "outgoing") return;
-    if (!window.confirm("このメイト申請を取り消しますか？\n承認前のやりとりも一覧から消えます。")) return;
+    if (
+      !window.confirm(
+        "このメイト申請を取り消しますか？\n承認前のやりとりも一覧から消えます。",
+      )
+    )
+      return;
     await decide(selectedPending.notice.id, "cancel");
   };
   const openChat = async (connection: Connection) => {
@@ -3803,7 +3967,10 @@ export default function MatchApp({
       const response = await fetch("/api/application-messages", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ applicationId: selectedPending.notice.id, body }),
+        body: JSON.stringify({
+          applicationId: selectedPending.notice.id,
+          body,
+        }),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -3855,7 +4022,9 @@ export default function MatchApp({
       setSelectedConnection((current) =>
         current?.id === connection.id ? { ...current, pinned } : current,
       );
-      notify(pinned ? "チャットを一番上に固定しました" : "ピン留めを外しました");
+      notify(
+        pinned ? "チャットを一番上に固定しました" : "ピン留めを外しました",
+      );
       return;
     }
     setPinUpdatingId(connection.id);
@@ -3881,7 +4050,9 @@ export default function MatchApp({
       setSelectedConnection((current) =>
         current?.id === connection.id ? { ...current, pinned } : current,
       );
-      notify(pinned ? "チャットを一番上に固定しました" : "ピン留めを外しました");
+      notify(
+        pinned ? "チャットを一番上に固定しました" : "ピン留めを外しました",
+      );
     } catch {
       notify("通信が不安定です。もう一度お試しください");
     } finally {
@@ -3964,7 +4135,11 @@ export default function MatchApp({
       messageCancellingId !== null
     )
       return;
-    if (!window.confirm("このメッセージの送信を取り消しますか？\n相手側からも本文が見えなくなります。"))
+    if (
+      !window.confirm(
+        "このメッセージの送信を取り消しますか？\n相手側からも本文が見えなくなります。",
+      )
+    )
       return;
     setMessageCancellingId(message.id);
     try {
@@ -4129,9 +4304,7 @@ export default function MatchApp({
       return false;
     }
     setConnections((rows) =>
-      rows.map((row) =>
-        row.id === connectionId ? { ...row, ...data } : row,
-      ),
+      rows.map((row) => (row.id === connectionId ? { ...row, ...data } : row)),
     );
     setSelectedConnection((value) =>
       value?.id === connectionId ? { ...value, ...data } : value,
@@ -4276,8 +4449,11 @@ export default function MatchApp({
                       ? "finished"
                       : action === "cancel"
                         ? "cancelled"
-                      : row.status,
-                active: action === "finish" || action === "cancel" ? false : row.active,
+                        : row.status,
+                active:
+                  action === "finish" || action === "cancel"
+                    ? false
+                    : row.active,
                 members:
                   action === "ready"
                     ? row.members.map((member) =>
@@ -4390,7 +4566,11 @@ export default function MatchApp({
     if (enabled && pushState !== "on" && !(await enablePush())) return;
     if (preview) {
       setRecruitAlertsEnabled(enabled);
-      notify(enabled ? "新しい募集の通知をオンにしました" : "募集通知をオフにしました");
+      notify(
+        enabled
+          ? "新しい募集の通知をオンにしました"
+          : "募集通知をオフにしました",
+      );
       return;
     }
     setRecruitAlertUpdating(true);
@@ -4406,7 +4586,11 @@ export default function MatchApp({
         return;
       }
       setRecruitAlertsEnabled(Boolean(data.enabled));
-      notify(data.enabled ? "新しい募集の通知をオンにしました" : "募集通知をオフにしました");
+      notify(
+        data.enabled
+          ? "新しい募集の通知をオンにしました"
+          : "募集通知をオフにしました",
+      );
     } finally {
       setRecruitAlertUpdating(false);
     }
@@ -4503,7 +4687,10 @@ export default function MatchApp({
         const response = await fetch("/api/connections", {
           method: "PATCH",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ connectionId: connection.id, action: "archive" }),
+          body: JSON.stringify({
+            connectionId: connection.id,
+            action: "archive",
+          }),
         });
         const data = await response.json();
         if (!response.ok) {
@@ -4539,7 +4726,10 @@ export default function MatchApp({
       const response = await fetch("/api/connections", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ connectionId: connection.id, action: "restore" }),
+        body: JSON.stringify({
+          connectionId: connection.id,
+          action: "restore",
+        }),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -4609,7 +4799,8 @@ export default function MatchApp({
   };
   const submitAvailability = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if ((!availabilityTarget && !availabilityHubOpen) || availabilitySaving) return;
+    if ((!availabilityTarget && !availabilityHubOpen) || availabilitySaving)
+      return;
     const form = event.currentTarget;
     setAvailabilitySaving(true);
     try {
@@ -4629,7 +4820,9 @@ export default function MatchApp({
         setOwnAvailability((slots) =>
           [...slots.filter((slot) => slot.id !== savedSlot.id), savedSlot].sort(
             (a, b) =>
-              `${a.day}T${a.startTime}`.localeCompare(`${b.day}T${b.startTime}`),
+              `${a.day}T${a.startTime}`.localeCompare(
+                `${b.day}T${b.startTime}`,
+              ),
           ),
         );
       }
@@ -4688,7 +4881,9 @@ export default function MatchApp({
   const unlinkAccount = async (account: LinkedAccount) => {
     if (unlinkingAccountId !== null) return;
     if (account.isCurrent) {
-      notify("ログイン中のアカウントは解除できません。別の連携アカウントでログインし直してください");
+      notify(
+        "ログイン中のアカウントは解除できません。別の連携アカウントでログインし直してください",
+      );
       return;
     }
     if (
@@ -5222,8 +5417,7 @@ export default function MatchApp({
                   <div className="fullCardTopline">
                     <span
                       className={
-                        discoverMode === "recommended" &&
-                        current.online
+                        discoverMode === "recommended" && current.online
                           ? "active"
                           : ""
                       }
@@ -5235,7 +5429,9 @@ export default function MatchApp({
                     {guestMode && <b>ログインでプロフィールをすべて表示</b>}
                   </div>
                   {discoverMode === "received" && (
-                    <div className="receivedSwipeHint">← 左スワイプでスキップ</div>
+                    <div className="receivedSwipeHint">
+                      ← 左スワイプでスキップ
+                    </div>
                   )}
                   <button
                     className="cardTapZone previous"
@@ -5299,7 +5495,9 @@ export default function MatchApp({
                       >
                         <span className="fullActionIcon">×</span>
                         <span className="fullActionCopy">
-                          <small>{receivedSkipBusy ? "処理中" : "スキップ"}</small>
+                          <small>
+                            {receivedSkipBusy ? "処理中" : "スキップ"}
+                          </small>
                           <em>一覧から外す</em>
                         </span>
                       </button>
@@ -5377,7 +5575,9 @@ export default function MatchApp({
                   <div className="tutorialFeatureGuide">
                     <div className="tutorialGuideIntro">
                       <strong>「いいね」と「メイト申請」は違います</strong>
-                      <p>相手への伝わり方と、チャットが始まるタイミングを確認できます。</p>
+                      <p>
+                        相手への伝わり方と、チャットが始まるタイミングを確認できます。
+                      </p>
                     </div>
                     <div className="tutorialFeatureCards">
                       <article className="likeGuideCard">
@@ -5385,7 +5585,9 @@ export default function MatchApp({
                         <div>
                           <strong>いいね</strong>
                           <span>気になる気持ちだけを伝える</span>
-                          <small>相手の通知と「相手から」にあなたのプロフィールが表示されます。</small>
+                          <small>
+                            相手の通知と「相手から」にあなたのプロフィールが表示されます。
+                          </small>
                         </div>
                         <ul>
                           <li>相手に「いいね」が届く</li>
@@ -5398,7 +5600,9 @@ export default function MatchApp({
                         <div>
                           <strong>メイト申請</strong>
                           <span>一緒に遊びたい相手へ正式に申請</span>
-                          <small>使うポケモンとひとことを送り、承認前から相談できます。</small>
+                          <small>
+                            使うポケモンとひとことを送り、承認前から相談できます。
+                          </small>
                         </div>
                         <ul>
                           <li>相手へ申請通知が届く</li>
@@ -5407,48 +5611,69 @@ export default function MatchApp({
                         </ul>
                       </article>
                     </div>
-                    <div className="tutorialMatchFlow" aria-label="いいねとメイト申請後の流れ">
-                      <span><b>1</b>プロフィールを見る</span>
+                    <div
+                      className="tutorialMatchFlow"
+                      aria-label="いいねとメイト申請後の流れ"
+                    >
+                      <span>
+                        <b>1</b>プロフィールを見る
+                      </span>
                       <i>›</i>
-                      <span><b>2</b>いいね／申請</span>
+                      <span>
+                        <b>2</b>いいね／申請
+                      </span>
                       <i>›</i>
-                      <span><b>3</b>承認前に相談</span>
+                      <span>
+                        <b>3</b>承認前に相談
+                      </span>
                       <i>›</i>
-                      <span><b>4</b>承認でメイト成立</span>
+                      <span>
+                        <b>4</b>承認でメイト成立
+                      </span>
                     </div>
                     <div className="tutorialMoreFeatures">
                       <article>
                         <b>＋</b>
                         <div>
                           <strong>募集</strong>
-                          <p>今から遊びたい時に条件を公開。参加申請を承認するとチャットが開通します。</p>
+                          <p>
+                            今から遊びたい時に条件を公開。参加申請を承認するとチャットが開通します。
+                          </p>
                         </div>
                       </article>
                       <article>
                         <b>▢</b>
                         <div>
                           <strong>やりとり</strong>
-                          <p>承認待ちの相談と、成立後の通常チャットを確認。相手をピン留めできます。</p>
+                          <p>
+                            承認待ちの相談と、成立後の通常チャットを確認。相手をピン留めできます。
+                          </p>
                         </div>
                       </article>
                       <article>
                         <b>🎮</b>
                         <div>
                           <strong>ロビーを作成して一緒にプレイ</strong>
-                          <p>チャットから誘い、相手が「はい」を押した時に集合ロビーが作られます。</p>
+                          <p>
+                            チャットから誘い、相手が「はい」を押した時に集合ロビーが作られます。
+                          </p>
                         </div>
                       </article>
                       <article>
                         <b>🔒</b>
                         <div>
                           <strong>安心機能</strong>
-                          <p>連絡先は自動公開されません。相手ごとの共有、通報、ブロックを選べます。</p>
+                          <p>
+                            連絡先は自動公開されません。相手ごとの共有、通報、ブロックを選べます。
+                          </p>
                         </div>
                       </article>
                     </div>
                     <div className="tutorialTips">
                       <strong>カードの見方</strong>
-                      <p>左右をタップで前・次へ／プロフィール部分をタップで詳細／「相手から」は左スワイプでブロックせずスキップ</p>
+                      <p>
+                        左右をタップで前・次へ／プロフィール部分をタップで詳細／「相手から」は左スワイプでブロックせずスキップ
+                      </p>
                     </div>
                   </div>
                   <button className="tutorialStart" onClick={closeTutorial}>
@@ -5466,7 +5691,9 @@ export default function MatchApp({
                   <small>LIVE RECRUITING</small>
                   <h1>募集中のメイト</h1>
                 </div>
-                <button onClick={openRecruitComposer}>＋ 条件を決めて募集</button>
+                <button onClick={openRecruitComposer}>
+                  ＋ 条件を決めて募集
+                </button>
               </div>
               <section className="recruitEntryHub">
                 <div className="recruitEntryCopy">
@@ -5482,53 +5709,53 @@ export default function MatchApp({
                 </div>
                 {!myRecruit && (
                   <>
-                  <fieldset className="recruitRolePicker quickMatchTypePicker">
-                    <legend>遊ぶモードを選ぶ</legend>
-                    <div>
-                      {(["ランクマッチ", "カジュアル"] as MatchType[]).map(
-                        (matchType) => (
-                          <label key={matchType}>
-                            <input
-                              type="radio"
-                              name="quickMatchType"
-                              checked={quickMatchType === matchType}
-                              onChange={() => setQuickMatchType(matchType)}
-                            />
-                            <span>
-                              {matchType === "ランクマッチ" ? "🏆" : "🎮"}{" "}
-                              {matchType}
-                            </span>
-                          </label>
-                        ),
-                      )}
+                    <fieldset className="recruitRolePicker quickMatchTypePicker">
+                      <legend>遊ぶモードを選ぶ</legend>
+                      <div>
+                        {(["ランクマッチ", "カジュアル"] as MatchType[]).map(
+                          (matchType) => (
+                            <label key={matchType}>
+                              <input
+                                type="radio"
+                                name="quickMatchType"
+                                checked={quickMatchType === matchType}
+                                onChange={() => setQuickMatchType(matchType)}
+                              />
+                              <span>
+                                {matchType === "ランクマッチ" ? "🏆" : "🎮"}{" "}
+                                {matchType}
+                              </span>
+                            </label>
+                          ),
+                        )}
+                      </div>
+                    </fieldset>
+                    <div className="quickRecruitGrid">
+                      <button
+                        onClick={() => createQuickRecruit("now-duo")}
+                        disabled={Boolean(quickRecruiting)}
+                      >
+                        <span>⚡</span>
+                        <strong>今からデュオ</strong>
+                        <small>1時間募集</small>
+                      </button>
+                      <button
+                        onClick={() => createQuickRecruit("later-duo")}
+                        disabled={Boolean(quickRecruiting)}
+                      >
+                        <span>◷</span>
+                        <strong>時間は相談</strong>
+                        <small>デュオ</small>
+                      </button>
+                      <button
+                        onClick={() => createQuickRecruit("trio")}
+                        disabled={Boolean(quickRecruiting)}
+                      >
+                        <span>◉</span>
+                        <strong>トリオ募集</strong>
+                        <small>時間は相談</small>
+                      </button>
                     </div>
-                  </fieldset>
-                  <div className="quickRecruitGrid">
-                    <button
-                      onClick={() => createQuickRecruit("now-duo")}
-                      disabled={Boolean(quickRecruiting)}
-                    >
-                      <span>⚡</span>
-                      <strong>今からデュオ</strong>
-                      <small>1時間募集</small>
-                    </button>
-                    <button
-                      onClick={() => createQuickRecruit("later-duo")}
-                      disabled={Boolean(quickRecruiting)}
-                    >
-                      <span>◷</span>
-                      <strong>時間は相談</strong>
-                      <small>デュオ</small>
-                    </button>
-                    <button
-                      onClick={() => createQuickRecruit("trio")}
-                      disabled={Boolean(quickRecruiting)}
-                    >
-                      <span>◉</span>
-                      <strong>トリオ募集</strong>
-                      <small>時間は相談</small>
-                    </button>
-                  </div>
                   </>
                 )}
                 <button
@@ -5542,7 +5769,11 @@ export default function MatchApp({
                       ? "新しい募集を通知中"
                       : "新しい募集が出たら通知"}
                   </strong>
-                  <small>{recruitAlertsEnabled ? "タップでオフ" : "募集ゼロでも見逃しません"}</small>
+                  <small>
+                    {recruitAlertsEnabled
+                      ? "タップでオフ"
+                      : "募集ゼロでも見逃しません"}
+                  </small>
                 </button>
               </section>
               <div className="recruitSummary">
@@ -5565,15 +5796,20 @@ export default function MatchApp({
                         : `${myRecruit.pokemon}で募集中`}
                     </strong>
                     <span>
-                      {myRecruit.matchType} ・ {myRecruit.role !== "指定なし"
+                      {myRecruit.matchType} ・{" "}
+                      {myRecruit.role !== "指定なし"
                         ? myRecruit.role
                         : myRecruit.playTime}
                     </span>
                     <span>{formatRecruitPostedAt(myRecruit.createdAt)}</span>
                   </div>
                   <div className="myRecruitActions">
-                    <button onClick={() => setRecruitShare(myRecruit)}>共有</button>
-                    <button onClick={() => cancelRecruit(myRecruit)}>キャンセル</button>
+                    <button onClick={() => setRecruitShare(myRecruit)}>
+                      共有
+                    </button>
+                    <button onClick={() => cancelRecruit(myRecruit)}>
+                      キャンセル
+                    </button>
                   </div>
                 </article>
               )}
@@ -5607,7 +5843,9 @@ export default function MatchApp({
                         <span className="recruitSummaryMain">
                           <span className="recruitSummaryEyebrow">
                             <b>{recruit.matchType}</b>
-                            <time>{formatRecruitPostedAt(recruit.createdAt)}</time>
+                            <time>
+                              {formatRecruitPostedAt(recruit.createdAt)}
+                            </time>
                           </span>
                           <span className="recruitTop">
                             <span className="recruitTrainerIdentity">
@@ -5647,9 +5885,13 @@ export default function MatchApp({
                       {expandedRecruitId === recruit.id && (
                         <div className="recruitItemDetails">
                           <div className="recruitConditionBlock">
-                            <small className="recruitSectionLabel">募集条件</small>
+                            <small className="recruitSectionLabel">
+                              募集条件
+                            </small>
                             <div className="recruitBadges">
-                              <span className="matchTypeBadge">{recruit.matchType}</span>
+                              <span className="matchTypeBadge">
+                                {recruit.matchType}
+                              </span>
                               <span>{formatRecruitStart(recruit)}</span>
                               <span>
                                 {recruit.desiredPokemon === "すべて"
@@ -5670,7 +5912,8 @@ export default function MatchApp({
                             <div className="recruitOwnerHeading">
                               <small>募集者プロフィール</small>
                               <strong>
-                                {recruit.gender || "性別未設定"} ・ 募集者ランク：{recruit.rank}
+                                {recruit.gender || "性別未設定"} ・
+                                募集者ランク：{recruit.rank}
                               </strong>
                             </div>
                             <div className="recruitFacts">
@@ -5709,7 +5952,9 @@ export default function MatchApp({
                             />
                             <span>
                               <strong>募集者プロフィールを見る</strong>
-                              <small>プロフィール画像・自己紹介・募集者情報</small>
+                              <small>
+                                プロフィール画像・自己紹介・募集者情報
+                              </small>
                             </span>
                             <b>›</b>
                           </button>
@@ -5762,7 +6007,9 @@ export default function MatchApp({
                   onClick={() => void loadRecruits(true)}
                   disabled={recruitsLoadingMore}
                 >
-                  {recruitsLoadingMore ? "読み込み中…" : "過去の募集をさらに表示"}
+                  {recruitsLoadingMore
+                    ? "読み込み中…"
+                    : "過去の募集をさらに表示"}
                 </button>
               )}
             </section>
@@ -5811,7 +6058,9 @@ export default function MatchApp({
                     <span>👤</span>
                     <div>
                       <strong>相手のプロフィールを見る</strong>
-                      <small>自己紹介・使うポケモン・ランク・遊べる時間帯</small>
+                      <small>
+                        自己紹介・使うポケモン・ランク・遊べる時間帯
+                      </small>
                     </div>
                     <b>›</b>
                   </button>
@@ -5822,7 +6071,9 @@ export default function MatchApp({
                       }`}
                     >
                       <p>
-                        👋 {selectedPending.notice.message || "一緒に遊びたいです！"}
+                        👋{" "}
+                        {selectedPending.notice.message ||
+                          "一緒に遊びたいです！"}
                       </p>
                       <small>
                         {selectedPending.notice.createdAt
@@ -5854,74 +6105,87 @@ export default function MatchApp({
                       </div>
                     ))}
                   </div>
-                  <form className="pendingMessageComposer" onSubmit={sendPendingMessage}>
+                  <form
+                    className="pendingMessageComposer"
+                    onSubmit={sendPendingMessage}
+                  >
                     <input
                       ref={pendingMessageInputRef}
                       value={pendingMessageText}
-                      onChange={(event) => setPendingMessageText(event.target.value)}
+                      onChange={(event) =>
+                        setPendingMessageText(event.target.value)
+                      }
                       maxLength={180}
                       placeholder="例：中央以外のロールもできますか？"
                       aria-label="承認前のひとこと"
                     />
                     <button
-                      disabled={!pendingMessageText.trim() || pendingMessageSending}
+                      disabled={
+                        !pendingMessageText.trim() || pendingMessageSending
+                      }
                     >
                       {pendingMessageSending ? "送信中" : "送る"}
                     </button>
                   </form>
                   {selectedPending.direction === "incoming" ? (
                     <>
-                    <div className="pendingChatActions threeActions">
-                      <button
-                        onClick={() => {
-                          pendingMessageInputRef.current?.focus();
-                        }}
-                      >
-                        ひとこと
-                      </button>
-                      <button
-                        onClick={() => setDeclineReasonOpen((open) => !open)}
-                      >
-                        断る
-                      </button>
-                      <button
-                        onClick={() =>
-                          decide(selectedPending.notice.id, "accept")
-                        }
-                      >
-                        承認する
-                      </button>
-                    </div>
-                    {declineReasonOpen && (
-                      <section className="declineReasonPanel">
-                        <strong>理由を添えると、相手に誤解されにくくなります</strong>
-                        <div>
-                          {[
-                            "ロールが重なっているため",
-                            "募集条件が合わなかったため",
-                            "今回は人数が埋まったため",
-                            "予定が合わなくなったため",
-                          ].map((reason) => (
-                            <button
-                              key={reason}
-                              className={declineReason === reason ? "active" : ""}
-                              onClick={() => setDeclineReason(reason)}
-                            >
-                              {reason}
-                            </button>
-                          ))}
-                        </div>
-                        <input
-                          value={declineNote}
-                          onChange={(event) => setDeclineNote(event.target.value)}
-                          maxLength={100}
-                          placeholder="補足（任意）例：下レーンならぜひお願いします"
-                        />
-                        <button onClick={declineSelectedApplication}>
-                          この理由を伝えて断る
+                      <div className="pendingChatActions threeActions">
+                        <button
+                          onClick={() => {
+                            pendingMessageInputRef.current?.focus();
+                          }}
+                        >
+                          ひとこと
                         </button>
-                      </section>
-                    )}
+                        <button
+                          onClick={() => setDeclineReasonOpen((open) => !open)}
+                        >
+                          断る
+                        </button>
+                        <button
+                          onClick={() =>
+                            decide(selectedPending.notice.id, "accept")
+                          }
+                        >
+                          承認する
+                        </button>
+                      </div>
+                      {declineReasonOpen && (
+                        <section className="declineReasonPanel">
+                          <strong>
+                            理由を添えると、相手に誤解されにくくなります
+                          </strong>
+                          <div>
+                            {[
+                              "ロールが重なっているため",
+                              "募集条件が合わなかったため",
+                              "今回は人数が埋まったため",
+                              "予定が合わなくなったため",
+                            ].map((reason) => (
+                              <button
+                                key={reason}
+                                className={
+                                  declineReason === reason ? "active" : ""
+                                }
+                                onClick={() => setDeclineReason(reason)}
+                              >
+                                {reason}
+                              </button>
+                            ))}
+                          </div>
+                          <input
+                            value={declineNote}
+                            onChange={(event) =>
+                              setDeclineNote(event.target.value)
+                            }
+                            maxLength={100}
+                            placeholder="補足（任意）例：下レーンならぜひお願いします"
+                          />
+                          <button onClick={declineSelectedApplication}>
+                            この理由を伝えて断る
+                          </button>
+                        </section>
+                      )}
                     </>
                   ) : (
                     <div className="pendingChatWaiting pendingChatWaitingCancelable">
@@ -5969,18 +6233,18 @@ export default function MatchApp({
                       <span>
                         <h1>{selectedConnection.mateName}</h1>
                         <p>
-                        <span
-                          className={
-                            matePresence.online
-                              ? "onlineDot active"
-                              : "onlineDot"
-                          }
-                        />{" "}
-                        {matePresence.typing
-                          ? "入力中…"
-                          : matePresence.online
-                            ? "オンライン"
-                            : `${selectedConnection.matePokemon} ・ マッチ済み`}
+                          <span
+                            className={
+                              matePresence.online
+                                ? "onlineDot active"
+                                : "onlineDot"
+                            }
+                          />{" "}
+                          {matePresence.typing
+                            ? "入力中…"
+                            : matePresence.online
+                              ? "オンライン"
+                              : `${selectedConnection.matePokemon} ・ マッチ済み`}
                         </p>
                         <small>プロフィールを見る</small>
                       </span>
@@ -5995,7 +6259,11 @@ export default function MatchApp({
                         {playInviteSending ? (
                           "送信中"
                         ) : (
-                          <>ロビーを作成して<br />一緒にプレイ</>
+                          <>
+                            ロビーを作成して
+                            <br />
+                            一緒にプレイ
+                          </>
                         )}
                       </b>
                     </button>
@@ -6031,10 +6299,14 @@ export default function MatchApp({
                       <button
                         type="button"
                         className="paginationButton messageHistoryButton"
-                        onClick={() => void loadMessages(selectedConnection, false, true)}
+                        onClick={() =>
+                          void loadMessages(selectedConnection, false, true)
+                        }
                         disabled={messagesLoadingOlder}
                       >
-                        {messagesLoadingOlder ? "読み込み中…" : "過去のメッセージを読み込む"}
+                        {messagesLoadingOlder
+                          ? "読み込み中…"
+                          : "過去のメッセージを読み込む"}
                       </button>
                     )}
                     {messagesLoading && !messages.length ? (
@@ -6050,7 +6322,9 @@ export default function MatchApp({
                         <p>通信を確認して、もう一度お試しください。</p>
                         <button
                           type="button"
-                          onClick={() => void loadMessages(selectedConnection, true)}
+                          onClick={() =>
+                            void loadMessages(selectedConnection, true)
+                          }
                         >
                           もう一度読み込む
                         </button>
@@ -6091,7 +6365,9 @@ export default function MatchApp({
                               </div>
                             )}
                             {!message.response && !message.canRespond && (
-                              <p className="playInviteStatus">相手の返事を待っています</p>
+                              <p className="playInviteStatus">
+                                相手の返事を待っています
+                              </p>
                             )}
                             {message.response === "accepted" && (
                               <div className="playInviteAccepted">
@@ -6124,18 +6400,20 @@ export default function MatchApp({
                             </small>
                             {message.sender === "mate" && (
                               <div className="messageUtilityActions">
-                              <button
-                                type="button"
-                                className="reportMessageButton"
-                                onClick={() => setSafetyTarget({
-                                  name: selectedConnection.mateName,
-                                  connectionId: selectedConnection.id,
-                                  messageId: message.id,
-                                  messageBody: message.body,
-                                })}
-                              >
-                                この発言を通報
-                              </button>
+                                <button
+                                  type="button"
+                                  className="reportMessageButton"
+                                  onClick={() =>
+                                    setSafetyTarget({
+                                      name: selectedConnection.mateName,
+                                      connectionId: selectedConnection.id,
+                                      messageId: message.id,
+                                      messageBody: message.body,
+                                    })
+                                  }
+                                >
+                                  この発言を通報
+                                </button>
                               </div>
                             )}
                           </div>
@@ -6145,7 +6423,11 @@ export default function MatchApp({
                             id={`message-${message.id}`}
                             className={`messageBubble ${message.sender}`}
                           >
-                            <p className={message.deleted ? "deletedMessageBody" : ""}>
+                            <p
+                              className={
+                                message.deleted ? "deletedMessageBody" : ""
+                              }
+                            >
                               {message.body}
                             </p>
                             <small>
@@ -6189,7 +6471,9 @@ export default function MatchApp({
                                     type="button"
                                     className="cancelMessageButton"
                                     onClick={() => void cancelMessage(message)}
-                                    disabled={messageCancellingId === message.id}
+                                    disabled={
+                                      messageCancellingId === message.id
+                                    }
                                   >
                                     {messageCancellingId === message.id
                                       ? "取消中…"
@@ -6199,18 +6483,20 @@ export default function MatchApp({
                               )}
                             {message.sender === "mate" && (
                               <div className="messageUtilityActions">
-                              <button
-                                type="button"
-                                className="reportMessageButton"
-                                onClick={() => setSafetyTarget({
-                                  name: selectedConnection.mateName,
-                                  connectionId: selectedConnection.id,
-                                  messageId: message.id,
-                                  messageBody: message.body,
-                                })}
-                              >
-                                この発言を通報
-                              </button>
+                                <button
+                                  type="button"
+                                  className="reportMessageButton"
+                                  onClick={() =>
+                                    setSafetyTarget({
+                                      name: selectedConnection.mateName,
+                                      connectionId: selectedConnection.id,
+                                      messageId: message.id,
+                                      messageBody: message.body,
+                                    })
+                                  }
+                                >
+                                  この発言を通報
+                                </button>
                               </div>
                             )}
                           </div>
@@ -6271,7 +6557,9 @@ export default function MatchApp({
                     <span>▦</span>
                     <div>
                       <strong>みんなのプレイ予定</strong>
-                      <p>自分の予定を追加・メイトの空いている時間を一覧で確認</p>
+                      <p>
+                        自分の予定を追加・メイトの空いている時間を一覧で確認
+                      </p>
                     </div>
                     <b>見る&nbsp;›</b>
                   </button>
@@ -6306,9 +6594,9 @@ export default function MatchApp({
                       </button>
                     </div>
                   ) : connections.length ||
-                  connectionsHasMore ||
-                  incoming.some((notice) => notice.status === "pending") ||
-                  outgoing.some((notice) => notice.status === "pending") ? (
+                    connectionsHasMore ||
+                    incoming.some((notice) => notice.status === "pending") ||
+                    outgoing.some((notice) => notice.status === "pending") ? (
                     <>
                       <p className="chatOverviewLead">
                         マッチしたメイトとのチャットです。届いた申請は一番上で確認できます。
@@ -6320,7 +6608,9 @@ export default function MatchApp({
                               <span>⚡</span>
                               <div>
                                 <strong>届いたメイト申請</strong>
-                                <p>相手のプロフィールを見て、承認前に相談できます</p>
+                                <p>
+                                  相手のプロフィールを見て、承認前に相談できます
+                                </p>
                               </div>
                               <i>{pendingIncoming.length}</i>
                             </header>
@@ -6341,7 +6631,9 @@ export default function MatchApp({
                                   <div>
                                     <strong>{notice.applicantName}</strong>
                                     <p>👋 あなたにメイト申請を送っています</p>
-                                    <small>タップしてプロフィール・一言を確認</small>
+                                    <small>
+                                      タップしてプロフィール・一言を確認
+                                    </small>
                                   </div>
                                   <b>確認する&nbsp;›</b>
                                 </button>
@@ -6353,13 +6645,17 @@ export default function MatchApp({
                           <section className="pendingConversationGroup outgoingOnly">
                             <button
                               className="pendingGroupSummary"
-                              onClick={() => setPendingGroupOpen((open) => !open)}
+                              onClick={() =>
+                                setPendingGroupOpen((open) => !open)
+                              }
                               aria-expanded={pendingGroupOpen}
                             >
                               <span>◷</span>
                               <div>
                                 <strong>送った申請</strong>
-                                <p>{pendingOutgoing.length}件・相手の承認待ち</p>
+                                <p>
+                                  {pendingOutgoing.length}件・相手の承認待ち
+                                </p>
                               </div>
                               <i>{pendingOutgoing.length}</i>
                               <b>{pendingGroupOpen ? "⌃" : "⌄"}</b>
@@ -6371,7 +6667,10 @@ export default function MatchApp({
                                     key={`pending-outgoing-${notice.id}`}
                                     className="chatListItem pending outgoing"
                                     onClick={() =>
-                                      openPendingConversation(notice, "outgoing")
+                                      openPendingConversation(
+                                        notice,
+                                        "outgoing",
+                                      )
                                     }
                                   >
                                     <UserAvatar
@@ -6399,7 +6698,9 @@ export default function MatchApp({
                             onClick={() => void loadNotices(true)}
                             disabled={noticesLoadingMore}
                           >
-                            {noticesLoadingMore ? "読み込み中…" : "過去の申請履歴を読み込む"}
+                            {noticesLoadingMore
+                              ? "読み込み中…"
+                              : "過去の申請履歴を読み込む"}
                           </button>
                         )}
                         {connections.map((connection) => (
@@ -6438,7 +6739,9 @@ export default function MatchApp({
                             </button>
                             <button
                               className="connectionPinButton"
-                              onClick={() => void toggleConnectionPin(connection)}
+                              onClick={() =>
+                                void toggleConnectionPin(connection)
+                              }
                               disabled={pinUpdatingId === connection.id}
                               aria-label={
                                 connection.pinned
@@ -6457,7 +6760,9 @@ export default function MatchApp({
                             onClick={() => void loadConnections(true)}
                             disabled={connectionsLoadingMore}
                           >
-                            {connectionsLoadingMore ? "読み込み中…" : "過去のチャットを読み込む"}
+                            {connectionsLoadingMore
+                              ? "読み込み中…"
+                              : "過去のチャットを読み込む"}
                           </button>
                         )}
                       </div>
@@ -6523,9 +6828,9 @@ export default function MatchApp({
                                   ? lobby.status === "cancelled"
                                     ? "解散済み"
                                     : "終了済み"
-                                : allReady
-                                  ? "全員準備OK"
-                                  : "集合中"}
+                                  : allReady
+                                    ? "全員準備OK"
+                                    : "集合中"}
                             </p>
                           </div>
                           <span>
@@ -6583,15 +6888,17 @@ export default function MatchApp({
                             {me?.ready ? "✓ 準備OKを取り消す" : "準備OK"}
                           </button>
                         )}
-                        {lobby.active && lobby.isOwner && lobby.status !== "playing" && (
-                          <button
-                            className="startPlayButton"
-                            disabled={!allReady}
-                            onClick={() => lobbyAction(lobby, "start")}
-                          >
-                            全員そろったらプレイ開始
-                          </button>
-                        )}
+                        {lobby.active &&
+                          lobby.isOwner &&
+                          lobby.status !== "playing" && (
+                            <button
+                              className="startPlayButton"
+                              disabled={!allReady}
+                              onClick={() => lobbyAction(lobby, "start")}
+                            >
+                              全員そろったらプレイ開始
+                            </button>
+                          )}
                         {lobby.active && lobby.status === "playing" && (
                           <button
                             className="finishPlayButton"
@@ -6601,7 +6908,10 @@ export default function MatchApp({
                           </button>
                         )}
                         {lobby.active && (
-                          <button className="lobbyVcButton" onClick={openDiscord}>
+                          <button
+                            className="lobbyVcButton"
+                            onClick={openDiscord}
+                          >
                             🎧 Discord VCで合流
                           </button>
                         )}
@@ -6662,7 +6972,11 @@ export default function MatchApp({
               <div className="profileHero profileDashboardHero">
                 <div
                   className={`profileHeader pokemonRole-${pokemonRole(profile.mainPokemon[0] || "")}`}
-                  style={profile.headerUrl ? { backgroundImage: `url(${profile.headerUrl})` } : undefined}
+                  style={
+                    profile.headerUrl
+                      ? { backgroundImage: `url(${profile.headerUrl})` }
+                      : undefined
+                  }
                 />
                 <div className="profileAvatarFrame">
                   <UserAvatar
@@ -6775,14 +7089,20 @@ export default function MatchApp({
                   <small>プロフィール</small>
                 </button>
               </div>
-              <section className="profileMatchHistory" aria-labelledby="match-history-title">
+              <section
+                className="profileMatchHistory"
+                aria-labelledby="match-history-title"
+              >
                 <header>
                   <div>
                     <small>MATCH HISTORY</small>
                     <h2 id="match-history-title">マッチした人一覧</h2>
                   </div>
                   {matchHistory.length > 0 && (
-                    <button type="button" onClick={() => setMatchHistoryOpen(true)}>
+                    <button
+                      type="button"
+                      onClick={() => setMatchHistoryOpen(true)}
+                    >
                       すべて見る
                     </button>
                   )}
@@ -6804,7 +7124,8 @@ export default function MatchApp({
                           <span>
                             <strong>{connection.mateName}</strong>
                             <small>
-                              {connection.matePokemon || "使用ポケモン未設定"} ・ {formatMatchDate(connection)}
+                              {connection.matePokemon || "使用ポケモン未設定"}{" "}
+                              ・ {formatMatchDate(connection)}
                             </small>
                           </span>
                         </button>
@@ -6837,7 +7158,9 @@ export default function MatchApp({
                 <div className="profileSectionHeading">
                   <small>PROFILE EDIT</small>
                   <h2>プロフィール編集</h2>
-                  <p>登録内容と、マッチ後に任意で共有する連絡先を変更できます。</p>
+                  <p>
+                    登録内容と、マッチ後に任意で共有する連絡先を変更できます。
+                  </p>
                 </div>
                 {avatarEditor()}
                 {headerEditor()}
@@ -6863,7 +7186,9 @@ export default function MatchApp({
                     }
                     placeholder="好きなポケモンやプレイスタイル、VCについてひとこと"
                   />
-                  <small className="fieldCounter">{profile.bio.length} / 160</small>
+                  <small className="fieldCounter">
+                    {profile.bio.length} / 160
+                  </small>
                 </label>
                 <div id="profile-pokemon-field">
                   <PokemonPicker
@@ -6889,7 +7214,9 @@ export default function MatchApp({
                 <div id="profile-play-time-field">
                   <PlayTimePicker
                     selected={profile.playTime}
-                    onChange={(playTime) => setProfile({ ...profile, playTime })}
+                    onChange={(playTime) =>
+                      setProfile({ ...profile, playTime })
+                    }
                   />
                 </div>
                 <label id="profile-age-field">
@@ -7055,7 +7382,9 @@ export default function MatchApp({
                             disabled={unlinkingAccountId !== null}
                             onClick={() => void unlinkAccount(linked)}
                           >
-                            {unlinkingAccountId === linked.id ? "解除中…" : "連携解除"}
+                            {unlinkingAccountId === linked.id
+                              ? "解除中…"
+                              : "連携解除"}
                           </button>
                         ) : (
                           <a href={`/api/link/${provider.id}`}>連携する</a>
@@ -7096,7 +7425,9 @@ export default function MatchApp({
                           disabled={archiveUpdatingId !== null}
                           onClick={() => void restoreConnection(connection)}
                         >
-                          {archiveUpdatingId === connection.id ? "復元中…" : "復元"}
+                          {archiveUpdatingId === connection.id
+                            ? "復元中…"
+                            : "復元"}
                         </button>
                       </article>
                     ))}
@@ -7109,7 +7440,9 @@ export default function MatchApp({
                 <div className="profileSectionHeading">
                   <small>SAFETY SETTINGS</small>
                   <h2>ブロック中のユーザー</h2>
-                  <p>解除すると、相手のプロフィールやチャットが再び表示されます。</p>
+                  <p>
+                    解除すると、相手のプロフィールやチャットが再び表示されます。
+                  </p>
                 </div>
                 {blockedUsersLoading ? (
                   <p className="blockedUserEmpty">読み込み中…</p>
@@ -7183,10 +7516,12 @@ export default function MatchApp({
                 <a href="/community">参加方法を見る</a>
               </section>
               <div className="accountOperations">
-                <button onClick={() => {
-                  setSupportMode("support");
-                  setSupportOpen(true);
-                }}>
+                <button
+                  onClick={() => {
+                    setSupportMode("support");
+                    setSupportOpen(true);
+                  }}
+                >
                   <span>?</span>
                   <div>
                     <strong>運営へお問い合わせ</strong>
@@ -7194,10 +7529,12 @@ export default function MatchApp({
                   </div>
                   <b>›</b>
                 </button>
-                <button onClick={() => {
-                  setSupportMode("feedback");
-                  setSupportOpen(true);
-                }}>
+                <button
+                  onClick={() => {
+                    setSupportMode("feedback");
+                    setSupportOpen(true);
+                  }}
+                >
                   <span>✦</span>
                   <div>
                     <strong>フィードバックを送る</strong>
@@ -7273,13 +7610,23 @@ export default function MatchApp({
       </section>
 
       {guestMode && loginOpen && (
-        <div className="guestLoginBackdrop" onClick={closeLogin}>
+        <div
+          className="guestLoginBackdrop"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) closeLogin();
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") closeLogin();
+          }}
+          role="button"
+          tabIndex={0}
+          aria-label="ログイン画面を閉じる"
+        >
           <section
             className="guestLoginCard"
             role="dialog"
             aria-modal="true"
             aria-labelledby="guest-login-title"
-            onClick={(event) => event.stopPropagation()}
           >
             <button
               className="guestLoginClose"
@@ -7290,7 +7637,11 @@ export default function MatchApp({
             </button>
             <div className="guestLoginMark">⚡</div>
             <small>YUNAMATCH</small>
-            <div className="loginIntentTabs" role="tablist" aria-label="ログイン方法">
+            <div
+              className="loginIntentTabs"
+              role="tablist"
+              aria-label="ログイン方法"
+            >
               <button
                 className={loginIntent === "login" ? "active" : ""}
                 onClick={() => setLoginIntent("login")}
@@ -7315,9 +7666,14 @@ export default function MatchApp({
             </h2>
             <p>
               {loginIntent === "login" ? (
-                <>登録した時と<strong>同じSNS・同じアカウント</strong>を選ぶと、プロフィールを引き継げます。</>
+                <>
+                  登録した時と<strong>同じSNS・同じアカウント</strong>
+                  を選ぶと、プロフィールを引き継げます。
+                </>
               ) : (
-                <><strong>{loginAction}</strong>は、無料登録後に利用できます。</>
+                <>
+                  <strong>{loginAction}</strong>は、無料登録後に利用できます。
+                </>
               )}
             </p>
             <div className="guestLoginProviders">
@@ -7374,7 +7730,9 @@ export default function MatchApp({
               <div className="existingAccountHelp">
                 <div>
                   <strong>すでに登録済みですか？</strong>
-                  <p>登録時と違うSNSアカウントでログインしている可能性があります。</p>
+                  <p>
+                    登録時と違うSNSアカウントでログインしている可能性があります。
+                  </p>
                 </div>
                 <a href="/api/auth/signout?callbackUrl=%2Flogin">
                   別のアカウントでログイン
@@ -7604,21 +7962,27 @@ export default function MatchApp({
                 <time dateTime="2026-08-24">08.24</time>
                 <div>
                   <h4>アカウント連携を解除できるようになりました</h4>
-                  <p>マイページの設定から、使わなくなったログインアカウントの連携を安全に解除できます。</p>
+                  <p>
+                    マイページの設定から、使わなくなったログインアカウントの連携を安全に解除できます。
+                  </p>
                 </div>
               </article>
               <article>
                 <time dateTime="2026-08-24">08.24</time>
                 <div>
                   <h4>オンライン表示の不具合を修正しました</h4>
-                  <p>ユナマッチを開いているのに、相手からオフラインに見える問題を改善しました。</p>
+                  <p>
+                    ユナマッチを開いているのに、相手からオフラインに見える問題を改善しました。
+                  </p>
                 </div>
               </article>
               <article>
                 <time dateTime="2026-08-24">08.24</time>
                 <div>
                   <h4>マッチ後のプレイ予定共有を追加しました</h4>
-                  <p>遊べる日や時間を共有できます。公開範囲は、メイト・お気に入り限定・自分だけから選べます。</p>
+                  <p>
+                    遊べる日や時間を共有できます。公開範囲は、メイト・お気に入り限定・自分だけから選べます。
+                  </p>
                 </div>
               </article>
             </div>
@@ -7658,17 +8022,31 @@ export default function MatchApp({
                   ユナマッチをご利用いただいている皆さんに向けて、ポケモンユナイトの大会を開催します。
                 </p>
                 <dl>
-                  <div><dt>開催日時</dt><dd>8月30日 12:00〜</dd></div>
-                  <div><dt>優勝賞金</dt><dd>10,000円</dd></div>
-                  <div><dt>準優勝賞金</dt><dd>5,000円</dd></div>
-                  <div><dt>参加方法</dt><dd>1人・デュオ・トリオ・フルパ</dd></div>
+                  <div>
+                    <dt>開催日時</dt>
+                    <dd>8月30日 12:00〜</dd>
+                  </div>
+                  <div>
+                    <dt>優勝賞金</dt>
+                    <dd>10,000円</dd>
+                  </div>
+                  <div>
+                    <dt>準優勝賞金</dt>
+                    <dd>5,000円</dd>
+                  </div>
+                  <div>
+                    <dt>参加方法</dt>
+                    <dd>1人・デュオ・トリオ・フルパ</dd>
+                  </div>
                 </dl>
                 <p>
                   1人での参加も可能です。もちろん、普段一緒に遊んでいるデュオ・トリオ・フルパでの参加も歓迎します！
                 </p>
               </div>
               <p className="tournamentCondition">
-                <b>参加条件</b><br />ユナマッチのアカウントを持っていること
+                <b>参加条件</b>
+                <br />
+                ユナマッチのアカウントを持っていること
               </p>
               <a
                 className="tournamentEntryButton"
@@ -7685,13 +8063,20 @@ export default function MatchApp({
                   className="tournamentSignupButton"
                   onClick={() => {
                     closeTournament();
-                    requestLogin({ type: "received", label: "ユナマッチ杯に参加する" });
+                    requestLogin({
+                      type: "received",
+                      label: "ユナマッチ杯に参加する",
+                    });
                   }}
                 >
                   ユナマッチのアカウントを作る
                 </button>
               )}
-              <button type="button" className="tournamentLater" onClick={closeTournament}>
+              <button
+                type="button"
+                className="tournamentLater"
+                onClick={closeTournament}
+              >
                 あとで見る
               </button>
             </div>
@@ -7767,16 +8152,31 @@ export default function MatchApp({
                   アプリ内ブラウザやiPhoneの通常タブでは、プッシュ通知を使えない場合があります。
                 </p>
                 <ol className="pushHelpSteps">
-                  <li><b>1</b><span>Safariなどの通常ブラウザでYUNAMATCHを開く</span></li>
-                  <li><b>2</b><span>共有ボタンから「ホーム画面に追加」を選ぶ</span></li>
-                  <li><b>3</b><span>追加したYUNAMATCHを開き「通知をオン」にする</span></li>
+                  <li>
+                    <b>1</b>
+                    <span>Safariなどの通常ブラウザでYUNAMATCHを開く</span>
+                  </li>
+                  <li>
+                    <b>2</b>
+                    <span>共有ボタンから「ホーム画面に追加」を選ぶ</span>
+                  </li>
+                  <li>
+                    <b>3</b>
+                    <span>追加したYUNAMATCHを開き「通知をオン」にする</span>
+                  </li>
                 </ol>
-                <button className="pushPromptEnable" onClick={copyNotificationLink}>
+                <button
+                  className="pushPromptEnable"
+                  onClick={copyNotificationLink}
+                >
                   YUNAMATCHのリンクをコピー
                 </button>
               </>
             )}
-            <button className="pushPromptLater" onClick={() => setPushHelpOpen(false)}>
+            <button
+              className="pushPromptLater"
+              onClick={() => setPushHelpOpen(false)}
+            >
               閉じる
             </button>
           </section>
@@ -7894,7 +8294,10 @@ export default function MatchApp({
             </div>
             <div className="notificationList">
               {visibleProfileLikes.map((like) => (
-                <div className="notificationItem" key={`profile-like-${like.id}`}>
+                <div
+                  className="notificationItem"
+                  key={`profile-like-${like.id}`}
+                >
                   <button
                     className="notificationRow heart"
                     onClick={() => {
@@ -7911,7 +8314,9 @@ export default function MatchApp({
                   </button>
                   <button
                     className="notificationDismiss"
-                    onClick={() => void dismissNotifications([`like:${like.id}`])}
+                    onClick={() =>
+                      void dismissNotifications([`like:${like.id}`])
+                    }
                     aria-label={`${like.senderName}さんからのいいね通知を消す`}
                   >
                     ×
@@ -7919,51 +8324,62 @@ export default function MatchApp({
                 </div>
               ))}
               {visibleHeartConnections.map((connection) => (
-                    <div className="notificationItem" key={`heart-${connection.id}`}>
-                    <button
-                      className="notificationRow heart"
-                      onClick={() => {
-                        void dismissNotifications([`heart:${connection.id}`]);
-                        void openChat(connection);
-                      }}
-                    >
-                      <span>♡</span>
-                      <div>
-                        <strong>{connection.mateName}さんからハート</strong>
-                        <p>「また遊びたい」が届きました</p>
-                      </div>
-                      <b>›</b>
-                    </button>
-                    <button
-                      className="notificationDismiss"
-                      onClick={() =>
-                        void dismissNotifications([`heart:${connection.id}`])
-                      }
-                      aria-label={`${connection.mateName}さんからのハート通知を消す`}
-                    >
-                      ×
-                    </button>
+                <div
+                  className="notificationItem"
+                  key={`heart-${connection.id}`}
+                >
+                  <button
+                    className="notificationRow heart"
+                    onClick={() => {
+                      void dismissNotifications([`heart:${connection.id}`]);
+                      void openChat(connection);
+                    }}
+                  >
+                    <span>♡</span>
+                    <div>
+                      <strong>{connection.mateName}さんからハート</strong>
+                      <p>「また遊びたい」が届きました</p>
                     </div>
-                  ))}
+                    <b>›</b>
+                  </button>
+                  <button
+                    className="notificationDismiss"
+                    onClick={() =>
+                      void dismissNotifications([`heart:${connection.id}`])
+                    }
+                    aria-label={`${connection.mateName}さんからのハート通知を消す`}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
               {visibleUnreadConnections.map((connection) => (
                 <div className="notificationItem" key={`chat-${connection.id}`}>
                   <button
                     className="notificationRow message"
                     onClick={() => {
-                      void dismissNotifications([chatNotificationKey(connection)]);
+                      void dismissNotifications([
+                        chatNotificationKey(connection),
+                      ]);
                       void openChat(connection);
                     }}
                   >
                     <span>●</span>
                     <div>
                       <strong>{connection.mateName}さんからメッセージ</strong>
-                      <p>{connection.unreadCount}件の未読メッセージがあります</p>
+                      <p>
+                        {connection.unreadCount}件の未読メッセージがあります
+                      </p>
                     </div>
                     <b>›</b>
                   </button>
                   <button
                     className="notificationDismiss"
-                    onClick={() => void dismissNotifications([chatNotificationKey(connection)])}
+                    onClick={() =>
+                      void dismissNotifications([
+                        chatNotificationKey(connection),
+                      ])
+                    }
                     aria-label={`${connection.mateName}さんからのメッセージ通知を消す`}
                   >
                     ×
@@ -7971,36 +8387,36 @@ export default function MatchApp({
                 </div>
               ))}
               {visiblePendingIncoming.map((notice) => (
-                  <article
-                    key={`request-${notice.id}`}
-                    className="notificationRequest"
-                  >
-                    <div className="notificationRow">
-                      <span>⚡</span>
-                      <div>
-                        <strong>{notice.applicantName}さんから申請</strong>
-                        <p>
-                          {notice.pokemon === "指定なし"
-                            ? "使うポケモンは相談したいそうです"
-                            : `${notice.pokemon}で一緒に遊びたいそうです`}
-                        </p>
-                      </div>
-                    </div>
+                <article
+                  key={`request-${notice.id}`}
+                  className="notificationRequest"
+                >
+                  <div className="notificationRow">
+                    <span>⚡</span>
                     <div>
-                      <button
-                        onClick={() => {
-                          openPendingConversation(notice, "incoming");
-                          setDeclineReasonOpen(true);
-                        }}
-                      >
-                        理由を添えて断る
-                      </button>
-                      <button onClick={() => decide(notice.id, "accept")}>
-                        承認する
-                      </button>
+                      <strong>{notice.applicantName}さんから申請</strong>
+                      <p>
+                        {notice.pokemon === "指定なし"
+                          ? "使うポケモンは相談したいそうです"
+                          : `${notice.pokemon}で一緒に遊びたいそうです`}
+                      </p>
                     </div>
-                  </article>
-                ))}
+                  </div>
+                  <div>
+                    <button
+                      onClick={() => {
+                        openPendingConversation(notice, "incoming");
+                        setDeclineReasonOpen(true);
+                      }}
+                    >
+                      理由を添えて断る
+                    </button>
+                    <button onClick={() => decide(notice.id, "accept")}>
+                      承認する
+                    </button>
+                  </div>
+                </article>
+              ))}
               {visibleDeclinedNotices.map((notice) => (
                 <div className="notificationItem" key={`declined-${notice.id}`}>
                   <button
@@ -8031,7 +8447,7 @@ export default function MatchApp({
                 </div>
               ))}
               {visibleAcceptedNotices.map((notice) => (
-                  <div className="notificationItem" key={`accepted-${notice.id}`}>
+                <div className="notificationItem" key={`accepted-${notice.id}`}>
                   <button
                     className="notificationRow accepted"
                     onClick={() => {
@@ -8058,8 +8474,8 @@ export default function MatchApp({
                   >
                     ×
                   </button>
-                  </div>
-                ))}
+                </div>
+              ))}
               {!visibleProfileLikes.length &&
                 !visibleHeartConnections.length &&
                 !visibleUnreadConnections.length &&
@@ -8172,12 +8588,14 @@ export default function MatchApp({
             </label>
             <fieldset className="activityFilter">
               <legend>最終オンライン</legend>
-              {([
-                ["", "指定なし"],
-                ["online", "オンライン中"],
-                ["3h", "3時間以内"],
-                ["24h", "24時間以内"],
-              ] as const).map(([value, label]) => (
+              {(
+                [
+                  ["", "指定なし"],
+                  ["online", "オンライン中"],
+                  ["3h", "3時間以内"],
+                  ["24h", "24時間以内"],
+                ] as const
+              ).map(([value, label]) => (
                 <button
                   type="button"
                   key={value || "all"}
@@ -8357,7 +8775,8 @@ export default function MatchApp({
             <p className="candidateDetailRank">
               {pendingProfileView.highestRate}
               {pendingProfileView.gender && ` ・ ${pendingProfileView.gender}`}
-              {pendingProfileView.age !== null && ` ・ ${pendingProfileView.age}歳`}
+              {pendingProfileView.age !== null &&
+                ` ・ ${pendingProfileView.age}歳`}
             </p>
             <div className="candidateBio">
               <small>自己紹介</small>
@@ -8500,8 +8919,14 @@ export default function MatchApp({
               </button>
             </div>
             <div className="candidateActionGuide">
-              <p><b>♡ いいね</b><span>気になる気持ちだけ通知。チャットは始まりません</span></p>
-              <p><b>⚡ メイト申請</b><span>ひとことを送り、承認前から相談できます</span></p>
+              <p>
+                <b>♡ いいね</b>
+                <span>気になる気持ちだけ通知。チャットは始まりません</span>
+              </p>
+              <p>
+                <b>⚡ メイト申請</b>
+                <span>ひとことを送り、承認前から相談できます</span>
+              </p>
             </div>
           </section>
         </div>
@@ -8541,14 +8966,18 @@ export default function MatchApp({
             </div>
             <h2>{recruitProfileView.trainerName}</h2>
             {!recruitProfileView.avatarUrl && (
-              <p className="recruitProfileMissing">プロフィール画像は未設定です</p>
+              <p className="recruitProfileMissing">
+                プロフィール画像は未設定です
+              </p>
             )}
             <div className="recruitProfileMeta">
               <PokemonLabel name={recruitProfileView.pokemon} />
               <span>性別：{recruitProfileView.gender || "未設定"}</span>
               <span>募集者ランク：{recruitProfileView.rank}</span>
               <span>募集モード：{recruitProfileView.matchType}</span>
-              <span>募集日時：{formatRecruitPostedAt(recruitProfileView.createdAt)}</span>
+              <span>
+                募集日時：{formatRecruitPostedAt(recruitProfileView.createdAt)}
+              </span>
             </div>
             <div className="candidateBio recruitProfileBio">
               <small>自己紹介</small>
@@ -8580,7 +9009,12 @@ export default function MatchApp({
           />
           <section className="sheetModal candidateDetailSheet matchedProfileSheet">
             <div className="sheetHandle" />
-            <button className="closeButton" onClick={() => setMatchedProfile(null)}>×</button>
+            <button
+              className="closeButton"
+              onClick={() => setMatchedProfile(null)}
+            >
+              ×
+            </button>
             <div
               className={`candidateDetailHero role-${pokemonRole(
                 matchedProfile.mateMainPokemon[0] || matchedProfile.matePokemon,
@@ -8596,7 +9030,8 @@ export default function MatchApp({
               <div className="candidateDetailPokemonName">
                 <small>MAIN POKÉMON</small>
                 <strong>
-                  {matchedProfile.mateMainPokemon[0] || matchedProfile.matePokemon}
+                  {matchedProfile.mateMainPokemon[0] ||
+                    matchedProfile.matePokemon}
                 </strong>
               </div>
               <UserAvatar
@@ -8609,7 +9044,8 @@ export default function MatchApp({
             <h2>{matchedProfile.mateName}</h2>
             <p className="candidateDetailRank">
               {matchedProfile.mateHighestRate} ・ {matchedProfile.mateGender}
-              {matchedProfile.mateAge !== null && ` ・ ${matchedProfile.mateAge}歳`}
+              {matchedProfile.mateAge !== null &&
+                ` ・ ${matchedProfile.mateAge}歳`}
             </p>
             <div className="matchedProfileBadge">✓ マッチ済みのメイト</div>
             {matchedProfile.mateBio && (
@@ -8630,10 +9066,15 @@ export default function MatchApp({
               <span>◷</span>
               <div>
                 <small>遊べる時間帯</small>
-                <strong>{matchedProfile.matePlayTime.join("・") || "未設定"}</strong>
+                <strong>
+                  {matchedProfile.matePlayTime.join("・") || "未設定"}
+                </strong>
               </div>
             </div>
-            <button className="matchedProfileClose" onClick={() => setMatchedProfile(null)}>
+            <button
+              className="matchedProfileClose"
+              onClick={() => setMatchedProfile(null)}
+            >
               閉じる
             </button>
           </section>
@@ -8649,7 +9090,12 @@ export default function MatchApp({
           />
           <section className="sheetModal matchHistorySheet">
             <div className="sheetHandle" />
-            <button className="closeButton" onClick={() => setMatchHistoryOpen(false)}>×</button>
+            <button
+              className="closeButton"
+              onClick={() => setMatchHistoryOpen(false)}
+            >
+              ×
+            </button>
             <small className="modalKicker">MATCH HISTORY</small>
             <h2>マッチした人一覧</h2>
             <p className="matchHistoryLead">
@@ -8705,7 +9151,9 @@ export default function MatchApp({
                 onClick={() => void loadConnections(true)}
                 disabled={connectionsLoadingMore}
               >
-                {connectionsLoadingMore ? "読み込み中…" : "過去のマッチをさらに読み込む"}
+                {connectionsLoadingMore
+                  ? "読み込み中…"
+                  : "過去のマッチをさらに読み込む"}
               </button>
             )}
           </section>
@@ -8813,8 +9261,7 @@ export default function MatchApp({
                         required
                       />
                       <span>
-                        {matchType === "ランクマッチ" ? "🏆" : "🎮"}{" "}
-                        {matchType}
+                        {matchType === "ランクマッチ" ? "🏆" : "🎮"} {matchType}
                       </span>
                     </label>
                   ),
@@ -8936,13 +9383,36 @@ export default function MatchApp({
 
       {recruitNotifyPrompt && (
         <div className="modalBackdrop">
-          <section className="recruitNotifyCard" role="dialog" aria-modal="true" aria-labelledby="recruit-notify-title">
-            <div className="recruitNotifyIcon"><span className="bellGlyph" aria-hidden="true" /></div>
+          <section
+            className="recruitNotifyCard"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="recruit-notify-title"
+          >
+            <div className="recruitNotifyIcon">
+              <span className="bellGlyph" aria-hidden="true" />
+            </div>
             <small>募集を公開しました</small>
-            <h2 id="recruit-notify-title">参加申請を<br />見逃さないようにしよう</h2>
-            <p>通知をオンにすると、サイトを閉じていても申請やマッチ成立がすぐ分かります。</p>
-            <button className="pushPromptEnable" onClick={() => finishRecruitNotifyPrompt(true)}>通知をオンにして続ける</button>
-            <button className="pushPromptLater" onClick={() => finishRecruitNotifyPrompt(false)}>今はしない</button>
+            <h2 id="recruit-notify-title">
+              参加申請を
+              <br />
+              見逃さないようにしよう
+            </h2>
+            <p>
+              通知をオンにすると、サイトを閉じていても申請やマッチ成立がすぐ分かります。
+            </p>
+            <button
+              className="pushPromptEnable"
+              onClick={() => finishRecruitNotifyPrompt(true)}
+            >
+              通知をオンにして続ける
+            </button>
+            <button
+              className="pushPromptLater"
+              onClick={() => finishRecruitNotifyPrompt(false)}
+            >
+              今はしない
+            </button>
           </section>
         </div>
       )}
@@ -8977,8 +9447,10 @@ export default function MatchApp({
                     : "募集者の役割：相談して決める"}
                 </span>
                 <p>
-                  募集者ランク：{recruitShare.rank}<br />
-                  {formatRecruitStart(recruitShare)} ・ {recruitShare.playTime}<br />
+                  募集者ランク：{recruitShare.rank}
+                  <br />
+                  {formatRecruitStart(recruitShare)} ・ {recruitShare.playTime}
+                  <br />
                   {formatRecruitPostedAt(recruitShare.createdAt)}
                 </p>
               </div>
@@ -9106,13 +9578,21 @@ export default function MatchApp({
             <div className="requestFlowGuide">
               <strong>送ったあとの流れ</strong>
               <div>
-                <span><b>1</b>申請を送る</span>
+                <span>
+                  <b>1</b>申請を送る
+                </span>
                 <i>›</i>
-                <span><b>2</b>やりとりで相談</span>
+                <span>
+                  <b>2</b>やりとりで相談
+                </span>
                 <i>›</i>
-                <span><b>3</b>承認でメイト</span>
+                <span>
+                  <b>3</b>承認でメイト
+                </span>
               </div>
-              <p>承認されると通常チャットが開きます。断られた場合も結果を通知します。</p>
+              <p>
+                承認されると通常チャットが開きます。断られた場合も結果を通知します。
+              </p>
             </div>
             <label>
               自分が使うポケモン
@@ -9247,7 +9727,9 @@ export default function MatchApp({
                   }}
                 >
                   <b>☆</b>
-                  {selectedConnection.myRatingScore ? "評価を編集" : "この人を評価"}
+                  {selectedConnection.myRatingScore
+                    ? "評価を編集"
+                    : "この人を評価"}
                 </button>
               )}
               <button
@@ -9315,7 +9797,9 @@ export default function MatchApp({
                 disabled={pinUpdatingId === selectedConnection.id}
               >
                 <b>{selectedConnection.pinned ? "★" : "☆"}</b>
-                {selectedConnection.pinned ? "ピン留めを外す" : "チャットをピン留め"}
+                {selectedConnection.pinned
+                  ? "ピン留めを外す"
+                  : "チャットをピン留め"}
               </button>
               <button
                 className="matchDissolveAction"
@@ -9366,12 +9850,16 @@ export default function MatchApp({
               <button
                 onClick={() => toggleContactSharing(selectedConnection.id)}
               >
-                {selectedConnection.myContactShared ? "共有をやめる" : "連絡先を共有"}
+                {selectedConnection.myContactShared
+                  ? "共有をやめる"
+                  : "連絡先を共有"}
               </button>
               {selectedConnection.mateContact && (
                 <button
                   onClick={() => {
-                    navigator.clipboard?.writeText(selectedConnection.mateContact || "");
+                    navigator.clipboard?.writeText(
+                      selectedConnection.mateContact || "",
+                    );
                     notify("相手の連絡先をコピーしました");
                   }}
                 >
@@ -9440,12 +9928,15 @@ export default function MatchApp({
                           <div>
                             <strong>{slot.mateName}</strong>
                             <time>
-                              {formatAvailabilityDay(slot.day)} {slot.startTime}〜{slot.endTime}
+                              {formatAvailabilityDay(slot.day)} {slot.startTime}
+                              〜{slot.endTime}
                             </time>
                             <small>{slot.matchType}</small>
                             {slot.note && <p>{slot.note}</p>}
                           </div>
-                          {connections.some((row) => row.id === slot.connectionId) && (
+                          {connections.some(
+                            (row) => row.id === slot.connectionId,
+                          ) && (
                             <button
                               type="button"
                               onClick={() => {
@@ -9483,9 +9974,12 @@ export default function MatchApp({
                         <article key={slot.id}>
                           <time>{formatAvailabilityDay(slot.day)}</time>
                           <div>
-                            <strong>{slot.startTime}〜{slot.endTime}</strong>
+                            <strong>
+                              {slot.startTime}〜{slot.endTime}
+                            </strong>
                             <small>
-                              {slot.matchType} ・ {slot.visibility === "mates"
+                              {slot.matchType} ・{" "}
+                              {slot.visibility === "mates"
                                 ? "全メイト"
                                 : slot.visibility === "favorites"
                                   ? "お気に入り限定"
@@ -9504,10 +9998,15 @@ export default function MatchApp({
                       ))}
                     </div>
                   ) : (
-                    <p className="availabilityEmpty">予定を登録してみましょう。</p>
+                    <p className="availabilityEmpty">
+                      予定を登録してみましょう。
+                    </p>
                   )}
                 </section>
-                <form className="availabilityForm" onSubmit={submitAvailability}>
+                <form
+                  className="availabilityForm"
+                  onSubmit={submitAvailability}
+                >
                   <div className="availabilityFormHeading">
                     <small>ADD SCHEDULE</small>
                     <h3>新しいプレイ予定</h3>
@@ -9526,11 +10025,21 @@ export default function MatchApp({
                   <div className="twoFields">
                     <label>
                       開始
-                      <input type="time" name="startTime" defaultValue="20:00" required />
+                      <input
+                        type="time"
+                        name="startTime"
+                        defaultValue="20:00"
+                        required
+                      />
                     </label>
                     <label>
                       終了
-                      <input type="time" name="endTime" defaultValue="22:00" required />
+                      <input
+                        type="time"
+                        name="endTime"
+                        defaultValue="22:00"
+                        required
+                      />
                     </label>
                   </div>
                   <div className="twoFields">
@@ -9562,7 +10071,10 @@ export default function MatchApp({
                   <p className="availabilityPrivacyNote">
                     「お気に入り限定」は、あなたが★でピン留めしたメイトだけに表示されます。
                   </p>
-                  <button className="primaryButton" disabled={availabilitySaving}>
+                  <button
+                    className="primaryButton"
+                    disabled={availabilitySaving}
+                  >
                     {availabilitySaving ? "登録中…" : "この予定を共有する"}
                   </button>
                 </form>
@@ -9604,7 +10116,8 @@ export default function MatchApp({
                       <strong>時間が合いそうです</strong>
                       <p>
                         {formatAvailabilityDay(availabilityMatches[0].day)}の
-                        {availabilityMatches[0].startTime}〜{availabilityMatches[0].endTime}
+                        {availabilityMatches[0].startTime}〜
+                        {availabilityMatches[0].endTime}
                       </p>
                     </div>
                   </section>
@@ -9623,14 +10136,18 @@ export default function MatchApp({
                         <article
                           key={slot.id}
                           className={
-                            availabilityMatches.some((row) => row.id === slot.id)
+                            availabilityMatches.some(
+                              (row) => row.id === slot.id,
+                            )
                               ? "overlap"
                               : ""
                           }
                         >
                           <time>{formatAvailabilityDay(slot.day)}</time>
                           <div>
-                            <strong>{slot.startTime}〜{slot.endTime}</strong>
+                            <strong>
+                              {slot.startTime}〜{slot.endTime}
+                            </strong>
                             <small>{slot.matchType}</small>
                             {slot.note && <p>{slot.note}</p>}
                           </div>
@@ -9657,9 +10174,12 @@ export default function MatchApp({
                         <article key={slot.id}>
                           <time>{formatAvailabilityDay(slot.day)}</time>
                           <div>
-                            <strong>{slot.startTime}〜{slot.endTime}</strong>
+                            <strong>
+                              {slot.startTime}〜{slot.endTime}
+                            </strong>
                             <small>
-                              {slot.matchType} ・ {slot.visibility === "mates"
+                              {slot.matchType} ・{" "}
+                              {slot.visibility === "mates"
                                 ? "全メイト"
                                 : slot.visibility === "favorites"
                                   ? "お気に入り限定"
@@ -9678,10 +10198,15 @@ export default function MatchApp({
                       ))}
                     </div>
                   ) : (
-                    <p className="availabilityEmpty">予定を登録してみましょう。</p>
+                    <p className="availabilityEmpty">
+                      予定を登録してみましょう。
+                    </p>
                   )}
                 </section>
-                <form className="availabilityForm" onSubmit={submitAvailability}>
+                <form
+                  className="availabilityForm"
+                  onSubmit={submitAvailability}
+                >
                   <div className="availabilityFormHeading">
                     <small>ADD SCHEDULE</small>
                     <h3>新しいプレイ予定</h3>
@@ -9700,11 +10225,21 @@ export default function MatchApp({
                   <div className="twoFields">
                     <label>
                       開始
-                      <input type="time" name="startTime" defaultValue="20:00" required />
+                      <input
+                        type="time"
+                        name="startTime"
+                        defaultValue="20:00"
+                        required
+                      />
                     </label>
                     <label>
                       終了
-                      <input type="time" name="endTime" defaultValue="22:00" required />
+                      <input
+                        type="time"
+                        name="endTime"
+                        defaultValue="22:00"
+                        required
+                      />
                     </label>
                   </div>
                   <div className="twoFields">
@@ -9736,7 +10271,10 @@ export default function MatchApp({
                   <p className="availabilityPrivacyNote">
                     「お気に入り限定」は、あなたが★でピン留めしたメイトだけに表示されます。
                   </p>
-                  <button className="primaryButton" disabled={availabilitySaving}>
+                  <button
+                    className="primaryButton"
+                    disabled={availabilitySaving}
+                  >
                     {availabilitySaving ? "登録中…" : "この予定を共有する"}
                   </button>
                 </form>
@@ -9927,7 +10465,9 @@ export default function MatchApp({
                 : "不具合・安全上の問題・アカウントの相談を送れます。原則24時間以内に運営が確認します。"}
             </p>
             <label>
-              {supportMode === "feedback" ? "フィードバックの種類" : "お問い合わせの種類"}
+              {supportMode === "feedback"
+                ? "フィードバックの種類"
+                : "お問い合わせの種類"}
               {supportMode === "feedback" ? (
                 <select name="category" defaultValue="フィードバック・改善案">
                   <option>フィードバック・改善案</option>
@@ -9951,9 +10491,11 @@ export default function MatchApp({
                 name="message"
                 minLength={5}
                 maxLength={1000}
-                placeholder={supportMode === "feedback"
-                  ? "こうなったら使いやすい、ここが良かった、など自由に入力してください"
-                  : "困っていることをできるだけ具体的に入力してください"}
+                placeholder={
+                  supportMode === "feedback"
+                    ? "こうなったら使いやすい、ここが良かった、など自由に入力してください"
+                    : "困っていることをできるだけ具体的に入力してください"
+                }
                 required
               />
             </label>

@@ -454,7 +454,8 @@ export default function IdentityPreview() {
               </article>
             ))}
             {connections.map((item) => (
-              <article
+              <button
+                type="button"
                 className={`${styles.panel} ${styles.chat}`}
                 key={item.id}
                 onClick={() => void openChat(item)}
@@ -465,7 +466,7 @@ export default function IdentityPreview() {
                   <small>{item.latestMessage?.body || "マッチしました"}</small>
                 </div>
                 <b>›</b>
-              </article>
+              </button>
             ))}
             {!incoming.length && !outgoing.length && !connections.length && (
               <p>まだやりとりがありません。</p>
