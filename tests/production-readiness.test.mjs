@@ -52,3 +52,16 @@ test("service Discord links are allowlisted and hidden until configured", async 
     assert.match(await read(`app/${page}/page.tsx`), /<ServiceDiscordLink service=/);
   }
 });
+
+test("admin launch readiness exposes booleans without leaking configured values", async () => {
+  const source = compact(await read("app/api/admin/readiness/route.ts"));
+  assert.match(source, /requireAdmin\(\)/);
+  assert.match(source, /TELECOM_SERVICES_CONFIRMED/);
+  for (const service of ["VALOMATCH", "STAMATE", "SHOENMATE"]) {
+    assert.match(source, new RegExp(`${service}_SITE_URL`));
+    assert.match(source, new RegExp(`${service}_X_URL`));
+    assert.match(source, new RegExp(`${service}_PUBLIC_RELEASE_APPROVED`));
+  }
+  assert.doesNotMatch(source, /value:process\.env/);
+  assert.match(await read("app/admin/admin-panel.tsx"), /公開準備チェック/);
+});

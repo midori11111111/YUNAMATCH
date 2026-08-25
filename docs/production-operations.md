@@ -19,6 +19,18 @@
 
 `AUTH_SECRET`と`ADMIN_PASSWORD`は24文字以上のランダム値にする。過去に共有した文字列やサービス名を使わない。
 
+## 3サービス公開フラグ
+
+管理画面の公開準備チェックは、次の環境変数が設定された場合だけ完了表示になる。
+
+- `VALOMATCH_SITE_URL` / `STAMATE_SITE_URL` / `SHOENMATE_SITE_URL`
+- `VALOMATCH_X_URL` / `STAMATE_X_URL` / `SHOENMATE_X_URL`
+- `NEXT_PUBLIC_VALOMATCH_DISCORD_URL` / `NEXT_PUBLIC_STAMATE_DISCORD_URL` / `NEXT_PUBLIC_SHOENMATE_DISCORD_URL`
+- `VALOMATCH_PUBLIC_RELEASE_APPROVED` / `STAMATE_PUBLIC_RELEASE_APPROVED` / `SHOENMATE_PUBLIC_RELEASE_APPROVED`
+- `TELECOM_SERVICES_CONFIRMED`
+
+確認フラグは、権利者の回答・公開方針・管轄窓口への確認記録が残ってから `true` にする。審査待ちを便宜的に完了扱いにしない。
+
 ## バックアップ
 
 - 毎日1回、およびDBマイグレーション直前に管理画面から書き出す。

@@ -1212,6 +1212,7 @@ button { cursor: pointer; }
 .adminServiceMetrics { display: grid; gap: 7px; margin-top: 11px; }
 .adminPage .adminServiceMetrics article { display: grid; grid-template-columns: 1.4fr repeat(5,1fr); align-items: center; gap: 7px; padding: 11px 14px; }
 .adminServiceMetrics strong { font-size: 11px; }.adminServiceMetrics span { color: #7e7684; font-size: 9px; }.adminServiceMetrics span.alert { color: #c62f4e; font-weight: 900; }
+.adminReadiness { display: grid; gap: 8px; margin-top: 14px; }.adminReadiness h3 { margin: 8px 0 0; }.adminPage .adminReadiness article { display: grid; grid-template-columns: 1fr auto; gap: 9px; padding: 13px 14px; }.adminReadiness article > em { color: #81798a; font-size: 9px; font-style: normal; font-weight: 900; }.adminReadiness article > div { grid-column: 1/-1; display: flex; flex-wrap: wrap; gap: 6px; }.adminReadiness span { padding: 6px 8px; border-radius: 999px; font-size: 9px; font-weight: 850; }.adminReadiness span.ok { color: #08784a; background: #dff8ec; }.adminReadiness span.missing { color: #b61c3b; background: #ffe8ec; }
 .adminPage > section + section { margin-top: 34px; }
 .adminSectionTitle { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
 .adminSectionTitle small { color: var(--purple); font-size: 9px; font-weight: 950; letter-spacing: 1.4px; }

@@ -116,6 +116,16 @@ type ServiceStat = {
   reports: number;
   openReports: number;
 };
+type ReadinessCheck = { label: string; ready: boolean };
+type LaunchReadiness = {
+  common: ReadinessCheck[];
+  services: Array<{
+    id: string;
+    name: string;
+    ready: boolean;
+    checks: ReadinessCheck[];
+  }>;
+};
 type ServiceReport = {
   id: number;
   serviceId: string;
@@ -165,7 +175,8 @@ export default function AdminPanel() {
     [loading, setLoading] = useState(true),
     [showResolved, setShowResolved] = useState(false);
   const [serviceStats, setServiceStats] = useState<ServiceStat[]>([]),
-    [serviceSchemaReady, setServiceSchemaReady] = useState(false);
+    [serviceSchemaReady, setServiceSchemaReady] = useState(false),
+    [launchReadiness, setLaunchReadiness] = useState<LaunchReadiness | null>(null);
   const [serviceReports, setServiceReports] = useState<ServiceReport[]>([]),
     [serviceAuditLogs, setServiceAuditLogs] = useState<ServiceAuditLog[]>([]);
   const [serviceUserQuery, setServiceUserQuery] = useState(""),
@@ -195,6 +206,9 @@ export default function AdminPanel() {
       fetch("/api/admin/services", { cache: "no-store" }).then((response) =>
         response.json(),
       ),
+      fetch("/api/admin/readiness", { cache: "no-store" }).then((response) =>
+        response.json(),
+      ),
       fetch("/api/admin/service-reports", { cache: "no-store" }).then(
         (response) => response.json(),
       ),
@@ -208,6 +222,7 @@ export default function AdminPanel() {
           ticketData,
           statsData,
           serviceData,
+          readinessData,
           serviceReportData,
           serviceAuditData,
         ]) => {
@@ -217,6 +232,7 @@ export default function AdminPanel() {
           if (statsData.totals) setStats(statsData);
           setServiceStats(serviceData.services || []);
           setServiceSchemaReady(Boolean(serviceData.schemaReady));
+          if (readinessData.services) setLaunchReadiness(readinessData);
           setServiceReports(serviceReportData.reports || []);
           setServiceAuditLogs(serviceAuditData.logs || []);
         },
@@ -549,6 +565,34 @@ export default function AdminPanel() {
                 <span className={service.openReports ? "alert" : ""}>
                   未対応通報 {service.openReports}
                 </span>
+              </article>
+            ))}
+          </div>
+        )}
+        {launchReadiness && (
+          <div className="adminReadiness">
+            <h3>公開準備チェック</h3>
+            <article>
+              <strong>全サービス共通</strong>
+              <div>
+                {launchReadiness.common.map((check) => (
+                  <span className={check.ready ? "ok" : "missing"} key={check.label}>
+                    {check.ready ? "✓" : "!"} {check.label}
+                  </span>
+                ))}
+              </div>
+            </article>
+            {launchReadiness.services.map((service) => (
+              <article key={service.id}>
+                <strong>{service.name}</strong>
+                <em>{service.ready ? "公開準備完了" : "未完了あり"}</em>
+                <div>
+                  {service.checks.map((check) => (
+                    <span className={check.ready ? "ok" : "missing"} key={check.label}>
+                      {check.ready ? "✓" : "!"} {check.label}
+                    </span>
+                  ))}
+                </div>
               </article>
             ))}
           </div>
