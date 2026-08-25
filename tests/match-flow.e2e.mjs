@@ -496,11 +496,40 @@ try {
     });
     const hiddenAfterBlock = await api(`/api/services/${serviceCase.id}/connections`, { user: second });
     assert.equal(hiddenAfterBlock.connections.length, 0);
+    if (serviceCase.id === "shoenmate") {
+      const blockedBackupResponse = await fetch(`${base}/api/admin/export`, {
+        headers: { cookie: adminCookie },
+      });
+      assert.equal(blockedBackupResponse.status, 200);
+      const blockedBackup = await blockedBackupResponse.json();
+      assert.ok(
+        blockedBackup.serviceBlocks.some(
+          (row) => row.serviceId === serviceCase.id,
+        ),
+      );
+    }
     await api(`/api/services/${serviceCase.id}/safety`, {
       user: second,
       method: "DELETE",
       body: { targetProfileId: reverseTarget.id },
     });
+    if (serviceCase.id === "shoenmate") {
+      const liveBackupResponse = await fetch(`${base}/api/admin/export`, {
+        headers: { cookie: adminCookie },
+      });
+      assert.equal(liveBackupResponse.status, 200);
+      const liveBackup = await liveBackupResponse.json();
+      assert.ok(
+        liveBackup.serviceConnections.some(
+          (row) => row.serviceId === serviceCase.id,
+        ),
+      );
+      assert.ok(
+        liveBackup.serviceMessages.some(
+          (row) => row.serviceId === serviceCase.id,
+        ),
+      );
+    }
     await api(`/api/services/${serviceCase.id}/profile`, {
       user: first,
       method: "DELETE",
@@ -509,6 +538,22 @@ try {
     const deletedServiceProfile = await api(`/api/services/${serviceCase.id}/profile`, { user: first });
     assert.equal(deletedServiceProfile.profile, null);
   }
+
+  const backupResponse = await fetch(`${base}/api/admin/export`, {
+    headers: { cookie: adminCookie },
+  });
+  assert.equal(backupResponse.status, 200);
+  assert.match(
+    backupResponse.headers.get("content-disposition") || "",
+    /yunamatch-backup-/,
+  );
+  const backup = await backupResponse.json();
+  assert.equal(backup.schemaVersion, 4);
+  assert.ok(backup.serviceProfiles.length >= 3);
+  assert.ok(Array.isArray(backup.serviceConnections));
+  assert.ok(Array.isArray(backup.serviceMessages));
+  assert.ok(Array.isArray(backup.serviceBlocks));
+  assert.ok(backup.serviceAdminAuditLogs.length >= 2);
 
   console.log("✓ YUNAMATCHと3サービスで登録→マッチ→チャット→ブロック→解除→退会を確認しました");
 } finally {
