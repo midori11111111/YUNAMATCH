@@ -28,3 +28,19 @@ test("rejects unknown service identifiers before database access",async()=>{
  assert.match(profile,/if\(!isServiceId\(service\)\)return null/);
  assert.match(recruits,/if\(!isServiceId\(service\)\)return Response\.json/);
 });
+
+test("scopes connections and messages to both the service and a participant",async()=>{
+ const [connections,messages]=await Promise.all([read("app/api/services/[service]/connections/route.ts"),read("app/api/services/[service]/messages/route.ts")]);
+ assert.match(connections,/eq\(serviceConnections\.serviceId,ctx\.service\)/);
+ assert.match(connections,/or\(eq\(serviceConnections\.userAProfileId,ctx\.profile\.id\),eq\(serviceConnections\.userBProfileId,ctx\.profile\.id\)\)/);
+ assert.match(messages,/eq\(serviceConnections\.serviceId,service\)/);
+ assert.match(messages,/or\(eq\(serviceConnections\.userAProfileId,profile\.id\),eq\(serviceConnections\.userBProfileId,profile\.id\)\)/);
+});
+
+test("deduplicates matches and client message retries",async()=>{
+ const [schema,connections,messages]=await Promise.all([read("db/schema.ts"),read("app/api/services/[service]/connections/route.ts"),read("app/api/services/[service]/messages/route.ts")]);
+ assert.match(schema,/uniqueIndex\("idx_service_connections_service_pair"\)/);
+ assert.match(schema,/uniqueIndex\("idx_service_messages_sender_client"\)/);
+ assert.match(connections,/onConflictDoNothing\(\{target:\[serviceConnections\.serviceId,serviceConnections\.pairKey\]\}\)/);
+ assert.match(messages,/onConflictDoNothing\(\{target:\[serviceMessages\.senderProfileId,serviceMessages\.clientId\]\}\)/);
+});

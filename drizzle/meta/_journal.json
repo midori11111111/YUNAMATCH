@@ -274,6 +274,13 @@
       "when": 1787666990142,
       "tag": "0038_noisy_black_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "6",
+      "when": 1787667137163,
+      "tag": "0039_flippant_the_leader",
+      "breakpoints": true
     }
   ]
 }

@@ -589,6 +589,7 @@ export const serviceConnections = sqliteTable(
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
     serviceId: text("service_id").notNull(),
+    pairKey: text("pair_key").notNull(),
     userAProfileId: integer("user_a_profile_id").notNull().references(() => serviceProfiles.id),
     userBProfileId: integer("user_b_profile_id").notNull().references(() => serviceProfiles.id),
     status: text("status").notNull().default("active"),
@@ -596,6 +597,7 @@ export const serviceConnections = sqliteTable(
     endedAt: integer("ended_at", { mode: "timestamp_ms" }),
   },
   (table) => [
+    uniqueIndex("idx_service_connections_service_pair").on(table.serviceId, table.pairKey),
     index("idx_service_connections_service_created").on(table.serviceId, table.createdAt),
     index("idx_service_connections_user_a").on(table.userAProfileId, table.createdAt),
     index("idx_service_connections_user_b").on(table.userBProfileId, table.createdAt),
