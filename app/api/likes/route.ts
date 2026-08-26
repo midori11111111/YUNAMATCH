@@ -232,8 +232,7 @@ export async function GET(){
     return [];
   }));
   const pendingTargetIds=new Set(pendingProfileRequests.map(row=>row.ownerId));
-  const visibleReceived=received.filter(row=>
-    !skippedLikeIds.has(row.id)&&
+  const eligibleReceived=received.filter(row=>
     !matchedUserIds.has(row.senderId)&&
     !pendingTargetIds.has(row.senderId)&&
     !hidden.has(row.senderId)&&
@@ -241,7 +240,9 @@ export async function GET(){
     row.senderAgeConfirmed&&
     Boolean(row.senderTermsAcceptedAt)
   );
-  const incoming=await Promise.all(visibleReceived.map(async row=>({
+  const visibleReceived=eligibleReceived.filter(row=>!skippedLikeIds.has(row.id));
+  const skippedReceived=eligibleReceived.filter(row=>skippedLikeIds.has(row.id));
+  const incomingFromRows=(rows:typeof eligibleReceived)=>Promise.all(rows.map(async row=>({
     id:row.id,
     senderId:await profilePublicId(row.senderId),
     senderName:row.senderName,
@@ -250,8 +251,10 @@ export async function GET(){
     read:Boolean(row.readAt),
     createdAt:row.createdAt,
   })));
+  const incoming=await incomingFromRows(visibleReceived);
+  const skippedIncoming=await incomingFromRows(skippedReceived);
   const likeCountByUser=new Map(likeCounts.map(row=>[row.userId,Number(row.count)||0]));
-  const receivedProfiles=await Promise.all(visibleReceived.map(async row=>{
+  const profilesFromRows=(rows:typeof eligibleReceived)=>Promise.all(rows.map(async row=>{
     const likeCount=likeCountByUser.get(row.senderId)||0;
     return {
       id:await profilePublicId(row.senderId),
@@ -270,10 +273,14 @@ export async function GET(){
       lastActiveAt:row.senderLastActiveAt,
     };
   }));
+  const receivedProfiles=await profilesFromRows(visibleReceived);
+  const skippedProfiles=await profilesFromRows(skippedReceived);
   const likedProfileIds=await Promise.all(sent.map(row=>profilePublicId(row.recipientId)));
   return Response.json({
     incoming,
     profiles:receivedProfiles,
+    skippedIncoming,
+    skippedProfiles,
     likedProfileIds,
     receivedLikeCount:Number(receivedLikeCountRow?.count)||0,
   });
@@ -317,12 +324,17 @@ export async function PATCH(request:Request){
   if(!user)return Response.json({error:"ログインが必要です",signIn:"/login"},{status:401});
   const db=getDb();
   const body=await request.json().catch(()=>({})) as {action?:string;likeId?:number};
-  if(body.action==="skip"){
+  if(body.action==="skip"||body.action==="restore"){
     const likeId=Number(body.likeId);
     if(!Number.isInteger(likeId)||likeId<=0)return Response.json({error:"いいねを確認してください"},{status:400});
     const [receivedLike]=await db.select({id:profileLikes.id}).from(profileLikes).where(and(eq(profileLikes.id,likeId),eq(profileLikes.recipientId,user.userId))).limit(1);
     if(!receivedLike)return Response.json({error:"このいいねは見つかりません"},{status:404});
-    await db.insert(notificationDismissals).values({userId:user.userId,notificationKey:`received-like:${likeId}`,createdAt:new Date()}).onConflictDoNothing();
+    const notificationKey=`received-like:${likeId}`;
+    if(body.action==="restore"){
+      await db.delete(notificationDismissals).where(and(eq(notificationDismissals.userId,user.userId),eq(notificationDismissals.notificationKey,notificationKey)));
+      return Response.json({ok:true,restored:true});
+    }
+    await db.insert(notificationDismissals).values({userId:user.userId,notificationKey,createdAt:new Date()}).onConflictDoNothing();
     return Response.json({ok:true,skipped:true});
   }
   await db.update(profileLikes).set({readAt:new Date()}).where(and(eq(profileLikes.recipientId,user.userId),isNull(profileLikes.readAt)));

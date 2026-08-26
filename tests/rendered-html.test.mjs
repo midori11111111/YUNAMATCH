@@ -1068,6 +1068,23 @@ test("lets users swipe away a received like without blocking the sender", async 
   assert.doesNotMatch(likesApi, /action==="skip"[\s\S]{0,1200}insert\(blocks\)/);
 });
 
+test("lets users review and restore received likes they skipped", async () => {
+  const [app, likesApi] = await Promise.all([
+    readFile(new URL("app/match-app.tsx", root), "utf8"),
+    readFile(new URL("app/api/likes/route.ts", root), "utf8"),
+  ]);
+
+  assert.match(app, /見返す/);
+  assert.match(app, /skippedProfileCandidates/);
+  assert.match(app, /restoreSkippedProfile/);
+  assert.match(app, /action: "restore", likeId: receivedLike\.id/);
+  assert.match(app, /相手からの一覧へ戻しました/);
+  assert.match(likesApi, /skippedIncoming/);
+  assert.match(likesApi, /skippedProfiles/);
+  assert.match(likesApi, /body\.action==="skip"\|\|body\.action==="restore"/);
+  assert.match(likesApi, /db\.delete\(notificationDismissals\)/);
+});
+
 test("removes matched, requested, and skipped people from received likes", async () => {
   const [app, likesApi] = await Promise.all([
     readFile(new URL("app/match-app.tsx", root), "utf8"),

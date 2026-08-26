@@ -218,7 +218,7 @@ button { cursor: pointer; }
 
 .fullDiscoverView { height: 100%; min-height: 0; position: relative; overflow: hidden; padding: 0 12px 10px; background: linear-gradient(180deg, #fff 0, #f8f5fb 100%); }
 .discoverModeBar { height: 60px; display: flex; align-items: center; gap: 7px; padding: 6px 2px 8px; }
-.discoverModeTabs { min-width: 0; height: 46px; display: grid; grid-template-columns: 1fr 1fr; flex: 1; padding: 4px; border-radius: 18px; background: #f4f1f7; }
+.discoverModeTabs { min-width: 0; height: 46px; display: grid; grid-template-columns: repeat(3,1fr); flex: 1; padding: 4px; border-radius: 18px; background: #f4f1f7; }
 .discoverModeTabs button { position: relative; border: 0; border-radius: 14px; color: #aaa4af; background: transparent; font-size: 11px; font-weight: 950; }
 .discoverModeTabs button.active { color: var(--ink); background: #fff; box-shadow: 0 6px 17px #34294c12; }
 .discoverModeTabs b { min-width: 17px; height: 17px; margin-left: 5px; display: inline-grid; place-items: center; padding: 0 4px; border-radius: 99px; color: #fff; background: var(--pink); font-size: 7px; }
@@ -292,6 +292,7 @@ button { cursor: pointer; }
 .fullActionCopy em { font-size: 6px; font-style: normal; font-weight: 800; opacity: .72; }
 .fullLikeAction { color: var(--pink); background: #fffffff0; }
 .fullSkipAction { color: #6f6878; background: #fffffff0; }
+.restoreSkippedAction { color: #5945bc; }
 .fullSkipAction:disabled { opacity: .62; }
 .fullLikeAction.liked { color: #fff; background: linear-gradient(145deg, #ff4f91, #ff82ad); }
 .fullRequestAction { color: #fff; background: linear-gradient(145deg, #6c4df6, #9c83ff); }

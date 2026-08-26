@@ -235,7 +235,7 @@ type Lobby = {
   members: LobbyMember[];
 };
 type AppTab = "discover" | "recruit" | "chat" | "lobby" | "profile";
-type DiscoverMode = "recommended" | "received";
+type DiscoverMode = "recommended" | "received" | "skipped";
 type LoginIntent = "login" | "signup";
 type RealtimePushEvent =
   | { type: "chat-message"; connectionId: number }
@@ -844,6 +844,12 @@ export default function MatchApp({
   const [profileLikes, setProfileLikes] = useState<ProfileLikeNotice[]>([]);
   const [receivedLikeCount, setReceivedLikeCount] = useState(0);
   const [receivedProfileCandidates, setReceivedProfileCandidates] = useState<
+    ProfileCandidate[]
+  >([]);
+  const [skippedProfileLikes, setSkippedProfileLikes] = useState<
+    ProfileLikeNotice[]
+  >([]);
+  const [skippedProfileCandidates, setSkippedProfileCandidates] = useState<
     ProfileCandidate[]
   >([]);
   const [likedProfileIds, setLikedProfileIds] = useState<string[]>([]);
@@ -1480,6 +1486,8 @@ export default function MatchApp({
       const data = await response.json();
       setProfileLikes(data.incoming || []);
       setReceivedProfileCandidates(data.profiles || []);
+      setSkippedProfileLikes(data.skippedIncoming || []);
+      setSkippedProfileCandidates(data.skippedProfiles || []);
       setLikedProfileIds(data.likedProfileIds || []);
       setReceivedLikeCount(Number(data.receivedLikeCount) || 0);
     } catch {
@@ -2058,6 +2066,8 @@ export default function MatchApp({
         ? loadOptionalAfter<{
             incoming?: ProfileLikeNotice[];
             profiles?: ProfileCandidate[];
+            skippedIncoming?: ProfileLikeNotice[];
+            skippedProfiles?: ProfileCandidate[];
             likedProfileIds?: string[];
             receivedLikeCount?: number;
           }>("/api/likes", 1_100)
@@ -2124,6 +2134,8 @@ export default function MatchApp({
           if (likeData) {
             setProfileLikes(likeData.incoming || []);
             setReceivedProfileCandidates(likeData.profiles || []);
+            setSkippedProfileLikes(likeData.skippedIncoming || []);
+            setSkippedProfileCandidates(likeData.skippedProfiles || []);
             setLikedProfileIds(likeData.likedProfileIds || []);
             setReceivedLikeCount(Number(likeData.receivedLikeCount) || 0);
           }
@@ -2629,7 +2641,13 @@ export default function MatchApp({
   // 「相手から」は届いたいいねの受信箱なので、通常検索の条件では絞らない。
   // 検索条件が残っていても、いいねを送った相手を必ず開けるようにする。
   const receivedCards = receivedProfileCandidates;
-  const cards = discoverMode === "received" ? receivedCards : recommendedCards;
+  const skippedCards = skippedProfileCandidates;
+  const cards =
+    discoverMode === "received"
+      ? receivedCards
+      : discoverMode === "skipped"
+        ? skippedCards
+        : recommendedCards;
   const activeFilterCount =
     Number(Boolean(pokemonQuery.trim())) +
     Number(Boolean(trainerQuery.trim())) +
@@ -2847,6 +2865,14 @@ export default function MatchApp({
       }
       setAnimation("left");
       window.setTimeout(() => {
+        setSkippedProfileCandidates((rows) => [
+          skippedCandidate,
+          ...rows.filter((person) => person.id !== skippedCandidate.id),
+        ]);
+        setSkippedProfileLikes((rows) => [
+          receivedLike,
+          ...rows.filter((like) => like.id !== receivedLike.id),
+        ]);
         setReceivedProfileCandidates((rows) =>
           rows.filter((person) => person.id !== skippedCandidate.id),
         );
@@ -2858,6 +2884,62 @@ export default function MatchApp({
         );
         setAnimation("");
         notify("この相手をスキップしました");
+      }, 220);
+    } catch {
+      notify("通信が不安定です。もう一度お試しください");
+    } finally {
+      setReceivedSkipBusy(false);
+    }
+  };
+  const restoreSkippedProfile = async () => {
+    if (
+      !current ||
+      discoverMode !== "skipped" ||
+      receivedSkipBusy ||
+      animation
+    )
+      return;
+    const restoredCandidate = current;
+    const receivedLike = skippedProfileLikes.find(
+      (like) => like.senderId === restoredCandidate.id,
+    );
+    if (!receivedLike) {
+      notify("このいいねは現在表示できません");
+      return;
+    }
+    setReceivedSkipBusy(true);
+    try {
+      const response = await fetch("/api/likes", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "restore", likeId: receivedLike.id }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        notify(data.error || "相手からへ戻せませんでした");
+        return;
+      }
+      setAnimation("right");
+      window.setTimeout(() => {
+        setReceivedProfileCandidates((rows) => [
+          restoredCandidate,
+          ...rows.filter((person) => person.id !== restoredCandidate.id),
+        ]);
+        setProfileLikes((rows) => [
+          receivedLike,
+          ...rows.filter((like) => like.id !== receivedLike.id),
+        ]);
+        setSkippedProfileCandidates((rows) =>
+          rows.filter((person) => person.id !== restoredCandidate.id),
+        );
+        setSkippedProfileLikes((rows) =>
+          rows.filter((like) => like.id !== receivedLike.id),
+        );
+        setCandidateDetail((detail) =>
+          detail?.id === restoredCandidate.id ? null : detail,
+        );
+        setAnimation("");
+        notify("相手からの一覧へ戻しました");
       }, 220);
     } catch {
       notify("通信が不安定です。もう一度お試しください");
@@ -2924,7 +3006,7 @@ export default function MatchApp({
     window.setTimeout(() => window.location.reload(), 320);
   };
   const changeDiscoverMode = (mode: DiscoverMode) => {
-    if (guestMode && mode === "received") {
+    if (guestMode && mode !== "recommended") {
       requestLogin({
         type: "received",
         label: "相手から届いたいいねを見る",
@@ -5343,6 +5425,15 @@ export default function MatchApp({
                     相手から
                     {profileLikes.length > 0 && <b>{profileLikes.length}</b>}
                   </button>
+                  <button
+                    className={discoverMode === "skipped" ? "active" : ""}
+                    onClick={() => changeDiscoverMode("skipped")}
+                  >
+                    見返す
+                    {skippedProfileCandidates.length > 0 && (
+                      <b>{skippedProfileCandidates.length}</b>
+                    )}
+                  </button>
                 </div>
                 <button
                   className="discoverDiscord"
@@ -5422,8 +5513,10 @@ export default function MatchApp({
                           : ""
                       }
                     >
-                      {discoverMode === "received"
-                        ? "♥ あなたにいいね"
+                      {discoverMode !== "recommended"
+                        ? discoverMode === "received"
+                          ? "♥ あなたにいいね"
+                          : "↩ スキップした相手"
                         : `● ${formatActivity(current.lastActiveAt, current.online)}`}
                     </span>
                     {guestMode && <b>ログインでプロフィールをすべて表示</b>}
@@ -5484,7 +5577,7 @@ export default function MatchApp({
                   </button>
                   <div
                     className={`fullCardActions ${
-                      discoverMode === "received" ? "receivedActions" : ""
+                      discoverMode !== "recommended" ? "receivedActions" : ""
                     }`}
                   >
                     {discoverMode === "received" && (
@@ -5499,6 +5592,21 @@ export default function MatchApp({
                             {receivedSkipBusy ? "処理中" : "スキップ"}
                           </small>
                           <em>一覧から外す</em>
+                        </span>
+                      </button>
+                    )}
+                    {discoverMode === "skipped" && (
+                      <button
+                        className="fullSkipAction restoreSkippedAction"
+                        onClick={() => void restoreSkippedProfile()}
+                        disabled={receivedSkipBusy}
+                      >
+                        <span className="fullActionIcon">↩</span>
+                        <span className="fullActionCopy">
+                          <small>
+                            {receivedSkipBusy ? "処理中" : "戻す"}
+                          </small>
+                          <em>相手からへ戻す</em>
                         </span>
                       </button>
                     )}
@@ -5534,16 +5642,24 @@ export default function MatchApp({
               ) : (
                 <div className="stateCard emptyState fullDiscoverState">
                   <div className="emptyOrb">
-                    {discoverMode === "received" ? "♡" : "Y"}
+                    {discoverMode === "received"
+                      ? "♡"
+                      : discoverMode === "skipped"
+                        ? "↩"
+                        : "Y"}
                   </div>
                   <h2>
                     {discoverMode === "received"
                       ? "まだいいねは届いていません"
+                      : discoverMode === "skipped"
+                        ? "スキップした人はいません"
                       : "新しいメイトを待っています"}
                   </h2>
                   <p>
                     {discoverMode === "received"
                       ? "相手からいいねされると、ここでプロフィールを見られます。"
+                      : discoverMode === "skipped"
+                        ? "左スワイプで外した相手を、ここからいつでも見返せます。"
                       : "条件に合う登録者はまだいません。時間を決めて今すぐ遊ぶなら募集を使えます。"}
                   </p>
                   {discoverMode === "recommended" && (
