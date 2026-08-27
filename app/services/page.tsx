@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import styles from "./services.module.css";
 
@@ -26,6 +27,7 @@ const services = [
   {
     id: "valomatch",
     mark: "V",
+    markImage: null,
     name: "バロマッチ",
     game: "VALORANT",
     summary: "ランク、役割、遊べる時間から、一緒にプレイする仲間を探します。",
@@ -39,6 +41,7 @@ const services = [
   {
     id: "stamate",
     mark: "S",
+    markImage: "/brand/stamate-mark.svg",
     name: "スタメイト",
     game: "ブロスタ",
     summary: "トロフィー、得意ロール、モード、時間帯から仲間を探します。",
@@ -52,6 +55,7 @@ const services = [
   {
     id: "shoenmate",
     mark: "荘",
+    markImage: null,
     name: "荘園メイト",
     game: "第五人格",
     summary: "陣営、段位、役割、遊べる時間から仲間を探します。",
@@ -89,7 +93,16 @@ export default function ServicesPage() {
             return (
               <article className={styles[service.stageClass]} key={service.id}>
                 <div className={styles.cardTop}>
-                  <b>{service.mark}</b>
+                  {service.markImage ? (
+                    <Image
+                      src={service.markImage}
+                      width={48}
+                      height={48}
+                      alt=""
+                    />
+                  ) : (
+                    <b>{service.mark}</b>
+                  )}
                   <span>
                     <small>{service.game}</small>
                     <h2>{service.name}</h2>

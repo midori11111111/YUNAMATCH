@@ -10,6 +10,7 @@
 - サイト用シンボル: `public/brand/stamate-mark.svg`
 - 横組みロゴ: `public/brand/stamate-logo.svg`
 - X / Discord用PNG: `public/brand/stamate-social-avatar.png`
+- リンク共有用OG画像: `public/brand/stamate-og.png`
 - ロゴは幾何学的な平面図形だけで構成し、Supercellのロゴ・キャラクター・ゲーム内素材を使用しない。
 
 アカウント名やIDには、Supercellまたはゲーム名の商標を含めない。プロフィール本文で対応ゲームを説明し、非公式であることを明記する。
@@ -158,4 +159,3 @@ https://yunamatch.com/stamate
 ```
 
 送信前に、直近30日のブロスタ活動、公開窓口、PR条件を再確認する。外部送信はユーザーの最終確認後に行う。
-

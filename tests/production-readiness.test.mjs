@@ -66,6 +66,9 @@ test("Stamate uses current geometric branding, game taxonomy, and guild-scoped r
     interactions,
     legal,
     launchKit,
+    stamateLayout,
+    previewLayout,
+    servicesPage,
   ] = await Promise.all([
     read("app/brawl-preview/page.tsx"),
     read("lib/service-config.ts"),
@@ -74,6 +77,9 @@ test("Stamate uses current geometric branding, game taxonomy, and guild-scoped r
     read("app/api/discord/interactions/route.ts"),
     read("app/legal/page.tsx"),
     read("docs/stamate-launch-kit.md"),
+    read("app/stamate/layout.tsx"),
+    read("app/brawl-preview/layout.tsx"),
+    read("app/services/page.tsx"),
   ]);
   for (const tier of ["ブロンズ", "ミシック", "マスター", "プロ"])
     assert.match(config, new RegExp(tier));
@@ -112,6 +118,9 @@ test("Stamate uses current geometric branding, game taxonomy, and guild-scoped r
   assert.match(mark, /M176 70h-62c-31 0-49 15-49 38/);
   assert.doesNotMatch(mark, /M128 55 150 86 187 90|skull/i);
   assert.doesNotMatch(mark, /filter|image href/);
+  assert.match(stamateLayout, /\/brand\/stamate-og\.png/);
+  assert.match(previewLayout, /\/brand\/stamate-og\.png/);
+  assert.match(servicesPage, /markImage: "\/brand\/stamate-mark\.svg"/);
   assert.match(registerCommand, /DISCORD_STAMATE_GUILD_ID/);
   assert.match(registerCommand, /guilds\/\$\{guildId\}\/commands/);
   assert.match(interactions, /createStamateRecruitMessage/);
