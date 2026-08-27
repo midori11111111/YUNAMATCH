@@ -43,14 +43,6 @@ body { margin: 0; }
   box-shadow: 0 14px 38px rgba(190, 70, 171, .35);
 }
 
-.loginBrandMark {
-  width: 78px;
-  height: 78px;
-  display: block;
-  margin: 0 auto 14px;
-  object-fit: contain;
-}
-
 .loginWordmark { font-size: 23px; font-weight: 900; letter-spacing: .08em; }
 .loginWordmark span { color: #fb5d88; }
 .loginEyebrow { margin: 8px 0 28px; color: #8e93ad; font-size: 11px; letter-spacing: .16em; }
