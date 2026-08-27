@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
   <title id="title">スタメイト</title>
-  <desc id="desc">2つの円と6方向バッジ、スパークが重なるスタメイトのシンボル</desc>
+  <desc id="desc">2つの円と黄色の6方向バッジが重なるスタメイトのシンボル</desc>
   <defs>
     <linearGradient id="stamate-cyan" x1="44" y1="44" x2="150" y2="168" gradientUnits="userSpaceOnUse">
       <stop stop-color="#5BE4DF"/>
@@ -23,6 +23,7 @@
   <circle cx="96" cy="106" r="62" fill="url(#stamate-cyan)"/>
   <circle cx="160" cy="150" r="62" fill="url(#stamate-coral)"/>
   <path d="M128 55 150 86 187 90 170 124 187 158 150 162 128 193 106 162 69 158 86 124 69 90 106 86Z" fill="url(#stamate-badge)"/>
-  <path d="m128 78 12 34 34 12-34 12-12 34-12-34-34-12 34-12z" fill="url(#stamate-spark)"/>
-  <path d="m128 101 8 23-8 23-8-23z" fill="#111A38"/>
+  <path d="M128 68 146 93 176 97 162 124 176 151 146 155 128 180 110 155 80 151 94 124 80 97 110 93Z" fill="url(#stamate-spark)"/>
+  <circle cx="128" cy="124" r="30" fill="#111A38"/>
+  <path d="m132 101-22 29h16l-3 20 23-31h-16z" fill="#FFFDF8"/>
 </svg>
