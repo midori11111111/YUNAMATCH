@@ -32,8 +32,10 @@ async function findOldestProfileByEmail(email:string){
 }
 
 export async function POST(request:Request){
-  const secret=process.env.AUTH_SECRET||"";
-  if(!secret||!secretsMatch(request.headers.get("x-yunamatch-auth-secret")||"",secret))return Response.json({error:"unauthorized"},{status:401});
+  const receivedSecret=request.headers.get("x-yunamatch-auth-secret")||"";
+  const allowedSecrets=[process.env.AUTH_SECRET,process.env.STAMATE_AUTH_SECRET]
+    .filter((secret):secret is string=>Boolean(secret));
+  if(!allowedSecrets.some((secret)=>secretsMatch(receivedSecret,secret)))return Response.json({error:"unauthorized"},{status:401});
   const body=await request.json() as Record<string,unknown>;
   const provider=typeof body.provider==="string"?body.provider:"";
   const providerAccountId=typeof body.providerAccountId==="string"?body.providerAccountId:"";

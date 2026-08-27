@@ -2,14 +2,20 @@ import { signIn } from "@/auth";
 import LoginButton from "./login-button";
 
 export default function LoginPage() {
+  const isStamate = process.env.SITE_VARIANT === "stamate";
+  const returnTo = isStamate ? "/stamate" : "/";
   return (
     <main className="loginPage">
       <section className="loginCard">
-        <div className="loginLogo" aria-hidden="true">Y</div>
-        <div className="loginWordmark">YUNA<span>MATCH</span></div>
-        <p className="loginEyebrow">POKÉMON UNITE MATCHING</p>
-        <h1>相性でつながる、<br /><span>ユナマッチ。</span></h1>
-        <p className="loginLead">使用ポケモンとプレイスタイルから、<br />今夜一緒に戦うメイトを見つけよう。</p>
+        {isStamate ? (
+          <img className="loginBrandMark" src="/brand/stamate-mark.svg" alt="" />
+        ) : (
+          <div className="loginLogo" aria-hidden="true">Y</div>
+        )}
+        <div className="loginWordmark">{isStamate ? "スタ" : "YUNA"}<span>{isStamate ? "メイト" : "MATCH"}</span></div>
+        <p className="loginEyebrow">{isStamate ? "BRAWL TEAM MATCHING" : "POKÉMON UNITE MATCHING"}</p>
+        <h1>相性でつながる、<br /><span>{isStamate ? "スタメイト。" : "ユナマッチ。"}</span></h1>
+        <p className="loginLead">{isStamate ? <>ランクとプレイスタイルから、<br />一緒に戦うゲーム仲間を見つけよう。</> : <>使用ポケモンとプレイスタイルから、<br />今夜一緒に戦うメイトを見つけよう。</>}</p>
         <div className="returningUserGuide">
           <strong>すでに登録済みの方</strong>
           <p>登録時と同じSNS・同じアカウントを選ぶと、別のスマホでもプロフィールやチャットを引き継げます。</p>
@@ -19,7 +25,7 @@ export default function LoginPage() {
           <form
             action={async () => {
               "use server";
-              await signIn("google", { redirectTo: "/" }, { prompt: "select_account" });
+              await signIn("google", { redirectTo: returnTo }, { prompt: "select_account" });
             }}
           >
             <LoginButton className="googleButton" markClassName="googleMark" mark="G" label="Googleでログイン" />
@@ -27,7 +33,7 @@ export default function LoginPage() {
           <form
             action={async () => {
               "use server";
-              await signIn("line", { redirectTo: "/" }, { prompt: "consent" });
+              await signIn("line", { redirectTo: returnTo }, { prompt: "consent" });
             }}
           >
             <LoginButton className="lineButton" markClassName="lineMark" mark="LINE" label="LINEでログイン" />
@@ -35,7 +41,7 @@ export default function LoginPage() {
           <form
             action={async () => {
               "use server";
-              await signIn("discord", { redirectTo: "/" }, { prompt: "consent" });
+              await signIn("discord", { redirectTo: returnTo }, { prompt: "consent" });
             }}
           >
             <LoginButton className="discordButton" markClassName="discordMark" mark="D" label="Discordでログイン" />
@@ -43,7 +49,7 @@ export default function LoginPage() {
           <form
             action={async () => {
               "use server";
-              await signIn("twitter", { redirectTo: "/" }, { force_login: "true" });
+              await signIn("twitter", { redirectTo: returnTo }, { force_login: "true" });
             }}
           >
             <LoginButton className="xButton" markClassName="xMark" mark="X" label="Xでログイン" />

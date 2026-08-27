@@ -9,6 +9,7 @@ const accountChoiceParams:Record<string,Record<string,string>>={
   discord:{prompt:"consent"},
   twitter:{force_login:"true"},
 };
+const serviceHomePath=process.env.SERVICE_HOME_PATH||"/";
 
 export async function GET(_request:Request,{params}:{params:Promise<{provider:string}>}){
   const {provider}=await params;
@@ -22,7 +23,7 @@ export async function GET(_request:Request,{params}:{params:Promise<{provider:st
   const source=new URL(_request.url);
   const joinDiscord=provider==="discord"&&source.searchParams.get("joinDiscord")==="1";
   const redirectTo=joinDiscord
-    ? "/?linked=discord&joinDiscord=1"
-    : `/?linked=${provider}`;
+    ? `${serviceHomePath}?linked=discord&joinDiscord=1`
+    : `${serviceHomePath}?linked=${provider}`;
   await signIn(provider,{redirectTo},accountChoiceParams[provider]);
 }

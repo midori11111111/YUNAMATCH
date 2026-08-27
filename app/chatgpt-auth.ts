@@ -115,9 +115,12 @@ async function resolveCanonicalUserId(
 
 export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
   const requestHeaders = await headers();
-  const authSecret = process.env.AUTH_SECRET;
+  const authSecrets = [
+    process.env.AUTH_SECRET,
+    process.env.STAMATE_AUTH_SECRET,
+  ].filter((secret): secret is string => Boolean(secret));
 
-  if (authSecret) {
+  for (const authSecret of authSecrets) {
     for (const secureCookie of [true, false]) {
       try {
         const token = await getToken({
@@ -155,7 +158,7 @@ export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
           };
         }
       } catch {
-        // 別形式のCookieか、ログイン前のアクセス。次の認証方法を確認する。
+        // 別形式のCookieか、ログイン前のアクセス。次の秘密鍵と認証方法を確認する。
       }
     }
   }

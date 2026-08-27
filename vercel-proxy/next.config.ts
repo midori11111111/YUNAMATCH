@@ -3,16 +3,26 @@ import type { NextConfig } from "next";
 const upstream =
   process.env.YUNAMATCH_UPSTREAM_URL ||
   "https://unite-mate-jp.tomoki-ashizawa.chatgpt.site";
+const serviceHomePath = process.env.SERVICE_HOME_PATH || "/";
 
 const nextConfig: NextConfig = {
   turbopack: { root: process.cwd() },
   async redirects() {
     return [
+      ...(serviceHomePath !== "/"
+        ? [
+            {
+              source: "/",
+              destination: serviceHomePath,
+              permanent: false as const,
+            },
+          ]
+        : []),
       {
         source: "/:path*",
-        has: [{ type: "host", value: "yunamatch.vercel.app" }],
+        has: [{ type: "host" as const, value: "yunamatch.vercel.app" }],
         destination: "https://yunamatch.com/:path*",
-        permanent: true,
+        permanent: true as const,
       },
     ];
   },
