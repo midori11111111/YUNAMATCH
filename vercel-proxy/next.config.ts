@@ -18,12 +18,6 @@ const nextConfig: NextConfig = {
             },
           ]
         : []),
-      {
-        source: "/:path*",
-        has: [{ type: "host" as const, value: "yunamatch.vercel.app" }],
-        destination: "https://yunamatch.com/:path*",
-        permanent: true as const,
-      },
     ];
   },
   async headers() {
