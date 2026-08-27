@@ -14,6 +14,10 @@
       <stop stop-color="#FFF16A"/>
       <stop offset="1" stop-color="#FFAE32"/>
     </linearGradient>
+    <linearGradient id="stamate-logo-badge" x1="82" y1="70" x2="178" y2="182" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6F56E8"/>
+      <stop offset="1" stop-color="#24265F"/>
+    </linearGradient>
     <linearGradient id="stamate-word" x1="302" y1="84" x2="704" y2="166" gradientUnits="userSpaceOnUse">
       <stop stop-color="#202C66"/>
       <stop offset="1" stop-color="#7048C8"/>
@@ -23,7 +27,8 @@
     <rect width="256" height="256" rx="56" fill="#FFFDF8"/>
     <circle cx="96" cy="106" r="62" fill="url(#stamate-logo-cyan)"/>
     <circle cx="160" cy="150" r="62" fill="url(#stamate-logo-coral)"/>
-    <path d="m128 64 16 44 44 16-44 16-16 44-16-44-44-16 44-16z" fill="url(#stamate-logo-spark)"/>
+    <path d="M128 55 150 86 187 90 170 124 187 158 150 162 128 193 106 162 69 158 86 124 69 90 106 86Z" fill="url(#stamate-logo-badge)"/>
+    <path d="m128 78 12 34 34 12-34 12-12 34-12-34-34-12 34-12z" fill="url(#stamate-logo-spark)"/>
     <path d="m128 101 8 23-8 23-8-23z" fill="#111A38"/>
   </g>
   <text x="302" y="137" fill="url(#stamate-word)" font-family="Arial, Helvetica, sans-serif" font-size="76" font-weight="800" letter-spacing="7">STAMATE</text>

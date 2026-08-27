@@ -108,6 +108,8 @@ test("Stamate uses current geometric branding, game taxonomy, and guild-scoped r
   assert.match(mark, /#5BE4DF/);
   assert.match(mark, /#F04498/);
   assert.match(mark, /#FFAE32/);
+  assert.match(mark, /#6F56E8/);
+  assert.match(mark, /M128 55 150 86 187 90/);
   assert.doesNotMatch(mark, /filter|image href/);
   assert.match(registerCommand, /DISCORD_STAMATE_GUILD_ID/);
   assert.match(registerCommand, /guilds\/\$\{guildId\}\/commands/);
