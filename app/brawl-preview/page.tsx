@@ -17,8 +17,12 @@ type Profile = {
   playTimes: string[];
   bio: string;
   avatarUrl: string;
+  age?: number;
+  gender?: string;
+  showGender?: boolean;
 };
 type Candidate = Profile & { id: number; gender: string; age: number };
+type ReceivedLike = { id: number; createdAt: string; profile: Candidate };
 type Recruit = {
   id: number;
   mode: string;
@@ -40,6 +44,7 @@ type Message = {
   body: string;
   createdAt: string;
 };
+type Filters = { role: string; tier: string };
 const nav: { id: Tab; icon: string; label: string }[] = [
   { id: "find", icon: "⌕", label: "さがす" },
   { id: "team", icon: "+", label: "募集" },
@@ -76,6 +81,15 @@ const tiers = [
     "フレンドバトル",
     "その他",
   ];
+function relativeTime(value: string) {
+  const seconds = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 1000));
+  if (seconds < 60) return "たった今";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}分前`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}時間前`;
+  return `${Math.floor(hours / 24)}日前`;
+}
 export default function BrawlPreview({
   basePath = "/brawl-preview",
 }: {
@@ -86,9 +100,17 @@ export default function BrawlPreview({
     >("checking"),
     [profile, setProfile] = useState<Profile | null>(null),
     [suggestedName, setSuggestedName] = useState(""),
-    [tab, setTab] = useState<Tab>("find"),
+    [tab, setTab] = useState<Tab>(() => {
+      if (typeof window === "undefined") return "find";
+      const saved = window.localStorage.getItem("stamate:last-tab");
+      return nav.some((item) => item.id === saved) ? (saved as Tab) : "find";
+    }),
+    [findView, setFindView] = useState<"recommended" | "received">(
+      "recommended",
+    ),
     [toast, setToast] = useState(""),
     [profiles, setProfiles] = useState<Candidate[]>([]),
+    [receivedLikes, setReceivedLikes] = useState<ReceivedLike[]>([]),
     [recruits, setRecruits] = useState<Recruit[]>([]),
     [connections, setConnections] = useState<Connection[]>([]),
     [incoming, setIncoming] = useState<Connection[]>([]),
@@ -96,20 +118,58 @@ export default function BrawlPreview({
     [activeChat, setActiveChat] = useState<Connection | null>(null),
     [messages, setMessages] = useState<Message[]>([]),
     [message, setMessage] = useState(""),
-    [loading, setLoading] = useState(false);
+    [loading, setLoading] = useState(false),
+    [chatLoading, setChatLoading] = useState(false),
+    [chatError, setChatError] = useState(""),
+    [filterOpen, setFilterOpen] = useState(false),
+    [tutorialOpen, setTutorialOpen] = useState(false),
+    [recruitOpen, setRecruitOpen] = useState(false),
+    [expandedRecruitId, setExpandedRecruitId] = useState<number | null>(null),
+    [viewProfile, setViewProfile] = useState<Profile | null>(null),
+    [filters, setFilters] = useState<Filters>(() => {
+      if (typeof window === "undefined") return { role: "", tier: "" };
+      try {
+        return JSON.parse(
+          window.localStorage.getItem("stamate:filters") ||
+            '{"role":"","tier":""}',
+        ) as Filters;
+      } catch {
+        return { role: "", tier: "" };
+      }
+    }),
+    [recruitForm, setRecruitForm] = useState({
+      mode: "ガチバトル",
+      partySize: "3",
+      desiredRole: "",
+      startAt: "",
+      durationMinutes: "120",
+      note: "",
+    });
   const notify = (text: string) => {
     setToast(text);
     window.setTimeout(() => setToast(""), 2400);
   };
-  const load = async () => {
+  const load = async (nextFilters = filters) => {
     setLoading(true);
     try {
+      const params = new URLSearchParams();
+      if (nextFilters.role) params.set("role", nextFilters.role);
+      if (nextFilters.tier) params.set("tier", nextFilters.tier);
+      const discoverRequest = params.size
+        ? fetch(`/api/services/stamate/discover?${params}`)
+        : fetch("/api/services/stamate/discover");
       const [d, r, c] = await Promise.all([
-          fetch("/api/services/stamate/discover"),
+          discoverRequest,
           fetch("/api/services/stamate/recruits"),
           fetch("/api/services/stamate/connections"),
         ]),
-        [dd, rr, cc] = await Promise.all([d.json(), r.json(), c.json()]);
+        likes = await fetch("/api/services/stamate/likes"),
+        [dd, rr, cc, ll] = await Promise.all([
+          d.json(),
+          r.json(),
+          c.json(),
+          likes.json(),
+        ]);
       if (d.ok) setProfiles(dd.profiles || []);
       if (r.ok) setRecruits(rr.recruits || []);
       if (c.ok) {
@@ -117,6 +177,11 @@ export default function BrawlPreview({
         setIncoming(cc.incoming || []);
         setOutgoing(cc.outgoing || []);
       }
+      if (likes.ok) setReceivedLikes(ll.received || []);
+      if (![d, r, c, likes].every((response) => response.ok))
+        notify("一部の情報を更新できませんでした。前回の表示を残しています");
+    } catch {
+      notify("通信に失敗しました。表示中の情報はそのまま残しています");
     } finally {
       setLoading(false);
     }
@@ -145,22 +210,45 @@ export default function BrawlPreview({
   useEffect(() => {
     if (auth === "ready") void load();
   }, [auth]);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("stamate:last-tab", tab);
+  }, [tab]);
+  useEffect(() => {
+    if (auth !== "ready" || typeof window === "undefined") return;
+    if (!window.localStorage.getItem("stamate:tutorial-seen"))
+      setTutorialOpen(true);
+  }, [auth]);
   const current = profiles[0],
+    receivedCurrent = receivedLikes[0]?.profile,
     initials = (profile?.displayName || "YOU").slice(0, 2).toUpperCase(),
-    removeCurrent = () => setProfiles((value) => value.slice(1));
-  async function like() {
-    if (!current) return;
+    removeCurrent = () => setProfiles((value) => value.slice(1)),
+    completionItems = [
+      ["プレイヤー名", profile?.displayName],
+      ["プレイヤータグ", profile?.gameIdentity],
+      ["ランク", profile?.skillTier && profile.skillTier !== "未設定"],
+      ["役割", profile?.roles?.length],
+      ["遊べる時間", profile?.playTimes?.length],
+      ["自己紹介", profile?.bio],
+      ["アイコン", profile?.avatarUrl],
+    ] as const,
+    completedCount = completionItems.filter(([, value]) => Boolean(value)).length,
+    completion = Math.round((completedCount / completionItems.length) * 100),
+    missingItems = completionItems
+      .filter(([, value]) => !value)
+      .map(([label]) => label);
+  async function likeTarget(targetProfileId: number, after: () => void) {
     const response = await fetch("/api/services/stamate/likes", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ targetProfileId: current.id }),
+        body: JSON.stringify({ targetProfileId }),
       }),
       data = await response.json();
     if (response.ok) {
       notify(
         data.matched ? "相互いいねでマッチしました！" : "いいねを送りました",
       );
-      removeCurrent();
+      after();
       void load();
     } else notify(data.error || "送信できませんでした");
   }
@@ -176,12 +264,6 @@ export default function BrawlPreview({
       setTab("chat");
       void load();
     } else notify(data.error || "申請できませんでした");
-  }
-  async function requestMate() {
-    if (!current) return;
-    const id = current.id;
-    removeCurrent();
-    await requestTarget(id);
   }
   async function act(
     connectionId: number,
@@ -205,53 +287,61 @@ export default function BrawlPreview({
     if (response.ok) void load();
   }
   async function createRecruit() {
-    const mode = prompt(
-      `募集モード（${modes.join(" / ")}）`,
-      "ガチバトル",
-    );
-    if (!mode) return;
-    if (!modes.includes(mode)) {
-      notify("表示された募集モードから選んでください");
-      return;
-    }
-    const partySize = Number(prompt("パーティ人数（2人 / 3人 / 5人）", "3"));
+    const partySize = Number(recruitForm.partySize),
+      desiredRole = recruitForm.desiredRole,
+      startAt = recruitForm.startAt
+        ? new Date(recruitForm.startAt).toISOString()
+        : undefined;
     if (![2, 3, 5].includes(partySize)) {
       notify("募集人数は2人・3人・5人から選んでください");
-      return;
-    }
-    const desiredRole = prompt(
-        `希望するタイプ（任意：${roles.slice(0, -1).join(" / ")}）`,
-        "",
-      )?.trim(),
-      note = prompt("募集のひとこと（任意）", "") || "";
-    if (desiredRole && !roles.includes(desiredRole)) {
-      notify("表示されたキャラクタータイプから選んでください");
       return;
     }
     const response = await fetch("/api/services/stamate/recruits", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          mode,
+          mode: recruitForm.mode,
           partySize,
           desiredRoles: desiredRole ? [desiredRole] : [],
-          note,
-          durationMinutes: 120,
+          note: recruitForm.note,
+          startAt,
+          durationMinutes: Number(recruitForm.durationMinutes),
         }),
       }),
       data = await response.json();
     notify(
       response.ok ? "募集を公開しました" : data.error || "募集できませんでした",
     );
-    if (response.ok) void load();
+    if (response.ok) {
+      setRecruitOpen(false);
+      setRecruitForm((value) => ({ ...value, note: "", startAt: "" }));
+      void load();
+    }
   }
   async function openChat(connection: Connection) {
     setActiveChat(connection);
-    const response = await fetch(
-        `/api/services/stamate/messages?connectionId=${connection.id}`,
-      ),
-      data = await response.json();
-    setMessages(response.ok ? data.messages || [] : []);
+    setChatLoading(true);
+    setChatError("");
+    try {
+      const controller = new AbortController(),
+        timeout = window.setTimeout(() => controller.abort(), 12_000),
+        response = await fetch(
+          `/api/services/stamate/messages?connectionId=${connection.id}`,
+          { signal: controller.signal },
+        );
+      window.clearTimeout(timeout);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "読み込めませんでした");
+      setMessages(data.messages || []);
+    } catch (value) {
+      setChatError(
+        value instanceof Error && value.name !== "AbortError"
+          ? value.message
+          : "読み込みに時間がかかっています。再試行してください",
+      );
+    } finally {
+      setChatLoading(false);
+    }
   }
   async function sendMessage(event: FormEvent) {
     event.preventDefault();
@@ -270,6 +360,86 @@ export default function BrawlPreview({
       data = await response.json();
     if (response.ok) setMessages((value) => [...value, data.message]);
     else notify(data.error || "送信できませんでした");
+  }
+  function applyFilters() {
+    window.localStorage.setItem("stamate:filters", JSON.stringify(filters));
+    setFilterOpen(false);
+    void load(filters);
+  }
+  function closeTutorial() {
+    window.localStorage.setItem("stamate:tutorial-seen", "1");
+    setTutorialOpen(false);
+  }
+  function candidateCard(candidate: Candidate, received = false) {
+    const onSkip = () =>
+      received
+        ? setReceivedLikes((value) => value.slice(1))
+        : removeCurrent();
+    return (
+      <article className={styles.card} key={`${received ? "received" : "recommended"}-${candidate.id}`}>
+        <div className={styles.cardhead}>
+          <span>{received ? "♥ あなたにいいね" : "● プロフィール公開中"}</span>
+          <b>{candidate.skillTier}</b>
+        </div>
+        <button
+          className={styles.visual}
+          onClick={() => setViewProfile(candidate)}
+          aria-label={`${candidate.displayName}さんの詳しいプロフィールを見る`}
+        >
+          {candidate.avatarUrl ? (
+            <img src={candidate.avatarUrl} alt="" />
+          ) : (
+            <>
+              <i />
+              <i />
+              <span>{candidate.displayName.slice(0, 2)}</span>
+              <strong>{candidate.roles[0]}</strong>
+            </>
+          )}
+          <em>タップで詳しく見る</em>
+        </button>
+        <div className={styles.info}>
+          <div className={styles.name}>
+            <span>{candidate.displayName.slice(0, 2)}</span>
+            <div>
+              <h2>{candidate.displayName}</h2>
+              <p>
+                {candidate.gameIdentity}
+                {candidate.gender ? ` · ${candidate.gender}` : ""}
+              </p>
+            </div>
+            <ServiceReportButton
+              service="stamate"
+              targetProfileId={candidate.id}
+              onNotice={notify}
+            />
+          </div>
+          <div className={styles.tags}>
+            {candidate.roles.map((x) => (
+              <span key={x}>{x}</span>
+            ))}
+          </div>
+          <p>{candidate.bio || "一緒に遊べる仲間を探しています。"}</p>
+          <small>{candidate.playTimes.join(" · ")}</small>
+        </div>
+        <div className={styles.actions}>
+          <button onClick={onSkip}>× スキップ</button>
+          <button
+            onClick={() =>
+              void likeTarget(candidate.id, () => {
+                if (received) setReceivedLikes((value) => value.slice(1));
+                else removeCurrent();
+              })
+            }
+          >
+            ♡ いいね
+          </button>
+          <button onClick={() => void requestTarget(candidate.id)}>
+            ⚡ メイト申請
+          </button>
+        </div>
+      </article>
+    );
   }
   if (auth === "checking")
     return (
@@ -298,6 +468,7 @@ export default function BrawlPreview({
         tiers={tiers}
         roles={roles}
         returnPath={basePath}
+        initialProfile={profile}
         onComplete={(value) => {
           setProfile(value as Profile);
           setAuth("ready");
@@ -348,6 +519,7 @@ export default function BrawlPreview({
           <h2>アカウントを選んで続ける</h2>
           <p>登録済みの方は、以前使ったアカウントを選んでください。</p>
           {[
+            ["G", "Google", "google", "#4285f4"],
             ["D", "Discord", "discord", "#5865f2"],
             ["𝕏", "X", "twitter", "#111"],
             ["L", "LINE", "line", "#06c755"],
@@ -378,7 +550,13 @@ export default function BrawlPreview({
   return (
     <main className={styles.app}>
       <header>
-        <button onClick={() => setTab("me")}>{initials}</button>
+        <button onClick={() => setTab("me")} aria-label="マイページ">
+          {profile?.avatarUrl ? (
+            <img src={profile.avatarUrl} alt="" />
+          ) : (
+            initials
+          )}
+        </button>
         <div>
           <Image
             src="/brand/stamate-mark.svg"
@@ -390,7 +568,7 @@ export default function BrawlPreview({
             STAMATE<small>PLAY TOGETHER</small>
           </b>
         </div>
-        <button onClick={() => setTab("chat")}>
+        <button onClick={() => setTab("chat")} aria-label="申請とやりとり">
           ♢{incoming.length > 0 && <i>{incoming.length}</i>}
         </button>
       </header>
@@ -402,60 +580,61 @@ export default function BrawlPreview({
                 <small>FOR YOU</small>
                 <h1>仲間を探す</h1>
               </div>
-              <button onClick={() => void load()}>↻ 更新</button>
+              <div className={styles.topActions}>
+                <button onClick={() => setTutorialOpen(true)}>？ 使い方</button>
+                <button onClick={() => setFilterOpen(true)}>≡ 絞り込み</button>
+              </div>
             </div>
-            {current ? (
-              <article className={styles.card}>
-                <div className={styles.cardhead}>
-                  <span>● プロフィール公開中</span>
-                  <b>{current.skillTier}</b>
-                </div>
-                <div className={styles.visual}>
-                  {current.avatarUrl ? (
-                    <img src={current.avatarUrl} alt="" />
-                  ) : (
-                    <>
-                      <i />
-                      <i />
-                      <span>{current.displayName.slice(0, 2)}</span>
-                      <strong>{current.roles[0]}</strong>
-                    </>
-                  )}
-                </div>
-                <div className={styles.info}>
-                  <div className={styles.name}>
-                    <span>{current.displayName.slice(0, 2)}</span>
-                    <div>
-                      <h2>{current.displayName}</h2>
-                      <p>
-                        {current.gameIdentity} ·{" "}
-                        {current.gender || `${current.age}歳`}
-                      </p>
-                    </div>
-                    <ServiceReportButton
-                      service="stamate"
-                      targetProfileId={current.id}
-                      onNotice={notify}
-                    />
-                  </div>
-                  <div className={styles.tags}>
-                    {current.roles.map((x) => (
-                      <span key={x}>{x}</span>
-                    ))}
-                  </div>
-                  <p>{current.bio || "一緒に遊べる仲間を探しています。"}</p>
-                  <small>{current.playTimes.join(" · ")}</small>
-                </div>
-                <div className={styles.actions}>
-                  <button onClick={removeCurrent}>× 次の人</button>
-                  <button onClick={like}>♡ いいね</button>
-                  <button onClick={requestMate}>⚡ メイト申請</button>
-                </div>
-              </article>
+            <div className={styles.findTabs}>
+              <button
+                className={findView === "recommended" ? styles.selected : ""}
+                onClick={() => setFindView("recommended")}
+              >
+                おすすめ <span>{profiles.length}</span>
+              </button>
+              <button
+                className={findView === "received" ? styles.selected : ""}
+                onClick={() => setFindView("received")}
+              >
+                相手から <span>{receivedLikes.length}</span>
+              </button>
+              <button onClick={() => void load()}>↻</button>
+            </div>
+            {(filters.role || filters.tier) && (
+              <div className={styles.activeFilters}>
+                <span>絞り込み中</span>
+                {filters.role && <b>{filters.role}</b>}
+                {filters.tier && <b>{filters.tier}</b>}
+                <button
+                  onClick={() => {
+                    const reset = { role: "", tier: "" };
+                    setFilters(reset);
+                    window.localStorage.removeItem("stamate:filters");
+                    void load(reset);
+                  }}
+                >
+                  解除
+                </button>
+              </div>
+            )}
+            {findView === "recommended" && current ? (
+              candidateCard(current)
+            ) : findView === "received" && receivedCurrent ? (
+              candidateCard(receivedCurrent, true)
             ) : (
               <section className={styles.screen}>
-                <h1>{loading ? "読み込み中…" : "表示できる仲間がいません"}</h1>
-                <p>時間を置いて更新すると、新しいプレイヤーが表示されます。</p>
+                <h1>
+                  {loading
+                    ? "読み込み中…"
+                    : findView === "received"
+                      ? "新しいいいねはありません"
+                      : "条件に合う仲間がいません"}
+                </h1>
+                <p>
+                  {findView === "received"
+                    ? "いいねが届くと、ここで相手のプロフィールを確認できます。"
+                    : "絞り込みを解除するか、時間を置いて更新してください。"}
+                </p>
                 <button className={styles.create} onClick={() => void load()}>
                   再読み込み
                 </button>
@@ -469,36 +648,58 @@ export default function BrawlPreview({
             <h1>今すぐ遊べる募集</h1>
             {recruits.length ? (
               recruits.map((item) => (
-                <article className={styles.recruit} key={item.id}>
-                  <div>
-                    <b>{item.mode}</b>
-                    <time>
-                      {new Date(item.createdAt).toLocaleTimeString("ja-JP", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </time>
-                  </div>
-                  <h2>{item.partySize}人パーティー募集</h2>
-                  <p>
-                    募集者：{item.owner?.displayName || "退会ユーザー"} ·{" "}
-                    {item.owner?.skillTier}
-                    <br />
-                    希望：{item.desiredRoles.join(" / ") || "指定なし"}
-                    <br />
-                    {item.note}
-                  </p>
-                  {item.owner?.id && (
-                    <button onClick={() => void requestTarget(item.owner!.id!)}>
-                      この募集に参加申請
-                    </button>
+                <article
+                  className={`${styles.recruit} ${expandedRecruitId === item.id ? styles.expanded : ""}`}
+                  key={item.id}
+                >
+                  <button
+                    className={styles.recruitSummary}
+                    onClick={() =>
+                      setExpandedRecruitId((value) =>
+                        value === item.id ? null : item.id,
+                      )
+                    }
+                  >
+                    <span>{item.mode}</span>
+                    <div>
+                      <h2>{item.partySize}人パーティー募集</h2>
+                      <p>
+                        {item.owner?.displayName || "退会ユーザー"} · 募集者のランク {item.owner?.skillTier}
+                      </p>
+                    </div>
+                    <time>{relativeTime(item.createdAt)}</time>
+                    <b>{expandedRecruitId === item.id ? "⌃" : "⌄"}</b>
+                  </button>
+                  {expandedRecruitId === item.id && (
+                    <div className={styles.recruitDetail}>
+                      <p>
+                        希望する役割：{item.desiredRoles.join(" / ") || "指定なし"}
+                        <br />
+                        {item.note || "ひとことはありません"}
+                      </p>
+                      {item.owner && (
+                        <button
+                          className={styles.secondary}
+                          onClick={() => setViewProfile(item.owner)}
+                        >
+                          募集者のプロフィール・自己紹介を見る
+                        </button>
+                      )}
+                      {item.owner?.id && item.owner.id !== profile?.id && (
+                        <button
+                          onClick={() => void requestTarget(item.owner!.id!)}
+                        >
+                          この募集に参加申請
+                        </button>
+                      )}
+                    </div>
                   )}
                 </article>
               ))
             ) : (
               <p>現在公開中の募集はありません。</p>
             )}
-            <button className={styles.create} onClick={createRecruit}>
+            <button className={styles.create} onClick={() => setRecruitOpen(true)}>
               ＋ 募集を作成
             </button>
           </section>
@@ -515,6 +716,12 @@ export default function BrawlPreview({
                   <p>
                     {item.other.skillTier} · {item.other.roles.join(" / ")}
                   </p>
+                  <button
+                    className={styles.textButton}
+                    onClick={() => setViewProfile(item.other)}
+                  >
+                    プロフィールを見る
+                  </button>
                 </div>
                 <button onClick={() => act(item.id, "accept")}>承認</button>
                 <button onClick={() => act(item.id, "decline")}>断る</button>
@@ -554,7 +761,13 @@ export default function BrawlPreview({
         {tab === "me" && (
           <section className={styles.screen}>
             <div className={styles.profile}>
-              <span>{initials}</span>
+              <span>
+                {profile?.avatarUrl ? (
+                  <img src={profile.avatarUrl} alt="" />
+                ) : (
+                  initials
+                )}
+              </span>
               <small>MY PROFILE</small>
               <h1>{profile?.displayName}</h1>
               <p>
@@ -571,10 +784,19 @@ export default function BrawlPreview({
                 <small>メイト</small>
               </article>
               <article>
-                <b>100%</b>
+                <b>{completion}%</b>
                 <small>登録完了</small>
               </article>
             </div>
+            {missingItems.length > 0 && (
+              <article className={styles.completion}>
+                <div>
+                  <strong>プロフィールをもっと充実</strong>
+                  <small>未入力：{missingItems.join("・")}</small>
+                </div>
+                <button onClick={() => setAuth("onboarding")}>入力する</button>
+              </article>
+            )}
             <article className={styles.link}>
               <div>
                 <strong>プレイヤー情報</strong>
@@ -608,19 +830,115 @@ export default function BrawlPreview({
           </button>
         ))}
       </nav>
+      {filterOpen && (
+        <div className={styles.modalBackdrop}>
+          <section className={styles.modal}>
+            <div className={styles.modalHead}>
+              <div>
+                <small>SEARCH FILTER</small>
+                <h2>仲間を絞り込む</h2>
+              </div>
+              <button onClick={() => setFilterOpen(false)}>×</button>
+            </div>
+            <label>
+              役割
+              <select
+                value={filters.role}
+                onChange={(event) =>
+                  setFilters((value) => ({ ...value, role: event.target.value }))
+                }
+              >
+                <option value="">すべての役割</option>
+                {roles.slice(0, -1).map((role) => (
+                  <option key={role}>{role}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              ランク
+              <select
+                value={filters.tier}
+                onChange={(event) =>
+                  setFilters((value) => ({ ...value, tier: event.target.value }))
+                }
+              >
+                <option value="">すべてのランク</option>
+                {tiers.map((tier) => (
+                  <option key={tier}>{tier}</option>
+                ))}
+              </select>
+            </label>
+            <div className={styles.modalActions}>
+              <button
+                className={styles.secondary}
+                onClick={() => setFilters({ role: "", tier: "" })}
+              >
+                条件をリセット
+              </button>
+              <button onClick={applyFilters}>この条件で表示</button>
+            </div>
+          </section>
+        </div>
+      )}
+      {tutorialOpen && (
+        <div className={styles.modalBackdrop}>
+          <section className={`${styles.modal} ${styles.tutorial}`}>
+            <small>HOW TO USE</small>
+            <h2>スタメイトの使い方</h2>
+            <div className={styles.tutorialList}>
+              <article><b>♡</b><div><strong>いいね</strong><p>気になる相手へ軽く興味を伝えます。お互いにいいねすると自動でマッチし、チャットが始まります。</p></div></article>
+              <article><b>⚡</b><div><strong>メイト申請</strong><p>一緒に遊びたい相手へ直接申請します。相手が承認するとチャットできます。</p></div></article>
+              <article><b>×</b><div><strong>スキップ</strong><p>ブロックせず、今表示している候補を次の人へ送ります。</p></div></article>
+              <article><b>＋</b><div><strong>募集</strong><p>今すぐ遊びたい時は条件を選び、参加者を募集できます。</p></div></article>
+            </div>
+            <button className={styles.primaryWide} onClick={closeTutorial}>使ってみる</button>
+          </section>
+        </div>
+      )}
+      {recruitOpen && (
+        <div className={styles.modalBackdrop}>
+          <section className={styles.modal}>
+            <div className={styles.modalHead}>
+              <div><small>CREATE TEAM</small><h2>募集を作成</h2></div>
+              <button onClick={() => setRecruitOpen(false)}>×</button>
+            </div>
+            <div className={styles.formGrid}>
+              <label>モード<select value={recruitForm.mode} onChange={(event) => setRecruitForm((value) => ({ ...value, mode: event.target.value }))}>{modes.map((mode) => <option key={mode}>{mode}</option>)}</select></label>
+              <label>パーティ人数<select value={recruitForm.partySize} onChange={(event) => setRecruitForm((value) => ({ ...value, partySize: event.target.value }))}><option value="2">2人</option><option value="3">3人</option><option value="5">5人</option></select></label>
+              <label>希望する役割（任意）<select value={recruitForm.desiredRole} onChange={(event) => setRecruitForm((value) => ({ ...value, desiredRole: event.target.value }))}><option value="">指定なし</option>{roles.slice(0, -1).map((role) => <option key={role}>{role}</option>)}</select></label>
+              <label>開始時間（任意）<input type="datetime-local" value={recruitForm.startAt} onChange={(event) => setRecruitForm((value) => ({ ...value, startAt: event.target.value }))} /></label>
+              <label>掲載時間<select value={recruitForm.durationMinutes} onChange={(event) => setRecruitForm((value) => ({ ...value, durationMinutes: event.target.value }))}><option value="60">1時間</option><option value="120">2時間</option><option value="360">6時間</option><option value="1440">24時間</option></select></label>
+              <label className={styles.full}>ひとこと（任意）<textarea maxLength={160} value={recruitForm.note} onChange={(event) => setRecruitForm((value) => ({ ...value, note: event.target.value }))} placeholder="例：VCなし、楽しく遊びたいです" /></label>
+            </div>
+            <button className={styles.primaryWide} onClick={() => void createRecruit()}>この内容で公開</button>
+          </section>
+        </div>
+      )}
+      {viewProfile && (
+        <div className={styles.modalBackdrop}>
+          <section className={styles.modal}>
+            <div className={styles.modalHead}>
+              <div><small>PLAYER PROFILE</small><h2>{viewProfile.displayName}</h2></div>
+              <button onClick={() => setViewProfile(null)}>×</button>
+            </div>
+            <div className={styles.profilePreview}>
+              <span>{viewProfile.avatarUrl ? <img src={viewProfile.avatarUrl} alt="" /> : viewProfile.displayName.slice(0, 2)}</span>
+              <div><b>{viewProfile.skillTier}</b><p>{viewProfile.gameIdentity}</p></div>
+            </div>
+            <div className={styles.tags}>{viewProfile.roles.map((role) => <span key={role}>{role}</span>)}</div>
+            <p className={styles.profileBio}>{viewProfile.bio || "自己紹介はまだありません。"}</p>
+            <small className={styles.profileTimes}>{viewProfile.playTimes?.join(" · ") || "遊べる時間は未設定です"}</small>
+          </section>
+        </div>
+      )}
       {activeChat && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 300,
-            background: "#fff",
-            padding: "24px",
-            overflow: "auto",
-          }}
-        >
-          <button onClick={() => setActiveChat(null)}>← 戻る</button>
-          <h2>{activeChat.other.displayName}</h2>
+        <div className={styles.chatOverlay}>
+          <div className={styles.chatHead}>
+            <button onClick={() => setActiveChat(null)}>←</button>
+            <button onClick={() => setViewProfile(activeChat.other)}>
+              <strong>{activeChat.other.displayName}</strong>
+              <small>{activeChat.other.skillTier}</small>
+            </button>
           <ServiceReportButton
             service="stamate"
             targetProfileId={activeChat.other.id}
@@ -631,49 +949,21 @@ export default function BrawlPreview({
               void load();
             }}
           />
-          {messages.map((item) => (
-            <p
-              key={item.id}
-              style={{ padding: 12, background: "#f3efff", borderRadius: 14 }}
-            >
-              {item.body}
-            </p>
-          ))}
-          <form
-            onSubmit={sendMessage}
-            style={{
-              position: "fixed",
-              left: 16,
-              right: 16,
-              bottom: 20,
-              display: "flex",
-              gap: 8,
-            }}
-          >
+          </div>
+          <div className={styles.chatMessages}>
+            {chatLoading && <p className={styles.chatState}>メッセージを読み込んでいます…</p>}
+            {chatError && <div className={styles.chatState}><p>{chatError}</p><button onClick={() => void openChat(activeChat)}>再試行</button></div>}
+            {!chatLoading && !chatError && !messages.length && <p className={styles.chatState}>マッチしました。まずは挨拶してみましょう！</p>}
+            {messages.map((item) => <p className={styles.bubble} key={item.id}>{item.body}</p>)}
+          </div>
+          <form onSubmit={sendMessage} className={styles.chatForm}>
             <input
-              style={{
-                flex: 1,
-                fontSize: 16,
-                padding: 14,
-                borderRadius: 14,
-                border: "1px solid #ddd",
-              }}
               value={message}
               maxLength={500}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="メッセージを入力"
             />
-            <button
-              style={{
-                padding: "0 18px",
-                border: 0,
-                borderRadius: 14,
-                background: "#7357f6",
-                color: "#fff",
-              }}
-            >
-              送信
-            </button>
+            <button>送信</button>
           </form>
         </div>
       )}

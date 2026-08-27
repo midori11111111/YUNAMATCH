@@ -93,8 +93,16 @@ export async function GET(
               profile: {
                 id: profile.id,
                 displayName: profile.displayName,
+                gameIdentity: profile.gameIdentity,
                 skillTier: profile.skillTier,
                 roles: JSON.parse(profile.roles),
+                playTimes: JSON.parse(profile.playTimes),
+                age: profile.age,
+                gender:
+                  profile.showGender && profile.age >= 18
+                    ? profile.gender
+                    : "",
+                bio: profile.bio,
                 avatarUrl: profile.avatarUrl,
               },
             },

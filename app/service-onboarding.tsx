@@ -11,6 +11,17 @@ type Props = {
   roles: string[];
   returnPath: string;
   onComplete: (profile: unknown) => void;
+  initialProfile?: {
+    displayName?: string;
+    gameIdentity?: string;
+    skillTier?: string;
+    roles?: string[];
+    playTimes?: string[];
+    age?: number;
+    gender?: string;
+    showGender?: boolean;
+    bio?: string;
+  } | null;
 };
 const playTimes = [
   "平日 朝",
@@ -31,17 +42,30 @@ export default function ServiceOnboarding({
   roles,
   returnPath,
   onComplete,
+  initialProfile,
 }: Props) {
-  const [displayName, setDisplayName] = useState(suggestedName),
-    [gameIdentity, setGameIdentity] = useState(""),
-    [skillTier, setSkillTier] = useState(tiers[0] || "未設定"),
-    [selectedRoles, setSelectedRoles] = useState<string[]>([]),
-    [selectedTimes, setSelectedTimes] = useState<string[]>([]),
-    [age, setAge] = useState(18),
-    [gender, setGender] = useState(""),
-    [showGender, setShowGender] = useState(false),
-    [bio, setBio] = useState(""),
-    [terms, setTerms] = useState(false),
+  const [displayName, setDisplayName] = useState(
+      initialProfile?.displayName || suggestedName,
+    ),
+    [gameIdentity, setGameIdentity] = useState(
+      initialProfile?.gameIdentity || "",
+    ),
+    [skillTier, setSkillTier] = useState(
+      initialProfile?.skillTier || tiers[0] || "未設定",
+    ),
+    [selectedRoles, setSelectedRoles] = useState<string[]>(
+      initialProfile?.roles || [],
+    ),
+    [selectedTimes, setSelectedTimes] = useState<string[]>(
+      initialProfile?.playTimes || [],
+    ),
+    [age, setAge] = useState(initialProfile?.age || 18),
+    [gender, setGender] = useState(initialProfile?.gender || ""),
+    [showGender, setShowGender] = useState(
+      initialProfile?.showGender || false,
+    ),
+    [bio, setBio] = useState(initialProfile?.bio || ""),
+    [terms, setTerms] = useState(Boolean(initialProfile)),
     [saving, setSaving] = useState(false),
     [error, setError] = useState("");
   const toggle = (
@@ -88,9 +112,11 @@ export default function ServiceOnboarding({
         <small className={styles.brand}>
           {name.toUpperCase()} · FIRST SETUP
         </small>
-        <h1>プレイヤー情報を登録</h1>
+        <h1>{initialProfile ? "プロフィールを編集" : "プレイヤー情報を登録"}</h1>
         <p className={styles.lead}>
-          初回だけ入力します。同じSNSアカウントでログインすれば、別の端末でも引き継がれます。
+          {initialProfile
+            ? "現在の情報を確認し、変更したい項目だけ編集してください。"
+            : "初回だけ入力します。同じSNSアカウントでログインすれば、別の端末でも引き継がれます。"}
         </p>
         <form className={styles.form} onSubmit={submit}>
           <label>
@@ -223,7 +249,11 @@ export default function ServiceOnboarding({
               !terms
             }
           >
-            {saving ? "登録しています…" : "登録して仲間を探す"}
+            {saving
+              ? "保存しています…"
+              : initialProfile
+                ? "変更内容を保存"
+                : "登録して仲間を探す"}
           </button>
           <a
             className={styles.signout}
