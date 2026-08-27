@@ -548,7 +548,7 @@ try {
     /yunamatch-backup-/,
   );
   const backup = await backupResponse.json();
-  assert.equal(backup.schemaVersion, 4);
+  assert.equal(backup.schemaVersion, 5);
   assert.ok(backup.serviceProfiles.length >= 3);
   assert.ok(Array.isArray(backup.serviceConnections));
   assert.ok(Array.isArray(backup.serviceMessages));
