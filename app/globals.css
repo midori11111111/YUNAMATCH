@@ -769,6 +769,8 @@ button { cursor: pointer; }
 .bottomNav button > span { width: 32px; height: 27px; display: grid; place-items: center; border-radius: 10px; font-size: 18px; line-height: 1; }
 .bottomNav button.active { color: var(--purple); }
 .bottomNav button.active > span { background: #eee9ff; }
+.persistentLoadingNav { opacity: .72; }
+.persistentLoadingNav button:disabled { color: #aaa4af; opacity: 1; cursor: default; }
 .bottomNav i { width: 15px; height: 15px; top: 7px; right: 15px; }
 
 .chatView { height: 100%; display: flex; flex-direction: column; padding-bottom: 0; }
@@ -985,6 +987,15 @@ button { cursor: pointer; }
 .cancelMessageButton { border: 0; padding: 3px 0; color: #928a99; background: transparent; font-size: 7px; font-weight: 800; text-decoration: underline; text-underline-offset: 2px; }
 .cancelMessageButton:disabled { opacity: .55; }
 .messageBubble.me p.deletedMessageBody { color: #958e9b; border: 1px solid #ddd7e2; background: #f7f5f8; font-style: italic; }
+.messageReactionArea { min-height: 24px; position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 5px; }
+.messageBubble.me .messageReactionArea { justify-content: flex-end; }
+.messageReactionArea > button { min-width: 28px; height: 23px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; border: 1px solid #e3ddea; border-radius: 99px; padding: 0 6px; color: #61576d; background: #fff; font-size: 10px; }
+.messageReactionArea > button.active { border-color: #8d76ed; background: #eee9ff; box-shadow: 0 0 0 1px #8d76ed22; }
+.messageReactionArea > button b { font-size: 7px; }
+.messageReactionArea > button.openReactionPicker { min-width: 31px; color: #8d8593; font-size: 8px; }
+.messageReactionPicker { position: absolute; z-index: 8; bottom: 28px; left: 0; display: flex; gap: 4px; padding: 6px; border: 1px solid #e4ddeb; border-radius: 99px; background: #fff; box-shadow: 0 8px 22px #33224324; }
+.messageBubble.me .messageReactionPicker { right: 0; left: auto; }
+.messageReactionPicker button { width: 31px; height: 31px; border: 0; border-radius: 50%; background: #f7f4fa; font-size: 15px; }
 .playInviteMessage .messageUtilityActions { justify-content: flex-end; margin-right: 0; }
 .playInviteMessage { width: min(88%, 330px); flex-shrink: 0; align-self: flex-start; overflow: hidden; border: 1px solid #e2dcf3; border-radius: 18px; padding: 13px; background: linear-gradient(145deg,#fff,#f7f3ff); box-shadow: 0 8px 20px #49367112; }
 .playInviteMessage.me { align-self: flex-end; }

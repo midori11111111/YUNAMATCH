@@ -11,6 +11,7 @@ import {
   lobbies,
   lobbyMembers,
   messageFavorites,
+  messageReactions,
   messages,
   profiles,
   profileLikes,
@@ -50,6 +51,7 @@ export async function GET() {
     mutualLikeMatchRows,
     messageRows,
     messageFavoriteRows,
+    messageReactionRows,
     ratingRows,
     lobbyRows,
     lobbyMemberRows,
@@ -82,6 +84,7 @@ export async function GET() {
     db.select().from(mutualLikeMatches),
     db.select().from(messages),
     db.select().from(messageFavorites),
+    db.select().from(messageReactions),
     db.select().from(connectionRatings),
     db.select().from(lobbies),
     db.select().from(lobbyMembers),
@@ -107,7 +110,7 @@ export async function GET() {
   return new Response(
     JSON.stringify(
       {
-        schemaVersion: 4,
+        schemaVersion: 5,
         generatedAt: generatedAt.toISOString(),
         profiles: profileRows,
         accountLinks: accountRows,
@@ -120,6 +123,7 @@ export async function GET() {
         mutualLikeMatches: mutualLikeMatchRows,
         messages: messageRows,
         messageFavorites: messageFavoriteRows,
+        messageReactions: messageReactionRows,
         connectionRatings: ratingRows,
         lobbies: lobbyRows,
         lobbyMembers: lobbyMemberRows,

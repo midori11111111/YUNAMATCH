@@ -21,7 +21,7 @@ test("administrator backup includes every multi-service safety and chat table", 
     assert.match(source, new RegExp(`${table}:`));
     assert.match(source, new RegExp(`db\\.select\\(\\)\\.from\\(${table}\\)`));
   }
-  assert.match(source, /schemaVersion:4/);
+  assert.match(source, /schemaVersion:5/);
   assert.match(source, /"cache-control":"no-store"/);
 });
 

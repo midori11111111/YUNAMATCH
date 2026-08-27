@@ -29,6 +29,7 @@ async function deleteAccount(userId: string) {
   const d1 = env.DB;
   await d1.batch([
     d1.prepare("DELETE FROM connection_ratings WHERE rater_id = ? OR rated_user_id = ?").bind(userId, userId),
+    d1.prepare("DELETE FROM message_reactions WHERE user_id = ? OR message_id IN (SELECT messages.id FROM messages INNER JOIN connections ON messages.connection_id = connections.id WHERE connections.user_a_id = ? OR connections.user_b_id = ?)").bind(userId, userId, userId),
     d1.prepare("DELETE FROM message_favorites WHERE user_id = ? OR connection_id IN (SELECT id FROM connections WHERE user_a_id = ? OR user_b_id = ?)").bind(userId, userId, userId),
     d1.prepare("DELETE FROM messages WHERE connection_id IN (SELECT id FROM connections WHERE user_a_id = ? OR user_b_id = ?)").bind(userId, userId),
     d1.prepare("DELETE FROM presence WHERE user_id = ?").bind(userId),

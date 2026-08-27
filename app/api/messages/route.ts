@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray, isNull, lt, or } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { blocks, connections, lobbies, lobbyMembers, messages, profiles } from "../../../db/schema";
+import { blocks, connections, lobbies, lobbyMembers, messageReactions, messages, profiles } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { sendPush } from "../../../lib/push";
 import { isSuspended } from "../../../lib/safety";
@@ -35,7 +35,14 @@ function serializeMessage(
   row: typeof messages.$inferSelect,
   userIds: Set<string>,
   mateLastRead?: Date | null,
+  reactionRows: Array<{ userId: string; reaction: string }> = [],
 ) {
+  const reactionCounts = new Map<string, number>();
+  for (const reaction of reactionRows)
+    reactionCounts.set(
+      reaction.reaction,
+      (reactionCounts.get(reaction.reaction) || 0) + 1,
+    );
   return {
     id: row.id,
     clientId: row.clientId,
@@ -52,6 +59,10 @@ function serializeMessage(
     read:
       userIds.has(row.senderId) &&
       Boolean(mateLastRead && row.createdAt <= mateLastRead),
+    reactions: [...reactionCounts].map(([reaction, count]) => ({ reaction, count })),
+    myReaction:
+      reactionRows.find((reaction) => userIds.has(reaction.userId))?.reaction ||
+      null,
   };
 }
 
@@ -93,6 +104,23 @@ export async function GET(request: Request) {
   ]);
   const hasMore = newestRows.length > pageSize;
   const rows = newestRows.slice(0, pageSize).reverse();
+  const reactionRows = rows.length
+    ? await getDb()
+        .select({
+          messageId: messageReactions.messageId,
+          userId: messageReactions.userId,
+          reaction: messageReactions.reaction,
+        })
+        .from(messageReactions)
+        .where(inArray(messageReactions.messageId, rows.map((row) => row.id)))
+        .catch(() => [])
+    : [];
+  const reactionsByMessage = new Map<number, Array<{ userId: string; reaction: string }>>();
+  for (const reaction of reactionRows) {
+    const current = reactionsByMessage.get(reaction.messageId) || [];
+    current.push(reaction);
+    reactionsByMessage.set(reaction.messageId, current);
+  }
   const isA=aliasSet.has(connection.userAId);
   const mateAllowsReadReceipts=mateProfiles[0]?.readReceiptsEnabled!==false;
   const mateLastRead=mateAllowsReadReceipts
@@ -104,7 +132,12 @@ export async function GET(request: Request) {
   );
   return Response.json({
     messages: rows.map((row) =>
-      serializeMessage(row, aliasSet, mateLastRead),
+      serializeMessage(
+        row,
+        aliasSet,
+        mateLastRead,
+        reactionsByMessage.get(row.id) || [],
+      ),
     ),
     hasMore,
     nextCursor: rows[0]?.id ?? null,

@@ -281,6 +281,27 @@ export const messages = sqliteTable(
   ],
 );
 
+export const messageReactions = sqliteTable(
+  "message_reactions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    messageId: integer("message_id")
+      .notNull()
+      .references(() => messages.id),
+    userId: text("user_id").notNull(),
+    reaction: text("reaction").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("idx_message_reactions_message_user").on(
+      table.messageId,
+      table.userId,
+    ),
+    index("idx_message_reactions_message").on(table.messageId),
+  ],
+);
+
 export const messageFavorites = sqliteTable(
   "message_favorites",
   {

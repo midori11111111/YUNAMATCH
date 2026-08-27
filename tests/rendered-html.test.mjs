@@ -1311,9 +1311,10 @@ test("shows uploaded profile headers to other signed-in users across profile sur
 });
 
 test("shows the latest trainer name to existing matched mates", async () => {
-  const [connectionsApi, availabilityApi] = await Promise.all([
+  const [connectionsApi, availabilityApi, profileApi] = await Promise.all([
     readFile(new URL("app/api/connections/route.ts", root), "utf8"),
     readFile(new URL("app/api/availability/route.ts", root), "utf8"),
+    readFile(new URL("app/api/profile/route.ts", root), "utf8"),
   ]);
 
   assert.match(
@@ -1325,4 +1326,33 @@ test("shows the latest trainer name to existing matched mates", async () => {
     availabilityApi,
     /profileByMate\.get\(relation\.mateId\)\?\.trainerName \|\| relation\.mateName/,
   );
+  assert.match(profileApi, /set\(\{userAName:trainerName\}\)/);
+  assert.match(profileApi, /set\(\{userBName:trainerName\}\)/);
+  assert.match(profileApi, /inArray\(connections\.userAId,aliases\)/);
+  assert.match(profileApi, /inArray\(connections\.userBId,aliases\)/);
+});
+
+test("keeps the bottom navigation visible while profile data loads", async () => {
+  const app = await readFile(new URL("app/match-app.tsx", root), "utf8");
+  assert.match(app, /persistentLoadingNav/);
+  assert.match(app, /プロフィールを準備しています/);
+  assert.match(app, /<span>⌕<\/span>さがす/);
+  assert.match(app, /<span>▢<\/span>やりとり/);
+});
+
+test("supports persistent reactions on direct messages", async () => {
+  const [app, api, messagesApi, schema, migration] = await Promise.all([
+    readFile(new URL("app/match-app.tsx", root), "utf8"),
+    readFile(new URL("app/api/message-reactions/route.ts", root), "utf8"),
+    readFile(new URL("app/api/messages/route.ts", root), "utf8"),
+    readFile(new URL("db/schema.ts", root), "utf8"),
+    readFile(new URL("drizzle/0042_naive_sway.sql", root), "utf8"),
+  ]);
+  assert.match(app, /reactToMessage/);
+  assert.match(app, /\["👍", "❤️", "😂", "🎮"\]/);
+  assert.match(api, /allowedReactions/);
+  assert.match(api, /\.delete\(messageReactions\)/);
+  assert.match(messagesApi, /reactionsByMessage/);
+  assert.match(schema, /messageReactions/);
+  assert.match(migration, /CREATE TABLE `message_reactions`/);
 });

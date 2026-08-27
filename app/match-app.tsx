@@ -193,6 +193,8 @@ type ChatMessage = {
   read?: boolean;
   deleted?: boolean;
   delivery?: "sending" | "failed";
+  reactions?: Array<{ reaction: string; count: number }>;
+  myReaction?: string | null;
 };
 const chatNotificationKey = (connection: Connection) =>
   `chat:${connection.id}:${connection.latestMessageId ?? 0}`;
@@ -903,6 +905,12 @@ export default function MatchApp({
   const messageTypingRef = useRef(false);
   const [messageSending, setMessageSending] = useState(false);
   const [messageCancellingId, setMessageCancellingId] = useState<number | null>(
+    null,
+  );
+  const [reactionPickerMessageId, setReactionPickerMessageId] = useState<
+    number | null
+  >(null);
+  const [reactionUpdatingId, setReactionUpdatingId] = useState<number | null>(
     null,
   );
   const [playInviteSending, setPlayInviteSending] = useState(false);
@@ -2286,6 +2294,13 @@ export default function MatchApp({
       setSelectedPending(null);
     }
   }, [incoming, outgoing, selectedPending]);
+
+  useEffect(() => {
+    if (!selectedConnection) return;
+    const latest = connections.find((row) => row.id === selectedConnection.id);
+    if (latest && latest.mateName !== selectedConnection.mateName)
+      setSelectedConnection(latest);
+  }, [connections, selectedConnection]);
 
   useEffect(() => {
     if (
@@ -4246,6 +4261,45 @@ export default function MatchApp({
       setMessageCancellingId(null);
     }
   };
+  const reactToMessage = async (message: ChatMessage, reaction: string) => {
+    if (
+      !selectedConnection ||
+      message.id < 1 ||
+      message.deleted ||
+      reactionUpdatingId !== null
+    )
+      return;
+    const nextReaction = message.myReaction === reaction ? null : reaction;
+    setReactionUpdatingId(message.id);
+    try {
+      const response = await fetch("/api/message-reactions", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ messageId: message.id, reaction: nextReaction }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        notify(data.error || "リアクションできませんでした");
+        return;
+      }
+      setMessages((rows) =>
+        rows.map((row) =>
+          row.id === message.id
+            ? {
+                ...row,
+                reactions: data.reactions || [],
+                myReaction: data.myReaction || null,
+              }
+            : row,
+        ),
+      );
+      setReactionPickerMessageId(null);
+    } catch {
+      notify("通信が不安定です。もう一度お試しください");
+    } finally {
+      setReactionUpdatingId(null);
+    }
+  };
   const sendPlayInvite = async () => {
     const connectionId = selectedConnection?.id;
     if (!connectionId || playInviteSending) return;
@@ -5296,6 +5350,19 @@ export default function MatchApp({
         <section className="phoneShell profileLoading">
           <div className="loadingBall" />
           <h1>プロフィールを準備しています</h1>
+          <nav
+            className="bottomNav persistentLoadingNav"
+            aria-label="メインメニュー"
+          >
+            <button disabled><span>⌕</span>さがす</button>
+            <button disabled><span>＋</span>募集</button>
+            <button disabled><span>▢</span>やりとり</button>
+            <button disabled><span>⚡</span>ロビー</button>
+            <button disabled>
+              <span><span className="navPersonIcon" aria-hidden="true" /></span>
+              マイページ
+            </button>
+          </nav>
         </section>
       </main>
     );
@@ -6564,6 +6631,65 @@ export default function MatchApp({
                                     ? " ・ 既読"
                                     : ""}
                             </small>
+                            {!message.deleted &&
+                              !message.delivery &&
+                              message.id > 0 && (
+                                <div className="messageReactionArea">
+                                  {(message.reactions || []).map((reaction) => (
+                                    <button
+                                      type="button"
+                                      key={reaction.reaction}
+                                      className={
+                                        message.myReaction === reaction.reaction
+                                          ? "active"
+                                          : ""
+                                      }
+                                      onClick={() =>
+                                        void reactToMessage(
+                                          message,
+                                          reaction.reaction,
+                                        )
+                                      }
+                                      disabled={reactionUpdatingId === message.id}
+                                    >
+                                      {reaction.reaction}
+                                      <b>{reaction.count}</b>
+                                    </button>
+                                  ))}
+                                  <button
+                                    type="button"
+                                    className="openReactionPicker"
+                                    onClick={() =>
+                                      setReactionPickerMessageId((current) =>
+                                        current === message.id ? null : message.id,
+                                      )
+                                    }
+                                    aria-label="リアクションを追加"
+                                  >
+                                    ＋☺
+                                  </button>
+                                  {reactionPickerMessageId === message.id && (
+                                    <div className="messageReactionPicker">
+                                      {["👍", "❤️", "😂", "🎮"].map(
+                                        (reaction) => (
+                                          <button
+                                            type="button"
+                                            key={reaction}
+                                            onClick={() =>
+                                              void reactToMessage(message, reaction)
+                                            }
+                                            disabled={
+                                              reactionUpdatingId === message.id
+                                            }
+                                          >
+                                            {reaction}
+                                          </button>
+                                        ),
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             {message.delivery === "failed" && (
                               <button
                                 type="button"

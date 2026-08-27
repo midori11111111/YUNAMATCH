@@ -1,11 +1,12 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { env } from "cloudflare:workers";
 import { getDb } from "../../../db";
-import { profiles } from "../../../db/schema";
+import { applications, connections, profiles, recruits } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { checkRateLimit, rateLimitResponse } from "../../../lib/rate-limit";
 import { containsProhibitedContent, prohibitedContentMessage } from "../../../lib/content-policy";
 import { normalizeRank, rankOptionSet } from "../../../lib/ranks";
+import { identityAliases } from "../../../lib/account-aliases";
 
 const genders = new Set(["男性", "女性"]);
 const playTimes = new Set([
@@ -74,6 +75,13 @@ export async function PUT(request:Request){
   const values={userId:user.userId,trainerName,mainPokemon:JSON.stringify(mainPokemon),highestRate,playTime:JSON.stringify(playTime),gender,contact,bio,avatarUrl,headerUrl,age,ageConfirmed,readReceiptsEnabled,termsAcceptedAt:now,authProvider:user.provider,createdAt:now,updatedAt:now};
   const db=getDb();
   await db.insert(profiles).values(values).onConflictDoUpdate({target:profiles.userId,set:{trainerName:values.trainerName,mainPokemon:values.mainPokemon,highestRate:values.highestRate,playTime:values.playTime,gender:values.gender,contact:values.contact,bio:values.bio,avatarUrl:values.avatarUrl,headerUrl:values.headerUrl,age:values.age,ageConfirmed:values.ageConfirmed,readReceiptsEnabled:values.readReceiptsEnabled,termsAcceptedAt:now,authProvider:values.authProvider,updatedAt:now}});
+  const aliases=await identityAliases(user.userId,user.email);
+  await Promise.all([
+    db.update(connections).set({userAName:trainerName}).where(inArray(connections.userAId,aliases)),
+    db.update(connections).set({userBName:trainerName}).where(inArray(connections.userBId,aliases)),
+    db.update(recruits).set({trainerName}).where(inArray(recruits.ownerId,aliases)),
+    db.update(applications).set({applicantName:trainerName}).where(inArray(applications.applicantId,aliases)),
+  ]);
   const [row]=await db.select().from(profiles).where(eq(profiles.userId,user.userId)).limit(1);
   return Response.json({profile:publicProfile(row)});
 }
@@ -104,6 +112,7 @@ export async function DELETE(request:Request){
   const id=user.userId;
   await d1.batch([
     d1.prepare("DELETE FROM connection_ratings WHERE rater_id = ? OR rated_user_id = ?").bind(id,id),
+    d1.prepare("DELETE FROM message_reactions WHERE user_id = ? OR message_id IN (SELECT messages.id FROM messages INNER JOIN connections ON messages.connection_id = connections.id WHERE connections.user_a_id = ? OR connections.user_b_id = ?)").bind(id,id,id),
     d1.prepare("DELETE FROM message_favorites WHERE user_id = ? OR connection_id IN (SELECT id FROM connections WHERE user_a_id = ? OR user_b_id = ?)").bind(id,id,id),
     d1.prepare("DELETE FROM messages WHERE connection_id IN (SELECT id FROM connections WHERE user_a_id = ? OR user_b_id = ?)").bind(id,id),
     d1.prepare("DELETE FROM presence WHERE user_id = ?").bind(id),
