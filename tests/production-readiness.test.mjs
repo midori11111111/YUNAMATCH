@@ -41,13 +41,17 @@ test("administrator backup retains core relationship and privacy tables", async 
   }
 });
 
-test("service Discord links are allowlisted and hidden until configured", async () => {
+test("service Discord links use allowlisted official invites with environment overrides", async () => {
   const source = compact(await read("app/service-discord-link.tsx"));
   assert.match(source, /url\.protocol==="https:"/);
   assert.match(source, /url\.hostname==="discord\.gg"/);
   assert.match(source, /url\.hostname==="discord\.com"/);
   assert.match(source, /url\.pathname\.startsWith\("\/invite\/"\)/);
   assert.match(source, /if\(!isDiscordInviteUrl\(url\)\)returnnull/);
+  assert.match(source, /https:\/\/discord\.gg\/yrqnQNEYc/);
+  assert.match(source, /https:\/\/discord\.gg\/eUX4kHBef/);
+  assert.match(source, /https:\/\/discord\.gg\/qWR5tTyPH/);
+  assert.match(source, /NEXT_PUBLIC_VALOMATCH_DISCORD_URL\|\|defaultInviteUrls\.valomatch/);
   for (const page of ["valorant-preview", "brawl-preview", "identity-preview"]) {
     assert.match(await read(`app/${page}/page.tsx`), /<ServiceDiscordLink service=/);
   }

@@ -2,10 +2,19 @@
 
 import type { ServiceId } from "@/lib/service-config";
 
-const inviteUrls: Record<ServiceId, string | undefined> = {
-  valomatch: process.env.NEXT_PUBLIC_VALOMATCH_DISCORD_URL,
-  stamate: process.env.NEXT_PUBLIC_STAMATE_DISCORD_URL,
-  shoenmate: process.env.NEXT_PUBLIC_SHOENMATE_DISCORD_URL,
+const defaultInviteUrls: Record<ServiceId, string> = {
+  valomatch: "https://discord.gg/yrqnQNEYc",
+  stamate: "https://discord.gg/eUX4kHBef",
+  shoenmate: "https://discord.gg/qWR5tTyPH",
+};
+
+const inviteUrls: Record<ServiceId, string> = {
+  valomatch:
+    process.env.NEXT_PUBLIC_VALOMATCH_DISCORD_URL || defaultInviteUrls.valomatch,
+  stamate:
+    process.env.NEXT_PUBLIC_STAMATE_DISCORD_URL || defaultInviteUrls.stamate,
+  shoenmate:
+    process.env.NEXT_PUBLIC_SHOENMATE_DISCORD_URL || defaultInviteUrls.shoenmate,
 };
 
 export function isDiscordInviteUrl(value: string | undefined) {
