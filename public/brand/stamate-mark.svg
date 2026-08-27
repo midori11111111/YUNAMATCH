@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">スタメイト</title>
+  <desc id="desc">3つの平面図形がつながるスタメイトのシンボル</desc>
+  <rect width="256" height="256" rx="56" fill="#111A38"/>
+  <path d="M38 54h78v78H38z" fill="#35C5D3"/>
+  <path d="M140 54h78v78h-78z" fill="#FF5D73"/>
+  <path d="m128 116 58 58-58 58-58-58z" fill="#FFD34D"/>
+  <path d="m128 94 34 34-34 34-34-34z" fill="#FFFDF5"/>
+</svg>

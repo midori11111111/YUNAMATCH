@@ -7,6 +7,8 @@ import {
   lobbyMembers,
   profiles,
   recruits,
+  serviceProfiles,
+  serviceRecruits,
 } from "../../../../db/schema";
 import { checkRateLimit } from "../../../../lib/rate-limit";
 import { normalizeRank } from "../../../../lib/ranks";
@@ -28,6 +30,37 @@ const discordRecruitRanks = new Set([
   "レジェンド1000〜1249",
   "レジェンド1250〜1499",
   "レジェンド1500以上",
+]);
+const defaultStamateGuildId = "1541983696780009554";
+const stamateModes = new Set([
+  "トロフィー",
+  "ガチバトル",
+  "フリープレイ",
+  "マップメーカー",
+  "スペシャルイベント",
+  "フレンドバトル",
+  "その他",
+]);
+const stamateRanks = new Set([
+  "未設定",
+  "ブロンズ",
+  "シルバー",
+  "ゴールド",
+  "ダイヤモンド",
+  "ミシック",
+  "レジェンド",
+  "マスター",
+  "プロ",
+]);
+const stamateRoles = new Set([
+  "アタッカー",
+  "アサシン",
+  "スナイパー",
+  "グレネーディア",
+  "タンク",
+  "サポート",
+  "コントローラー",
+  "指定なし",
 ]);
 
 type DiscordInteraction = {
@@ -58,6 +91,9 @@ type DiscordMessage = {
 };
 
 const errorMessage = (content: string): DiscordMessage => ({ content });
+const isStamateGuild = (guildId: string | undefined) =>
+  guildId ===
+  (process.env.DISCORD_STAMATE_GUILD_ID || defaultStamateGuildId);
 const discordLinkMessage = (): DiscordMessage => ({
   content:
     "YUNAMATCHでこのDiscordアカウントを連携してから、もう一度 `/募集` を実行してください。",
@@ -70,6 +106,23 @@ const discordLinkMessage = (): DiscordMessage => ({
           style: 5,
           label: "Discord連携はこちら",
           url: "https://yunamatch.com/?joinDiscord=1",
+        },
+      ],
+    },
+  ],
+});
+const stamateLinkMessage = (): DiscordMessage => ({
+  content:
+    "スタメイトでDiscordアカウントを連携してから、もう一度 `/募集` を実行してください。",
+  components: [
+    {
+      type: 1,
+      components: [
+        {
+          type: 2,
+          style: 5,
+          label: "Discord連携はこちら",
+          url: "https://yunamatch.com/stamate?joinDiscord=1",
         },
       ],
     },
@@ -98,6 +151,178 @@ async function verify(request: Request, body: string) {
   } catch {
     return false;
   }
+}
+
+async function createStamateRecruitMessage(
+  interaction: DiscordInteraction,
+  discordId: string,
+): Promise<DiscordMessage> {
+  const db = getDb();
+  const [linked] = await db
+    .select()
+    .from(accountLinks)
+    .where(
+      and(
+        eq(accountLinks.provider, "discord"),
+        eq(accountLinks.providerAccountId, discordId),
+      ),
+    )
+    .limit(1);
+  if (!linked) return stamateLinkMessage();
+
+  const [profile] = await db
+    .select()
+    .from(serviceProfiles)
+    .where(
+      and(
+        eq(serviceProfiles.serviceId, "stamate"),
+        eq(serviceProfiles.userId, linked.canonicalUserId),
+      ),
+    )
+    .limit(1);
+  if (!profile || profile.status !== "active" || profile.suspendedAt)
+    return errorMessage(
+      "利用できるスタメイトプロフィールが見つかりません。先にサイトで登録を完了してください。",
+    );
+
+  const rateLimit = await checkRateLimit(`stamate:${profile.userId}`, {
+    action: "discord-recruit",
+    limit: 5,
+    windowMs: 60 * 60_000,
+  });
+  if (!rateLimit.allowed)
+    return errorMessage(
+      "短時間の募集回数が多すぎます。少し待ってからもう一度お試しください。",
+    );
+
+  const options = Object.fromEntries(
+    (interaction.data?.options || []).map((option) => [
+      option.name,
+      option.value,
+    ]),
+  );
+  const mode = String(options.mode || "");
+  const currentRank = String(options.current_rank || "");
+  const role = String(options.role || "指定なし");
+  const partySize = Number(options.party_size);
+  const createVoice = String(options.create_vc || "no") === "yes";
+  const startsIn = Number(options.starts_in || 0);
+  const duration = Number(options.duration || 2);
+  const note = String(options.note || "")
+    .trim()
+    .replace(/@/g, "＠")
+    .slice(0, 120);
+  if (
+    !stamateModes.has(mode) ||
+    !stamateRanks.has(currentRank) ||
+    !stamateRoles.has(role) ||
+    ![2, 3, 5].includes(partySize) ||
+    ![0, 30, 60, 120].includes(startsIn) ||
+    ![1, 2, 3].includes(duration) ||
+    !["yes", "no"].includes(String(options.create_vc || "no"))
+  )
+    return errorMessage("募集条件を確認してください。");
+
+  const now = new Date();
+  const startAt = new Date(now.getTime() + startsIn * 60_000);
+  const expiresAt = new Date(startAt.getTime() + duration * 3_600_000);
+  await Promise.all([
+    db
+      .update(serviceRecruits)
+      .set({ status: "closed", updatedAt: now })
+      .where(
+        and(
+          eq(serviceRecruits.serviceId, "stamate"),
+          eq(serviceRecruits.ownerProfileId, profile.id),
+          eq(serviceRecruits.status, "open"),
+        ),
+      ),
+    db
+      .update(serviceProfiles)
+      .set({ skillTier: currentRank, updatedAt: now })
+      .where(eq(serviceProfiles.id, profile.id)),
+  ]);
+  const [recruit] = await db
+    .insert(serviceRecruits)
+    .values({
+      serviceId: "stamate",
+      ownerProfileId: profile.id,
+      mode,
+      partySize,
+      desiredRoles: JSON.stringify(role === "指定なし" ? [] : [role]),
+      startAt,
+      note,
+      status: "open",
+      expiresAt,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .returning();
+
+  let voiceRoom: { name: string; url: string } | null = null;
+  if (createVoice) {
+    try {
+      voiceRoom = await createRecruitVoiceRoom({
+        discordId,
+        trainerName: profile.displayName,
+        userLimit: partySize,
+        guildId: interaction.guild_id,
+        categoryName: "スタメイト 募集VC",
+        roomPrefix: "募集VC｜",
+      });
+    } catch {
+      await db
+        .update(serviceRecruits)
+        .set({ status: "closed", updatedAt: new Date() })
+        .where(eq(serviceRecruits.id, recruit.id));
+      return errorMessage(
+        "VCを作成できなかったため募集は公開しませんでした。Botのチャンネル管理権限を確認してください。",
+      );
+    }
+  }
+
+  const startLabel = startsIn === 0 ? "今から" : `${startsIn}分後`;
+  const url = `https://yunamatch.com/stamate?recruit=${recruit.id}`;
+  return {
+    content: [
+      `@here **${mode}の${partySize}人パーティ募集中です**`,
+      `募集者：${profile.displayName.replace(/@/g, "＠")}`,
+      `現在ランク：${currentRank}`,
+      role === "指定なし" ? "" : `希望タイプ：${role}`,
+      `開始：${startLabel}・募集時間：${duration}時間`,
+      note ? `ひとこと：${note}` : "",
+      createVoice
+        ? `専用VC：${partySize}人用・24時間で自動削除`
+        : "専用VC：作成しない",
+      "参加申請は下のボタンから",
+    ]
+      .filter(Boolean)
+      .join("\n"),
+    allowed_mentions: { parse: ["everyone"] },
+    components: [
+      {
+        type: 1,
+        components: [
+          {
+            type: 2,
+            style: 5,
+            label: "スタメイトで参加申請",
+            url,
+          },
+          ...(voiceRoom
+            ? [
+                {
+                  type: 2,
+                  style: 5,
+                  label: `${partySize}人用VCに入る`,
+                  url: voiceRoom.url,
+                },
+              ]
+            : []),
+        ],
+      },
+    ],
+  };
 }
 
 async function createRecruitMessage(
@@ -334,12 +559,14 @@ export async function POST(request: Request) {
       type: 4,
       data: { content: "対応していない操作です", flags: 64 },
     });
+  const stamateGuild = isStamateGuild(interaction.guild_id);
   if (interaction.data?.name === "はじめ方")
     return json({
       type: 4,
       data: {
-        content:
-          "⚡ **YUNAMATCHの使い方**\n1. プロフィールでDiscordアカウントを連携\n2. このサーバーで `/募集` を入力\n3. カジュアルかランクマッチを選択\n4. 届いた申請をYUNAMATCHで承認\n5. チャットで人数を選び、Botに専用VCを作ってもらう\n\n詳しくはこちら：https://yunamatch.com/community",
+        content: stamateGuild
+          ? "**スタメイトの使い方**\n1. スタメイトでプロフィールを登録\n2. Discordアカウントを連携\n3. このサーバーで `/募集` を入力\n4. モード・ランク・人数・VC作成を選択\n5. 届いた参加申請をサイトで承認\n\nスタメイト：https://yunamatch.com/stamate"
+          : "⚡ **YUNAMATCHの使い方**\n1. プロフィールでDiscordアカウントを連携\n2. このサーバーで `/募集` を入力\n3. カジュアルかランクマッチを選択\n4. 届いた申請をYUNAMATCHで承認\n5. チャットで人数を選び、Botに専用VCを作ってもらう\n\n詳しくはこちら：https://yunamatch.com/community",
         flags: 64,
       },
     });
@@ -361,7 +588,9 @@ export async function POST(request: Request) {
       },
     });
 
-  const task = createRecruitMessage(interaction, discordId)
+  const task = (stamateGuild
+    ? createStamateRecruitMessage(interaction, discordId)
+    : createRecruitMessage(interaction, discordId))
     .then((message) =>
       editOriginalResponse(applicationId, interactionToken, message),
     )

@@ -73,7 +73,7 @@ export default function Terms() {
         <p>
           ブロスタの非公式ファンコンテンツです。この素材は非公式であり、Supercellによる承認・推奨を受けていません。詳細は
           <a
-            href="https://supercell.com/en/fan-content-policy/"
+            href="https://supercell.com/en/fan-content-policy/jp/"
             target="_blank"
             rel="noreferrer"
           >

@@ -14,7 +14,8 @@
     "check:production": "node scripts/check-production-readiness.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
-    "discord:register": "node scripts/register-discord-command.mjs"
+    "discord:register": "node scripts/register-discord-command.mjs",
+    "discord:register:stamate": "node scripts/register-stamate-discord-command.mjs"
   },
   "dependencies": {
     "@auth/core": "^0.41.3",

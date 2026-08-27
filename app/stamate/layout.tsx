@@ -4,6 +4,10 @@ export const metadata: Metadata = {
   title: "スタメイト｜ゲーム仲間探し",
   description:
     "トロフィー・得意ロール・遊べる時間帯から仲間を探す非公式コミュニティサービス。",
+  icons: {
+    icon: "/brand/stamate-mark.svg",
+    apple: "/brand/stamate-social-avatar.png",
+  },
 };
 
 export default function Layout({ children }: { children: React.ReactNode }) {

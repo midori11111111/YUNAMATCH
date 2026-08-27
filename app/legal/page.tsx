@@ -22,12 +22,12 @@ const DATA: Record<
     status: "限定ベータ公開前の最終確認中",
     owner: "Supercell",
     policy: "Fan Content Policy",
-    policyUrl: "https://supercell.com/en/fan-content-policy/",
+    policyUrl: "https://supercell.com/en/fan-content-policy/jp/",
     special: [
-      "SupercellおよびBrawl Starsの公式サービスではありません。",
+      "このコンテンツは非公式であり、Supercellによる承認を受けていません。",
       "公式ロゴ・キャラクター画像・ゲーム内画像をサービス素材として使用しません。",
       "プレイヤータグ連携を追加する場合は、公式APIの条件と本人同意を確認します。",
-      "広告・寄付・有料機能は、Fan Content Policyとの適合性確認が終わるまで提供しません。",
+      "利用者へ料金を請求する機能は提供しません。広告・寄付は導入前にFan Content Policyと国内法への適合性を再確認します。",
     ],
   },
   valomatch: {

@@ -1,5 +1,6 @@
 "use client";
 import { FormEvent, useEffect, useState } from "react";
+import Image from "next/image";
 import styles from "./brawl-preview.module.css";
 import ServiceOnboarding from "../service-onboarding";
 import ServiceTermsGate from "../service-terms-gate";
@@ -51,12 +52,30 @@ const tiers = [
     "シルバー",
     "ゴールド",
     "ダイヤモンド",
-    "エリート",
     "ミシック",
     "レジェンド",
     "マスター",
+    "プロ",
   ],
-  roles = ["アタッカー", "タンク", "サポート", "コントロール", "指定なし"];
+  roles = [
+    "アタッカー",
+    "アサシン",
+    "スナイパー",
+    "グレネーディア",
+    "タンク",
+    "サポート",
+    "コントローラー",
+    "指定なし",
+  ],
+  modes = [
+    "トロフィー",
+    "ガチバトル",
+    "フリープレイ",
+    "マップメーカー",
+    "スペシャルイベント",
+    "フレンドバトル",
+    "その他",
+  ];
 export default function BrawlPreview({
   basePath = "/brawl-preview",
 }: {
@@ -187,19 +206,35 @@ export default function BrawlPreview({
   }
   async function createRecruit() {
     const mode = prompt(
-      "募集モード（トロフィー / ランク / イベント / フレンドバトル / その他）",
-      "ランク",
+      `募集モード（${modes.join(" / ")}）`,
+      "ガチバトル",
     );
     if (!mode) return;
-    const partySize = Number(prompt("パーティ人数（2〜5）", "3")),
+    if (!modes.includes(mode)) {
+      notify("表示された募集モードから選んでください");
+      return;
+    }
+    const partySize = Number(prompt("パーティ人数（2人 / 3人 / 5人）", "3"));
+    if (![2, 3, 5].includes(partySize)) {
+      notify("募集人数は2人・3人・5人から選んでください");
+      return;
+    }
+    const desiredRole = prompt(
+        `希望するタイプ（任意：${roles.slice(0, -1).join(" / ")}）`,
+        "",
+      )?.trim(),
       note = prompt("募集のひとこと（任意）", "") || "";
+    if (desiredRole && !roles.includes(desiredRole)) {
+      notify("表示されたキャラクタータイプから選んでください");
+      return;
+    }
     const response = await fetch("/api/services/stamate/recruits", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           mode,
           partySize,
-          desiredRoles: [],
+          desiredRoles: desiredRole ? [desiredRole] : [],
           note,
           durationMinutes: 120,
         }),
@@ -240,7 +275,14 @@ export default function BrawlPreview({
     return (
       <main className={styles.login}>
         <section className={styles.intro}>
-          <div className={styles.mark}>S</div>
+          <Image
+            className={styles.mark}
+            src="/brand/stamate-mark.svg"
+            alt="スタメイト"
+            width={66}
+            height={66}
+            priority
+          />
           <h1>STAMATE</h1>
           <p>プロフィールを確認しています…</p>
         </section>
@@ -252,7 +294,7 @@ export default function BrawlPreview({
         service="stamate"
         name="スタメイト"
         suggestedName={suggestedName}
-        identityLabel="プレイヤー名・タグ"
+        identityLabel="プレイヤー名 / プレイヤータグ（#を含む）"
         tiers={tiers}
         roles={roles}
         returnPath={basePath}
@@ -274,7 +316,14 @@ export default function BrawlPreview({
     return (
       <main className={styles.login}>
         <section className={styles.intro}>
-          <div className={styles.mark}>S</div>
+          <Image
+            className={styles.mark}
+            src="/brand/stamate-mark.svg"
+            alt="スタメイト"
+            width={66}
+            height={66}
+            priority
+          />
           <b>
             STAMATE <small>スタメイト</small>
           </b>
@@ -331,7 +380,12 @@ export default function BrawlPreview({
       <header>
         <button onClick={() => setTab("me")}>{initials}</button>
         <div>
-          <span>S</span>
+          <Image
+            src="/brand/stamate-mark.svg"
+            alt=""
+            width={36}
+            height={36}
+          />
           <b>
             STAMATE<small>PLAY TOGETHER</small>
           </b>
@@ -625,8 +679,12 @@ export default function BrawlPreview({
       )}
       {toast && <aside>{toast}</aside>}
       <div className={styles.disclaimer}>
-        この素材は非公式であり、Supercellによる承認・支援を受けていません。
-        <a href="https://supercell.com/en/fan-content-policy/">
+        このコンテンツは非公式であり、Supercellによる承認を受けていません。
+        <a
+          href="https://supercell.com/en/fan-content-policy/jp/"
+          target="_blank"
+          rel="noreferrer"
+        >
           Fan Content Policy
         </a>
       </div>

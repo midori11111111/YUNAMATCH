@@ -57,6 +57,69 @@ test("service Discord links use allowlisted official invites with environment ov
   }
 });
 
+test("Stamate uses current flat branding, game taxonomy, and guild-scoped recruiting", async () => {
+  const [
+    page,
+    config,
+    mark,
+    registerCommand,
+    interactions,
+    legal,
+    launchKit,
+  ] = await Promise.all([
+    read("app/brawl-preview/page.tsx"),
+    read("lib/service-config.ts"),
+    read("public/brand/stamate-mark.svg"),
+    read("scripts/register-stamate-discord-command.mjs"),
+    read("app/api/discord/interactions/route.ts"),
+    read("app/legal/page.tsx"),
+    read("docs/stamate-launch-kit.md"),
+  ]);
+  for (const tier of ["ブロンズ", "ミシック", "マスター", "プロ"])
+    assert.match(config, new RegExp(tier));
+  assert.doesNotMatch(config, /stamate:[^\n]+エリート/);
+  for (const role of [
+    "アタッカー",
+    "アサシン",
+    "スナイパー",
+    "グレネーディア",
+    "タンク",
+    "サポート",
+    "コントローラー",
+  ]) {
+    assert.match(config, new RegExp(role));
+    assert.match(registerCommand, new RegExp(role));
+  }
+  for (const mode of [
+    "トロフィー",
+    "ガチバトル",
+    "フリープレイ",
+    "マップメーカー",
+    "スペシャルイベント",
+    "フレンドバトル",
+  ]) {
+    assert.match(config, new RegExp(mode));
+    assert.match(registerCommand, new RegExp(mode));
+  }
+  assert.match(page, /\/brand\/stamate-mark\.svg/);
+  assert.match(page, /プレイヤー名 \/ プレイヤータグ（#を含む）/);
+  assert.match(page, /!\[2, 3, 5\]\.includes\(partySize\)/);
+  assert.doesNotMatch(mark, /linearGradient|radialGradient|filter|image href/);
+  assert.match(mark, /#35C5D3/);
+  assert.match(mark, /#FF5D73/);
+  assert.match(mark, /#FFD34D/);
+  assert.match(registerCommand, /DISCORD_STAMATE_GUILD_ID/);
+  assert.match(registerCommand, /guilds\/\$\{guildId\}\/commands/);
+  assert.match(interactions, /createStamateRecruitMessage/);
+  assert.match(interactions, /serviceId: "stamate"/);
+  assert.match(interactions, /categoryName: "スタメイト 募集VC"/);
+  assert.match(interactions, /スタメイトで参加申請/);
+  assert.match(legal, /supercell\.com\/en\/fan-content-policy\/jp\//);
+  assert.match(legal, /このコンテンツは非公式であり、Supercellによる承認を受けていません/);
+  assert.match(launchKit, /YAPIMARU/);
+  assert.match(launchKit, /米将軍/);
+});
+
 test("admin launch readiness exposes booleans without leaking configured values", async () => {
   const source = compact(await read("app/api/admin/readiness/route.ts"));
   assert.match(source, /requireAdmin\(\)/);

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 256" role="img" aria-labelledby="title desc">
+  <title id="title">STAMATE</title>
+  <desc id="desc">スタメイトの横組みロゴ</desc>
+  <g>
+    <rect width="256" height="256" rx="56" fill="#111A38"/>
+    <path d="M38 54h78v78H38z" fill="#35C5D3"/>
+    <path d="M140 54h78v78h-78z" fill="#FF5D73"/>
+    <path d="m128 116 58 58-58 58-58-58z" fill="#FFD34D"/>
+    <path d="m128 94 34 34-34 34-34-34z" fill="#FFFDF5"/>
+  </g>
+  <text x="302" y="137" fill="#111A38" font-family="Arial, Helvetica, sans-serif" font-size="76" font-weight="800" letter-spacing="7">STAMATE</text>
+  <text x="306" y="181" fill="#65708C" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" letter-spacing="8">PLAY TOGETHER</text>
+</svg>
