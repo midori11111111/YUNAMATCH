@@ -995,8 +995,22 @@ test("lets users hide read receipts without keeping their own chats unread", asy
   assert.match(profileApi, /readReceiptsEnabled:body\.readReceiptsEnabled/);
   assert.match(messagesApi, /mateAllowsReadReceipts/);
   assert.match(messagesApi, /Chat read receipt/);
-  assert.match(app, /既読をつけない/);
+  assert.match(app, /既読表示/);
   assert.match(app, /toggleReadReceipts/);
+});
+
+test("keeps read receipts off by default while allowing users to opt in", async () => {
+  const [app, profileApi, schema, migration] = await Promise.all([
+    readFile(new URL("app/match-app.tsx", root), "utf8"),
+    readFile(new URL("app/api/profile/route.ts", root), "utf8"),
+    readFile(new URL("db/schema.ts", root), "utf8"),
+    readFile(new URL("drizzle/0043_redundant_post.sql", root), "utf8"),
+  ]);
+  assert.match(app, /readReceiptsEnabled: false/);
+  assert.match(app, /<strong>既読表示<\/strong>/);
+  assert.match(profileApi, /body\.readReceiptsEnabled===true/);
+  assert.match(schema, /readReceiptsEnabled:[\s\S]*?\.default\(false\)/);
+  assert.match(migration, /UPDATE `profiles` SET `read_receipts_enabled` = false/);
 });
 
 test("lets administrators find and suspend any registered account", async () => {

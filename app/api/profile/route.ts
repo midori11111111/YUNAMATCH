@@ -36,7 +36,7 @@ function publicProfile(row:typeof profiles.$inferSelect){
   let playTime:string[]=[];
   try{const parsed=JSON.parse(row.mainPokemon);if(Array.isArray(parsed))mainPokemon=parsed.filter(value=>typeof value==="string").slice(0,5)}catch{if(row.mainPokemon)mainPokemon=[row.mainPokemon]}
   try{const parsed=JSON.parse(row.playTime);if(Array.isArray(parsed))playTime=parsed.filter(value=>typeof value==="string"&&playTimes.has(value)).slice(0,7)}catch{if(playTimes.has(row.playTime))playTime=[row.playTime]}
-  return {trainerName:row.trainerName,mainPokemon,highestRate:normalizeRank(row.highestRate),playTime,gender:row.gender,contact:row.contact,bio:row.bio||"",avatarUrl:row.avatarUrl,headerUrl:row.headerUrl||"",age:row.age,ageConfirmed:row.ageConfirmed,readReceiptsEnabled:row.readReceiptsEnabled!==false,termsAccepted:Boolean(row.termsAcceptedAt)};
+  return {trainerName:row.trainerName,mainPokemon,highestRate:normalizeRank(row.highestRate),playTime,gender:row.gender,contact:row.contact,bio:row.bio||"",avatarUrl:row.avatarUrl,headerUrl:row.headerUrl||"",age:row.age,ageConfirmed:row.ageConfirmed,readReceiptsEnabled:row.readReceiptsEnabled===true,termsAccepted:Boolean(row.termsAcceptedAt)};
 }
 
 export async function GET(){
@@ -67,7 +67,7 @@ export async function PUT(request:Request){
   const validHeader=!headerUrl||/^\/api\/media\/header\/[a-f0-9]{64}\?v=\d+$/.test(headerUrl)||(headerUrl.length<=700_000&&/^data:image\/(?:jpeg|png|webp);base64,[a-zA-Z0-9+/=]+$/.test(headerUrl));
   const age=typeof body.age==="number"&&Number.isInteger(body.age)?body.age:null;
   const ageConfirmed=age!==null&&age>=18?true:body.ageConfirmed===true;
-  const readReceiptsEnabled=body.readReceiptsEnabled!==false;
+  const readReceiptsEnabled=body.readReceiptsEnabled===true;
   const termsAccepted=body.termsAccepted===true;
   if(containsProhibitedContent(trainerName)||containsProhibitedContent(bio))return Response.json({error:prohibitedContentMessage},{status:400});
   if(!trainerName||trainerName.length>24||mainPokemon.length===0||!rankOptionSet.has(highestRate)||playTime.length===0||!genders.has(gender)||contact.length>120||bio.length>160||!validAvatar||!validHeader||age===null||age<13||age>99||!ageConfirmed||!termsAccepted)return Response.json({error:"年齢を含む入力内容と利用条件への同意を確認してください"},{status:400});

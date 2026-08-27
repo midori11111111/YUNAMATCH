@@ -1023,7 +1023,7 @@ export default function MatchApp({
     headerUrl: "",
     age: null,
     ageConfirmed: false,
-    readReceiptsEnabled: true,
+    readReceiptsEnabled: false,
     termsAccepted: false,
   };
   const [profile, setProfile] = useState<Profile>(
@@ -10057,23 +10057,23 @@ export default function MatchApp({
             <section className="chatReadReceiptSetting">
               <span aria-hidden="true">✓</span>
               <div>
-                <strong>既読をつけない</strong>
+                <strong>既読表示</strong>
                 <small>
-                  オンにすると、すべてのチャットで相手側に既読を表示しません。
+                  オフにすると、すべてのチャットで相手側に既読を表示しません。
                 </small>
               </div>
               <button
                 type="button"
-                className={!profile.readReceiptsEnabled ? "enabled" : ""}
+                className={profile.readReceiptsEnabled ? "enabled" : ""}
                 onClick={toggleReadReceipts}
                 disabled={readReceiptUpdating}
-                aria-pressed={!profile.readReceiptsEnabled}
+                aria-pressed={profile.readReceiptsEnabled}
               >
                 {readReceiptUpdating
                   ? "変更中"
                   : profile.readReceiptsEnabled
-                    ? "オフ"
-                    : "オン"}
+                    ? "オン"
+                    : "オフ"}
               </button>
             </section>
             <div className="chatContactMenu">

@@ -25,7 +25,7 @@ export const profiles = sqliteTable("profiles", {
     .default(false),
   readReceiptsEnabled: integer("read_receipts_enabled", { mode: "boolean" })
     .notNull()
-    .default(true),
+    .default(false),
   termsAcceptedAt: integer("terms_accepted_at", { mode: "timestamp_ms" }),
   suspendedAt: integer("suspended_at", { mode: "timestamp_ms" }),
   authProvider: text("auth_provider").notNull(),
