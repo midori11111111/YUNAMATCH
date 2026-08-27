@@ -57,7 +57,7 @@ test("service Discord links use allowlisted official invites with environment ov
   }
 });
 
-test("Stamate uses current flat branding, game taxonomy, and guild-scoped recruiting", async () => {
+test("Stamate uses current geometric branding, game taxonomy, and guild-scoped recruiting", async () => {
   const [
     page,
     config,
@@ -104,10 +104,11 @@ test("Stamate uses current flat branding, game taxonomy, and guild-scoped recrui
   assert.match(page, /\/brand\/stamate-mark\.svg/);
   assert.match(page, /プレイヤー名 \/ プレイヤータグ（#を含む）/);
   assert.match(page, /!\[2, 3, 5\]\.includes\(partySize\)/);
-  assert.doesNotMatch(mark, /linearGradient|radialGradient|filter|image href/);
-  assert.match(mark, /#35C5D3/);
-  assert.match(mark, /#FF5D73/);
-  assert.match(mark, /#FFD34D/);
+  assert.match(mark, /linearGradient/);
+  assert.match(mark, /#5BE4DF/);
+  assert.match(mark, /#F04498/);
+  assert.match(mark, /#FFAE32/);
+  assert.doesNotMatch(mark, /filter|image href/);
   assert.match(registerCommand, /DISCORD_STAMATE_GUILD_ID/);
   assert.match(registerCommand, /guilds\/\$\{guildId\}\/commands/);
   assert.match(interactions, /createStamateRecruitMessage/);

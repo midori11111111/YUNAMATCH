@@ -1,13 +1,31 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 256" role="img" aria-labelledby="title desc">
   <title id="title">STAMATE</title>
   <desc id="desc">スタメイトの横組みロゴ</desc>
+  <defs>
+    <linearGradient id="stamate-logo-cyan" x1="44" y1="44" x2="150" y2="168" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5BE4DF"/>
+      <stop offset="1" stop-color="#288FE2"/>
+    </linearGradient>
+    <linearGradient id="stamate-logo-coral" x1="104" y1="92" x2="218" y2="214" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF8A63"/>
+      <stop offset="1" stop-color="#F04498"/>
+    </linearGradient>
+    <linearGradient id="stamate-logo-spark" x1="92" y1="78" x2="164" y2="176" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF16A"/>
+      <stop offset="1" stop-color="#FFAE32"/>
+    </linearGradient>
+    <linearGradient id="stamate-word" x1="302" y1="84" x2="704" y2="166" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#202C66"/>
+      <stop offset="1" stop-color="#7048C8"/>
+    </linearGradient>
+  </defs>
   <g>
     <rect width="256" height="256" rx="56" fill="#FFFDF8"/>
-    <circle cx="96" cy="106" r="62" fill="#35C5D3"/>
-    <circle cx="160" cy="150" r="62" fill="#FF5D73"/>
-    <path d="m128 64 16 44 44 16-44 16-16 44-16-44-44-16 44-16z" fill="#FFD34D"/>
+    <circle cx="96" cy="106" r="62" fill="url(#stamate-logo-cyan)"/>
+    <circle cx="160" cy="150" r="62" fill="url(#stamate-logo-coral)"/>
+    <path d="m128 64 16 44 44 16-44 16-16 44-16-44-44-16 44-16z" fill="url(#stamate-logo-spark)"/>
     <path d="m128 101 8 23-8 23-8-23z" fill="#111A38"/>
   </g>
-  <text x="302" y="137" fill="#111A38" font-family="Arial, Helvetica, sans-serif" font-size="76" font-weight="800" letter-spacing="7">STAMATE</text>
+  <text x="302" y="137" fill="url(#stamate-word)" font-family="Arial, Helvetica, sans-serif" font-size="76" font-weight="800" letter-spacing="7">STAMATE</text>
   <text x="306" y="181" fill="#65708C" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" letter-spacing="8">PLAY TOGETHER</text>
 </svg>
