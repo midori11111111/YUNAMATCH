@@ -1347,11 +1347,18 @@ test("shows the latest trainer name to existing matched mates", async () => {
 });
 
 test("keeps the bottom navigation visible while profile data loads", async () => {
-  const app = await readFile(new URL("app/match-app.tsx", root), "utf8");
+  const [app, css] = await Promise.all([
+    readFile(new URL("app/match-app.tsx", root), "utf8"),
+    readFile(new URL("app/globals.css", root), "utf8"),
+  ]);
   assert.match(app, /persistentLoadingNav/);
   assert.match(app, /プロフィールを準備しています/);
   assert.match(app, /<span>⌕<\/span>さがす/);
   assert.match(app, /<span>▢<\/span>やりとり/);
+  assert.match(css, /\.phoneShell[^}]*isolation: isolate/);
+  assert.match(css, /\.bottomNav[^}]*z-index: 15/);
+  assert.match(css, /\.bottomNav[^}]*transform: translateZ\(0\)/);
+  assert.match(css, /@media \(max-width: 540px\)[\s\S]*?\.bottomNav \{ position: fixed/);
 });
 
 test("supports persistent reactions on direct messages", async () => {

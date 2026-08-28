@@ -48,7 +48,7 @@ button { cursor: pointer; }
 .loginCard small { color: #aaa4b3; font-size: 9px; }
 
 .appStage { min-height: 100dvh; display: grid; place-items: center; padding: 20px; background: radial-gradient(circle at 12% 14%, #ffd9e7 0, transparent 25%), radial-gradient(circle at 88% 80%, #d8ceff 0, transparent 32%), linear-gradient(135deg, #f4efff, #fff8fb); }
-.phoneShell { width: min(460px, 100%); height: min(920px, calc(100dvh - 40px)); min-height: 720px; position: relative; overflow: hidden; border: 1px solid #e9e2f1; border-radius: 40px; background: #fff; box-shadow: 0 32px 100px #3c315c2b, 0 2px 0 #fff inset; }
+.phoneShell { width: min(460px, 100%); height: min(920px, calc(100dvh - 40px)); min-height: 720px; position: relative; isolation: isolate; overflow: hidden; border: 1px solid #e9e2f1; border-radius: 40px; background: #fff; box-shadow: 0 32px 100px #3c315c2b, 0 2px 0 #fff inset; }
 .pullRefreshIndicator { min-width: 104px; height: 34px; position: absolute; z-index: 30; top: 7px; left: 50%; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 12px; border: 1px solid #e4dcf2; border-radius: 99px; color: #5b477f; background: #fffffff2; box-shadow: 0 8px 22px #39295825; pointer-events: none; transition: opacity .16s ease, transform .16s ease; backdrop-filter: blur(12px); }
 .pullRefreshIndicator span { font-size: 14px; font-weight: 950; line-height: 1; }
 .pullRefreshIndicator strong { font-size: 8px; white-space: nowrap; }
@@ -764,7 +764,7 @@ button { cursor: pointer; }
 .onboardingSubmit { width: 100%; border: 0; border-radius: 14px; padding: 15px; color: #fff; background: linear-gradient(135deg, var(--purple), #8d75f1); font-size: 10px; font-weight: 900; box-shadow: 0 10px 24px #7257e835; }
 .onboardingSubmit:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
 
-.bottomNav { height: 72px; position: absolute; z-index: 5; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(5, 1fr); border-top: 1px solid var(--line); background: #fffffff7; box-shadow: 0 -8px 26px #3c315c0d; backdrop-filter: blur(15px); }
+.bottomNav { height: 72px; position: absolute; z-index: 15; left: 0; right: 0; bottom: 0; display: grid !important; visibility: visible; grid-template-columns: repeat(5, 1fr); border-top: 1px solid var(--line); background: #fffffff7; box-shadow: 0 -8px 26px #3c315c0d; transform: translateZ(0); -webkit-transform: translateZ(0); backface-visibility: hidden; -webkit-backface-visibility: hidden; backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); }
 .bottomNav button { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 0; background: transparent; color: #a49daa; font-size: 7px; font-weight: 850; }
 .bottomNav button > span { width: 32px; height: 27px; display: grid; place-items: center; border-radius: 10px; font-size: 18px; line-height: 1; }
 .bottomNav button.active { color: var(--purple); }
@@ -1588,7 +1588,7 @@ button { cursor: pointer; }
   .matchModal { margin: auto 18px; }
   .loginCard { border: 0; background: transparent; box-shadow: none; }
   .loginPage { padding: 20px; }
-  .bottomNav { padding-bottom: env(safe-area-inset-bottom); height: calc(72px + env(safe-area-inset-bottom)); }
+  .bottomNav { position: fixed; top: auto; left: 0; right: 0; bottom: 0; width: 100%; padding-bottom: env(safe-area-inset-bottom); height: calc(72px + env(safe-area-inset-bottom)); }
   .appViewport { height: calc(100% - 142px - env(safe-area-inset-bottom)); }
   .onboardingBackdrop { padding: 0; place-items: stretch; }
   .onboardingCard { width: 100%; max-height: 100dvh; min-height: 100dvh; padding: 24px 22px max(28px, env(safe-area-inset-bottom)); border: 0; border-radius: 0; box-shadow: none; }
