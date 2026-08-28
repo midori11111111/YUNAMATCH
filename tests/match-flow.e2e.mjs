@@ -489,6 +489,37 @@ try {
       { user: second },
     );
     assert.equal(serviceThread.messages.at(-1).body, "よろしくお願いします");
+    const textMessage = serviceThread.messages.at(-1);
+    const reaction = await api(
+      `/api/services/${serviceCase.id}/message-reactions`,
+      {
+        user: second,
+        method: "PUT",
+        body: { messageId: textMessage.id, reaction: "👍" },
+      },
+    );
+    assert.equal(reaction.myReaction, "👍");
+    await new Promise((resolvePromise) => setTimeout(resolvePromise, 1_050));
+    const invite = await api(`/api/services/${serviceCase.id}/messages`, {
+      user: first,
+      method: "POST",
+      body: {
+        connectionId: matched.connection.id,
+        kind: "play_invite",
+        clientId: `${serviceCase.id}-play-invite-1`,
+      },
+    });
+    assert.equal(invite.message.kind, "play_invite");
+    assert.equal(invite.message.response, null);
+    const acceptedInvite = await api(
+      `/api/services/${serviceCase.id}/messages`,
+      {
+        user: second,
+        method: "PATCH",
+        body: { messageId: invite.message.id, response: "accepted" },
+      },
+    );
+    assert.equal(acceptedInvite.message.response, "accepted");
     await api(`/api/services/${serviceCase.id}/safety`, {
       user: second,
       method: "POST",
@@ -513,6 +544,16 @@ try {
       method: "DELETE",
       body: { targetProfileId: reverseTarget.id },
     });
+    await api(`/api/services/${serviceCase.id}/connections`, {
+      user: second,
+      method: "PATCH",
+      body: { connectionId: matched.connection.id, action: "archive" },
+    });
+    const hiddenAfterConversationEnd = await api(
+      `/api/services/${serviceCase.id}/connections`,
+      { user: second },
+    );
+    assert.equal(hiddenAfterConversationEnd.connections.length, 0);
     if (serviceCase.id === "shoenmate") {
       const liveBackupResponse = await fetch(`${base}/api/admin/export`, {
         headers: { cookie: adminCookie },
@@ -548,10 +589,11 @@ try {
     /yunamatch-backup-/,
   );
   const backup = await backupResponse.json();
-  assert.equal(backup.schemaVersion, 5);
+  assert.equal(backup.schemaVersion, 6);
   assert.ok(backup.serviceProfiles.length >= 3);
   assert.ok(Array.isArray(backup.serviceConnections));
   assert.ok(Array.isArray(backup.serviceMessages));
+  assert.ok(Array.isArray(backup.serviceMessageReactions));
   assert.ok(Array.isArray(backup.serviceBlocks));
   assert.ok(backup.serviceAdminAuditLogs.length >= 2);
 

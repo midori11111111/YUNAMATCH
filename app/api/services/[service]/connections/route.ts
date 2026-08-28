@@ -84,7 +84,10 @@ export async function GET(
             row.userAProfileId === ctx.profile.id
               ? row.userBProfileId
               : row.userAProfileId,
-          ),
+          ) &&
+          !(row.userAProfileId === ctx.profile.id
+            ? row.userAArchived
+            : row.userBArchived),
       ),
     otherIds = [
       ...new Set(
@@ -242,6 +245,8 @@ export async function POST(
       set: {
         requesterProfileId: ctx.profile.id,
         status: "pending",
+        userAArchived: false,
+        userBArchived: false,
         endedAt: null,
         createdAt: now,
       },
@@ -293,6 +298,18 @@ export async function PATCH(
       .limit(1);
   if (!row)
     return Response.json({ error: "申請が見つかりません" }, { status: 404 });
+  if (action === "archive" && row.status === "active") {
+    const [updated] = await db
+      .update(serviceConnections)
+      .set(
+        row.userAProfileId === ctx.profile.id
+          ? { userAArchived: true }
+          : { userBArchived: true },
+      )
+      .where(eq(serviceConnections.id, row.id))
+      .returning();
+    return Response.json({ connection: updated });
+  }
   if (row.status !== "pending")
     return Response.json({ error: "この申請は処理済みです" }, { status: 409 });
   const incoming = row.requesterProfileId !== ctx.profile.id;
@@ -308,7 +325,11 @@ export async function PATCH(
   if (action === "accept" && incoming) {
     const [updated] = await db
       .update(serviceConnections)
-      .set({ status: "active" })
+      .set({
+        status: "active",
+        userAArchived: false,
+        userBArchived: false,
+      })
       .where(
         and(
           eq(serviceConnections.id, row.id),

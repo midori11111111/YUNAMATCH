@@ -209,7 +209,12 @@ export async function POST(
     })
     .onConflictDoUpdate({
       target: [serviceConnections.serviceId, serviceConnections.pairKey],
-      set: { status: "active", endedAt: null },
+      set: {
+        status: "active",
+        userAArchived: false,
+        userBArchived: false,
+        endedAt: null,
+      },
     });
   const [connection] = await db
     .select()

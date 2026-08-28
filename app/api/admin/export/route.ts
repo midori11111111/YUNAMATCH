@@ -28,6 +28,7 @@ import {
   serviceBlocks,
   serviceConnections,
   serviceLikes,
+  serviceMessageReactions,
   serviceMessages,
   serviceProfiles,
   serviceRecruits,
@@ -69,6 +70,7 @@ export async function GET() {
     serviceConnectionRows,
     serviceLikeRows,
     serviceMessageRows,
+    serviceMessageReactionRows,
     serviceReportRows,
     serviceBlockRows,
     serviceAdminAuditRows,
@@ -102,6 +104,7 @@ export async function GET() {
     db.select().from(serviceConnections),
     db.select().from(serviceLikes),
     db.select().from(serviceMessages),
+    db.select().from(serviceMessageReactions),
     db.select().from(serviceReports),
     db.select().from(serviceBlocks),
     db.select().from(serviceAdminAuditLogs),
@@ -110,7 +113,7 @@ export async function GET() {
   return new Response(
     JSON.stringify(
       {
-        schemaVersion: 5,
+        schemaVersion: 6,
         generatedAt: generatedAt.toISOString(),
         profiles: profileRows,
         accountLinks: accountRows,
@@ -141,6 +144,7 @@ export async function GET() {
         serviceConnections: serviceConnectionRows,
         serviceLikes: serviceLikeRows,
         serviceMessages: serviceMessageRows,
+        serviceMessageReactions: serviceMessageReactionRows,
         serviceReports: serviceReportRows,
         serviceBlocks: serviceBlockRows,
         serviceAdminAuditLogs: serviceAdminAuditRows,

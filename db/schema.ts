@@ -641,6 +641,12 @@ export const serviceConnections = sqliteTable(
       .notNull()
       .references(() => serviceProfiles.id),
     status: text("status").notNull().default("active"),
+    userAArchived: integer("user_a_archived", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    userBArchived: integer("user_b_archived", { mode: "boolean" })
+      .notNull()
+      .default(false),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
     endedAt: integer("ended_at", { mode: "timestamp_ms" }),
   },
@@ -706,6 +712,9 @@ export const serviceMessages = sqliteTable(
       .references(() => serviceProfiles.id),
     clientId: text("client_id").notNull(),
     body: text("body").notNull(),
+    kind: text("kind").notNull().default("text"),
+    response: text("response"),
+    respondedAt: integer("responded_at", { mode: "timestamp_ms" }),
     deletedAt: integer("deleted_at", { mode: "timestamp_ms" }),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   },
@@ -719,6 +728,37 @@ export const serviceMessages = sqliteTable(
       table.createdAt,
     ),
     index("idx_service_messages_service_created").on(
+      table.serviceId,
+      table.createdAt,
+    ),
+    uniqueIndex("idx_service_messages_pending_play_invite")
+      .on(table.connectionId)
+      .where(sql`${table.kind} = 'play_invite' and ${table.response} is null`),
+  ],
+);
+
+export const serviceMessageReactions = sqliteTable(
+  "service_message_reactions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    serviceId: text("service_id").notNull(),
+    messageId: integer("message_id")
+      .notNull()
+      .references(() => serviceMessages.id),
+    profileId: integer("profile_id")
+      .notNull()
+      .references(() => serviceProfiles.id),
+    reaction: text("reaction").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("idx_service_message_reactions_message_profile").on(
+      table.messageId,
+      table.profileId,
+    ),
+    index("idx_service_message_reactions_message").on(table.messageId),
+    index("idx_service_message_reactions_service_created").on(
       table.serviceId,
       table.createdAt,
     ),

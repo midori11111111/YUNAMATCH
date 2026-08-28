@@ -43,6 +43,12 @@ type Message = {
   senderProfileId: number;
   body: string;
   createdAt: string;
+  kind: "text" | "play_invite";
+  response: "accepted" | "declined" | null;
+  canRespond: boolean;
+  reactions: Array<{ reaction: string; count: number }>;
+  myReaction: string | null;
+  deleted?: boolean;
 };
 type Filters = { role: string; tier: string };
 const nav: { id: Tab; icon: string; label: string }[] = [
@@ -121,6 +127,16 @@ export default function BrawlPreview({
     [loading, setLoading] = useState(false),
     [chatLoading, setChatLoading] = useState(false),
     [chatError, setChatError] = useState(""),
+    [chatMenuOpen, setChatMenuOpen] = useState(false),
+    [quickMessageOpen, setQuickMessageOpen] = useState(false),
+    [reactionPickerId, setReactionPickerId] = useState<number | null>(null),
+    [reactionUpdatingId, setReactionUpdatingId] = useState<number | null>(null),
+    [playInviteSending, setPlayInviteSending] = useState(false),
+    [respondingInviteId, setRespondingInviteId] = useState<number | null>(null),
+    [conversationCloseOpen, setConversationCloseOpen] = useState(false),
+    [conversationCloseReason, setConversationCloseReason] = useState(""),
+    [conversationCloseNote, setConversationCloseNote] = useState(""),
+    [conversationClosing, setConversationClosing] = useState(false),
     [filterOpen, setFilterOpen] = useState(false),
     [tutorialOpen, setTutorialOpen] = useState(false),
     [recruitOpen, setRecruitOpen] = useState(false),
@@ -320,6 +336,9 @@ export default function BrawlPreview({
   }
   async function openChat(connection: Connection) {
     setActiveChat(connection);
+    setChatMenuOpen(false);
+    setQuickMessageOpen(false);
+    setReactionPickerId(null);
     setChatLoading(true);
     setChatError("");
     try {
@@ -343,23 +362,156 @@ export default function BrawlPreview({
       setChatLoading(false);
     }
   }
-  async function sendMessage(event: FormEvent) {
-    event.preventDefault();
-    if (!activeChat || !message.trim()) return;
-    const body = message.trim();
-    setMessage("");
+  async function postMessage(
+    body: string,
+    kind: "text" | "play_invite" = "text",
+  ) {
+    if (!activeChat || !body.trim()) return false;
     const response = await fetch("/api/services/stamate/messages", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           connectionId: activeChat.id,
-          body,
+          body: body.trim(),
+          kind,
           clientId: crypto.randomUUID(),
         }),
       }),
       data = await response.json();
-    if (response.ok) setMessages((value) => [...value, data.message]);
-    else notify(data.error || "送信できませんでした");
+    if (response.ok) {
+      setMessages((value) =>
+        value.some((item) => item.id === data.message.id)
+          ? value
+          : [...value, data.message],
+      );
+      return true;
+    }
+    notify(data.error || "送信できませんでした");
+    return false;
+  }
+  async function sendMessage(event: FormEvent) {
+    event.preventDefault();
+    const body = message.trim();
+    if (!body) return;
+    if (await postMessage(body)) setMessage("");
+  }
+  async function sendQuickMessage(body: string) {
+    if (await postMessage(body)) {
+      setQuickMessageOpen(false);
+      notify("ひとことを送りました");
+    }
+  }
+  async function sendPlayInvite() {
+    if (playInviteSending) return;
+    setPlayInviteSending(true);
+    try {
+      if (await postMessage("一緒にプレイしませんか？", "play_invite"))
+        notify("一緒にプレイの申請を送りました");
+    } finally {
+      setPlayInviteSending(false);
+    }
+  }
+  async function respondPlayInvite(
+    messageId: number,
+    responseValue: "accepted" | "declined",
+  ) {
+    if (respondingInviteId !== null) return;
+    setRespondingInviteId(messageId);
+    try {
+      const response = await fetch("/api/services/stamate/messages", {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ messageId, response: responseValue }),
+        }),
+        data = await response.json();
+      if (!response.ok) {
+        notify(data.error || "回答できませんでした");
+        return;
+      }
+      setMessages((rows) =>
+        rows.map((row) => (row.id === messageId ? data.message : row)),
+      );
+      notify(
+        responseValue === "accepted"
+          ? "一緒にプレイすることになりました！"
+          : "今回は見送りました",
+      );
+    } finally {
+      setRespondingInviteId(null);
+    }
+  }
+  async function reactToMessage(item: Message, reaction: string) {
+    if (reactionUpdatingId !== null || item.deleted) return;
+    setReactionUpdatingId(item.id);
+    try {
+      const response = await fetch(
+          "/api/services/stamate/message-reactions",
+          {
+            method: "PUT",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              messageId: item.id,
+              reaction: item.myReaction === reaction ? null : reaction,
+            }),
+          },
+        ),
+        data = await response.json();
+      if (!response.ok) {
+        notify(data.error || "リアクションできませんでした");
+        return;
+      }
+      setMessages((rows) =>
+        rows.map((row) =>
+          row.id === item.id
+            ? {
+                ...row,
+                reactions: data.reactions || [],
+                myReaction: data.myReaction || null,
+              }
+            : row,
+        ),
+      );
+      setReactionPickerId(null);
+    } finally {
+      setReactionUpdatingId(null);
+    }
+  }
+  async function closeConversation() {
+    if (!activeChat || !conversationCloseReason || conversationClosing) return;
+    setConversationClosing(true);
+    try {
+      const farewell = [
+        "今回は会話を見送ります",
+        conversationCloseReason,
+        conversationCloseNote.trim(),
+      ]
+        .filter(Boolean)
+        .join("。")
+        .slice(0, 220);
+      if (!(await postMessage(farewell))) return;
+      const response = await fetch("/api/services/stamate/connections", {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            connectionId: activeChat.id,
+            action: "archive",
+          }),
+        }),
+        data = await response.json();
+      if (!response.ok) {
+        notify(data.error || "会話を終了できませんでした");
+        return;
+      }
+      setConversationCloseOpen(false);
+      setChatMenuOpen(false);
+      setActiveChat(null);
+      setConversationCloseReason("");
+      setConversationCloseNote("");
+      notify("一言を伝えて、会話を一覧から閉じました");
+      void load();
+    } finally {
+      setConversationClosing(false);
+    }
   }
   function applyFilters() {
     window.localStorage.setItem("stamate:filters", JSON.stringify(filters));
@@ -934,27 +1086,152 @@ export default function BrawlPreview({
       {activeChat && (
         <div className={styles.chatOverlay}>
           <div className={styles.chatHead}>
-            <button onClick={() => setActiveChat(null)}>←</button>
+            <button
+              onClick={() => {
+                setChatMenuOpen(false);
+                setActiveChat(null);
+              }}
+              aria-label="やりとり一覧へ戻る"
+            >
+              ←
+            </button>
             <button onClick={() => setViewProfile(activeChat.other)}>
               <strong>{activeChat.other.displayName}</strong>
-              <small>{activeChat.other.skillTier}</small>
+              <small>{activeChat.other.skillTier} · プロフィールを見る</small>
             </button>
-          <ServiceReportButton
-            service="stamate"
-            targetProfileId={activeChat.other.id}
-            connectionId={activeChat.id}
-            onNotice={notify}
-            onBlocked={() => {
-              setActiveChat(null);
-              void load();
-            }}
-          />
+            <button
+              className={styles.chatMenuButton}
+              onClick={() => setChatMenuOpen(true)}
+              aria-label="チャットメニューを開く"
+            >
+              •••
+            </button>
+          </div>
+          <div className={styles.chatPrimaryActions}>
+            <button
+              onClick={() => void sendPlayInvite()}
+              disabled={playInviteSending}
+            >
+              <b>🎮</b>
+              <span>
+                {playInviteSending ? "送信中…" : "一緒にプレイを申請"}
+              </span>
+            </button>
+            <button onClick={() => setQuickMessageOpen(true)}>
+              <b>💬</b>
+              <span>一言を送る</span>
+            </button>
           </div>
           <div className={styles.chatMessages}>
             {chatLoading && <p className={styles.chatState}>メッセージを読み込んでいます…</p>}
             {chatError && <div className={styles.chatState}><p>{chatError}</p><button onClick={() => void openChat(activeChat)}>再試行</button></div>}
             {!chatLoading && !chatError && !messages.length && <p className={styles.chatState}>マッチしました。まずは挨拶してみましょう！</p>}
-            {messages.map((item) => <p className={styles.bubble} key={item.id}>{item.body}</p>)}
+            {messages.map((item) => {
+              const mine = item.senderProfileId === profile?.id;
+              if (item.kind === "play_invite")
+                return (
+                  <article
+                    className={`${styles.playInvite} ${mine ? styles.mine : ""}`}
+                    key={item.id}
+                  >
+                    <div>
+                      <b>🎮</b>
+                      <span>
+                        <small>PLAY INVITE</small>
+                        <strong>一緒にプレイしませんか？</strong>
+                      </span>
+                    </div>
+                    {!item.response && item.canRespond && (
+                      <div className={styles.playInviteAnswers}>
+                        <button
+                          onClick={() =>
+                            void respondPlayInvite(item.id, "declined")
+                          }
+                          disabled={respondingInviteId === item.id}
+                        >
+                          今回は見送る
+                        </button>
+                        <button
+                          onClick={() =>
+                            void respondPlayInvite(item.id, "accepted")
+                          }
+                          disabled={respondingInviteId === item.id}
+                        >
+                          一緒にプレイ
+                        </button>
+                      </div>
+                    )}
+                    {!item.response && !item.canRespond && (
+                      <p>相手の返事を待っています</p>
+                    )}
+                    {item.response === "accepted" && (
+                      <p className={styles.accepted}>✓ 一緒にプレイします</p>
+                    )}
+                    {item.response === "declined" && (
+                      <p>今回は見送りになりました</p>
+                    )}
+                    <time>{relativeTime(item.createdAt)}</time>
+                  </article>
+                );
+              return (
+                <article
+                  className={`${styles.messageBubble} ${mine ? styles.mine : ""}`}
+                  key={item.id}
+                >
+                  <p>{item.body}</p>
+                  <time>{relativeTime(item.createdAt)}</time>
+                  {!item.deleted && (
+                    <div className={styles.reactionArea}>
+                      {(item.reactions || []).map((reaction) => (
+                        <button
+                          type="button"
+                          key={reaction.reaction}
+                          className={
+                            item.myReaction === reaction.reaction
+                              ? styles.reacted
+                              : ""
+                          }
+                          onClick={() =>
+                            void reactToMessage(item, reaction.reaction)
+                          }
+                          disabled={reactionUpdatingId === item.id}
+                        >
+                          {reaction.reaction} <b>{reaction.count}</b>
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        className={styles.reactionAdd}
+                        onClick={() =>
+                          setReactionPickerId((current) =>
+                            current === item.id ? null : item.id,
+                          )
+                        }
+                        aria-label="リアクションを追加"
+                      >
+                        ＋☺
+                      </button>
+                      {reactionPickerId === item.id && (
+                        <div className={styles.reactionPicker}>
+                          {["👍", "❤️", "😂", "🎮"].map((reaction) => (
+                            <button
+                              type="button"
+                              key={reaction}
+                              onClick={() =>
+                                void reactToMessage(item, reaction)
+                              }
+                              disabled={reactionUpdatingId === item.id}
+                            >
+                              {reaction}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </article>
+              );
+            })}
           </div>
           <form onSubmit={sendMessage} className={styles.chatForm}>
             <input
@@ -965,6 +1242,161 @@ export default function BrawlPreview({
             />
             <button>送信</button>
           </form>
+          {chatMenuOpen && (
+            <div className={styles.chatSheetBackdrop}>
+              <button
+                className={styles.sheetDismiss}
+                onClick={() => setChatMenuOpen(false)}
+                aria-label="チャットメニューを閉じる"
+              />
+              <section className={styles.chatActionSheet}>
+                <div className={styles.sheetHandle} />
+                <small>CHAT MENU</small>
+                <h2>{activeChat.other.displayName}さんとのメニュー</h2>
+                <div className={styles.chatActionGrid}>
+                  <button onClick={() => setViewProfile(activeChat.other)}>
+                    <b>👤</b>
+                    プロフィール
+                  </button>
+                  <button
+                    onClick={() => {
+                      setChatMenuOpen(false);
+                      setQuickMessageOpen(true);
+                    }}
+                  >
+                    <b>💬</b>
+                    一言を送る
+                  </button>
+                  <button
+                    onClick={() => {
+                      setChatMenuOpen(false);
+                      void sendPlayInvite();
+                    }}
+                  >
+                    <b>🎮</b>
+                    一緒にプレイ
+                  </button>
+                  <button
+                    className={styles.conversationEnd}
+                    onClick={() => {
+                      setChatMenuOpen(false);
+                      setConversationCloseOpen(true);
+                    }}
+                  >
+                    <b>−</b>
+                    会話を見送る
+                  </button>
+                </div>
+                <div className={styles.safetyActions}>
+                  <ServiceReportButton
+                    service="stamate"
+                    targetProfileId={activeChat.other.id}
+                    connectionId={activeChat.id}
+                    onNotice={notify}
+                    onBlocked={() => {
+                      setChatMenuOpen(false);
+                      setActiveChat(null);
+                      void load();
+                    }}
+                    className={styles.safetyActionButton}
+                  />
+                </div>
+                <p className={styles.chatMenuHint}>
+                  ブロックすると、お互いの検索・募集・申請・チャットに表示されなくなります。
+                </p>
+              </section>
+            </div>
+          )}
+        </div>
+      )}
+      {quickMessageOpen && activeChat && (
+        <div className={styles.modalBackdrop}>
+          <section className={`${styles.modal} ${styles.quickMessageSheet}`}>
+            <div className={styles.modalHead}>
+              <div>
+                <small>QUICK MESSAGE</small>
+                <h2>一言を送る</h2>
+              </div>
+              <button onClick={() => setQuickMessageOpen(false)}>×</button>
+            </div>
+            <div className={styles.quickMessages}>
+              {[
+                "よろしくお願いします！",
+                "今から一緒に遊べますか？",
+                "どのモードで遊びますか？",
+                "VCなしでも大丈夫です！",
+                "また時間が合う時に遊びましょう！",
+              ].map((text) => (
+                <button key={text} onClick={() => void sendQuickMessage(text)}>
+                  <span>💬</span>
+                  {text}
+                </button>
+              ))}
+            </div>
+            <button
+              className={styles.secondaryWide}
+              onClick={() => {
+                setQuickMessageOpen(false);
+                window.setTimeout(() =>
+                  document.querySelector<HTMLInputElement>(
+                    `.${styles.chatForm} input`,
+                  )?.focus(),
+                0);
+              }}
+            >
+              自分で入力する
+            </button>
+          </section>
+        </div>
+      )}
+      {conversationCloseOpen && activeChat && (
+        <div className={styles.modalBackdrop}>
+          <section className={`${styles.modal} ${styles.conversationCloseSheet}`}>
+            <div className={styles.modalHead}>
+              <div>
+                <small>END CONVERSATION</small>
+                <h2>会話を見送る</h2>
+              </div>
+              <button onClick={() => setConversationCloseOpen(false)}>×</button>
+            </div>
+            <p>
+              ブロックはせず、理由と一言を相手に伝えてこの会話を一覧から閉じます。
+            </p>
+            <div className={styles.closeReasons}>
+              {[
+                "時間が合わなかったため",
+                "遊びたいモードが違ったため",
+                "今回はメンバーが決まったため",
+                "また別の機会に遊びたいため",
+              ].map((reason) => (
+                <button
+                  key={reason}
+                  className={
+                    conversationCloseReason === reason ? styles.selected : ""
+                  }
+                  onClick={() => setConversationCloseReason(reason)}
+                >
+                  {reason}
+                </button>
+              ))}
+            </div>
+            <label>
+              補足の一言（任意）
+              <textarea
+                maxLength={100}
+                value={conversationCloseNote}
+                onChange={(event) => setConversationCloseNote(event.target.value)}
+                placeholder="例：夜ならまた遊べます！"
+              />
+            </label>
+            <button
+              className={styles.endConversationButton}
+              onClick={() => void closeConversation()}
+              disabled={!conversationCloseReason || conversationClosing}
+            >
+              {conversationClosing ? "送信中…" : "理由を伝えて会話を閉じる"}
+            </button>
+          </section>
         </div>
       )}
       {toast && <aside>{toast}</aside>}

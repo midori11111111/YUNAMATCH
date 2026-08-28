@@ -4,6 +4,7 @@ import {
   serviceBlocks,
   serviceConnections,
   serviceLikes,
+  serviceMessageReactions,
   serviceMessages,
   serviceProfiles,
   serviceRecruits,
@@ -262,7 +263,19 @@ export async function DELETE(
         ),
       ),
     );
-  const connectionIds = connections.map((row) => row.id);
+  const connectionIds = connections.map((row) => row.id),
+    messageRows = connectionIds.length
+      ? await db
+          .select({ id: serviceMessages.id })
+          .from(serviceMessages)
+          .where(
+            and(
+              eq(serviceMessages.serviceId, ctx.service),
+              inArray(serviceMessages.connectionId, connectionIds),
+            ),
+          )
+      : [],
+    messageIds = messageRows.map((row) => row.id);
   const queries = [
     db
       .delete(serviceReports)
@@ -277,6 +290,18 @@ export async function DELETE(
       ),
     ...(connectionIds.length
       ? [
+          ...(messageIds.length
+            ? [
+                db
+                  .delete(serviceMessageReactions)
+                  .where(
+                    and(
+                      eq(serviceMessageReactions.serviceId, ctx.service),
+                      inArray(serviceMessageReactions.messageId, messageIds),
+                    ),
+                  ),
+              ]
+            : []),
           db
             .delete(serviceMessages)
             .where(

@@ -5,6 +5,7 @@ import {
   serviceBlocks,
   serviceConnections,
   serviceLikes,
+  serviceMessageReactions,
   serviceMessages,
   serviceProfiles,
   serviceRecruits,
@@ -94,6 +95,18 @@ async function deleteServiceAccount(service: string, profileId: number) {
         ),
       ),
     connectionIds = connections.map((row) => row.id),
+    messageRows = connectionIds.length
+      ? await db
+          .select({ id: serviceMessages.id })
+          .from(serviceMessages)
+          .where(
+            and(
+              eq(serviceMessages.serviceId, service),
+              inArray(serviceMessages.connectionId, connectionIds),
+            ),
+          )
+      : [],
+    messageIds = messageRows.map((row) => row.id),
     queries = [
       db
         .delete(serviceReports)
@@ -108,6 +121,18 @@ async function deleteServiceAccount(service: string, profileId: number) {
         ),
       ...(connectionIds.length
         ? [
+            ...(messageIds.length
+              ? [
+                  db
+                    .delete(serviceMessageReactions)
+                    .where(
+                      and(
+                        eq(serviceMessageReactions.serviceId, service),
+                        inArray(serviceMessageReactions.messageId, messageIds),
+                      ),
+                    ),
+                ]
+              : []),
             db
               .delete(serviceMessages)
               .where(

@@ -117,6 +117,30 @@ test("keeps mate requests pending until the recipient acts",async()=>{
  assert.match(connections,/action==="cancel"&&!incoming/);
 });
 
+test("adds the YUNAMATCH-style chat tools to Stamate without duplicating the service API",async()=>{
+ const [page,messages,reactions,connections,schema,migration]=(await Promise.all([
+  read("app/brawl-preview/page.tsx"),
+  read("app/api/services/[service]/messages/route.ts"),
+  read("app/api/services/[service]/message-reactions/route.ts"),
+  read("app/api/services/[service]/connections/route.ts"),
+  read("db/schema.ts"),
+  read("drizzle/0044_true_korvac.sql")
+ ])).map(compact);
+ for(const label of ["一緒にプレイを申請","一言を送る","会話を見送る","ブロック"])
+  assert.match(page,new RegExp(label));
+ assert.match(page,/reactToMessage/);
+ assert.match(page,/respondPlayInvite/);
+ assert.match(page,/ServiceReportButtonservice="stamate"/);
+ assert.match(messages,/kind=body\.kind==="play_invite"\?"play_invite":"text"/);
+ assert.match(messages,/exportasyncfunctionPATCH/);
+ assert.match(reactions,/allowedReactions/);
+ assert.match(reactions,/isServicePairBlocked/);
+ assert.match(connections,/action==="archive"&&row\.status==="active"/);
+ assert.match(connections,/row\.userAProfileId===ctx\.profile\.id\?row\.userAArchived:row\.userBArchived/);
+ assert.match(schema,/serviceMessageReactions=sqliteTable\("service_message_reactions"/);
+ assert.match(migration,/CREATETABLE`service_message_reactions`/);
+});
+
 test("supports scoped reporting and administrator moderation for all three services",async()=>{
  const [reportApi,adminApi,adminPage,brawl,valo,identity]=await Promise.all([
   read("app/api/services/[service]/reports/route.ts"),read("app/api/admin/service-reports/route.ts"),read("app/admin/admin-panel.tsx"),read("app/brawl-preview/page.tsx"),read("app/valorant-preview/page.tsx"),read("app/identity-preview/page.tsx")
@@ -163,7 +187,7 @@ test("supports service-scoped account deletion and audited moderation",async()=>
  ).map(compact);
  assert.match(profile,/exportasyncfunctionDELETE/);
  assert.match(profile,/body\.confirmation!=="削除"/);
- for(const table of ["serviceReports","serviceMessages","serviceLikes","serviceBlocks","serviceConnections","serviceRecruits","serviceProfiles"])
+ for(const table of ["serviceReports","serviceMessageReactions","serviceMessages","serviceLikes","serviceBlocks","serviceConnections","serviceRecruits","serviceProfiles"])
   assert.match(profile,new RegExp(`db\\.delete\\(${table}\\)`));
  assert.match(auditSchema,/serviceAdminAuditLogs=sqliteTable\("service_admin_audit_logs"/);
  assert.match(auditApi,/requireAdmin/);
