@@ -4,8 +4,8 @@ const upstream =
   process.env.YUNAMATCH_UPSTREAM_URL ||
   "https://unite-mate-jp.tomoki-ashizawa.chatgpt.site";
 const serviceHomePath = process.env.SERVICE_HOME_PATH || "/";
-const immutableStaticPaths = [
-  "/_next/static/:path*",
+const versionedStaticPaths = ["/_next/static/:path*"];
+const publicAssetPaths = [
   "/brand/:path*",
   "/og.png",
   "/og-yunamatch-logo.png",
@@ -34,6 +34,21 @@ const immutableStaticHeaders = [
   },
 ];
 
+const publicAssetHeaders = [
+  {
+    key: "Cache-Control",
+    value: "public, max-age=3600, stale-while-revalidate=604800",
+  },
+  {
+    key: "CDN-Cache-Control",
+    value: "public, s-maxage=86400, stale-while-revalidate=604800",
+  },
+  {
+    key: "Vercel-CDN-Cache-Control",
+    value: "public, s-maxage=86400, stale-while-revalidate=604800",
+  },
+];
+
 const nextConfig: NextConfig = {
   turbopack: { root: process.cwd() },
   async redirects() {
@@ -59,9 +74,14 @@ const nextConfig: NextConfig = {
           { key: "Vercel-CDN-Cache-Control", value: "no-store" },
         ],
       },
-      // These files are versioned or only changed through a deployment. Keep
-      // API, HTML, service-worker and user-uploaded media on the no-store rule.
-      ...immutableStaticPaths.map((source) => ({
+      // Public logos may keep the same filename, so revalidate them quickly.
+      // API, HTML, service-worker and user-uploaded media stay on no-store.
+      ...publicAssetPaths.map((source) => ({
+        source,
+        headers: publicAssetHeaders,
+      })),
+      // Framework assets include a content hash and are safe to cache forever.
+      ...versionedStaticPaths.map((source) => ({
         source,
         headers: immutableStaticHeaders,
       })),

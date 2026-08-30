@@ -1257,19 +1257,22 @@ test("keeps linked-account users online under their canonical profile", async ()
   assert.match(app, /presenceHeartbeatMs = 120_000/);
 });
 
-test("Vercel proxy caches only immutable public assets", async () => {
+test("Vercel proxy safely caches only static public assets", async () => {
   const config = await readFile(
     new URL("vercel-proxy/next.config.ts", root),
     "utf8",
   );
-  assert.match(config, /immutableStaticPaths/);
+  assert.match(config, /versionedStaticPaths/);
+  assert.match(config, /publicAssetPaths/);
   assert.match(config, /\/_next\/static\/:path\*/);
   assert.match(config, /\/brand\/:path\*/);
   assert.match(config, /public, max-age=31536000, immutable/);
   assert.match(config, /public, s-maxage=31536000, immutable/);
+  assert.match(config, /public, max-age=3600, stale-while-revalidate=604800/);
+  assert.match(config, /public, s-maxage=86400, stale-while-revalidate=604800/);
   assert.match(config, /source: "\/:path\*"[\s\S]+no-store/);
-  assert.doesNotMatch(config, /immutableStaticPaths[\s\S]+\/api\//);
-  assert.doesNotMatch(config, /immutableStaticPaths[\s\S]+sw\.js/);
+  assert.doesNotMatch(config, /(?:versionedStaticPaths|publicAssetPaths)[\s\S]+\/api\//);
+  assert.doesNotMatch(config, /(?:versionedStaticPaths|publicAssetPaths)[\s\S]+sw\.js/);
 });
 
 test("lets users safely unlink a non-current login account", async () => {
