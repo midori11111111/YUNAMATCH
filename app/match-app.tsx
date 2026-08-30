@@ -268,6 +268,14 @@ const activeTabSessionKey = "yunamatch-active-tab-v1";
 const connectionsSessionCacheKey = "yunamatch-connections-session-v1";
 const messagesSessionCacheKey = "yunamatch-messages-session-v1";
 const apiTimeoutMs = 8_000;
+// Push/realtime events and action-triggered refreshes are the primary update path.
+// These timers are only a visible-tab safety net, kept deliberately infrequent
+// so an idle browser does not continuously consume edge/observability events.
+const conversationFallbackWithPushMs = 120_000;
+const conversationFallbackWithoutPushMs = 30_000;
+const visibleSummaryRefreshMs = 180_000;
+const presenceHeartbeatMs = 120_000;
+const activeChatPresenceRefreshMs = 60_000;
 
 function readCachedConnections() {
   if (typeof window === "undefined") return [] as Connection[];
@@ -2245,12 +2253,24 @@ export default function MatchApp({
       if (selectedConnection) void loadMessages(selectedConnection);
       if (selectedPending) void loadPendingMessages(selectedPending.notice.id);
     };
-    const fallbackInterval = pushState === "on" ? 60_000 : 15_000;
+    const fallbackInterval =
+      pushState === "on"
+        ? conversationFallbackWithPushMs
+        : conversationFallbackWithoutPushMs;
     const timer = window.setInterval(
       refreshCurrentConversation,
       fallbackInterval,
     );
-    return () => window.clearInterval(timer);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") refreshCurrentConversation();
+    };
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    window.addEventListener("focus", refreshCurrentConversation);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+      window.removeEventListener("focus", refreshCurrentConversation);
+    };
   }, [preview, guestMode, selectedConnection, selectedPending, pushState]);
 
   useEffect(() => {
@@ -2262,8 +2282,20 @@ export default function MatchApp({
       if (tab === "chat") void loadConnections();
       if (tab === "lobby") void loadLobbies();
     };
-    const timer = window.setInterval(refreshVisibleSummary, 60_000);
-    return () => window.clearInterval(timer);
+    const timer = window.setInterval(
+      refreshVisibleSummary,
+      visibleSummaryRefreshMs,
+    );
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") refreshVisibleSummary();
+    };
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    window.addEventListener("focus", refreshVisibleSummary);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+      window.removeEventListener("focus", refreshVisibleSummary);
+    };
   }, [preview, guestMode, tab, loadLikes]);
 
   const latestMessage = messages[messages.length - 1];
@@ -2320,11 +2352,13 @@ export default function MatchApp({
         }).catch(() => undefined);
     };
     heartbeat();
-    const timer = window.setInterval(heartbeat, 60_000);
+    const timer = window.setInterval(heartbeat, presenceHeartbeatMs);
     document.addEventListener("visibilitychange", heartbeat);
+    window.addEventListener("focus", heartbeat);
     return () => {
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", heartbeat);
+      window.removeEventListener("focus", heartbeat);
     };
   }, [preview, guestMode, profileReady, onboardingOpen, selectedConnection]);
 
@@ -2436,23 +2470,31 @@ export default function MatchApp({
   useEffect(() => {
     if (preview || !selectedConnection) return;
     let active = true;
+    let pingInFlight = false;
     const ping = async () => {
-      if (document.visibilityState !== "visible") return;
-      await fetch("/api/presence", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          connectionId: selectedConnection.id,
-          typing: messageTypingRef.current,
-        }),
-      });
-      const response = await fetch(
-        `/api/presence?connectionId=${selectedConnection.id}`,
-      );
-      if (active && response.ok) setMatePresence(await response.json());
+      if (document.visibilityState !== "visible" || pingInFlight) return;
+      pingInFlight = true;
+      try {
+        await fetch("/api/presence", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            connectionId: selectedConnection.id,
+            typing: messageTypingRef.current,
+          }),
+        });
+        const response = await fetch(
+          `/api/presence?connectionId=${selectedConnection.id}`,
+        );
+        if (active && response.ok) setMatePresence(await response.json());
+      } catch {
+        /* オンライン表示だけ失敗してもチャットは継続する */
+      } finally {
+        pingInFlight = false;
+      }
     };
     ping();
-    const timer = window.setInterval(ping, 30_000);
+    const timer = window.setInterval(ping, activeChatPresenceRefreshMs);
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
         void ping();
@@ -2470,11 +2512,13 @@ export default function MatchApp({
       }).catch(() => undefined);
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", ping);
     return () => {
       active = false;
       messageTypingRef.current = false;
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", ping);
       fetch("/api/presence", {
         method: "POST",
         headers: { "content-type": "application/json" },

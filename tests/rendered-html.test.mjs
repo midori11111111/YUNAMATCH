@@ -868,10 +868,14 @@ test("keeps chat and recruiting responsive under load", async () => {
 
   assert.match(app, /delivery: "sending"/);
   assert.match(app, /送信失敗/);
-  assert.match(app, /pushState === "on" \? 60_000 : 15_000/);
+  assert.match(app, /conversationFallbackWithPushMs = 120_000/);
+  assert.match(app, /conversationFallbackWithoutPushMs = 30_000/);
   assert.match(app, /setInterval\(\s*refreshCurrentConversation,\s*fallbackInterval/);
-  assert.match(app, /setInterval\(refreshVisibleSummary, 60_000\)/);
-  assert.match(app, /setInterval\(ping, 30_000\)/);
+  assert.match(app, /visibleSummaryRefreshMs = 180_000/);
+  assert.match(app, /activeChatPresenceRefreshMs = 60_000/);
+  assert.match(app, /window\.addEventListener\("focus", refreshCurrentConversation\)/);
+  assert.match(app, /window\.addEventListener\("focus", refreshVisibleSummary\)/);
+  assert.match(app, /pingInFlight/);
   assert.match(app, /document\.visibilityState !== "visible"/);
   assert.match(app, /messageTypingRef/);
   assert.match(app, /\}, \[preview, selectedConnection\]\);\s*\n\s*useEffect\(\(\) => \{/);
@@ -1250,7 +1254,22 @@ test("keeps linked-account users online under their canonical profile", async ()
   assert.match(presenceApi, /payload\.connectionId[\s\S]+\{ lastSeenAt: now \}/);
   assert.match(presenceApi, /online: age < 3 \* 60_000/);
   assert.match(discoverApi, /Date\.now\(\) - 3 \* 60_000/);
-  assert.match(app, /setInterval\(heartbeat, 60_000\)/);
+  assert.match(app, /presenceHeartbeatMs = 120_000/);
+});
+
+test("Vercel proxy caches only immutable public assets", async () => {
+  const config = await readFile(
+    new URL("vercel-proxy/next.config.ts", root),
+    "utf8",
+  );
+  assert.match(config, /immutableStaticPaths/);
+  assert.match(config, /\/_next\/static\/:path\*/);
+  assert.match(config, /\/brand\/:path\*/);
+  assert.match(config, /public, max-age=31536000, immutable/);
+  assert.match(config, /public, s-maxage=31536000, immutable/);
+  assert.match(config, /source: "\/:path\*"[\s\S]+no-store/);
+  assert.doesNotMatch(config, /immutableStaticPaths[\s\S]+\/api\//);
+  assert.doesNotMatch(config, /immutableStaticPaths[\s\S]+sw\.js/);
 });
 
 test("lets users safely unlink a non-current login account", async () => {
