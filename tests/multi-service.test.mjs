@@ -26,7 +26,7 @@ test("discovers only active profiles from the selected service",async()=>{
 });
 
 test("uses real account login and persistent onboarding in Stamate",async()=>{
- const [rawPage,rawOnboarding]=await Promise.all([read("app/brawl-preview/page.tsx"),read("app/service-onboarding.tsx")]),page=compact(rawPage),onboarding=compact(rawOnboarding);
+ const [rawPage,rawOnboarding,brawlers]=await Promise.all([read("app/brawl-preview/page.tsx"),read("app/service-onboarding.tsx"),read("lib/stamate-brawlers.ts")]),page=compact(rawPage),onboarding=compact(rawOnboarding);
  assert.match(page,/fetch\("\/api\/services\/stamate\/profile"\)/);
  assert.match(page,/\/api\/login\/\$\{x\[2\]\}\?returnTo=/);
  assert.match(page,/ServiceOnboardingservice="stamate"/);
@@ -41,6 +41,11 @@ test("uses real account login and persistent onboarding in Stamate",async()=>{
  assert.match(page,/act\(item\.id,"accept"\)/);
  assert.match(page,/act\(item\.id,"decline"\)/);
  assert.match(page,/act\(item\.id,"cancel"\)/);
+ assert.match(page,/selectionLabel="よく使うキャラ（最大5体）"/);
+ assert.match(page,/希望するキャラ/);
+ assert.match(page,/すべてのキャラ/);
+ assert.match(brawlers,/stamateBrawlers/);
+ assert.doesNotMatch(rawPage,/得意な役割|希望する役割|すべての役割/);
 });
 
 test("uses real account login and matching APIs in Valomatch",async()=>{

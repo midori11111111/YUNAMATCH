@@ -9,6 +9,9 @@ type Props = {
   identityLabel: string;
   tiers: string[];
   roles: string[];
+  selectionLabel?: string;
+  selectionPicker?: boolean;
+  selectionPlaceholder?: string;
   returnPath: string;
   onComplete: (profile: unknown) => void;
   initialProfile?: {
@@ -40,6 +43,9 @@ export default function ServiceOnboarding({
   identityLabel,
   tiers,
   roles,
+  selectionLabel = "得意な役割（複数可）",
+  selectionPicker = false,
+  selectionPlaceholder = "選択してください",
   returnPath,
   onComplete,
   initialProfile,
@@ -54,8 +60,9 @@ export default function ServiceOnboarding({
       initialProfile?.skillTier || tiers[0] || "未設定",
     ),
     [selectedRoles, setSelectedRoles] = useState<string[]>(
-      initialProfile?.roles || [],
+      (initialProfile?.roles || []).filter((value) => roles.includes(value)),
     ),
+    [pendingRole, setPendingRole] = useState(""),
     [selectedTimes, setSelectedTimes] = useState<string[]>(
       initialProfile?.playTimes || [],
     ),
@@ -149,19 +156,68 @@ export default function ServiceOnboarding({
             </select>
           </label>
           <label>
-            得意な役割（複数可）
-            <span className={styles.choice}>
-              {roles.map((x) => (
-                <button
-                  type="button"
-                  key={x}
-                  className={selectedRoles.includes(x) ? styles.active : ""}
-                  onClick={() => toggle(selectedRoles, x, setSelectedRoles)}
-                >
-                  {x}
-                </button>
-              ))}
-            </span>
+            {selectionLabel}
+            {selectionPicker ? (
+              <>
+                <span className={styles.optionPicker}>
+                  <select
+                    value={pendingRole}
+                    onChange={(event) => setPendingRole(event.target.value)}
+                  >
+                    <option value="">{selectionPlaceholder}</option>
+                    {roles
+                      .filter((value) => !selectedRoles.includes(value))
+                      .map((value) => (
+                        <option key={value}>{value}</option>
+                      ))}
+                  </select>
+                  <button
+                    type="button"
+                    disabled={!pendingRole || selectedRoles.length >= 5}
+                    onClick={() => {
+                      if (!pendingRole || selectedRoles.includes(pendingRole))
+                        return;
+                      setSelectedRoles((values) => [...values, pendingRole]);
+                      setPendingRole("");
+                    }}
+                  >
+                    追加
+                  </button>
+                </span>
+                <span className={styles.selectionCount}>
+                  最大5体・現在{selectedRoles.length}体
+                </span>
+                <span className={styles.choice}>
+                  {selectedRoles.map((value) => (
+                    <button
+                      type="button"
+                      key={value}
+                      className={styles.active}
+                      onClick={() =>
+                        setSelectedRoles((values) =>
+                          values.filter((item) => item !== value),
+                        )
+                      }
+                    >
+                      {value} ×
+                    </button>
+                  ))}
+                </span>
+              </>
+            ) : (
+              <span className={styles.choice}>
+                {roles.map((x) => (
+                  <button
+                    type="button"
+                    key={x}
+                    className={selectedRoles.includes(x) ? styles.active : ""}
+                    onClick={() => toggle(selectedRoles, x, setSelectedRoles)}
+                  >
+                    {x}
+                  </button>
+                ))}
+              </span>
+            )}
           </label>
           <label>
             遊べる時間（複数可）

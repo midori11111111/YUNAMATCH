@@ -42,7 +42,10 @@ export async function GET(
     tier = cleanText(url.searchParams.get("tier"), 40),
     config = serviceConfig[service];
   if (role && !config.roles.has(role))
-    return Response.json({ error: "役割の指定が不正です" }, { status: 400 });
+    return Response.json(
+      { error: service === "stamate" ? "キャラの指定が不正です" : "役割の指定が不正です" },
+      { status: 400 },
+    );
   if (tier && !config.tiers.has(tier))
     return Response.json({ error: "ランクの指定が不正です" }, { status: 400 });
   const user = await getChatGPTUser(),

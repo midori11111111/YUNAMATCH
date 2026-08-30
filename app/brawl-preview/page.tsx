@@ -7,6 +7,7 @@ import ServiceTermsGate from "../service-terms-gate";
 import ServiceReportButton from "../service-report-button";
 import ServiceAccountSafety from "../service-account-safety";
 import ServiceDiscordLink from "../service-discord-link";
+import { stamateBrawlers } from "../../lib/stamate-brawlers";
 type Tab = "find" | "team" | "chat" | "me";
 type Profile = {
   id?: number;
@@ -50,7 +51,7 @@ type Message = {
   myReaction: string | null;
   deleted?: boolean;
 };
-type Filters = { role: string; tier: string };
+type Filters = { brawler: string; tier: string };
 const nav: { id: Tab; icon: string; label: string }[] = [
   { id: "find", icon: "⌕", label: "さがす" },
   { id: "team", icon: "+", label: "募集" },
@@ -68,16 +69,8 @@ const tiers = [
     "マスター",
     "プロ",
   ],
-  roles = [
-    "アタッカー",
-    "アサシン",
-    "スナイパー",
-    "グレネーディア",
-    "タンク",
-    "サポート",
-    "コントローラー",
-    "指定なし",
-  ],
+  brawlers = [...stamateBrawlers],
+  brawlerSet = new Set<string>(brawlers),
   modes = [
     "トロフィー",
     "ガチバトル",
@@ -87,6 +80,8 @@ const tiers = [
     "フレンドバトル",
     "その他",
   ];
+const validBrawlers = (values: string[]) =>
+  values.filter((value) => brawlerSet.has(value));
 function relativeTime(value: string) {
   const seconds = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 1000));
   if (seconds < 60) return "たった今";
@@ -143,20 +138,24 @@ export default function BrawlPreview({
     [expandedRecruitId, setExpandedRecruitId] = useState<number | null>(null),
     [viewProfile, setViewProfile] = useState<Profile | null>(null),
     [filters, setFilters] = useState<Filters>(() => {
-      if (typeof window === "undefined") return { role: "", tier: "" };
+      if (typeof window === "undefined") return { brawler: "", tier: "" };
       try {
-        return JSON.parse(
+        const stored = JSON.parse(
           window.localStorage.getItem("stamate:filters") ||
-            '{"role":"","tier":""}',
-        ) as Filters;
+            '{"brawler":"","tier":""}',
+        ) as Filters & { role?: string };
+        return {
+          brawler: stored.brawler || "",
+          tier: stored.tier || "",
+        };
       } catch {
-        return { role: "", tier: "" };
+        return { brawler: "", tier: "" };
       }
     }),
     [recruitForm, setRecruitForm] = useState({
       mode: "ガチバトル",
       partySize: "3",
-      desiredRole: "",
+      desiredBrawler: "",
       startAt: "",
       durationMinutes: "120",
       note: "",
@@ -169,7 +168,7 @@ export default function BrawlPreview({
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (nextFilters.role) params.set("role", nextFilters.role);
+      if (nextFilters.brawler) params.set("role", nextFilters.brawler);
       if (nextFilters.tier) params.set("tier", nextFilters.tier);
       const discoverRequest = params.size
         ? fetch(`/api/services/stamate/discover?${params}`)
@@ -238,12 +237,13 @@ export default function BrawlPreview({
   const current = profiles[0],
     receivedCurrent = receivedLikes[0]?.profile,
     initials = (profile?.displayName || "YOU").slice(0, 2).toUpperCase(),
+    currentBrawlers = validBrawlers(profile?.roles || []),
     removeCurrent = () => setProfiles((value) => value.slice(1)),
     completionItems = [
       ["プレイヤー名", profile?.displayName],
       ["プレイヤータグ", profile?.gameIdentity],
       ["ランク", profile?.skillTier && profile.skillTier !== "未設定"],
-      ["役割", profile?.roles?.length],
+      ["よく使うキャラ", currentBrawlers.length],
       ["遊べる時間", profile?.playTimes?.length],
       ["自己紹介", profile?.bio],
       ["アイコン", profile?.avatarUrl],
@@ -304,7 +304,7 @@ export default function BrawlPreview({
   }
   async function createRecruit() {
     const partySize = Number(recruitForm.partySize),
-      desiredRole = recruitForm.desiredRole,
+      desiredBrawler = recruitForm.desiredBrawler,
       startAt = recruitForm.startAt
         ? new Date(recruitForm.startAt).toISOString()
         : undefined;
@@ -318,7 +318,7 @@ export default function BrawlPreview({
         body: JSON.stringify({
           mode: recruitForm.mode,
           partySize,
-          desiredRoles: desiredRole ? [desiredRole] : [],
+          desiredRoles: desiredBrawler ? [desiredBrawler] : [],
           note: recruitForm.note,
           startAt,
           durationMinutes: Number(recruitForm.durationMinutes),
@@ -523,6 +523,7 @@ export default function BrawlPreview({
     setTutorialOpen(false);
   }
   function candidateCard(candidate: Candidate, received = false) {
+    const candidateBrawlers = validBrawlers(candidate.roles);
     const onSkip = () =>
       received
         ? setReceivedLikes((value) => value.slice(1))
@@ -545,7 +546,7 @@ export default function BrawlPreview({
               <i />
               <i />
               <span>{candidate.displayName.slice(0, 2)}</span>
-              <strong>{candidate.roles[0]}</strong>
+              <strong>{candidateBrawlers[0] || "キャラ未設定"}</strong>
             </>
           )}
           <em>タップで詳しく見る</em>
@@ -567,9 +568,11 @@ export default function BrawlPreview({
             />
           </div>
           <div className={styles.tags}>
-            {candidate.roles.map((x) => (
-              <span key={x}>{x}</span>
-            ))}
+            {candidateBrawlers.length ? (
+              candidateBrawlers.map((x) => <span key={x}>{x}</span>)
+            ) : (
+              <span>キャラ未設定</span>
+            )}
           </div>
           <p>{candidate.bio || "一緒に遊べる仲間を探しています。"}</p>
           <small>{candidate.playTimes.join(" · ")}</small>
@@ -618,7 +621,10 @@ export default function BrawlPreview({
         suggestedName={suggestedName}
         identityLabel="プレイヤー名 / プレイヤータグ（#を含む）"
         tiers={tiers}
-        roles={roles}
+        roles={brawlers}
+        selectionLabel="よく使うキャラ（最大5体）"
+        selectionPicker
+        selectionPlaceholder="キャラを選ぶ"
         returnPath={basePath}
         initialProfile={profile}
         onComplete={(value) => {
@@ -656,7 +662,7 @@ export default function BrawlPreview({
             相性からつくる。
           </h1>
           <p>
-            トロフィーだけじゃない。得意な役割、遊びたいモード、プレイ時間からブロスタ仲間を探そう。
+            トロフィーだけじゃない。よく使うキャラ、遊びたいモード、プレイ時間からブロスタ仲間を探そう。
           </p>
           <div className={styles.bubbles}>
             <i>AT</i>
@@ -752,14 +758,14 @@ export default function BrawlPreview({
               </button>
               <button onClick={() => void load()}>↻</button>
             </div>
-            {(filters.role || filters.tier) && (
+            {(filters.brawler || filters.tier) && (
               <div className={styles.activeFilters}>
                 <span>絞り込み中</span>
-                {filters.role && <b>{filters.role}</b>}
+                {filters.brawler && <b>{filters.brawler}</b>}
                 {filters.tier && <b>{filters.tier}</b>}
                 <button
                   onClick={() => {
-                    const reset = { role: "", tier: "" };
+                    const reset = { brawler: "", tier: "" };
                     setFilters(reset);
                     window.localStorage.removeItem("stamate:filters");
                     void load(reset);
@@ -825,7 +831,7 @@ export default function BrawlPreview({
                   {expandedRecruitId === item.id && (
                     <div className={styles.recruitDetail}>
                       <p>
-                        希望する役割：{item.desiredRoles.join(" / ") || "指定なし"}
+                        希望するキャラ：{item.desiredRoles.join(" / ") || "指定なし"}
                         <br />
                         {item.note || "ひとことはありません"}
                       </p>
@@ -866,7 +872,7 @@ export default function BrawlPreview({
                 <div>
                   <strong>{item.other.displayName}</strong>
                   <p>
-                    {item.other.skillTier} · {item.other.roles.join(" / ")}
+                    {item.other.skillTier} · {validBrawlers(item.other.roles).join(" / ") || "キャラ未設定"}
                   </p>
                   <button
                     className={styles.textButton}
@@ -923,7 +929,7 @@ export default function BrawlPreview({
               <small>MY PROFILE</small>
               <h1>{profile?.displayName}</h1>
               <p>
-                {profile?.skillTier} · {profile?.roles.join(" / ")}
+                {profile?.skillTier} · {currentBrawlers.join(" / ") || "キャラ未設定"}
               </p>
             </div>
             <div className={styles.stats}>
@@ -993,16 +999,19 @@ export default function BrawlPreview({
               <button onClick={() => setFilterOpen(false)}>×</button>
             </div>
             <label>
-              役割
+              キャラ
               <select
-                value={filters.role}
+                value={filters.brawler}
                 onChange={(event) =>
-                  setFilters((value) => ({ ...value, role: event.target.value }))
+                  setFilters((value) => ({
+                    ...value,
+                    brawler: event.target.value,
+                  }))
                 }
               >
-                <option value="">すべての役割</option>
-                {roles.slice(0, -1).map((role) => (
-                  <option key={role}>{role}</option>
+                <option value="">すべてのキャラ</option>
+                {brawlers.map((brawler) => (
+                  <option key={brawler}>{brawler}</option>
                 ))}
               </select>
             </label>
@@ -1023,7 +1032,7 @@ export default function BrawlPreview({
             <div className={styles.modalActions}>
               <button
                 className={styles.secondary}
-                onClick={() => setFilters({ role: "", tier: "" })}
+                onClick={() => setFilters({ brawler: "", tier: "" })}
               >
                 条件をリセット
               </button>
@@ -1057,7 +1066,7 @@ export default function BrawlPreview({
             <div className={styles.formGrid}>
               <label>モード<select value={recruitForm.mode} onChange={(event) => setRecruitForm((value) => ({ ...value, mode: event.target.value }))}>{modes.map((mode) => <option key={mode}>{mode}</option>)}</select></label>
               <label>パーティ人数<select value={recruitForm.partySize} onChange={(event) => setRecruitForm((value) => ({ ...value, partySize: event.target.value }))}><option value="2">2人</option><option value="3">3人</option><option value="5">5人</option></select></label>
-              <label>希望する役割（任意）<select value={recruitForm.desiredRole} onChange={(event) => setRecruitForm((value) => ({ ...value, desiredRole: event.target.value }))}><option value="">指定なし</option>{roles.slice(0, -1).map((role) => <option key={role}>{role}</option>)}</select></label>
+              <label>希望するキャラ（任意）<select value={recruitForm.desiredBrawler} onChange={(event) => setRecruitForm((value) => ({ ...value, desiredBrawler: event.target.value }))}><option value="">指定なし</option>{brawlers.map((brawler) => <option key={brawler}>{brawler}</option>)}</select></label>
               <label>開始時間（任意）<input type="datetime-local" value={recruitForm.startAt} onChange={(event) => setRecruitForm((value) => ({ ...value, startAt: event.target.value }))} /></label>
               <label>掲載時間<select value={recruitForm.durationMinutes} onChange={(event) => setRecruitForm((value) => ({ ...value, durationMinutes: event.target.value }))}><option value="60">1時間</option><option value="120">2時間</option><option value="360">6時間</option><option value="1440">24時間</option></select></label>
               <label className={styles.full}>ひとこと（任意）<textarea maxLength={160} value={recruitForm.note} onChange={(event) => setRecruitForm((value) => ({ ...value, note: event.target.value }))} placeholder="例：VCなし、楽しく遊びたいです" /></label>
@@ -1077,7 +1086,7 @@ export default function BrawlPreview({
               <span>{viewProfile.avatarUrl ? <img src={viewProfile.avatarUrl} alt="" /> : viewProfile.displayName.slice(0, 2)}</span>
               <div><b>{viewProfile.skillTier}</b><p>{viewProfile.gameIdentity}</p></div>
             </div>
-            <div className={styles.tags}>{viewProfile.roles.map((role) => <span key={role}>{role}</span>)}</div>
+            <div className={styles.tags}>{validBrawlers(viewProfile.roles).length ? validBrawlers(viewProfile.roles).map((brawler) => <span key={brawler}>{brawler}</span>) : <span>キャラ未設定</span>}</div>
             <p className={styles.profileBio}>{viewProfile.bio || "自己紹介はまだありません。"}</p>
             <small className={styles.profileTimes}>{viewProfile.playTimes?.join(" · ") || "遊べる時間は未設定です"}</small>
           </section>

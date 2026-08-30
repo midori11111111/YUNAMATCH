@@ -13,6 +13,10 @@ import {
 import { checkRateLimit } from "../../../../lib/rate-limit";
 import { normalizeRank } from "../../../../lib/ranks";
 import { createRecruitVoiceRoom } from "../../../../lib/discord-recruit-voice";
+import {
+  stamateBrawlers,
+  stamateBrawlerSet,
+} from "../../../../lib/stamate-brawlers";
 
 const json = (data: unknown, status = 200) => Response.json(data, { status });
 const bytes = (hex: string) =>
@@ -52,17 +56,6 @@ const stamateRanks = new Set([
   "マスター",
   "プロ",
 ]);
-const stamateRoles = new Set([
-  "アタッカー",
-  "アサシン",
-  "スナイパー",
-  "グレネーディア",
-  "タンク",
-  "サポート",
-  "コントローラー",
-  "指定なし",
-]);
-
 type DiscordInteraction = {
   application_id?: string;
   guild_id?: string;
@@ -72,7 +65,11 @@ type DiscordInteraction = {
   user?: { id?: string };
   data?: {
     name?: string;
-    options?: Array<{ name: string; value: string | number }>;
+    options?: Array<{
+      name: string;
+      value: string | number;
+      focused?: boolean;
+    }>;
   };
 };
 
@@ -203,7 +200,7 @@ async function createStamateRecruitMessage(
   );
   const mode = String(options.mode || "");
   const currentRank = String(options.current_rank || "");
-  const role = String(options.role || "指定なし");
+  const brawler = String(options.brawler || options.role || "");
   const partySize = Number(options.party_size);
   const createVoice = String(options.create_vc || "no") === "yes";
   const startsIn = Number(options.starts_in || 0);
@@ -215,7 +212,7 @@ async function createStamateRecruitMessage(
   if (
     !stamateModes.has(mode) ||
     !stamateRanks.has(currentRank) ||
-    !stamateRoles.has(role) ||
+    (brawler !== "" && !stamateBrawlerSet.has(brawler)) ||
     ![2, 3, 5].includes(partySize) ||
     ![0, 30, 60, 120].includes(startsIn) ||
     ![1, 2, 3].includes(duration) ||
@@ -249,7 +246,7 @@ async function createStamateRecruitMessage(
       ownerProfileId: profile.id,
       mode,
       partySize,
-      desiredRoles: JSON.stringify(role === "指定なし" ? [] : [role]),
+      desiredRoles: JSON.stringify(brawler ? [brawler] : []),
       startAt,
       note,
       status: "open",
@@ -288,7 +285,7 @@ async function createStamateRecruitMessage(
       `@here **${mode}の${partySize}人パーティ募集中です**`,
       `募集者：${profile.displayName.replace(/@/g, "＠")}`,
       `現在ランク：${currentRank}`,
-      role === "指定なし" ? "" : `希望タイプ：${role}`,
+      brawler ? `希望キャラ：${brawler}` : "",
       `開始：${startLabel}・募集時間：${duration}時間`,
       note ? `ひとこと：${note}` : "",
       createVoice
@@ -554,6 +551,25 @@ export async function POST(request: Request) {
     return new Response("invalid request signature", { status: 401 });
   const interaction = JSON.parse(raw) as DiscordInteraction;
   if (interaction.type === 1) return json({ type: 1 });
+  if (interaction.type === 4) {
+    const focused = interaction.data?.options?.find((option) => option.focused),
+      query = String(focused?.value || "").toLocaleLowerCase("ja");
+    if (
+      isStamateGuild(interaction.guild_id) &&
+      interaction.data?.name === "募集" &&
+      focused?.name === "brawler"
+    )
+      return json({
+        type: 8,
+        data: {
+          choices: stamateBrawlers
+            .filter((name) => name.toLocaleLowerCase("ja").includes(query))
+            .slice(0, 25)
+            .map((name) => ({ name, value: name })),
+        },
+      });
+    return json({ type: 8, data: { choices: [] } });
+  }
   if (interaction.type !== 2)
     return json({
       type: 4,

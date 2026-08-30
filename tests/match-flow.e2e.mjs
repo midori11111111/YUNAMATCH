@@ -411,7 +411,7 @@ try {
   // three new services, not only in the original YUNAMATCH tables.
   const serviceCases = [
     { id: "valomatch", tier: "ゴールド", role: "コントローラー", mode: "アンレート" },
-    { id: "stamate", tier: "ゴールド", role: "サポート", mode: "トロフィー" },
+    { id: "stamate", tier: "ゴールド", role: "シェリー", mode: "トロフィー" },
     { id: "shoenmate", tier: "サバイバー3段", role: "救助", mode: "マルチ戦" },
   ];
   for (const serviceCase of serviceCases) {

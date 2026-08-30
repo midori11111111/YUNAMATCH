@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "スタメイト｜ブロスタ仲間探し",
   description:
-    "トロフィー・得意ロール・遊べる時間帯からブロスタ仲間を探す非公式コミュニティサービス",
+    "トロフィー・よく使うキャラ・遊べる時間帯からブロスタ仲間を探す非公式コミュニティサービス",
   icons: {
     icon: "/brand/stamate-mark.svg",
     apple: "/brand/stamate-social-avatar.png",
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "スタメイト｜ブロスタ仲間探し",
     description:
-      "トロフィー・得意ロール・遊べる時間帯からブロスタ仲間を探す非公式コミュニティサービス",
+      "トロフィー・よく使うキャラ・遊べる時間帯からブロスタ仲間を探す非公式コミュニティサービス",
     images: [
       {
         url: "/brand/stamate-og.png",

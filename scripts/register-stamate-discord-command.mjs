@@ -56,19 +56,10 @@ const commands = [
       },
       {
         type: 3,
-        name: "role",
-        description: "希望するキャラクタータイプ（任意）",
+        name: "brawler",
+        description: "希望するキャラ（任意・名前を入力して検索）",
         required: false,
-        choices: choices([
-          "アタッカー",
-          "アサシン",
-          "スナイパー",
-          "グレネーディア",
-          "タンク",
-          "サポート",
-          "コントローラー",
-          "指定なし",
-        ]),
+        autocomplete: true,
       },
       {
         type: 3,

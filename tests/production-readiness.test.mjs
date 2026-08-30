@@ -70,6 +70,7 @@ test("Stamate uses current geometric branding, game taxonomy, and guild-scoped r
     stamateLayout,
     previewLayout,
     servicesPage,
+    brawlers,
   ] = await Promise.all([
     read("app/brawl-preview/page.tsx"),
     read("lib/service-config.ts"),
@@ -81,22 +82,16 @@ test("Stamate uses current geometric branding, game taxonomy, and guild-scoped r
     read("app/stamate/layout.tsx"),
     read("app/brawl-preview/layout.tsx"),
     read("app/services/page.tsx"),
+    read("lib/stamate-brawlers.ts"),
   ]);
   for (const tier of ["ブロンズ", "ミシック", "マスター", "プロ"])
     assert.match(config, new RegExp(tier));
   assert.doesNotMatch(config, /stamate:[^\n]+エリート/);
-  for (const role of [
-    "アタッカー",
-    "アサシン",
-    "スナイパー",
-    "グレネーディア",
-    "タンク",
-    "サポート",
-    "コントローラー",
-  ]) {
-    assert.match(config, new RegExp(role));
-    assert.match(registerCommand, new RegExp(role));
-  }
+  for (const brawler of ["シェリー", "モーティス", "スパイク", "シリウス"])
+    assert.match(brawlers, new RegExp(brawler));
+  assert.match(config, /stamateBrawlerSet/);
+  assert.match(registerCommand, /name: "brawler"/);
+  assert.match(registerCommand, /autocomplete: true/);
   for (const mode of [
     "トロフィー",
     "ガチバトル",

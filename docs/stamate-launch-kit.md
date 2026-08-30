@@ -20,7 +20,7 @@
 確認した一次情報:
 
 - [Supercell ファンコンテンツポリシー（日本語）](https://supercell.com/en/fan-content-policy/jp/)
-- [Supercell サポート：キャラクタータイプ](https://ingame.support.supercell.com/brawl-stars/ja/articles/brawler-classes.html)
+- [Supercell サポート：ブロウラー](https://support.supercell.com/brawl-stars/en/game/index.html)
 - [Supercell サポート：ガチバトル](https://support.supercell.com/brawl-stars/en/articles/about-ranked-3.html)
 - [Supercell サポート：ゲームモード](https://support.supercell.com/brawl-stars/en/articles/game-modes-12.html)
 
@@ -44,7 +44,7 @@
 
 ### キャラクタータイプ
 
-`アタッカー / アサシン / スナイパー / グレネーディア / タンク / サポート / コントローラー / 指定なし`
+プロフィールでは「よく使うキャラ」を最大5体まで登録する。検索と募集でもキャラ名を指定できる。
 
 ### 募集モード
 
@@ -112,7 +112,7 @@ https://yunamatch.com/stamate
 1. 何ができるか: 探す、募集、マッチ、チャットを4枚で説明。
 2. 30秒の使い方: 登録 → 条件選択 → いいね/申請 → チャット。
 3. 安全対策: 恋愛目的禁止、通報、ブロック、未成年者の性別非表示。
-4. 募集例: ガチバトル、3人、サポート希望、今から、VCあり。
+4. 募集例: ガチバトル、3人、シェリー希望、今から、VCあり。
 5. 改善募集: 不具合・分かりにくい所を問い合わせフォームで募集。
 
 ## 30秒動画台本
