@@ -239,6 +239,7 @@ type Lobby = {
 type AppTab = "discover" | "recruit" | "chat" | "lobby" | "profile";
 type DiscoverMode = "recommended" | "received" | "skipped";
 type LoginIntent = "login" | "signup";
+type IncomingRequestDisplayMode = "collapsed" | "expanded";
 type RealtimePushEvent =
   | { type: "chat-message"; connectionId: number }
   | { type: "chat-refresh"; connectionId: number }
@@ -267,6 +268,8 @@ const discoverFiltersStorageKey = "yunamatch-discover-filters-v1";
 const activeTabSessionKey = "yunamatch-active-tab-v1";
 const connectionsSessionCacheKey = "yunamatch-connections-session-v1";
 const messagesSessionCacheKey = "yunamatch-messages-session-v1";
+const incomingRequestDisplayStorageKey =
+  "yunamatch-incoming-request-display-v1";
 const apiTimeoutMs = 8_000;
 // Push/realtime events and action-triggered refreshes are the primary update path.
 // These timers are only a visible-tab safety net, kept deliberately infrequent
@@ -883,6 +886,9 @@ export default function MatchApp({
   const [pendingProfileView, setPendingProfileView] =
     useState<PendingMateProfile | null>(null);
   const [pendingGroupOpen, setPendingGroupOpen] = useState(false);
+  const [incomingRequestsOpen, setIncomingRequestsOpen] = useState(true);
+  const [incomingRequestDisplayMode, setIncomingRequestDisplayMode] =
+    useState<IncomingRequestDisplayMode>("expanded");
   const [pendingMessages, setPendingMessages] = useState<ApplicationMessage[]>(
     [],
   );
@@ -1074,6 +1080,18 @@ export default function MatchApp({
   const notify = (message: string) => {
     setToast(message);
     window.setTimeout(() => setToast(""), 2600);
+  };
+
+  const updateIncomingRequestDisplayMode = (
+    mode: IncomingRequestDisplayMode,
+  ) => {
+    setIncomingRequestDisplayMode(mode);
+    setIncomingRequestsOpen(mode === "expanded");
+    try {
+      window.localStorage.setItem(incomingRequestDisplayStorageKey, mode);
+    } catch {
+      /* 保存できない環境でも現在の表示切り替えは続ける */
+    }
   };
 
   const requestLogin = (action: PendingGuestAction) => {
@@ -1862,6 +1880,24 @@ export default function MatchApp({
       /* 保存領域を使えないブラウザでもタブ移動は続ける */
     }
   }, [activeTabRestored, tab]);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(
+        incomingRequestDisplayStorageKey,
+      );
+      if (stored !== "collapsed" && stored !== "expanded") return;
+      setIncomingRequestDisplayMode(stored);
+      setIncomingRequestsOpen(stored === "expanded");
+    } catch {
+      /* 保存領域を使えないブラウザでは従来どおり開いて表示する */
+    }
+  }, []);
+
+  useEffect(() => {
+    if (tab !== "chat") return;
+    setIncomingRequestsOpen(incomingRequestDisplayMode === "expanded");
+  }, [tab, incomingRequestDisplayMode]);
 
   useEffect(() => {
     if (preview || guestMode) return;
@@ -6891,40 +6927,96 @@ export default function MatchApp({
                         {pendingIncoming.length > 0 && (
                           <section className="receivedRequestsPanel">
                             <header className="receivedRequestsHeader">
-                              <span>⚡</span>
-                              <div>
-                                <strong>届いたメイト申請</strong>
-                                <p>
-                                  相手のプロフィールを見て、承認前に相談できます
-                                </p>
-                              </div>
-                              <i>{pendingIncoming.length}</i>
-                            </header>
-                            <div className="receivedRequestList">
-                              {pendingIncoming.map((notice) => (
+                              <button
+                                type="button"
+                                className="receivedRequestsSummary"
+                                onClick={() =>
+                                  setIncomingRequestsOpen((open) => !open)
+                                }
+                                aria-expanded={incomingRequestsOpen}
+                              >
+                                <span>⚡</span>
+                                <div>
+                                  <strong>届いたメイト申請</strong>
+                                  <p>
+                                    相手のプロフィールを見て、承認前に相談できます
+                                  </p>
+                                </div>
+                                <i>{pendingIncoming.length}</i>
+                                <b>{incomingRequestsOpen ? "⌃" : "⌄"}</b>
+                              </button>
+                              <div
+                                className="receivedRequestsDisplaySetting"
+                                role="group"
+                                aria-label="届いたメイト申請の初期表示"
+                              >
+                                <span>自動表示</span>
                                 <button
-                                  key={`pending-incoming-${notice.id}`}
-                                  className="receivedRequestCard"
+                                  type="button"
+                                  className={
+                                    incomingRequestDisplayMode === "collapsed"
+                                      ? "active"
+                                      : ""
+                                  }
                                   onClick={() =>
-                                    openPendingConversation(notice, "incoming")
+                                    updateIncomingRequestDisplayMode(
+                                      "collapsed",
+                                    )
+                                  }
+                                  aria-pressed={
+                                    incomingRequestDisplayMode === "collapsed"
                                   }
                                 >
-                                  <UserAvatar
-                                    name={notice.applicantName || "メイト"}
-                                    src={notice.mateProfile?.avatarUrl}
-                                    className="chatMateAvatar"
-                                  />
-                                  <div>
-                                    <strong>{notice.applicantName}</strong>
-                                    <p>👋 あなたにメイト申請を送っています</p>
-                                    <small>
-                                      タップしてプロフィール・一言を確認
-                                    </small>
-                                  </div>
-                                  <b>確認する&nbsp;›</b>
+                                  まとめる
                                 </button>
-                              ))}
-                            </div>
+                                <button
+                                  type="button"
+                                  className={
+                                    incomingRequestDisplayMode === "expanded"
+                                      ? "active"
+                                      : ""
+                                  }
+                                  onClick={() =>
+                                    updateIncomingRequestDisplayMode("expanded")
+                                  }
+                                  aria-pressed={
+                                    incomingRequestDisplayMode === "expanded"
+                                  }
+                                >
+                                  開く
+                                </button>
+                              </div>
+                            </header>
+                            {incomingRequestsOpen && (
+                              <div className="receivedRequestList">
+                                {pendingIncoming.map((notice) => (
+                                  <button
+                                    key={`pending-incoming-${notice.id}`}
+                                    className="receivedRequestCard"
+                                    onClick={() =>
+                                      openPendingConversation(
+                                        notice,
+                                        "incoming",
+                                      )
+                                    }
+                                  >
+                                    <UserAvatar
+                                      name={notice.applicantName || "メイト"}
+                                      src={notice.mateProfile?.avatarUrl}
+                                      className="chatMateAvatar"
+                                    />
+                                    <div>
+                                      <strong>{notice.applicantName}</strong>
+                                      <p>👋 あなたにメイト申請を送っています</p>
+                                      <small>
+                                        タップしてプロフィール・一言を確認
+                                      </small>
+                                    </div>
+                                    <b>確認する&nbsp;›</b>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </section>
                         )}
                         {pendingOutgoing.length > 0 && (

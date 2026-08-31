@@ -517,6 +517,13 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /届いた申請は一番上で確認できます/);
   assert.match(app, /届いたメイト申請/);
   assert.match(app, /receivedRequestsPanel/);
+  assert.match(app, /yunamatch-incoming-request-display-v1/);
+  assert.match(app, /届いたメイト申請の初期表示/);
+  assert.match(app, /まとめる/);
+  assert.match(app, /incomingRequestDisplayMode === "collapsed"/);
+  assert.match(app, /if \(tab !== "chat"\) return;[\s\S]*setIncomingRequestsOpen\(incomingRequestDisplayMode === "expanded"\)/);
+  assert.match(app, /incomingRequestsOpen &&/);
+  assert.match(app, /localStorage\.setItem\(incomingRequestDisplayStorageKey, mode\)/);
   assert.match(app, /pendingConversationGroup/);
   assert.ok(
     app.indexOf("{pendingIncoming.length > 0") <
