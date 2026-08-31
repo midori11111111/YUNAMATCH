@@ -6871,6 +6871,31 @@ export default function MatchApp({
                       </button>
                     </div>
                   </div>
+                  <section className="chatReadReceiptSetting chatOverviewReadReceiptSetting">
+                    <span aria-hidden="true">✓</span>
+                    <div>
+                      <strong>既読を相手に表示</strong>
+                      <small>
+                        {profile.readReceiptsEnabled
+                          ? "ON：メッセージを読むと相手側に既読が付きます"
+                          : "OFF：読んでも相手側には既読が付きません"}
+                      </small>
+                    </div>
+                    <button
+                      type="button"
+                      className={profile.readReceiptsEnabled ? "enabled" : ""}
+                      onClick={toggleReadReceipts}
+                      disabled={readReceiptUpdating}
+                      aria-pressed={profile.readReceiptsEnabled}
+                      aria-label="既読表示を切り替える"
+                    >
+                      {readReceiptUpdating
+                        ? "変更中"
+                        : profile.readReceiptsEnabled
+                          ? "ON"
+                          : "OFF"}
+                    </button>
+                  </section>
                   <button
                     type="button"
                     className="chatScheduleEntry"
@@ -10190,28 +10215,6 @@ export default function MatchApp({
                   : "マッチを解消"}
               </button>
             </div>
-            <section className="chatReadReceiptSetting">
-              <span aria-hidden="true">✓</span>
-              <div>
-                <strong>既読表示</strong>
-                <small>
-                  オフにすると、すべてのチャットで相手側に既読を表示しません。
-                </small>
-              </div>
-              <button
-                type="button"
-                className={profile.readReceiptsEnabled ? "enabled" : ""}
-                onClick={toggleReadReceipts}
-                disabled={readReceiptUpdating}
-                aria-pressed={profile.readReceiptsEnabled}
-              >
-                {readReceiptUpdating
-                  ? "変更中"
-                  : profile.readReceiptsEnabled
-                    ? "オン"
-                    : "オフ"}
-              </button>
-            </section>
             <div className="chatContactMenu">
               <div>
                 <strong>

@@ -1006,7 +1006,10 @@ test("lets users hide read receipts without keeping their own chats unread", asy
   assert.match(profileApi, /readReceiptsEnabled:body\.readReceiptsEnabled/);
   assert.match(messagesApi, /mateAllowsReadReceipts/);
   assert.match(messagesApi, /Chat read receipt/);
-  assert.match(app, /既読表示/);
+  assert.match(app, /既読を相手に表示/);
+  assert.match(app, /OFF：読んでも相手側には既読が付きません/);
+  assert.match(app, /aria-label="既読表示を切り替える"/);
+  assert.match(app, /chatOverviewReadReceiptSetting/);
   assert.match(app, /toggleReadReceipts/);
 });
 
@@ -1018,7 +1021,7 @@ test("keeps read receipts off by default while allowing users to opt in", async 
     readFile(new URL("drizzle/0043_redundant_post.sql", root), "utf8"),
   ]);
   assert.match(app, /readReceiptsEnabled: false/);
-  assert.match(app, /<strong>既読表示<\/strong>/);
+  assert.match(app, /<strong>既読を相手に表示<\/strong>/);
   assert.match(profileApi, /body\.readReceiptsEnabled===true/);
   assert.match(schema, /readReceiptsEnabled:[\s\S]*?\.default\(false\)/);
   assert.match(migration, /UPDATE `profiles` SET `read_receipts_enabled` = false/);

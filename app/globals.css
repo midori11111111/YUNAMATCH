@@ -909,6 +909,8 @@ button { cursor: pointer; }
 .chatReadReceiptSetting button { min-width: 48px; border: 0; border-radius: 99px; padding: 9px 10px; color: #817987; background: #e8e4eb; font-size: 7px; font-weight: 950; }
 .chatReadReceiptSetting button.enabled { color: #fff; background: var(--purple); }
 .chatReadReceiptSetting button:disabled { opacity: .55; }
+.chatOverviewReadReceiptSetting { margin: 2px 0 10px; border-color: #ded7e8; background: #fff; box-shadow: 0 5px 16px #33294d0b; }
+.chatOverviewReadReceiptSetting button { min-width: 52px; }
 .chatActionGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .chatActionGrid button { min-width: 0; min-height: 72px; display: grid; place-items: center; align-content: center; gap: 7px; border: 1px solid #e9e3ee; border-radius: 16px; padding: 10px 5px; color: #6f6878; background: #fff; font-size: 8px; font-weight: 900; }
 .chatActionGrid button b { color: var(--purple); font-size: 17px; line-height: 1; }
