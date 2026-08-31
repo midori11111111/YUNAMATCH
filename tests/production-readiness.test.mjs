@@ -159,10 +159,16 @@ test("canonical public service routes preserve their own OAuth return path", asy
     ["valomatch", "ValorantPreviewPage"],
     ["stamate", "BrawlPreview"],
     ["shoenmate", "IdentityPreview"],
+    ["roninmatch", "RoninMatch"],
   ];
   for (const [route, component] of routes) {
     const source = compact(await read(`app/${route}/page.tsx`));
-    assert.match(source, new RegExp(`<${component}basePath="/${route}"/>`));
+    if (route === "roninmatch") {
+      assert.match(source, /exportdefaultfunctionRoninMatch/);
+      assert.match(source, /basePath="\/roninmatch"/);
+    } else {
+      assert.match(source, new RegExp(`<${component}basePath="/${route}"/>`));
+    }
   }
   for (const page of ["valorant-preview", "brawl-preview", "identity-preview"]) {
     const source = await read(`app/${page}/page.tsx`);
@@ -176,7 +182,7 @@ test("canonical public service routes preserve their own OAuth return path", asy
 
 test("public service portal exposes launch state and only allowlisted social links", async () => {
   const source = compact(await read("app/services/page.tsx"));
-  for (const route of ["/valomatch", "/stamate", "/shoenmate"])
+  for (const route of ["/valomatch", "/stamate", "/shoenmate", "/roninmatch"])
     assert.match(source, new RegExp(`href:"${route}"`));
   assert.match(source, /allowedHosts\.includes\(url\.hostname\)/);
   assert.match(source, /url\.protocol==="https:"/);
@@ -198,6 +204,7 @@ test("material terms updates require every existing service profile to consent a
   assert.match(gate, /更新された利用条件とプライバシーポリシーに同意します/);
   for (const service of ["valomatch", "stamate", "shoenmate"])
     assert.match(config, new RegExp(`${service}:\\{name:.*termsVersion:"2026-08-26-v2"`));
+  assert.match(config, /roninmatch:\{name:"浪マッチ",termsVersion:"2026-09-01-v1"/);
 });
 
 test("publishes a traceable privacy request process", async () => {

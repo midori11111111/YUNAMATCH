@@ -88,7 +88,7 @@ test("keeps legal acceptance and minor gender privacy service scoped",async()=>{
 
 test("rejects unknown service identifiers before database access",async()=>{
  const [config,profile,recruits]=(await Promise.all([read("lib/service-config.ts"),read("app/api/services/[service]/profile/route.ts"),read("app/api/services/[service]/recruits/route.ts")])).map(compact);
- assert.match(config,/serviceIds=\["valomatch","stamate","shoenmate"\]/);
+ assert.match(config,/serviceIds=\["valomatch","stamate","shoenmate","roninmatch"\]/);
  assert.match(profile,/if\(!isServiceId\(service\)\)returnnull/);
  assert.match(recruits,/if\(!isServiceId\(service\)\)returnResponse\.json/);
 });
@@ -146,7 +146,7 @@ test("adds the YUNAMATCH-style chat tools to Stamate without duplicating the ser
  assert.match(migration,/CREATETABLE`service_message_reactions`/);
 });
 
-test("supports scoped reporting and administrator moderation for all three services",async()=>{
+test("supports scoped reporting and administrator moderation for every service",async()=>{
  const [reportApi,adminApi,adminPage,brawl,valo,identity]=await Promise.all([
   read("app/api/services/[service]/reports/route.ts"),read("app/api/admin/service-reports/route.ts"),read("app/admin/admin-panel.tsx"),read("app/brawl-preview/page.tsx"),read("app/valorant-preview/page.tsx"),read("app/identity-preview/page.tsx")
  ]);
@@ -215,6 +215,22 @@ test("lets administrators search and moderate every service account",async()=>{
  assert.match(api,/\["suspend","restore","delete"\]\.includes\(action\)/);
  assert.match(api,/db\.insert\(serviceAdminAuditLogs\)/);
  assert.match(admin,/\/api\/admin\/service-users/);
- assert.match(admin,/3サービスのユーザー検索/);
+ assert.match(admin,/4サービスのユーザー検索/);
  assert.match(admin,/アカウント削除/);
+});
+
+test("runs the full persistent matching flow for Roninmatch",async()=>{
+ const raw=await read("app/roninmatch/page.tsx"),page=compact(raw);
+ assert.match(page,/fetch\("\/api\/services\/roninmatch\/profile"\)/);
+ assert.match(page,/ServiceOnboardingservice="roninmatch"/);
+ for(const route of ["discover","likes","connections","recruits","messages"])
+  assert.match(page,new RegExp(`\\/api\\/services\\/roninmatch\\/${route}`));
+ assert.match(page,/ServiceReportButtonservice="roninmatch"/);
+ assert.match(page,/ServiceAccountSafetyservice="roninmatch"/);
+ assert.match(page,/basePath="\/roninmatch"/);
+ assert.match(raw,/志望校・学部/);
+ assert.match(raw,/現在の模試判定/);
+ assert.match(raw,/勉強できる時間/);
+ assert.match(raw,/オンライン自習/);
+ assert.doesNotMatch(raw,/ブロスタ|トロフィー|よく使うキャラ|希望するキャラ/);
 });

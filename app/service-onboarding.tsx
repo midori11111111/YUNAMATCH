@@ -12,6 +12,10 @@ type Props = {
   selectionLabel?: string;
   selectionPicker?: boolean;
   selectionPlaceholder?: string;
+  profileHeading?: string;
+  tierLabel?: string;
+  timeLabel?: string;
+  timeOptions?: string[];
   returnPath: string;
   onComplete: (profile: unknown) => void;
   initialProfile?: {
@@ -46,6 +50,10 @@ export default function ServiceOnboarding({
   selectionLabel = "得意な役割（複数可）",
   selectionPicker = false,
   selectionPlaceholder = "選択してください",
+  profileHeading = "プレイヤー情報を登録",
+  tierLabel = "現在のランク",
+  timeLabel = "遊べる時間（複数可）",
+  timeOptions = playTimes,
   returnPath,
   onComplete,
   initialProfile,
@@ -119,7 +127,7 @@ export default function ServiceOnboarding({
         <small className={styles.brand}>
           {name.toUpperCase()} · FIRST SETUP
         </small>
-        <h1>{initialProfile ? "プロフィールを編集" : "プレイヤー情報を登録"}</h1>
+        <h1>{initialProfile ? "プロフィールを編集" : profileHeading}</h1>
         <p className={styles.lead}>
           {initialProfile
             ? "現在の情報を確認し、変更したい項目だけ編集してください。"
@@ -145,7 +153,7 @@ export default function ServiceOnboarding({
             />
           </label>
           <label>
-            現在のランク
+            {tierLabel}
             <select
               value={skillTier}
               onChange={(e) => setSkillTier(e.target.value)}
@@ -220,9 +228,9 @@ export default function ServiceOnboarding({
             )}
           </label>
           <label>
-            遊べる時間（複数可）
+            {timeLabel}
             <span className={styles.choice}>
-              {playTimes.map((x) => (
+              {timeOptions.map((x) => (
                 <button
                   type="button"
                   key={x}

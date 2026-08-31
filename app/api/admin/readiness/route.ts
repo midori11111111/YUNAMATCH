@@ -22,6 +22,16 @@ const services = [
     approvalLabel: "Supercellファンコンテンツ方針の最終確認",
   },
   {
+    id: "roninmatch",
+    name: "浪マッチ",
+    site: "RONINMATCH_SITE_URL",
+    x: "RONINMATCH_X_URL",
+    discord: "NEXT_PUBLIC_RONINMATCH_DISCORD_URL",
+    approval: "RONINMATCH_PUBLIC_RELEASE_APPROVED",
+    reference: "RONINMATCH_APPROVAL_REFERENCE",
+    approvalLabel: "未成年者保護・教育サービス表示の最終確認",
+  },
+  {
     id: "shoenmate",
     name: "荘園メイト",
     site: "SHOENMATE_SITE_URL",

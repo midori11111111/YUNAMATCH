@@ -552,6 +552,14 @@ export default function AdminPanel() {
             <p>機能実装済み。書面回答待ちのため一般公開は停止しています。</p>
             <Link href="/shoenmate">確認する</Link>
           </article>
+          <article>
+            <div>
+              <small>STUDY MATCHING</small>
+              <h3>浪マッチ</h3>
+              <p>志望校・模試判定・科目・勉強時間で探す受験仲間サービス</p>
+            </div>
+            <Link href="/roninmatch">確認する</Link>
+          </article>
         </div>
         {serviceStats.length > 0 && (
           <div className="adminServiceMetrics">
@@ -602,7 +610,7 @@ export default function AdminPanel() {
         <div className="adminSectionTitle">
           <div>
             <small>MULTI SERVICE USERS</small>
-            <h2>3サービスのユーザー検索</h2>
+            <h2>4サービスのユーザー検索</h2>
           </div>
         </div>
         <div className="adminUserSearchForm">
@@ -615,6 +623,7 @@ export default function AdminPanel() {
             <option value="valomatch">バロマッチ</option>
             <option value="stamate">スタメイト</option>
             <option value="shoenmate">荘園メイト</option>
+            <option value="roninmatch">浪マッチ</option>
           </select>
           <input
             value={serviceUserQuery}
@@ -675,7 +684,7 @@ export default function AdminPanel() {
         <div className="adminSectionTitle">
           <div>
             <small>MULTI SERVICE SAFETY</small>
-            <h2>3サービスの通報</h2>
+            <h2>4サービスの通報</h2>
           </div>
           <button onClick={load}>更新</button>
         </div>
@@ -708,7 +717,9 @@ export default function AdminPanel() {
                       ? "バロマッチ"
                       : report.serviceId === "stamate"
                         ? "スタメイト"
-                        : "荘園メイト"}
+                        : report.serviceId === "shoenmate"
+                          ? "荘園メイト"
+                          : "浪マッチ"}
                     ・通報者 {report.reporterName}・
                     {new Date(report.createdAt).toLocaleString("ja-JP")}
                   </small>

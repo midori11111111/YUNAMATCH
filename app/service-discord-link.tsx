@@ -6,6 +6,7 @@ const defaultInviteUrls: Record<ServiceId, string> = {
   valomatch: "https://discord.gg/yrqnQNEYc",
   stamate: "https://discord.gg/eUX4kHBef",
   shoenmate: "https://discord.gg/qWR5tTyPH",
+  roninmatch: "",
 };
 
 const inviteUrls: Record<ServiceId, string> = {
@@ -15,6 +16,8 @@ const inviteUrls: Record<ServiceId, string> = {
     process.env.NEXT_PUBLIC_STAMATE_DISCORD_URL || defaultInviteUrls.stamate,
   shoenmate:
     process.env.NEXT_PUBLIC_SHOENMATE_DISCORD_URL || defaultInviteUrls.shoenmate,
+  roninmatch:
+    process.env.NEXT_PUBLIC_RONINMATCH_DISCORD_URL || defaultInviteUrls.roninmatch,
 };
 
 export function isDiscordInviteUrl(value: string | undefined) {

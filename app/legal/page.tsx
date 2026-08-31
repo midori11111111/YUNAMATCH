@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import styles from "./legal.module.css";
 
-type Service = "stamate" | "valomatch" | "shoenmate";
+type Service = "stamate" | "valomatch" | "shoenmate" | "roninmatch";
 const DATA: Record<
   Service,
   {
@@ -56,6 +56,20 @@ const DATA: Record<
       "公式ロゴ・キャラクター画像・ゲーム内画像は、書面で利用範囲が確認できるまで使用しません。",
       "問い合わせ回答で示された名称・素材・API・収益化条件を公開前に反映します。",
       "回答前は登録・チャットを伴う一般公開を行いません。",
+    ],
+  },
+  roninmatch: {
+    name: "浪マッチ",
+    game: "大学受験",
+    status: "開発プレビュー",
+    owner: "YUNAMATCH運営",
+    policy: "共通利用規約",
+    policyUrl: "/terms",
+    special: [
+      "予備校、学校、大学、模試運営会社等の公式サービスではありません。",
+      "志望校、模試判定、学習状況は利用者の自己申告であり、合格可能性を保証しません。",
+      "答案代作、試験中の不正、教材の無断共有、金銭を伴う個人指導の勧誘を禁止します。",
+      "恋愛、面会、外部連絡先交換を目的とした利用を禁止し、未成年者の情報を保護します。",
     ],
   },
 };
@@ -111,7 +125,7 @@ export default function LegalCenter() {
             ))}
           </ul>
           <p>
-            <a href={d.policyUrl} target="_blank" rel="noreferrer">
+            <a href={d.policyUrl} target={d.policyUrl.startsWith("http") ? "_blank" : undefined} rel={d.policyUrl.startsWith("http") ? "noreferrer" : undefined}>
               {d.owner}の{d.policy}を確認する ↗
             </a>
           </p>
