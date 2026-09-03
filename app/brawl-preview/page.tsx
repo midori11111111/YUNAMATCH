@@ -133,6 +133,7 @@ export default function BrawlPreview({
     [conversationCloseNote, setConversationCloseNote] = useState(""),
     [conversationClosing, setConversationClosing] = useState(false),
     [filterOpen, setFilterOpen] = useState(false),
+    [loginOpen, setLoginOpen] = useState(false),
     [tutorialOpen, setTutorialOpen] = useState(false),
     [recruitOpen, setRecruitOpen] = useState(false),
     [expandedRecruitId, setExpandedRecruitId] = useState<number | null>(null),
@@ -164,7 +165,10 @@ export default function BrawlPreview({
     setToast(text);
     window.setTimeout(() => setToast(""), 2400);
   };
-  const load = async (nextFilters = filters) => {
+  const load = async (
+    nextFilters = filters,
+    includePrivate = auth === "ready",
+  ) => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -173,27 +177,37 @@ export default function BrawlPreview({
       const discoverRequest = params.size
         ? fetch(`/api/services/stamate/discover?${params}`)
         : fetch("/api/services/stamate/discover");
-      const [d, r, c] = await Promise.all([
+      const [d, r] = await Promise.all([
           discoverRequest,
           fetch("/api/services/stamate/recruits"),
-          fetch("/api/services/stamate/connections"),
         ]),
-        likes = await fetch("/api/services/stamate/likes"),
-        [dd, rr, cc, ll] = await Promise.all([
+        [dd, rr] = await Promise.all([
           d.json(),
           r.json(),
-          c.json(),
-          likes.json(),
         ]);
       if (d.ok) setProfiles(dd.profiles || []);
       if (r.ok) setRecruits(rr.recruits || []);
-      if (c.ok) {
-        setConnections(cc.connections || []);
-        setIncoming(cc.incoming || []);
-        setOutgoing(cc.outgoing || []);
+      if (includePrivate) {
+        const [c, likes] = await Promise.all([
+            fetch("/api/services/stamate/connections"),
+            fetch("/api/services/stamate/likes"),
+          ]),
+          [cc, ll] = await Promise.all([c.json(), likes.json()]);
+        if (c.ok) {
+          setConnections(cc.connections || []);
+          setIncoming(cc.incoming || []);
+          setOutgoing(cc.outgoing || []);
+        }
+        if (likes.ok) setReceivedLikes(ll.received || []);
+        if (![c, likes].every((response) => response.ok))
+          notify("一部の情報を更新できませんでした。前回の表示を残しています");
+      } else {
+        setConnections([]);
+        setIncoming([]);
+        setOutgoing([]);
+        setReceivedLikes([]);
       }
-      if (likes.ok) setReceivedLikes(ll.received || []);
-      if (![d, r, c, likes].every((response) => response.ok))
+      if (![d, r].every((response) => response.ok))
         notify("一部の情報を更新できませんでした。前回の表示を残しています");
     } catch {
       notify("通信に失敗しました。表示中の情報はそのまま残しています");
@@ -223,7 +237,8 @@ export default function BrawlPreview({
     };
   }, []);
   useEffect(() => {
-    if (auth === "ready") void load();
+    if (auth === "ready" || auth === "guest")
+      void load(filters, auth === "ready");
   }, [auth]);
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -254,6 +269,10 @@ export default function BrawlPreview({
       .filter(([, value]) => !value)
       .map(([label]) => label);
   async function likeTarget(targetProfileId: number, after: () => void) {
+    if (auth === "guest") {
+      setLoginOpen(true);
+      return;
+    }
     const response = await fetch("/api/services/stamate/likes", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -269,6 +288,10 @@ export default function BrawlPreview({
     } else notify(data.error || "送信できませんでした");
   }
   async function requestTarget(targetProfileId: number) {
+    if (auth === "guest") {
+      setLoginOpen(true);
+      return;
+    }
     const response = await fetch("/api/services/stamate/connections", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -303,6 +326,11 @@ export default function BrawlPreview({
     if (response.ok) void load();
   }
   async function createRecruit() {
+    if (auth === "guest") {
+      setRecruitOpen(false);
+      setLoginOpen(true);
+      return;
+    }
     const partySize = Number(recruitForm.partySize),
       desiredBrawler = recruitForm.desiredBrawler,
       startAt = recruitForm.startAt
@@ -561,11 +589,20 @@ export default function BrawlPreview({
                 {candidate.gender ? ` · ${candidate.gender}` : ""}
               </p>
             </div>
-            <ServiceReportButton
-              service="stamate"
-              targetProfileId={candidate.id}
-              onNotice={notify}
-            />
+            {auth === "ready" ? (
+              <ServiceReportButton
+                service="stamate"
+                targetProfileId={candidate.id}
+                onNotice={notify}
+              />
+            ) : (
+              <button
+                onClick={() => setLoginOpen(true)}
+                aria-label="ログインして安全機能を使う"
+              >
+                ⓘ
+              </button>
+            )}
           </div>
           <div className={styles.tags}>
             {candidateBrawlers.length ? (
@@ -641,75 +678,19 @@ export default function BrawlPreview({
         onComplete={() => setAuth("ready")}
       />
     );
-  if (auth === "guest")
-    return (
-      <main className={styles.login}>
-        <section className={styles.intro}>
-          <Image
-            className={styles.mark}
-            src="/brand/stamate-mark.svg"
-            alt="スタメイト"
-            width={66}
-            height={66}
-            priority
-          />
-          <b>
-            STAMATE <small>スタメイト</small>
-          </b>
-          <h1>
-            最高のチームは、
-            <br />
-            相性からつくる。
-          </h1>
-          <p>
-            トロフィーだけじゃない。よく使うキャラ、遊びたいモード、プレイ時間からブロスタ仲間を探そう。
-          </p>
-          <div className={styles.bubbles}>
-            <i>AT</i>
-            <i>MI</i>
-            <i>RE</i>
-            <span>TEAM UP!</span>
-          </div>
-        </section>
-        <section className={styles.sheet}>
-          <i />
-          <small>CHOOSE ACCOUNT</small>
-          <h2>アカウントを選んで続ける</h2>
-          <p>登録済みの方は、以前使ったアカウントを選んでください。</p>
-          {[
-            ["G", "Google", "google", "#4285f4"],
-            ["D", "Discord", "discord", "#5865f2"],
-            ["𝕏", "X", "twitter", "#111"],
-            ["L", "LINE", "line", "#06c755"],
-          ].map((x) => (
-            <button
-              key={x[1]}
-              onClick={() => {
-                location.href = `/api/login/${x[2]}?returnTo=${encodeURIComponent(basePath)}`;
-              }}
-            >
-              <b style={{ background: x[3] }}>{x[0]}</b>
-              <span>
-                <strong>{x[1]}で続ける</strong>
-                <small>アカウントを選択してログイン</small>
-              </span>
-              <em>›</em>
-            </button>
-          ))}
-          <p className={styles.terms}>
-            続けることで<a href="/legal?service=stamate">利用条件・安全方針</a>
-            と<a href="/privacy">プライバシーポリシー</a>に同意します。
-            <a href="/community-guidelines">コミュニティガイドライン</a>も確認してください。
-          </p>
-          <footer>UNOFFICIAL COMMUNITY SERVICE · BY YUNAMATCH</footer>
-        </section>
-      </main>
-    );
   return (
     <main className={styles.app}>
       <header>
-        <button onClick={() => setTab("me")} aria-label="マイページ">
-          {profile?.avatarUrl ? (
+        <button
+          className={auth === "guest" ? styles.guestLoginButton : ""}
+          onClick={() =>
+            auth === "guest" ? setLoginOpen(true) : setTab("me")
+          }
+          aria-label={auth === "guest" ? "ログインする" : "マイページ"}
+        >
+          {auth === "guest" ? (
+            "ログイン"
+          ) : profile?.avatarUrl ? (
             <img src={profile.avatarUrl} alt="" />
           ) : (
             initials
@@ -726,10 +707,24 @@ export default function BrawlPreview({
             STAMATE<small>PLAY TOGETHER</small>
           </b>
         </div>
-        <button onClick={() => setTab("chat")} aria-label="申請とやりとり">
+        <button
+          onClick={() =>
+            auth === "guest" ? setLoginOpen(true) : setTab("chat")
+          }
+          aria-label="申請とやりとり"
+        >
           ♢{incoming.length > 0 && <i>{incoming.length}</i>}
         </button>
       </header>
+      {auth === "guest" && (
+        <div className={styles.guestBanner}>
+          <div>
+            <strong>登録なしで見られます</strong>
+            <span>いいね・申請・募集はログイン後に利用できます</span>
+          </div>
+          <button onClick={() => setLoginOpen(true)}>ログイン</button>
+        </div>
+      )}
       <section className={styles.body}>
         {tab === "find" && (
           <>
@@ -752,7 +747,11 @@ export default function BrawlPreview({
               </button>
               <button
                 className={findView === "received" ? styles.selected : ""}
-                onClick={() => setFindView("received")}
+                onClick={() =>
+                  auth === "guest"
+                    ? setLoginOpen(true)
+                    : setFindView("received")
+                }
               >
                 相手から <span>{receivedLikes.length}</span>
               </button>
@@ -857,7 +856,12 @@ export default function BrawlPreview({
             ) : (
               <p>現在公開中の募集はありません。</p>
             )}
-            <button className={styles.create} onClick={() => setRecruitOpen(true)}>
+            <button
+              className={styles.create}
+              onClick={() =>
+                auth === "guest" ? setLoginOpen(true) : setRecruitOpen(true)
+              }
+            >
               ＋ 募集を作成
             </button>
           </section>
@@ -979,8 +983,12 @@ export default function BrawlPreview({
             key={item.id}
             className={tab === item.id ? styles.active : ""}
             onClick={() => {
+              if (auth === "guest" && ["chat", "me"].includes(item.id)) {
+                setLoginOpen(true);
+                return;
+              }
               setTab(item.id);
-              if (item.id !== "me") void load();
+              if (item.id !== "me") void load(filters, auth === "ready");
             }}
           >
             <b>{item.icon}</b>
@@ -988,6 +996,56 @@ export default function BrawlPreview({
           </button>
         ))}
       </nav>
+      {auth === "guest" && loginOpen && (
+        <div
+          className={styles.modalBackdrop}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setLoginOpen(false);
+          }}
+        >
+          <section
+            className={`${styles.modal} ${styles.loginPrompt}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="stamate-login-title"
+          >
+            <div className={styles.modalHead}>
+              <div>
+                <small>START STAMATE</small>
+                <h2 id="stamate-login-title">ログインすると使えます</h2>
+              </div>
+              <button onClick={() => setLoginOpen(false)}>×</button>
+            </div>
+            <p>
+              いいね・メイト申請・募集・チャットを使うには、アカウントを選んでください。登録済みの方は以前と同じアカウントで続けられます。
+            </p>
+            <div className={styles.loginProviders}>
+              {[
+                ["G", "Google", "google", "#4285f4"],
+                ["D", "Discord", "discord", "#5865f2"],
+                ["𝕏", "X", "twitter", "#111"],
+                ["L", "LINE", "line", "#06c755"],
+              ].map((x) => (
+                <a
+                  key={x[1]}
+                  href={`/api/login/${x[2]}?returnTo=${encodeURIComponent(basePath)}`}
+                >
+                  <b style={{ background: x[3] }}>{x[0]}</b>
+                  <span>
+                    <strong>{x[1]}で続ける</strong>
+                    <small>ログイン・新規登録</small>
+                  </span>
+                  <em>›</em>
+                </a>
+              ))}
+            </div>
+            <p className={styles.loginLegal}>
+              続けることで<a href="/legal?service=stamate">利用条件・安全方針</a>
+              と<a href="/privacy">プライバシーポリシー</a>に同意します。
+            </p>
+          </section>
+        </div>
+      )}
       {filterOpen && (
         <div className={styles.modalBackdrop}>
           <section className={styles.modal}>
