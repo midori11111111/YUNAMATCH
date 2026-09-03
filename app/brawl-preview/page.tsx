@@ -237,6 +237,7 @@ export default function BrawlPreview({
     };
   }, []);
   useEffect(() => {
+    if (auth === "guest" && (tab === "chat" || tab === "me")) setTab("find");
     if (auth === "ready" || auth === "guest")
       void load(filters, auth === "ready");
   }, [auth]);
