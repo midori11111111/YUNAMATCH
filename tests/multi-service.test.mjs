@@ -48,6 +48,22 @@ test("uses real account login and persistent onboarding in Stamate",async()=>{
  assert.doesNotMatch(rawPage,/得意な役割|希望する役割|すべての役割/);
 });
 
+test("opens shared Stamate recruit links before login and keeps the link through login",async()=>{
+ const [page,recruits,discord]=(await Promise.all([
+  read("app/brawl-preview/page.tsx"),
+  read("app/api/services/[service]/recruits/route.ts"),
+  read("app/api/discord/interactions/route.ts")
+ ])).map(compact);
+ assert.match(page,/params\.get\("recruit"\)/);
+ assert.match(page,/setTab\("team"\)/);
+ assert.match(page,/setExpandedRecruitId\(linkedRecruitId\)/);
+ assert.match(page,/encodeURIComponent\(loginReturnTo\)/);
+ assert.match(recruits,/requestedId\?eq\(serviceRecruits\.id,requestedId\):undefined/);
+ assert.match(discord,/process\.env\.STAMATE_SITE_URL\|\|"https:\/\/stamate-jp\.vercel\.app\/stamate"/);
+ assert.match(discord,/\?recruit=\$\{recruit\.id\}/);
+ assert.doesNotMatch(discord,/https:\/\/yunamatch\.com\/stamate\?recruit=/);
+});
+
 test("uses real account login and matching APIs in Valomatch",async()=>{
  const page=compact(await read("app/valorant-preview/page.tsx"));
  assert.match(page,/fetch\("\/api\/services\/valomatch\/profile"\)/);

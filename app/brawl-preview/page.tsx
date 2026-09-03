@@ -138,6 +138,7 @@ export default function BrawlPreview({
     [tutorialStep, setTutorialStep] = useState(0),
     [recruitOpen, setRecruitOpen] = useState(false),
     [expandedRecruitId, setExpandedRecruitId] = useState<number | null>(null),
+    [loginReturnTo, setLoginReturnTo] = useState(basePath),
     [viewProfile, setViewProfile] = useState<Profile | null>(null),
     [filters, setFilters] = useState<Filters>(() => {
       if (typeof window === "undefined") return { brawler: "", tier: "" };
@@ -178,9 +179,17 @@ export default function BrawlPreview({
       const discoverRequest = params.size
         ? fetch(`/api/services/stamate/discover?${params}`)
         : fetch("/api/services/stamate/discover");
+      const linkedRecruitId =
+        typeof window === "undefined"
+          ? 0
+          : Number(new URLSearchParams(window.location.search).get("recruit"));
+      const recruitUrl =
+        Number.isInteger(linkedRecruitId) && linkedRecruitId > 0
+          ? `/api/services/stamate/recruits?id=${linkedRecruitId}`
+          : "/api/services/stamate/recruits";
       const [d, r] = await Promise.all([
           discoverRequest,
-          fetch("/api/services/stamate/recruits"),
+          fetch(recruitUrl),
         ]),
         [dd, rr] = await Promise.all([
           d.json(),
@@ -236,6 +245,15 @@ export default function BrawlPreview({
     return () => {
       live = false;
     };
+  }, []);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search),
+      linkedRecruitId = Number(params.get("recruit"));
+    setLoginReturnTo(`${window.location.pathname}${window.location.search}`);
+    if (Number.isInteger(linkedRecruitId) && linkedRecruitId > 0) {
+      setTab("team");
+      setExpandedRecruitId(linkedRecruitId);
+    }
   }, []);
   useEffect(() => {
     if (auth === "guest" && (tab === "chat" || tab === "me")) setTab("find");
@@ -867,7 +885,11 @@ export default function BrawlPreview({
                 </article>
               ))
             ) : (
-              <p>現在公開中の募集はありません。</p>
+              <p>
+                {expandedRecruitId
+                  ? "この募集は終了したか、現在は表示できません。"
+                  : "現在公開中の募集はありません。"}
+              </p>
             )}
             <button
               className={styles.create}
@@ -1041,7 +1063,7 @@ export default function BrawlPreview({
               ].map((x) => (
                 <a
                   key={x[1]}
-                  href={`/api/login/${x[2]}?returnTo=${encodeURIComponent(basePath)}`}
+                  href={`/api/login/${x[2]}?returnTo=${encodeURIComponent(loginReturnTo)}`}
                 >
                   <b style={{ background: x[3] }}>{x[0]}</b>
                   <span>

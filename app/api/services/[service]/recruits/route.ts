@@ -39,6 +39,7 @@ export async function GET(
   if (!isServiceId(service))
     return Response.json({ error: "サービスIDが不正です" }, { status: 404 });
   const url = new URL(request.url),
+    requestedId = Number(url.searchParams.get("id") || 0),
     before = Number(url.searchParams.get("before") || 0),
     now = new Date(),
     db = getDb(),
@@ -81,6 +82,7 @@ export async function GET(
       .where(
         and(
           eq(serviceRecruits.serviceId, service),
+          requestedId ? eq(serviceRecruits.id, requestedId) : undefined,
           eq(serviceRecruits.status, "open"),
           gt(serviceRecruits.expiresAt, now),
           before ? lt(serviceRecruits.id, before) : undefined,
@@ -121,7 +123,7 @@ export async function GET(
       };
     }),
     nextBefore:
-      rows.length > 30
+      !requestedId && rows.length > 30
         ? (rows[Math.min(rows.length, 60) - 1]?.id ?? null)
         : null,
   });

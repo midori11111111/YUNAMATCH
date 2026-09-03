@@ -36,6 +36,9 @@ const discordRecruitRanks = new Set([
   "レジェンド1500以上",
 ]);
 const defaultStamateGuildId = "1541983696780009554";
+const stamateSiteUrl = (
+  process.env.STAMATE_SITE_URL || "https://stamate-jp.vercel.app/stamate"
+).replace(/\/$/, "");
 const stamateModes = new Set([
   "トロフィー",
   "ガチバトル",
@@ -119,7 +122,7 @@ const stamateLinkMessage = (): DiscordMessage => ({
           type: 2,
           style: 5,
           label: "Discord連携はこちら",
-          url: "https://yunamatch.com/stamate?joinDiscord=1",
+          url: `${stamateSiteUrl}?joinDiscord=1`,
         },
       ],
     },
@@ -279,7 +282,7 @@ async function createStamateRecruitMessage(
   }
 
   const startLabel = startsIn === 0 ? "今から" : `${startsIn}分後`;
-  const url = `https://yunamatch.com/stamate?recruit=${recruit.id}`;
+  const url = `${stamateSiteUrl}?recruit=${recruit.id}`;
   return {
     content: [
       `@here **${mode}の${partySize}人パーティ募集中です**`,
@@ -581,7 +584,7 @@ export async function POST(request: Request) {
       type: 4,
       data: {
         content: stamateGuild
-          ? "**スタメイトの使い方**\n1. スタメイトでプロフィールを登録\n2. Discordアカウントを連携\n3. このサーバーで `/募集` を入力\n4. モード・ランク・人数・VC作成を選択\n5. 届いた参加申請をサイトで承認\n\nスタメイト：https://yunamatch.com/stamate"
+          ? `**スタメイトの使い方**\n1. スタメイトでプロフィールを登録\n2. Discordアカウントを連携\n3. このサーバーで \`/募集\` を入力\n4. モード・ランク・人数・VC作成を選択\n5. 届いた参加申請をサイトで承認\n\nスタメイト：${stamateSiteUrl}`
           : "⚡ **YUNAMATCHの使い方**\n1. プロフィールでDiscordアカウントを連携\n2. このサーバーで `/募集` を入力\n3. カジュアルかランクマッチを選択\n4. 届いた申請をYUNAMATCHで承認\n5. チャットで人数を選び、Botに専用VCを作ってもらう\n\n詳しくはこちら：https://yunamatch.com/community",
         flags: 64,
       },
