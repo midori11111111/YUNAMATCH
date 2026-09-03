@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { pushSubscriptions } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
@@ -17,5 +17,5 @@ export async function POST(request:Request){
 
 export async function DELETE(request:Request){
   const user=await getChatGPTUser();if(!user)return Response.json({error:"ログインが必要です"},{status:401});
-  const {endpoint}=await request.json() as {endpoint?:string};if(endpoint)await getDb().delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint,endpoint));return Response.json({ok:true});
+  const {endpoint}=await request.json() as {endpoint?:string};if(endpoint)await getDb().delete(pushSubscriptions).where(and(eq(pushSubscriptions.endpoint,endpoint),eq(pushSubscriptions.userId,user.userId)));return Response.json({ok:true});
 }

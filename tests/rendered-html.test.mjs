@@ -695,6 +695,10 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(lobbyApi, /lobbyMembers/);
   assert.match(lobbyApi, /startTimeUndecided/);
   assert.match(pushApi, /pushSubscriptions/);
+  assert.match(pushApi, /eq\(pushSubscriptions\.userId,user\.userId\)/);
+  assert.match(app, /subscription\.unsubscribe\(\)/);
+  assert.match(app, /プッシュ通知をオフにしました/);
+  assert.match(app, /pushState === "on" \? disablePush : enablePush/);
   assert.match(discordApi, /x-signature-ed25519/);
   assert.match(discordApi, /options\.lane/);
   assert.match(discordApi, /options\.play_style/);

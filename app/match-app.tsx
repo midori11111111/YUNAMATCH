@@ -1049,6 +1049,7 @@ export default function MatchApp({
   const [pushState, setPushState] = useState<
     "off" | "on" | "install-required" | "denied" | "unsupported"
   >("off");
+  const [pushUpdating, setPushUpdating] = useState(false);
   const [pushHelpOpen, setPushHelpOpen] = useState(false);
   const [recruitAlertsEnabled, setRecruitAlertsEnabled] = useState(false);
   const [recruitAlertUpdating, setRecruitAlertUpdating] = useState(false);
@@ -4728,6 +4729,8 @@ export default function MatchApp({
       setPushHelpOpen(true);
       return false;
     }
+    if (pushUpdating) return false;
+    setPushUpdating(true);
     try {
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
@@ -4759,6 +4762,37 @@ export default function MatchApp({
     } catch {
       setPushHelpOpen(true);
       return false;
+    } finally {
+      setPushUpdating(false);
+    }
+  };
+  const disablePush = async () => {
+    if (pushUpdating) return;
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+      setPushState("unsupported");
+      setPushHelpOpen(true);
+      return;
+    }
+    setPushUpdating(true);
+    try {
+      const registration = await navigator.serviceWorker.getRegistration();
+      const subscription = await registration?.pushManager.getSubscription();
+      if (subscription) {
+        const endpoint = subscription.endpoint;
+        const unsubscribed = await subscription.unsubscribe();
+        if (!unsubscribed) throw new Error("unsubscribe");
+        await fetch("/api/push", {
+          method: "DELETE",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ endpoint }),
+        }).catch(() => undefined);
+      }
+      setPushState("off");
+      notify("プッシュ通知をオフにしました");
+    } catch {
+      notify("通知をオフにできませんでした。もう一度お試しください");
+    } finally {
+      setPushUpdating(false);
     }
   };
   const copyNotificationLink = async () => {
@@ -7735,14 +7769,17 @@ export default function MatchApp({
                 </div>
                 <button
                   className={pushState === "on" ? "enabled" : ""}
-                  onClick={enablePush}
-                  disabled={pushState === "on"}
+                  onClick={pushState === "on" ? disablePush : enablePush}
+                  disabled={pushUpdating}
+                  aria-busy={pushUpdating}
                 >
-                  {pushState === "on"
-                    ? "通知オン"
-                    : pushState === "off"
-                      ? "オンにする"
-                      : "設定方法"}
+                  {pushUpdating
+                    ? "変更中…"
+                    : pushState === "on"
+                      ? "オフにする"
+                      : pushState === "off"
+                        ? "オンにする"
+                        : "設定方法"}
                 </button>
               </section>
               <section className="linkedAccountSettings">
