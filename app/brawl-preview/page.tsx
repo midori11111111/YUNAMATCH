@@ -135,6 +135,7 @@ export default function BrawlPreview({
     [filterOpen, setFilterOpen] = useState(false),
     [loginOpen, setLoginOpen] = useState(false),
     [tutorialOpen, setTutorialOpen] = useState(false),
+    [tutorialStep, setTutorialStep] = useState(0),
     [recruitOpen, setRecruitOpen] = useState(false),
     [expandedRecruitId, setExpandedRecruitId] = useState<number | null>(null),
     [viewProfile, setViewProfile] = useState<Profile | null>(null),
@@ -246,9 +247,15 @@ export default function BrawlPreview({
     window.localStorage.setItem("stamate:last-tab", tab);
   }, [tab]);
   useEffect(() => {
-    if (auth !== "ready" || typeof window === "undefined") return;
-    if (!window.localStorage.getItem("stamate:tutorial-seen"))
+    if (
+      (auth !== "ready" && auth !== "guest") ||
+      typeof window === "undefined"
+    )
+      return;
+    if (!window.localStorage.getItem("stamate:tutorial-seen")) {
+      setTutorialStep(0);
       setTutorialOpen(true);
+    }
   }, [auth]);
   const current = profiles[0],
     receivedCurrent = receivedLikes[0]?.profile,
@@ -551,6 +558,10 @@ export default function BrawlPreview({
     window.localStorage.setItem("stamate:tutorial-seen", "1");
     setTutorialOpen(false);
   }
+  function openTutorial() {
+    setTutorialStep(0);
+    setTutorialOpen(true);
+  }
   function candidateCard(candidate: Candidate, received = false) {
     const candidateBrawlers = validBrawlers(candidate.roles);
     const onSkip = () =>
@@ -595,6 +606,7 @@ export default function BrawlPreview({
                 service="stamate"
                 targetProfileId={candidate.id}
                 onNotice={notify}
+                compact
               />
             ) : (
               <button
@@ -735,7 +747,7 @@ export default function BrawlPreview({
                 <h1>仲間を探す</h1>
               </div>
               <div className={styles.topActions}>
-                <button onClick={() => setTutorialOpen(true)}>？ 使い方</button>
+                <button onClick={openTutorial}>？ 使い方</button>
                 <button onClick={() => setFilterOpen(true)}>≡ 絞り込み</button>
               </div>
             </div>
@@ -1102,16 +1114,57 @@ export default function BrawlPreview({
       )}
       {tutorialOpen && (
         <div className={styles.modalBackdrop}>
-          <section className={`${styles.modal} ${styles.tutorial}`}>
-            <small>HOW TO USE</small>
-            <h2>スタメイトの使い方</h2>
-            <div className={styles.tutorialList}>
-              <article><b>♡</b><div><strong>いいね</strong><p>気になる相手へ軽く興味を伝えます。お互いにいいねすると自動でマッチし、チャットが始まります。</p></div></article>
-              <article><b>⚡</b><div><strong>メイト申請</strong><p>一緒に遊びたい相手へ直接申請します。相手が承認するとチャットできます。</p></div></article>
-              <article><b>×</b><div><strong>スキップ</strong><p>ブロックせず、今表示している候補を次の人へ送ります。</p></div></article>
-              <article><b>＋</b><div><strong>募集</strong><p>今すぐ遊びたい時は条件を選び、参加者を募集できます。</p></div></article>
+          <section className={`${styles.modal} ${styles.tutorial}`} role="dialog" aria-modal="true" aria-label="スタメイトの使い方">
+            <div className={styles.modalHead}>
+              <div><small>STAMATE GUIDE</small><h2>スタメイトの使い方</h2></div>
+              <button onClick={closeTutorial} aria-label="使い方を閉じる">×</button>
             </div>
-            <button className={styles.primaryWide} onClick={closeTutorial}>使ってみる</button>
+            <div className={styles.tutorialStage}>
+              {tutorialStep === 0 && (
+                <div className={styles.tutorialSlide}>
+                  <span className={styles.tutorialNumber}>01</span>
+                  <strong>まずは気になる相手を探す</strong>
+                  <p>カードをタップすると、よく使うキャラ・ランク・自己紹介を詳しく確認できます。</p>
+                  <div className={styles.tutorialMockCard}>
+                    <i>ST</i><div><b>プレイヤー名</b><small>よく使うキャラ · ランク</small></div><em>詳細 ›</em>
+                  </div>
+                  <div className={styles.tutorialTip}>「相手から」では、あなたに届いたいいねを確認できます</div>
+                </div>
+              )}
+              {tutorialStep === 1 && (
+                <div className={styles.tutorialSlide}>
+                  <span className={styles.tutorialNumber}>02</span>
+                  <strong>いいねとメイト申請を使い分ける</strong>
+                  <p>気軽な興味はいいね、一緒に遊びたい時はメイト申請を送ります。</p>
+                  <div className={styles.tutorialChoiceGrid}>
+                    <article><b>♡</b><strong>いいね</strong><small>相手へ気になる気持ちを通知。お互いにいいねすると自動でマッチします。</small></article>
+                    <article><b>⚡</b><strong>メイト申請</strong><small>相手が承認するとメイト成立。やりとりからチャットできます。</small></article>
+                  </div>
+                  <div className={styles.tutorialTip}>× スキップはブロックではありません。次の候補へ進むだけです</div>
+                </div>
+              )}
+              {tutorialStep === 2 && (
+                <div className={styles.tutorialSlide}>
+                  <span className={styles.tutorialNumber}>03</span>
+                  <strong>今すぐ遊ぶなら募集</strong>
+                  <p>モード・人数・希望キャラ・開始時間を選び、募集を公開できます。</p>
+                  <div className={styles.tutorialFlow}>
+                    <span><b>1</b>募集を公開</span><i>›</i><span><b>2</b>参加申請</span><i>›</i><span><b>3</b>承認して会話</span>
+                  </div>
+                  <div className={styles.tutorialSafety}>
+                    <b>安全機能</b>
+                    <p>プロフィールの「…」またはチャット右上のメニューから通報・ブロックができます。通報内容は相手に表示されません。</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className={styles.tutorialDots} aria-label={`${tutorialStep + 1} / 3ページ`}>
+              {[0, 1, 2].map((step) => <i key={step} className={tutorialStep === step ? styles.currentDot : ""} />)}
+            </div>
+            <div className={styles.tutorialControls}>
+              {tutorialStep > 0 ? <button className={styles.secondary} onClick={() => setTutorialStep((step) => step - 1)}>戻る</button> : <span />}
+              {tutorialStep < 2 ? <button onClick={() => setTutorialStep((step) => step + 1)}>次へ</button> : <button onClick={closeTutorial}>使ってみる</button>}
+            </div>
           </section>
         </div>
       )}

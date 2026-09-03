@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import styles from "./service-report-button.module.css";
 export default function ServiceReportButton({
   service,
   targetProfileId,
@@ -7,6 +8,7 @@ export default function ServiceReportButton({
   onNotice,
   onBlocked,
   className = "",
+  compact = false,
 }: {
   service: string;
   targetProfileId: number;
@@ -14,9 +16,11 @@ export default function ServiceReportButton({
   onNotice: (text: string) => void;
   onBlocked?: () => void;
   className?: string;
+  compact?: boolean;
 }) {
   const [sending, setSending] = useState(false);
   const [blocking, setBlocking] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   async function report() {
     const reason = prompt(
       "通報理由を入力してください\n例：暴言、なりすまし、不適切な募集、連絡先の強要",
@@ -69,8 +73,40 @@ export default function ServiceReportButton({
       setBlocking(false);
     }
   }
+  if (compact)
+    return (
+      <div className={styles.compactRoot}>
+        <button
+          type="button"
+          className={`${styles.compactTrigger} ${className}`.trim()}
+          onClick={() => setMenuOpen(true)}
+          aria-label="通報・ブロックメニューを開く"
+          aria-expanded={menuOpen}
+        >
+          ⋯
+        </button>
+        {menuOpen && (
+          <div className={styles.backdrop} role="dialog" aria-modal="true" aria-label="安全メニュー">
+            <button type="button" className={styles.dismiss} onClick={() => setMenuOpen(false)} aria-label="安全メニューを閉じる" />
+            <section className={styles.sheet}>
+              <i />
+              <small>SAFETY</small>
+              <h2>安全メニュー</h2>
+              <p>必要な操作を選んでください。相手に通報内容は通知されません。</p>
+              <button type="button" className={styles.reportAction} disabled={sending} onClick={() => { setMenuOpen(false); void report(); }}>
+                <b>!</b><span><strong>{sending ? "送信中…" : "運営に通報する"}</strong><small>理由と状況を運営へ送ります</small></span>
+              </button>
+              <button type="button" className={styles.blockAction} disabled={blocking} onClick={() => { setMenuOpen(false); void block(); }}>
+                <b>×</b><span><strong>{blocking ? "処理中…" : "この相手をブロック"}</strong><small>検索・募集・申請・チャットから非表示にします</small></span>
+              </button>
+              <button type="button" className={styles.cancel} onClick={() => setMenuOpen(false)}>キャンセル</button>
+            </section>
+          </div>
+        )}
+      </div>
+    );
   return (
-    <span style={{ display: "inline-flex", gap: 8 }}>
+    <span className={styles.inlineActions}>
       <button
         type="button"
         className={className}
