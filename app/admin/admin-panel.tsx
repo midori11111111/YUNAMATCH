@@ -176,7 +176,9 @@ export default function AdminPanel() {
     [showResolved, setShowResolved] = useState(false);
   const [serviceStats, setServiceStats] = useState<ServiceStat[]>([]),
     [serviceSchemaReady, setServiceSchemaReady] = useState(false),
-    [launchReadiness, setLaunchReadiness] = useState<LaunchReadiness | null>(null);
+    [launchReadiness, setLaunchReadiness] = useState<LaunchReadiness | null>(
+      null,
+    );
   const [serviceReports, setServiceReports] = useState<ServiceReport[]>([]),
     [serviceAuditLogs, setServiceAuditLogs] = useState<ServiceAuditLog[]>([]);
   const [serviceUserQuery, setServiceUserQuery] = useState(""),
@@ -540,16 +542,18 @@ export default function AdminPanel() {
             <p>Supercell非公式表記を掲載し、独立データ基盤へ接続済みです。</p>
             <Link href="/stamate">確認する</Link>
           </article>
-          <article className="waiting">
+          <article className="beta">
             <header>
               <b>荘</b>
               <span>
                 <strong>荘園メイト</strong>
-                <small>NetEase回答待ち</small>
+                <small>無料限定ベータ</small>
               </span>
-              <em>HOLD</em>
+              <em>BETA</em>
             </header>
-            <p>機能実装済み。書面回答待ちのため一般公開は停止しています。</p>
+            <p>
+              非公式・公式素材/API不使用・無料の小規模テストです。一般公開と収益化は保留しています。
+            </p>
             <Link href="/shoenmate">確認する</Link>
           </article>
           <article>
@@ -584,7 +588,10 @@ export default function AdminPanel() {
               <strong>全サービス共通</strong>
               <div>
                 {launchReadiness.common.map((check) => (
-                  <span className={check.ready ? "ok" : "missing"} key={check.label}>
+                  <span
+                    className={check.ready ? "ok" : "missing"}
+                    key={check.label}
+                  >
                     {check.ready ? "✓" : "!"} {check.label}
                   </span>
                 ))}
@@ -596,7 +603,10 @@ export default function AdminPanel() {
                 <em>{service.ready ? "公開準備完了" : "未完了あり"}</em>
                 <div>
                   {service.checks.map((check) => (
-                    <span className={check.ready ? "ok" : "missing"} key={check.label}>
+                    <span
+                      className={check.ready ? "ok" : "missing"}
+                      key={check.label}
+                    >
                       {check.ready ? "✓" : "!"} {check.label}
                     </span>
                   ))}

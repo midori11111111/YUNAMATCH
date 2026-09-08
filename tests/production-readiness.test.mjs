@@ -195,15 +195,16 @@ test("material terms updates require every existing service profile to consent a
       await read("app/api/services/[service]/profile/route.ts"),
     ),
     gate = compact(await read("app/service-terms-gate.tsx")),
-    config = await read("lib/service-config.ts");
+    config = compact(await read("lib/service-config.ts"));
   assert.match(profileRoute, /termsCurrent:/);
   assert.match(profileRoute, /row\.termsVersion===serviceConfig\[ctx\.service\]\.termsVersion/);
   assert.match(profileRoute, /exportasyncfunctionPATCH/);
   assert.match(profileRoute, /termsAcceptedAt:now/);
   assert.match(gate, /method:"PATCH"/);
   assert.match(gate, /更新された利用条件とプライバシーポリシーに同意します/);
-  for (const service of ["valomatch", "stamate", "shoenmate"])
+  for (const service of ["valomatch", "stamate"])
     assert.match(config, new RegExp(`${service}:\\{name:.*termsVersion:"2026-08-26-v2"`));
+  assert.match(config, /shoenmate:\{name:"荘園メイト",termsVersion:"2026-09-08-v3"/);
   assert.match(config, /roninmatch:\{name:"浪マッチ",termsVersion:"2026-09-01-v1"/);
 });
 

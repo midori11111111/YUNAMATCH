@@ -47,15 +47,16 @@ const DATA: Record<
   shoenmate: {
     name: "荘園メイト",
     game: "第五人格",
-    status: "NetEase回答待ち・プレビュー限定",
+    status: "無料限定ベータ（一般公開・収益化は保留）",
     owner: "NetEase Games",
-    policy: "Identity V公式サイト",
-    policyUrl: "https://www.identityvgame.com/",
+    policy: "Identity V二次創作ガイドライン",
+    policyUrl:
+      "https://www.identityv.jp/news/gonggao/2021/05/21/29435_949240.html",
     special: [
       "NetEase Gamesおよび第五人格の公式サービスではありません。",
       "公式ロゴ・キャラクター画像・ゲーム内画像は、書面で利用範囲が確認できるまで使用しません。",
-      "問い合わせ回答で示された名称・素材・API・収益化条件を公開前に反映します。",
-      "回答前は登録・チャットを伴う一般公開を行いません。",
+      "公式素材・公式API・有料機能を使わず、少人数の限定ベータとして安全性と動作を確認します。",
+      "権利者への問い合わせは継続し、回答または要請があった場合は名称・機能・公開範囲を変更または停止します。",
     ],
   },
   roninmatch: {
@@ -125,7 +126,11 @@ export default function LegalCenter() {
             ))}
           </ul>
           <p>
-            <a href={d.policyUrl} target={d.policyUrl.startsWith("http") ? "_blank" : undefined} rel={d.policyUrl.startsWith("http") ? "noreferrer" : undefined}>
+            <a
+              href={d.policyUrl}
+              target={d.policyUrl.startsWith("http") ? "_blank" : undefined}
+              rel={d.policyUrl.startsWith("http") ? "noreferrer" : undefined}
+            >
               {d.owner}の{d.policy}を確認する ↗
             </a>
           </p>

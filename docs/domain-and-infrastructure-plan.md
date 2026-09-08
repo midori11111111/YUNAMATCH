@@ -8,7 +8,7 @@
 
 - バロマッチ: `https://yunamatch.com/valomatch`
 - スタメイト: `https://yunamatch.com/stamate`
-- 荘園メイト: `https://yunamatch.com/shoenmate`（権利者回答前はプレビューのみ）
+- 荘園メイト: `https://yunamatch.com/shoenmate`（権利者回答前は無料限定ベータのみ）
 - 共通規約・安全センター: `https://yunamatch.com/legal`
 - 共通運営画面: `https://yunamatch.com/admin`
 
@@ -78,6 +78,7 @@ Cloudflare Registrarはレジストリ原価で購入・更新できるが、登
 - [ ] OAuthの本番URL
 - [ ] 管理者2要素認証と長い固有パスワード
 - [ ] 本番でテスト用アカウント2件を使い、各サービスの通し試験
-- [ ] 荘園メイトは回答が来るまで一般登録を開かない
+- [x] 荘園メイトは回答が来るまで公式素材・公式API・有料機能を使わない無料限定ベータに限定
+- [ ] 荘園メイトの一般公開・収益化は書面回答後に再判定
 - [ ] バロマッチはRiotの製品ステータスと許可機能を確認
 - [ ] スタメイトは公式素材・広告・有料機能がないことを確認

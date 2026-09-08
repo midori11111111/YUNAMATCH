@@ -281,6 +281,12 @@ export default function IdentityPreview({
             </div>
           </section>
           <section className={styles.sheet}>
+            <div className={styles.betaNotice}>
+              <strong>無料限定ベータ</strong>
+              <span>
+                公式素材・公式API・有料機能を使わず、小規模に動作と安全性を確認しています。
+              </span>
+            </div>
             <small>SELECT ACCOUNT</small>
             <h2>アカウントを選んで続ける</h2>
             <p>登録済みの方は、以前使用したアカウントを選んでください。</p>
@@ -307,7 +313,8 @@ export default function IdentityPreview({
               続けることで
               <a href="/legal?service=shoenmate">利用条件・安全方針</a>と
               <a href="/privacy">プライバシーポリシー</a>に同意します。
-              <a href="/community-guidelines">コミュニティガイドライン</a>も確認してください。
+              <a href="/community-guidelines">コミュニティガイドライン</a>
+              も確認してください。
             </p>
           </section>
         </div>
@@ -334,6 +341,11 @@ export default function IdentityPreview({
             ♢{incoming.length || ""}
           </button>
         </header>
+        <aside className={styles.betaBar}>
+          <b>無料限定ベータ</b>
+          <span>非公式／公式素材・公式API不使用</span>
+          <a href="/legal?service=shoenmate">確認する</a>
+        </aside>
         {tab === "find" && (
           <>
             <div className={styles.title}>
@@ -513,7 +525,9 @@ export default function IdentityPreview({
                 プロフィールを編集
               </button>
               <ServiceDiscordLink service="shoenmate" />
-              <a href={`/api/auth/signout?callbackUrl=${encodeURIComponent(basePath)}`}>
+              <a
+                href={`/api/auth/signout?callbackUrl=${encodeURIComponent(basePath)}`}
+              >
                 ログアウト
               </a>
               <ServiceAccountSafety service="shoenmate" onNotice={say} />
