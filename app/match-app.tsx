@@ -1056,6 +1056,7 @@ export default function MatchApp({
   const [quickMatchType, setQuickMatchType] =
     useState<MatchType>("ランクマッチ");
   const [quickRecruiting, setQuickRecruiting] = useState("");
+  const [quickRecruitNote, setQuickRecruitNote] = useState("");
   const [quickApplyingId, setQuickApplyingId] = useState<number | null>(null);
   const [profileReady, setProfileReady] = useState(
     guestMode || preview || initialProfile !== undefined,
@@ -3609,7 +3610,7 @@ export default function MatchApp({
       desiredPokemon: "すべて",
       desiredRole: "指定なし",
       matchType: quickMatchType,
-      note: "",
+      note: quickRecruitNote.trim(),
     };
     setQuickRecruiting(preset);
     try {
@@ -3630,7 +3631,7 @@ export default function MatchApp({
           winRate: 0,
           rank: profile.highestRate,
           playTime: profile.playTime.join("・"),
-          note: "",
+          note: body.note,
           startAt: startAt.toISOString(),
           startTimeUndecided,
           expiresAt: new Date(
@@ -3643,6 +3644,7 @@ export default function MatchApp({
           acceptedCount: 0,
         };
         setMyRecruit(recruit);
+        setQuickRecruitNote("");
         notify("募集を公開しました。あとは申請を待つだけです");
         return;
       }
@@ -3657,10 +3659,13 @@ export default function MatchApp({
         return;
       }
       setMyRecruit(data.recruit);
+      setQuickRecruitNote("");
       if (pushState === "on") setRecruitShare(data.recruit);
       else setRecruitNotifyPrompt(data.recruit);
       notify("募集を公開しました。あとは申請を待つだけです");
-      await Promise.all([loadRecruits(), loadLobbies()]);
+      await Promise.allSettled([loadRecruits(), loadLobbies()]);
+    } catch {
+      notify("募集を投稿できませんでした。ひとことは残っているので、もう一度お試しください");
     } finally {
       setQuickRecruiting("");
     }
@@ -6027,6 +6032,21 @@ export default function MatchApp({
                         )}
                       </div>
                     </fieldset>
+                    <label className="quickRecruitNoteField">
+                      <span>ひとこと <small>任意</small></span>
+                      <textarea
+                        value={quickRecruitNote}
+                        onChange={(event) => setQuickRecruitNote(event.target.value)}
+                        maxLength={180}
+                        rows={2}
+                        disabled={Boolean(quickRecruiting)}
+                        placeholder="例：VCありで楽しく！ロールは相談しましょう"
+                        aria-describedby="quick-recruit-note-hint"
+                      />
+                      <small id="quick-recruit-note-hint">
+                        募集を見る人に表示されます。未入力でも募集できます。{quickRecruitNote.length}/180
+                      </small>
+                    </label>
                     <div className="quickRecruitGrid">
                       <button
                         onClick={() => createQuickRecruit("now-duo")}
@@ -6174,6 +6194,9 @@ export default function MatchApp({
                                 : "役割は相談"}
                             </span>
                           </span>
+                          {recruit.note && (
+                            <span className="recruitSummaryNote">{recruit.note}</span>
+                          )}
                         </span>
                         <span className="recruitExpandIcon" aria-hidden="true">
                           {expandedRecruitId === recruit.id ? "⌃" : "⌄"}
