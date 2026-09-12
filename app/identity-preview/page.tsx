@@ -16,6 +16,9 @@ type Profile = {
   playTimes: string[];
   bio: string;
   avatarUrl: string;
+  age?: number;
+  gender?: string;
+  showGender?: boolean;
 };
 type Candidate = Profile & { id: number; age: number; gender: string };
 type Recruit = {
@@ -76,7 +79,8 @@ export default function IdentityPreview({
     [messages, setMessages] = useState<Message[]>([]),
     [message, setMessage] = useState(""),
     [loginOpen, setLoginOpen] = useState(false),
-    [loginAction, setLoginAction] = useState("この機能");
+    [loginAction, setLoginAction] = useState("この機能"),
+    [profileAction, setProfileAction] = useState("第五マッチ");
   const say = (text: string) => {
     setNotice(text);
     setTimeout(() => setNotice(""), 2200);
@@ -116,7 +120,7 @@ export default function IdentityPreview({
         if (data.profile) {
           setMe(data.profile);
           setAuth(data.termsCurrent ? "ready" : "consent");
-        } else setAuth("onboarding");
+        } else setAuth("ready");
       })
       .catch(() => live && setAuth("guest"));
     return () => {
@@ -124,9 +128,10 @@ export default function IdentityPreview({
     };
   }, []);
   useEffect(() => {
-    if (auth === "ready") void load();
+    if (auth === "ready" && me) void load();
+    if (auth === "ready" && !me) void loadPublic();
     if (auth === "guest") void loadPublic();
-  }, [auth]);
+  }, [auth, me]);
   const current = profiles[0],
     removeCurrent = () => setProfiles((value) => value.slice(1));
   function requireLogin(action: string) {
@@ -135,8 +140,17 @@ export default function IdentityPreview({
     setLoginOpen(true);
     return true;
   }
+  function requireProfile(action: string) {
+    if (requireLogin(action)) return true;
+    if (auth === "ready" && !me) {
+      setProfileAction(action);
+      setAuth("onboarding");
+      return true;
+    }
+    return false;
+  }
   async function like() {
-    if (requireLogin("いいね")) return;
+    if (requireProfile("いいね")) return;
     if (!current) return;
     const response = await fetch("/api/services/shoenmate/likes", {
         method: "POST",
@@ -157,7 +171,7 @@ export default function IdentityPreview({
     }
   }
   async function requestTarget(targetProfileId: number) {
-    if (requireLogin("メイト申請")) return;
+    if (requireProfile("メイト申請")) return;
     const response = await fetch("/api/services/shoenmate/connections", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -175,7 +189,7 @@ export default function IdentityPreview({
     }
   }
   async function requestMate() {
-    if (requireLogin("メイト申請")) return;
+    if (requireProfile("メイト申請")) return;
     if (!current) return;
     const id = current.id;
     removeCurrent();
@@ -201,7 +215,7 @@ export default function IdentityPreview({
     if (response.ok) void load();
   }
   async function createRecruit() {
-    if (requireLogin("募集の作成")) return;
+    if (requireProfile("募集の作成")) return;
     const mode = prompt(
       "モード（ランク戦 / マルチ戦 / 協力狩り / カスタム / その他）",
       "ランク戦",
@@ -227,7 +241,7 @@ export default function IdentityPreview({
     if (response.ok) void load();
   }
   async function openChat(connection: Connection) {
-    if (requireLogin("やりとり")) return;
+    if (requireProfile("やりとり")) return;
     setActiveChat(connection);
     const response = await fetch(
         `/api/services/shoenmate/messages?connectionId=${connection.id}`,
@@ -274,7 +288,10 @@ export default function IdentityPreview({
         identityLabel="ゲーム内プレイヤー名・ID"
         tiers={tiers}
         roles={roles}
+        profileHeading={`${profileAction}にはプレイヤー情報が必要です`}
         returnPath={basePath}
+        initialProfile={me}
+        onCancel={() => setAuth("ready")}
         onComplete={(value) => {
           setMe(value as Profile);
           setAuth("ready");
@@ -308,7 +325,7 @@ export default function IdentityPreview({
           </div>
           <button
             onClick={() => {
-              if (requireLogin("届いた申請の確認")) return;
+              if (requireProfile("届いた申請の確認")) return;
               setTab("chat");
             }}
           >
@@ -327,6 +344,19 @@ export default function IdentityPreview({
               <span>いいね・申請・募集・やりとりはログイン後に使えます。</span>
             </div>
             <button onClick={() => requireLogin("第五マッチ")}>ログイン</button>
+          </aside>
+        )}
+        {auth === "ready" && !me && (
+          <aside className={styles.guestBanner}>
+            <div>
+              <strong>ログインできました</strong>
+              <span>
+                まずはサイトを見てみてください。使いたい機能を押した時にプレイヤー情報を登録します。
+              </span>
+            </div>
+            <button onClick={() => requireProfile("プロフィール登録")}>
+              登録する
+            </button>
           </aside>
         )}
         {tab === "find" && (
@@ -359,10 +389,10 @@ export default function IdentityPreview({
                   </div>
                   <p>{current.bio || "一緒に遊べる仲間を探しています。"}</p>
                   <small>{current.playTimes.join(" · ")}</small>
-                  {auth === "guest" ? (
+                  {auth !== "ready" || !me ? (
                     <button
                       className={styles.textButton}
-                      onClick={() => requireLogin("通報")}
+                      onClick={() => requireProfile("通報")}
                     >
                       このプロフィールを通報
                     </button>
@@ -538,10 +568,12 @@ export default function IdentityPreview({
               className={tab === item[0] ? styles.active : ""}
               onClick={() => {
                 if (
-                  auth === "guest" &&
+                  (auth === "guest" || (auth === "ready" && !me)) &&
                   (item[0] === "chat" || item[0] === "profile")
                 ) {
-                  requireLogin(item[0] === "chat" ? "やりとり" : "マイページ");
+                  requireProfile(
+                    item[0] === "chat" ? "やりとり" : "マイページ",
+                  );
                   return;
                 }
                 setTab(item[0]);

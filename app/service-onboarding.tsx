@@ -18,6 +18,7 @@ type Props = {
   timeOptions?: string[];
   returnPath: string;
   onComplete: (profile: unknown) => void;
+  onCancel?: () => void;
   initialProfile?: {
     displayName?: string;
     gameIdentity?: string;
@@ -56,6 +57,7 @@ export default function ServiceOnboarding({
   timeOptions = playTimes,
   returnPath,
   onComplete,
+  onCancel,
   initialProfile,
 }: Props) {
   const [displayName, setDisplayName] = useState(
@@ -124,6 +126,11 @@ export default function ServiceOnboarding({
   return (
     <main className={styles.backdrop}>
       <section className={styles.panel}>
+        {onCancel && (
+          <button type="button" className={styles.cancel} onClick={onCancel}>
+            ← サイトを見る
+          </button>
+        )}
         <small className={styles.brand}>
           {name.toUpperCase()} · FIRST SETUP
         </small>
