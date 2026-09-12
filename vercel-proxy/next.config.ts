@@ -3,7 +3,6 @@ import type { NextConfig } from "next";
 const upstream =
   process.env.YUNAMATCH_UPSTREAM_URL ||
   "https://unite-mate-jp.tomoki-ashizawa.chatgpt.site";
-const serviceHomePath = process.env.SERVICE_HOME_PATH || "/";
 const versionedStaticPaths = ["/_next/static/:path*"];
 const publicAssetPaths = [
   "/brand/:path*",
@@ -17,6 +16,7 @@ const publicAssetPaths = [
   "/yunamatch-official-icon-v2.svg",
   "/discord-server-icon.png",
   "/favicon.svg",
+  "/ads.txt",
 ];
 
 const immutableStaticHeaders = [
@@ -51,19 +51,6 @@ const publicAssetHeaders = [
 
 const nextConfig: NextConfig = {
   turbopack: { root: process.cwd() },
-  async redirects() {
-    return [
-      ...(serviceHomePath !== "/"
-        ? [
-            {
-              source: "/",
-              destination: serviceHomePath,
-              permanent: false as const,
-            },
-          ]
-        : []),
-    ];
-  },
   async headers() {
     return [
       {
@@ -90,6 +77,13 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return {
       beforeFiles: [
+        // Fifth Match has its own public domain. Serve the existing shared
+        // Shoenmate route without changing the address in the browser.
+        ...["daigomatch.com", "www.daigomatch.com"].map((host) => ({
+          source: "/",
+          has: [{ type: "host" as const, value: host }],
+          destination: `${upstream}/shoenmate`,
+        })),
         {
           source: "/_next/static/css/:path*",
           destination: `${upstream}/_next/static/css/:path*`,
