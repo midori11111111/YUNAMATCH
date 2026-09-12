@@ -82,7 +82,7 @@ test("uses real account login and matching APIs in Valomatch",async()=>{
 });
 
 test("keeps Shoenmate functional but separately scoped while approval is pending",async()=>{
- const page=compact(await read("app/identity-preview/page.tsx"));
+ const rawPage=await read("app/identity-preview/page.tsx"),page=compact(rawPage);
  assert.match(page,/fetch\("\/api\/services\/shoenmate\/profile"\)/);
  assert.match(page,/ServiceOnboardingservice="shoenmate"/);
  assert.match(page,/fetch\("\/api\/services\/shoenmate\/discover"\)/);
@@ -91,6 +91,14 @@ test("keeps Shoenmate functional but separately scoped while approval is pending
  assert.match(page,/fetch\("\/api\/services\/shoenmate\/recruits"/);
  assert.match(page,/fetch\("\/api\/services\/shoenmate\/messages"/);
  assert.match(page,/本サービスはNetEaseGamesおよびIdentityV／第五人格の公式サービスではありません/);
+ assert.match(page,/auth==="guest"\)voidloadPublic\(\)/);
+ assert.match(page,/requireLogin\("いいね"\)/);
+ assert.match(page,/requireLogin\("メイト申請"\)/);
+ assert.match(page,/requireLogin\("募集の作成"\)/);
+ assert.match(page,/requireLogin\("やりとり"\)/);
+ for(const provider of ["line","twitter","discord","google"])
+  assert.match(page,new RegExp(`id:"${provider}"`));
+ assert.doesNotMatch(rawPage,/if \(auth === "guest"\)\s*return/);
  assert.doesNotMatch(page,/setLogged\(true\)/);
 });
 

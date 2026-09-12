@@ -33,6 +33,12 @@ type Connection = {
   latestMessage: { body: string } | null;
 };
 type Message = { id: number; body: string };
+const loginProviders = [
+  { id: "line", label: "LINE", mark: "L", color: "#06c755" },
+  { id: "twitter", label: "X", mark: "X", color: "#181818" },
+  { id: "discord", label: "Discord", mark: "D", color: "#5865f2" },
+  { id: "google", label: "Google", mark: "G", color: "#4285f4" },
+];
 const tiers = [
     "未設定",
     "サバイバー1段",
@@ -68,20 +74,28 @@ export default function IdentityPreview({
     [outgoing, setOutgoing] = useState<Connection[]>([]),
     [activeChat, setActiveChat] = useState<Connection | null>(null),
     [messages, setMessages] = useState<Message[]>([]),
-    [message, setMessage] = useState("");
+    [message, setMessage] = useState(""),
+    [loginOpen, setLoginOpen] = useState(false),
+    [loginAction, setLoginAction] = useState("この機能");
   const say = (text: string) => {
     setNotice(text);
     setTimeout(() => setNotice(""), 2200);
   };
-  const load = async () => {
-    const [d, r, c] = await Promise.all([
+  const loadPublic = async () => {
+    const [d, r] = await Promise.all([
         fetch("/api/services/shoenmate/discover"),
         fetch("/api/services/shoenmate/recruits"),
-        fetch("/api/services/shoenmate/connections"),
       ]),
-      [dd, rr, cc] = await Promise.all([d.json(), r.json(), c.json()]);
+      [dd, rr] = await Promise.all([d.json(), r.json()]);
     if (d.ok) setProfiles(dd.profiles || []);
     if (r.ok) setRecruits(rr.recruits || []);
+  };
+  const load = async () => {
+    const [, c] = await Promise.all([
+        loadPublic(),
+        fetch("/api/services/shoenmate/connections"),
+      ]),
+      cc = await c.json();
     if (c.ok) {
       setConnections(cc.connections || []);
       setIncoming(cc.incoming || []);
@@ -111,10 +125,18 @@ export default function IdentityPreview({
   }, []);
   useEffect(() => {
     if (auth === "ready") void load();
+    if (auth === "guest") void loadPublic();
   }, [auth]);
   const current = profiles[0],
     removeCurrent = () => setProfiles((value) => value.slice(1));
+  function requireLogin(action: string) {
+    if (auth !== "guest") return false;
+    setLoginAction(action);
+    setLoginOpen(true);
+    return true;
+  }
   async function like() {
+    if (requireLogin("いいね")) return;
     if (!current) return;
     const response = await fetch("/api/services/shoenmate/likes", {
         method: "POST",
@@ -135,6 +157,7 @@ export default function IdentityPreview({
     }
   }
   async function requestTarget(targetProfileId: number) {
+    if (requireLogin("メイト申請")) return;
     const response = await fetch("/api/services/shoenmate/connections", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -152,6 +175,7 @@ export default function IdentityPreview({
     }
   }
   async function requestMate() {
+    if (requireLogin("メイト申請")) return;
     if (!current) return;
     const id = current.id;
     removeCurrent();
@@ -177,6 +201,7 @@ export default function IdentityPreview({
     if (response.ok) void load();
   }
   async function createRecruit() {
+    if (requireLogin("募集の作成")) return;
     const mode = prompt(
       "モード（ランク戦 / マルチ戦 / 協力狩り / カスタム / その他）",
       "ランク戦",
@@ -202,6 +227,7 @@ export default function IdentityPreview({
     if (response.ok) void load();
   }
   async function openChat(connection: Connection) {
+    if (requireLogin("やりとり")) return;
     setActiveChat(connection);
     const response = await fetch(
         `/api/services/shoenmate/messages?connectionId=${connection.id}`,
@@ -263,63 +289,6 @@ export default function IdentityPreview({
         onComplete={() => setAuth("ready")}
       />
     );
-  if (auth === "guest")
-    return (
-      <main className={styles.app}>
-        <div className={styles.login}>
-          <section className={styles.hero}>
-            <div className={styles.seal}>五</div>
-            <small>DAIGO MATCH</small>
-            <h1>第五マッチ</h1>
-            <p>
-              陣営、段位、得意な役割、遊べる時間から、第五人格を一緒に遊ぶ仲間を探す非公式コミュニティ。
-            </p>
-            <div className={styles.figures}>
-              <i>救</i>
-              <i>牽</i>
-              <i>解</i>
-            </div>
-          </section>
-          <section className={styles.sheet}>
-            <div className={styles.betaNotice}>
-              <strong>無料限定ベータ</strong>
-              <span>
-                公式素材・公式API・有料機能を使わず、小規模に動作と安全性を確認しています。
-              </span>
-            </div>
-            <small>SELECT ACCOUNT</small>
-            <h2>アカウントを選んで続ける</h2>
-            <p>登録済みの方は、以前使用したアカウントを選んでください。</p>
-            {[
-              ["D", "Discord", "discord", "#5865f2"],
-              ["𝕏", "X", "twitter", "#181818"],
-              ["L", "LINE", "line", "#06c755"],
-            ].map((item) => (
-              <button
-                key={item[1]}
-                onClick={() => {
-                  location.href = `/api/login/${item[2]}?returnTo=${encodeURIComponent(basePath)}`;
-                }}
-              >
-                <b style={{ background: item[3] }}>{item[0]}</b>
-                <span>
-                  <strong>{item[1]}で続ける</strong>
-                  <small>アカウントを選択してログイン</small>
-                </span>
-                <em>›</em>
-              </button>
-            ))}
-            <p className={styles.consent}>
-              続けることで
-              <a href="/legal?service=shoenmate">利用条件・安全方針</a>と
-              <a href="/privacy">プライバシーポリシー</a>に同意します。
-              <a href="/community-guidelines">コミュニティガイドライン</a>
-              も確認してください。
-            </p>
-          </section>
-        </div>
-      </main>
-    );
   const nav: [Tab, string, string][] = [
     ["find", "⌕", "さがす"],
     ["recruit", "＋", "募集"],
@@ -337,7 +306,12 @@ export default function IdentityPreview({
               <small>DAIGO MATCH</small>
             </span>
           </div>
-          <button onClick={() => setTab("chat")}>
+          <button
+            onClick={() => {
+              if (requireLogin("届いた申請の確認")) return;
+              setTab("chat");
+            }}
+          >
             ♢{incoming.length || ""}
           </button>
         </header>
@@ -346,6 +320,15 @@ export default function IdentityPreview({
           <span>非公式／公式素材・公式API不使用</span>
           <a href="/legal?service=shoenmate">確認する</a>
         </aside>
+        {auth === "guest" && (
+          <aside className={styles.guestBanner}>
+            <div>
+              <strong>登録前でも仲間と募集を見られます</strong>
+              <span>いいね・申請・募集・やりとりはログイン後に使えます。</span>
+            </div>
+            <button onClick={() => requireLogin("第五マッチ")}>ログイン</button>
+          </aside>
+        )}
         {tab === "find" && (
           <>
             <div className={styles.title}>
@@ -376,16 +359,25 @@ export default function IdentityPreview({
                   </div>
                   <p>{current.bio || "一緒に遊べる仲間を探しています。"}</p>
                   <small>{current.playTimes.join(" · ")}</small>
-                  <ServiceReportButton
-                    service="shoenmate"
-                    targetProfileId={current.id}
-                    onNotice={say}
-                  />
+                  {auth === "guest" ? (
+                    <button
+                      className={styles.textButton}
+                      onClick={() => requireLogin("通報")}
+                    >
+                      このプロフィールを通報
+                    </button>
+                  ) : (
+                    <ServiceReportButton
+                      service="shoenmate"
+                      targetProfileId={current.id}
+                      onNotice={say}
+                    />
+                  )}
                   <div className={styles.actions}>
                     <button
                       onClick={() => {
                         removeCurrent();
-                        void load();
+                        if (profiles.length <= 1) void loadPublic();
                       }}
                     >
                       次の人
@@ -398,7 +390,12 @@ export default function IdentityPreview({
             ) : (
               <article className={styles.panel}>
                 <h2>表示できるプレイヤーがいません</h2>
-                <button className={styles.primary} onClick={() => void load()}>
+                <button
+                  className={styles.primary}
+                  onClick={() =>
+                    auth === "ready" ? void load() : void loadPublic()
+                  }
+                >
                   再読み込み
                 </button>
               </article>
@@ -540,8 +537,16 @@ export default function IdentityPreview({
               key={item[0]}
               className={tab === item[0] ? styles.active : ""}
               onClick={() => {
+                if (
+                  auth === "guest" &&
+                  (item[0] === "chat" || item[0] === "profile")
+                ) {
+                  requireLogin(item[0] === "chat" ? "やりとり" : "マイページ");
+                  return;
+                }
                 setTab(item[0]);
-                void load();
+                if (auth === "ready") void load();
+                else void loadPublic();
               }}
             >
               <b>{item[1]}</b>
@@ -606,6 +611,56 @@ export default function IdentityPreview({
               />
               <button className={styles.primary}>送信</button>
             </form>
+          </div>
+        )}
+        {auth === "guest" && loginOpen && (
+          <div
+            className={styles.loginBackdrop}
+            role="presentation"
+            onClick={(event) => {
+              if (event.target === event.currentTarget) setLoginOpen(false);
+            }}
+          >
+            <section
+              className={styles.loginSheet}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="shoenmate-login-title"
+            >
+              <button
+                className={styles.loginClose}
+                onClick={() => setLoginOpen(false)}
+                aria-label="ログイン画面を閉じる"
+              >
+                ×
+              </button>
+              <div className={styles.loginSeal}>五</div>
+              <small>OPEN THE MANOR GATE</small>
+              <h2 id="shoenmate-login-title">ログインして{loginAction}を使う</h2>
+              <p>
+                登録済みの方は、以前使ったものと同じSNSアカウントを選んでください。
+              </p>
+              <div className={styles.loginProviders}>
+                {loginProviders.map((provider) => (
+                  <a
+                    key={provider.id}
+                    href={`/api/login/${provider.id}?returnTo=${encodeURIComponent(basePath)}`}
+                  >
+                    <b style={{ background: provider.color }}>{provider.mark}</b>
+                    <span>
+                      <strong>{provider.label}で続ける</strong>
+                      <small>ログイン／新規登録</small>
+                    </span>
+                    <em>›</em>
+                  </a>
+                ))}
+              </div>
+              <p className={styles.consent}>
+                続けることで
+                <a href="/legal?service=shoenmate">利用条件・安全方針</a>と
+                <a href="/privacy">プライバシーポリシー</a>に同意します。
+              </p>
+            </section>
           </div>
         )}
         {notice && <div className={styles.notice}>{notice}</div>}

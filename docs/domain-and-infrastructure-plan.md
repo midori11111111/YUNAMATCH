@@ -37,6 +37,13 @@ Cloudflare WorkersのCustom Domainsは、同一Workerに複数ホスト名を設
 4. 許可ホストの固定リストをサーバー側で検証し、任意URLへのリダイレクトを禁止
 5. 各ゲーム権利者の名称・商標条件を確認
 
+## 第五マッチ独自ドメインの現在地（2026-09-12）
+
+- `daigomatch.com` と `www.daigomatch.com` のDNS・TLS・Vercel接続は完了。
+- 現在は両ホストを `https://yunamatch.com/shoenmate` へ307転送している。
+- これにより、既存のOAuth Cookieとコールバックを壊さずに独自ドメインを案内URLとして使える。
+- アドレスバーを `daigomatch.com` のまま保つ完全移行は、Google・Discord・LINE・XそれぞれのOAuthコールバック追加と、ホスト固定のリダイレク検証後に行う。
+
 ## データ構成
 
 - D1: 1データベースを継続し、`service_id` で完全分離
