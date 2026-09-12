@@ -468,11 +468,16 @@ try {
     const reverseTarget = discoveredBySecond.profiles.find((row) => row.displayName === `${serviceCase.id}-A`);
     assert.ok(target);
     assert.ok(reverseTarget);
+    const filteredPlayers = await api(`/api/services/${serviceCase.id}/discover?role=${encodeURIComponent(serviceCase.role)}&tier=${encodeURIComponent(serviceCase.tier)}`, { user: first });
+    assert.ok(filteredPlayers.profiles.some(row => row.id === target.id));
+    assert.ok(filteredPlayers.profiles.every(row => row.roles.includes(serviceCase.role) && row.skillTier === serviceCase.tier));
     await api(`/api/services/${serviceCase.id}/likes`, {
       user: first,
       method: "POST",
       body: { targetProfileId: target.id },
     });
+    const receivedBeforeMatch = await api(`/api/services/${serviceCase.id}/likes`, { user: second });
+    assert.ok(receivedBeforeMatch.received.some(row => row.profile.id === reverseTarget.id));
     const matched = await api(`/api/services/${serviceCase.id}/likes`, {
       user: second,
       method: "POST",
@@ -527,6 +532,10 @@ try {
     });
     const hiddenAfterBlock = await api(`/api/services/${serviceCase.id}/connections`, { user: second });
     assert.equal(hiddenAfterBlock.connections.length, 0);
+    const receivedByBlocker = await api(`/api/services/${serviceCase.id}/likes`, { user: second });
+    const receivedByBlocked = await api(`/api/services/${serviceCase.id}/likes`, { user: first });
+    assert.ok(!receivedByBlocker.received.some(row => row.profile.id === reverseTarget.id));
+    assert.ok(!receivedByBlocked.received.some(row => row.profile.id === target.id));
     if (serviceCase.id === "shoenmate") {
       const blockedBackupResponse = await fetch(`${base}/api/admin/export`, {
         headers: { cookie: adminCookie },

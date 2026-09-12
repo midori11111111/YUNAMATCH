@@ -1,6 +1,12 @@
 # 第五マッチ — Design system
 
-## Direction
+## Reference update — supplied Tapple captures
+
+The supplied three screenshots and 22-second screen recording supersede the initial editorial layout below. Use the reference composition directly: a tall photo-first home deck; overlaid name/bio/actions; recommended and received-like segments; a floating five-destination nav; horizontal discovery cards; centered profile; native bottom sheets for details and filters. Use navy text, white surfaces and coral actions. Keep the original Fifth Match icon, name and real service data. Do not reproduce point balances, paid plans, fabricated popularity, extra photos or other people's photos from the references.
+
+The photo card has one progress segment because each current profile has one image. A horizontal swipe skips locally; likes and mate requests still require explicit buttons. The explore screen uses actual public profiles and role filters. Login and first setup behavior is unchanged.
+
+## Initial direction (superseded layout and palette)
 Reference: https://x.com/Voxyz_ai/status/2093766772029559077/video/1 introduces reusable DESIGN.md systems; https://styles.refero.design/ is the referenced approach. This implementation uses its explicit-token method, not a copy of an unrelated screen.
 
 Metaphor: an invitation to meet a teammate. Quiet, contemporary and personal; not an imitation of the game's gothic artwork. Tapple informs only the simplicity and small-size legibility of the independent geometric icon.

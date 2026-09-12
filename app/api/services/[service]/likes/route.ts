@@ -1,7 +1,8 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, or } from "drizzle-orm";
 import { getDb } from "../../../../../db";
 import {
   serviceConnections,
+  serviceBlocks,
   serviceLikes,
   serviceProfiles,
 } from "../../../../../db/schema";
@@ -43,7 +44,7 @@ export async function GET(
       { status: 401 },
     );
   const db = getDb();
-  const [received, sent] = await Promise.all([
+  const [received, sent, blocks] = await Promise.all([
     db
       .select()
       .from(serviceLikes)
@@ -67,7 +68,11 @@ export async function GET(
         ),
       )
       .limit(1000),
+    db.select({ a: serviceBlocks.blockerProfileId, b: serviceBlocks.blockedProfileId })
+      .from(serviceBlocks)
+      .where(and(eq(serviceBlocks.serviceId, ctx.service), or(eq(serviceBlocks.blockerProfileId, ctx.profile.id), eq(serviceBlocks.blockedProfileId, ctx.profile.id)))),
   ]);
+  const blockedIds = new Set(blocks.map(row => row.a === ctx.profile.id ? row.b : row.a));
   const page = received.slice(0, 200),
     profileIds = [...new Set(page.map((row) => row.senderProfileId))];
   const profiles = profileIds.length
@@ -77,6 +82,8 @@ export async function GET(
         .where(
           and(
             eq(serviceProfiles.serviceId, ctx.service),
+            eq(serviceProfiles.status, "active"),
+            isNull(serviceProfiles.suspendedAt),
             inArray(serviceProfiles.id, profileIds),
           ),
         )
@@ -85,7 +92,7 @@ export async function GET(
   return Response.json({
     received: page.flatMap((row) => {
       const profile = byId.get(row.senderProfileId);
-      return profile
+      return profile && !blockedIds.has(profile.id)
         ? [
             {
               id: row.id,
