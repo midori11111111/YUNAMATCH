@@ -92,13 +92,15 @@ test("keeps Shoenmate functional but separately scoped while approval is pending
  assert.match(page,/fetch\("\/api\/services\/shoenmate\/messages"/);
  assert.match(page,/本サービスはNetEaseGamesおよびIdentityV／第五人格の公式サービスではありません/);
  assert.match(page,/auth==="guest"\)voidloadPublic\(\)/);
- assert.match(page,/elsesetAuth\("ready"\)/);
  assert.match(page,/auth==="ready"&&!me\)voidloadPublic\(\)/);
+ assert.match(page,/get\("setup"\)==="1"/);
+ assert.match(page,/setAuth\(setupRequested\?"onboarding":"ready"\)/);
+ assert.match(page,/encodeURIComponent\(`\$\{basePath\}\?setup=1`\)/);
  assert.match(page,/requireProfile\("いいね"\)/);
  assert.match(page,/requireProfile\("メイト申請"\)/);
  assert.match(page,/requireProfile\("募集の作成"\)/);
  assert.match(page,/requireProfile\("やりとり"\)/);
- assert.match(page,/onCancel=\{\(\)=>setAuth\("ready"\)\}/);
+ assert.match(page,/onCancel=\{\(\)=>\{history\.replaceState\(null,"",basePath\);setAuth\("ready"\);\}\}/);
  for(const provider of ["line","twitter","discord","google"])
   assert.match(page,new RegExp(`id:"${provider}"`));
  assert.doesNotMatch(rawPage,/if \(auth === "guest"\)\s*return/);

@@ -79,8 +79,7 @@ export default function IdentityPreview({
     [messages, setMessages] = useState<Message[]>([]),
     [message, setMessage] = useState(""),
     [loginOpen, setLoginOpen] = useState(false),
-    [loginAction, setLoginAction] = useState("この機能"),
-    [profileAction, setProfileAction] = useState("第五マッチ");
+    [loginAction, setLoginAction] = useState("この機能");
   const say = (text: string) => {
     setNotice(text);
     setTimeout(() => setNotice(""), 2200);
@@ -120,7 +119,11 @@ export default function IdentityPreview({
         if (data.profile) {
           setMe(data.profile);
           setAuth(data.termsCurrent ? "ready" : "consent");
-        } else setAuth("ready");
+        } else {
+          const setupRequested =
+            new URLSearchParams(window.location.search).get("setup") === "1";
+          setAuth(setupRequested ? "onboarding" : "ready");
+        }
       })
       .catch(() => live && setAuth("guest"));
     return () => {
@@ -143,7 +146,6 @@ export default function IdentityPreview({
   function requireProfile(action: string) {
     if (requireLogin(action)) return true;
     if (auth === "ready" && !me) {
-      setProfileAction(action);
       setAuth("onboarding");
       return true;
     }
@@ -288,11 +290,15 @@ export default function IdentityPreview({
         identityLabel="ゲーム内プレイヤー名・ID"
         tiers={tiers}
         roles={roles}
-        profileHeading={`${profileAction}にはプレイヤー情報が必要です`}
+        profileHeading="プレイヤー情報を登録"
         returnPath={basePath}
         initialProfile={me}
-        onCancel={() => setAuth("ready")}
+        onCancel={() => {
+          history.replaceState(null, "", basePath);
+          setAuth("ready");
+        }}
         onComplete={(value) => {
+          history.replaceState(null, "", basePath);
           setMe(value as Profile);
           setAuth("ready");
         }}
@@ -676,7 +682,7 @@ export default function IdentityPreview({
                 {loginProviders.map((provider) => (
                   <a
                     key={provider.id}
-                    href={`/api/login/${provider.id}?returnTo=${encodeURIComponent(basePath)}`}
+                    href={`/api/login/${provider.id}?returnTo=${encodeURIComponent(`${basePath}?setup=1`)}`}
                   >
                     <b style={{ background: provider.color }}>{provider.mark}</b>
                     <span>
