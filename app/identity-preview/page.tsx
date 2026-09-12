@@ -352,7 +352,7 @@ export default function IdentityPreview({
       <main className={styles.app}>
         <div className={styles.login}>
           <section className={styles.hero}>
-            <img className={styles.seal} src="/daigomatch-icon.svg" alt="" />
+            <img className={styles.seal} src="/daigomatch-icon.svg?rev=2" alt="" />
             <h1>第五マッチ</h1>
             <p>プロフィールを確認しています…</p>
           </section>
@@ -402,7 +402,7 @@ export default function IdentityPreview({
       <div className={styles.shell}>
         <header className={styles.header}>
           <div className={styles.brand}>
-            <img src="/daigomatch-icon.svg" alt="" width="48" height="48" />
+            <img src="/daigomatch-icon.svg?rev=2" alt="" width="48" height="48" />
             <span>
               <strong>第五マッチ</strong>
               <small>DAIGO MATCH</small>
@@ -488,7 +488,7 @@ export default function IdentityPreview({
               </article>
             ) : (
               <article className={`${styles.panel} ${styles.empty}`}>
-                <img src="/daigomatch-icon.svg" alt="" width="80" height="80" />
+                <img src="/daigomatch-icon.svg?rev=2" alt="" width="80" height="80" />
                 <h2>{publicLoading ? "仲間を探しています…" : publicError ? "読み込みに失敗しました" : discoverMode === "received" ? "まだ表示できるいいねがありません" : "今の条件では仲間が見つかりません"}</h2>
                 <p>{publicError || (discoverMode === "received" ? "あなたへのいいねが、ここに届きます。" : "条件を変えるか、募集から探してみましょう。")}</p>
                 <button
@@ -747,7 +747,7 @@ export default function IdentityPreview({
               >
                 ×
               </button>
-              <img className={styles.loginSeal} src="/daigomatch-icon.svg" alt="" />
+              <img className={styles.loginSeal} src="/daigomatch-icon.svg?rev=2" alt="" />
               <small>OPEN THE MANOR GATE</small>
               <h2 id="shoenmate-login-title">ログインして{loginAction}を使う</h2>
               <p>
