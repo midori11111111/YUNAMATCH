@@ -7,6 +7,7 @@ import {
   serviceProfiles,
 } from "../../../../../db/schema";
 import { getChatGPTUser } from "../../../../chatgpt-auth";
+import { matchesShoenmateRole } from "../../../../../lib/shoenmate-profile";
 import {
   cleanText,
   isServiceId,
@@ -20,6 +21,7 @@ function output(row: typeof serviceProfiles.$inferSelect) {
     gameIdentity: row.gameIdentity,
     skillTier: row.skillTier,
     roles: JSON.parse(row.roles) as string[],
+    characters: JSON.parse(row.characters) as string[],
     playTimes: JSON.parse(row.playTimes) as string[],
     age: row.age,
     gender: row.showGender && row.age >= 18 ? row.gender : "",
@@ -137,7 +139,9 @@ export async function GET(
   const filtered = rows.filter(
       (row) =>
         !excluded.includes(row.id) &&
-        (!role || (JSON.parse(row.roles) as string[]).includes(role)),
+        (!role || (service === "shoenmate"
+          ? matchesShoenmateRole(JSON.parse(row.roles), role)
+          : (JSON.parse(row.roles) as string[]).includes(role))),
     ),
     page = filtered.slice(0, 30);
   return Response.json({

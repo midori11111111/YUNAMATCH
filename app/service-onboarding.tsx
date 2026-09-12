@@ -1,6 +1,7 @@
 "use client";
 import { FormEvent, useState } from "react";
 import styles from "./service-onboarding.module.css";
+import ShoenmateProfileFields from "./shoenmate-profile-fields";
 
 type Props = {
   service: string;
@@ -24,11 +25,13 @@ type Props = {
     gameIdentity?: string;
     skillTier?: string;
     roles?: string[];
+    characters?: string[];
     playTimes?: string[];
     age?: number;
     gender?: string;
     showGender?: boolean;
     bio?: string;
+    avatarUrl?: string;
   } | null;
 };
 const playTimes = [
@@ -73,6 +76,7 @@ export default function ServiceOnboarding({
       (initialProfile?.roles || []).filter((value) => roles.includes(value)),
     ),
     [pendingRole, setPendingRole] = useState(""),
+    [characters, setCharacters] = useState<string[]>(initialProfile?.characters || []),
     [selectedTimes, setSelectedTimes] = useState<string[]>(
       initialProfile?.playTimes || [],
     ),
@@ -106,11 +110,13 @@ export default function ServiceOnboarding({
             gameIdentity,
             skillTier,
             roles: selectedRoles,
+            ...(service === "shoenmate" ? { characters } : {}),
             playTimes: selectedTimes,
             age,
             gender,
             showGender,
             bio,
+            avatarUrl: initialProfile?.avatarUrl || "",
             termsAccepted: terms,
           }),
         }),
@@ -170,7 +176,9 @@ export default function ServiceOnboarding({
               ))}
             </select>
           </label>
-          <label>
+          {service === "shoenmate" ? (
+            <ShoenmateProfileFields roles={selectedRoles} onRolesChange={setSelectedRoles} characters={characters} onCharactersChange={setCharacters} />
+          ) : <label>
             {selectionLabel}
             {selectionPicker ? (
               <>
@@ -233,7 +241,7 @@ export default function ServiceOnboarding({
                 ))}
               </span>
             )}
-          </label>
+          </label>}
           <label>
             {timeLabel}
             <span className={styles.choice}>

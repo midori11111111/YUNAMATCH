@@ -1,0 +1,1 @@
+ALTER TABLE `service_profiles` ADD `characters` text DEFAULT '[]' NOT NULL;

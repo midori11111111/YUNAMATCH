@@ -6,6 +6,7 @@ import ServiceTermsGate from "../service-terms-gate";
 import ServiceReportButton from "../service-report-button";
 import ServiceAccountSafety from "../service-account-safety";
 import ServiceDiscordLink from "../service-discord-link";
+import { shoenmateRoles, shoenmateRoleLabel, matchesShoenmateRole } from "../../lib/shoenmate-profile";
 type Tab = "find" | "explore" | "recruit" | "chat" | "profile";
 function Icon({ name }: { name: Tab | "heart" | "bell" | "arrow" | "filter" | "skip" | "info" }) {
   const paths = {
@@ -29,6 +30,7 @@ type Profile = {
   gameIdentity: string;
   skillTier: string;
   roles: string[];
+  characters?: string[];
   playTimes: string[];
   bio: string;
   avatarUrl: string;
@@ -73,7 +75,7 @@ const tiers = [
     "ハンター5段",
     "ハンター6段以上",
   ],
-  roles = ["救助", "牽制", "補助", "解読", "ハンター", "指定なし"];
+  roles = shoenmateRoles;
 export default function IdentityPreview({
   basePath = "/identity-preview",
 }: {
@@ -193,7 +195,7 @@ export default function IdentityPreview({
     if (auth === "ready" && !me) void loadPublic();
     if (auth === "guest") void loadPublic();
   }, [auth, me]);
-  const visibleReceived = receivedLikes.filter(({ profile }) => (!filters.role || profile.roles.includes(filters.role)) && (!filters.tier || profile.skillTier === filters.tier));
+  const visibleReceived = receivedLikes.filter(({ profile }) => matchesShoenmateRole(profile.roles, filters.role) && (!filters.tier || profile.skillTier === filters.tier));
   const current = discoverMode === "received" ? visibleReceived[0]?.profile : profiles[0];
   const removeCurrent = () => {
     if (discoverMode === "received") setReceivedLikes(value => value.filter(item => item.profile.id !== current?.id));
@@ -365,7 +367,7 @@ export default function IdentityPreview({
         service="shoenmate"
         name="第五マッチ"
         suggestedName={suggestedName}
-        identityLabel="ゲーム内プレイヤー名・ID"
+        identityLabel="ユーザー名"
         tiers={tiers}
         roles={roles}
         profileHeading="プレイヤー情報を登録"
@@ -471,9 +473,10 @@ export default function IdentityPreview({
                   <p className={styles.cardMeta}>{current.skillTier}{current.gender ? ` · ${current.gender}` : ""}</p>
                   <div className={styles.tags}>
                     {current.roles.map((role) => (
-                      <span key={role}>{role}</span>
+                      <span key={role}>{shoenmateRoleLabel(role)}</span>
                     ))}
                   </div>
+                  {!!current.characters?.length && <p className={styles.cardMeta}>よく使うキャラ：{current.characters.slice(0,3).join(" · ")}{current.characters.length > 3 ? ` ほか${current.characters.length - 3}体` : ""}</p>}
                   <button className={styles.cardBio} onClick={() => setDetailProfile(current)}>{current.bio || "一緒に遊べる仲間を探しています。"}</button>
                   <div className={styles.actions}>
                     <button
@@ -516,11 +519,11 @@ export default function IdentityPreview({
             {profiles.length ? <div className={styles.peopleRail}>
               {profiles.map(person => <button className={styles.miniCard} key={person.id} onClick={() => setDetailProfile(person)}>
                 {person.avatarUrl ? <img src={person.avatarUrl} alt="" /> : <span className={styles.miniInitial}>{person.displayName.slice(0,1)}</span>}
-                <div><strong>{person.displayName}</strong><small>{person.skillTier}</small><span>{person.roles.slice(0,2).join(" · ") || "役割指定なし"}</span></div>
+                <div><strong>{person.displayName}</strong><small>{person.skillTier}</small><span>{person.roles.slice(0,2).map(shoenmateRoleLabel).join(" · ") || "役割指定なし"}</span></div>
               </button>)}
             </div> : <div className={styles.galleryEmpty}><p>{publicLoading ? "読み込んでいます…" : publicError || "今の条件に合う仲間はまだいません。"}</p><button className={styles.textButton} onClick={() => filterDialog.current?.showModal()}>条件を変更する →</button></div>}
             <div className={styles.sectionHeading}><h2>役割から見つける</h2></div>
-            <div className={styles.roleChoices}>{roles.map(role => <button key={role} onClick={() => { const next = { ...filters, role }; setFilters(next); setDiscoverMode("recommended"); setTab("find"); void loadPublic(next); }}>{role}<Icon name="arrow" /></button>)}</div>
+            <div className={styles.roleChoices}>{roles.map(role => <button key={role} onClick={() => { const next = { ...filters, role }; setFilters(next); setDiscoverMode("recommended"); setTab("find"); void loadPublic(next); }}>{shoenmateRoleLabel(role)}<Icon name="arrow" /></button>)}</div>
             <aside className={styles.guide} aria-label="仲間とつながるには">
               <div><Icon name="heart" /><strong>お互いにいいねでマッチ</strong><p>マッチしたら、チャットで相談。</p></div>
               <div><Icon name="chat" /><strong>直接誘うならメイト申請</strong><p>相手の承認後にやりとりできます。</p></div>
@@ -638,9 +641,10 @@ export default function IdentityPreview({
               </p>
               <div className={styles.tags}>
                 {me?.roles.map((role) => (
-                  <span key={role}>{role}</span>
+                  <span key={role}>{shoenmateRoleLabel(role)}</span>
                 ))}
               </div>
+              <p>よく使うキャラ：{me?.characters?.join(" · ") || "未設定"}</p>
               <p>{me?.bio}</p>
               <div className={styles.profileStats}>
                 <button onClick={() => { setDiscoverMode("received"); setTab("find"); }}><Icon name="heart" /><strong>{receivedLikes.length}</strong><span>届いたいいね</span></button>
@@ -794,7 +798,7 @@ export default function IdentityPreview({
             <div className={styles.sheetHandle} />
             <button type="button" className={styles.loginClose} aria-label="絞り込みを閉じる" onClick={() => filterDialog.current?.close()}>×</button>
             <h2 id="filter-title">仲間を絞り込む</h2>
-            <label>得意な役割<select name="role" defaultValue={filters.role}><option value="">すべての役割</option>{roles.map(role => <option key={role}>{role}</option>)}</select></label>
+            <label>得意な役割<select name="role" defaultValue={filters.role}><option value="">すべての役割</option>{roles.map(role => <option key={role} value={role}>{shoenmateRoleLabel(role)}</option>)}</select></label>
             <label>現在の段位<select name="tier" defaultValue={filters.tier}><option value="">すべての段位</option>{tiers.map(tier => <option key={tier}>{tier}</option>)}</select></label>
             <button type="button" className={styles.textButton} onClick={() => { const next = {role:"",tier:""}; setFilters(next); filterDialog.current?.close(); void loadPublic(next); }}>条件をクリア</button>
             <button className={styles.primary}>この条件で探す</button>
@@ -806,7 +810,8 @@ export default function IdentityPreview({
           <div className={styles.detailAvatar}>{detailProfile.avatarUrl ? <img src={detailProfile.avatarUrl} alt="" /> : <Icon name="profile" />}</div>
           <h2 id="detail-title">{detailProfile.displayName}</h2>
           <p>{detailProfile.gameIdentity} · {detailProfile.skillTier}</p>
-          <div className={styles.tags}>{detailProfile.roles.map(role => <span key={role}>{role}</span>)}</div>
+          <div className={styles.tags}>{detailProfile.roles.map(role => <span key={role}>{shoenmateRoleLabel(role)}</span>)}</div>
+          <h3>よく使うキャラ</h3><p>{detailProfile.characters?.join(" · ") || "未設定"}</p>
           <h3>自己紹介</h3><p className={styles.fullBio}>{detailProfile.bio || "自己紹介はまだありません。"}</p>
           <h3>遊べる時間</h3><p>{detailProfile.playTimes.join(" · ") || "未設定"}</p>
           <button className={styles.primary} onClick={() => { const id = detailProfile.id; setDetailProfile(null); if (id) void requestTarget(id); }}>メイト申請を送る</button>

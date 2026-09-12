@@ -103,6 +103,7 @@ export async function GET(
                 gameIdentity: profile.gameIdentity,
                 skillTier: profile.skillTier,
                 roles: JSON.parse(profile.roles),
+                characters: JSON.parse(profile.characters),
                 playTimes: JSON.parse(profile.playTimes),
                 age: profile.age,
                 gender:

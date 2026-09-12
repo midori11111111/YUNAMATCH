@@ -151,6 +151,7 @@ export async function GET(
             displayName: other.displayName,
             skillTier: other.skillTier,
             roles: JSON.parse(other.roles),
+            characters: JSON.parse(other.characters),
             avatarUrl: other.avatarUrl,
           }
         : {
@@ -158,6 +159,7 @@ export async function GET(
             displayName: "退会ユーザー",
             skillTier: "",
             roles: [],
+            characters: [],
             avatarUrl: "",
           },
       latestMessage: latest

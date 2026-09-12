@@ -562,6 +562,7 @@ export const serviceProfiles = sqliteTable(
     userId: text("user_id").notNull(),
     displayName: text("display_name").notNull(),
     gameIdentity: text("game_identity").notNull().default(""),
+    characters: text("characters").notNull().default("[]"),
     skillTier: text("skill_tier").notNull().default(""),
     roles: text("roles").notNull().default("[]"),
     playTimes: text("play_times").notNull().default("[]"),

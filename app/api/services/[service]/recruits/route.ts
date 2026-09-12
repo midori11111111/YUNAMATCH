@@ -115,6 +115,7 @@ export async function GET(
               displayName: owner.displayName,
               skillTier: owner.skillTier,
               roles: JSON.parse(owner.roles),
+              characters: JSON.parse(owner.characters),
               avatarUrl: owner.avatarUrl,
               gender: owner.showGender && owner.age >= 18 ? owner.gender : "",
               bio: owner.bio,

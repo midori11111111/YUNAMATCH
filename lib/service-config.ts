@@ -1,4 +1,5 @@
 import { stamateBrawlerSet } from "./stamate-brawlers";
+import { shoenmateRoles } from "./shoenmate-profile";
 
 export const serviceIds = [
   "valomatch",
@@ -75,7 +76,7 @@ export const serviceConfig: Record<
   shoenmate: {
     name: "第五マッチ",
     termsVersion: "2026-09-08-v3",
-    roles: new Set(["救助", "牽制", "補助", "解読", "ハンター", "指定なし"]),
+    roles: new Set(shoenmateRoles),
     modes: new Set(["ランク戦", "マルチ戦", "協力狩り", "カスタム", "その他"]),
     tiers: new Set([
       "未設定",

@@ -440,6 +440,27 @@ try {
       method: "PUT",
       body: serviceProfile(`${serviceCase.id}-B`),
     });
+    if (serviceCase.id === "shoenmate") {
+      const path = `/api/services/${serviceCase.id}/profile`;
+      const original = serviceProfile(`${serviceCase.id}-B`);
+      const characterProfile = await api(path, { user: second, method: "PUT", body: { ...original, roles: ["救助", "ハンター"], characters: ["傭兵", "血の女王"] } });
+      assert.deepEqual(characterProfile.profile.characters, ["傭兵", "血の女王"]);
+      assert.deepEqual(characterProfile.profile.roles, ["救助", "ハンター"]);
+      // An older client omitting characters must not erase the saved choices.
+      await api(path, { user: second, method: "PUT", body: original });
+      const reloaded = await api(path, { user: second });
+      assert.deepEqual(reloaded.profile.characters, ["傭兵", "血の女王"]);
+      assert.equal(reloaded.profile.gameIdentity, original.gameIdentity);
+      for (const characters of [["存在しないキャラ"], ["傭兵", "空軍", "医師", "庭師", "占い師", "血の女王"], "傭兵"]) {
+        const invalid = await fetch(`${base}${path}`, { method: "PUT", headers: { ...second, "content-type": "application/json" }, body: JSON.stringify({ ...original, characters }) });
+        assert.equal(invalid.status, 400);
+      }
+      await api(path, { user: second, method: "PUT", body: { ...original, characters: [] } });
+      assert.deepEqual((await api(path, { user: second })).profile.characters, []);
+      await api(path, { user: second, method: "PUT", body: { ...original, characters: ["傭兵", "血の女王"] } });
+      const survivors = await api(`/api/services/shoenmate/discover?role=${encodeURIComponent("サバイバー")}`, { user: first });
+      assert.ok(survivors.profiles.some(row => row.displayName === original.displayName));
+    }
     const serviceAdminSearch = await fetch(
       `${base}/api/admin/service-users?q=${encodeURIComponent(`${serviceCase.id}-B`)}&service=${serviceCase.id}`,
       { headers: { cookie: adminCookie } },
@@ -468,6 +489,7 @@ try {
     const reverseTarget = discoveredBySecond.profiles.find((row) => row.displayName === `${serviceCase.id}-A`);
     assert.ok(target);
     assert.ok(reverseTarget);
+    assert.deepEqual(target.characters, serviceCase.id === "shoenmate" ? ["傭兵", "血の女王"] : []);
     const filteredPlayers = await api(`/api/services/${serviceCase.id}/discover?role=${encodeURIComponent(serviceCase.role)}&tier=${encodeURIComponent(serviceCase.tier)}`, { user: first });
     assert.ok(filteredPlayers.profiles.some(row => row.id === target.id));
     assert.ok(filteredPlayers.profiles.every(row => row.roles.includes(serviceCase.role) && row.skillTier === serviceCase.tier));

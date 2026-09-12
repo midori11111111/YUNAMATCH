@@ -11,6 +11,7 @@ import {
   serviceReports,
 } from "../../../../../db/schema";
 import { getChatGPTUser } from "../../../../chatgpt-auth";
+import { shoenmateCharacterSet } from "../../../../../lib/shoenmate-profile";
 import {
   containsProhibitedContent,
   prohibitedContentMessage,
@@ -30,6 +31,7 @@ function output(row: typeof serviceProfiles.$inferSelect) {
   return {
     ...row,
     roles: JSON.parse(row.roles) as string[],
+    characters: JSON.parse(row.characters) as string[],
     playTimes: JSON.parse(row.playTimes) as string[],
     gender: row.showGender && row.age >= 18 ? row.gender : "",
     showGender: row.showGender && row.age >= 18,
@@ -146,6 +148,12 @@ export async function PUT(
     gender = cleanText(body.gender, 10),
     showGender = body.showGender === true && age >= 18,
     termsAccepted = body.termsAccepted === true;
+  const charactersProvided = ctx.service === "shoenmate" && Object.hasOwn(body, "characters");
+  if (charactersProvided && (
+    !Array.isArray(body.characters) || body.characters.length > 5 ||
+    body.characters.some(value => typeof value !== "string" || !shoenmateCharacterSet.has(value))
+  )) return Response.json({ error: "よく使うキャラは一覧から最大5体まで選んでください" }, { status: 400 });
+  const characters = charactersProvided ? JSON.stringify(stringList(body.characters, 5)) : undefined;
   if (
     !displayName ||
     !gameIdentity ||
@@ -175,6 +183,7 @@ export async function PUT(
       gameIdentity,
       skillTier,
       roles: JSON.stringify(roles),
+      characters: characters ?? "[]",
       playTimes: JSON.stringify(playTimes),
       age,
       gender,
@@ -197,6 +206,7 @@ export async function PUT(
         gameIdentity,
         skillTier,
         roles: values.roles,
+        ...(characters !== undefined ? { characters } : {}),
         playTimes: values.playTimes,
         age,
         gender,
