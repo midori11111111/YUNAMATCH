@@ -8,7 +8,7 @@
 
 - スタメイト `/stamate`
 - バロマッチ `/valomatch`
-- 荘園メイト `/shoenmate`
+- 第五マッチ `/shoenmate`
 
 確認結果:
 

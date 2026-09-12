@@ -12,7 +12,7 @@ import { requireAdmin } from "../../../../lib/admin";
 const SERVICES = [
   { id: "valomatch", name: "バロマッチ", stage: "review" },
   { id: "stamate", name: "スタメイト", stage: "beta" },
-  { id: "shoenmate", name: "荘園メイト", stage: "beta" },
+  { id: "shoenmate", name: "第五マッチ", stage: "beta" },
   { id: "roninmatch", name: "浪マッチ", stage: "preview" },
 ] as const;
 

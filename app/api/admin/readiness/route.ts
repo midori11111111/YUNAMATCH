@@ -33,7 +33,7 @@ const services = [
   },
   {
     id: "shoenmate",
-    name: "荘園メイト",
+    name: "第五マッチ",
     site: "SHOENMATE_SITE_URL",
     x: "SHOENMATE_X_URL",
     discord: "NEXT_PUBLIC_SHOENMATE_DISCORD_URL",

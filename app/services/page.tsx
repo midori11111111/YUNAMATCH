@@ -68,9 +68,9 @@ const services = [
   },
   {
     id: "shoenmate",
-    mark: "荘",
+    mark: "五",
     markImage: null,
-    name: "荘園メイト",
+    name: "第五マッチ",
     game: "第五人格",
     summary: "陣営、段位、役割、遊べる時間から仲間を探します。",
     href: "/shoenmate",

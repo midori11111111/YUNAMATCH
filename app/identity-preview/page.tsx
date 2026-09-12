@@ -232,8 +232,8 @@ export default function IdentityPreview({
       <main className={styles.app}>
         <div className={styles.login}>
           <section className={styles.hero}>
-            <div className={styles.seal}>荘</div>
-            <h1>荘園メイト</h1>
+            <div className={styles.seal}>五</div>
+            <h1>第五マッチ</h1>
             <p>プロフィールを確認しています…</p>
           </section>
         </div>
@@ -243,7 +243,7 @@ export default function IdentityPreview({
     return (
       <ServiceOnboarding
         service="shoenmate"
-        name="荘園メイト"
+        name="第五マッチ"
         suggestedName={suggestedName}
         identityLabel="ゲーム内プレイヤー名・ID"
         tiers={tiers}
@@ -259,7 +259,7 @@ export default function IdentityPreview({
     return (
       <ServiceTermsGate
         service="shoenmate"
-        name="荘園メイト"
+        name="第五マッチ"
         onComplete={() => setAuth("ready")}
       />
     );
@@ -268,9 +268,9 @@ export default function IdentityPreview({
       <main className={styles.app}>
         <div className={styles.login}>
           <section className={styles.hero}>
-            <div className={styles.seal}>荘</div>
-            <small>SHOEN MATE</small>
-            <h1>荘園メイト</h1>
+            <div className={styles.seal}>五</div>
+            <small>DAIGO MATCH</small>
+            <h1>第五マッチ</h1>
             <p>
               陣営、段位、得意な役割、遊べる時間から、第五人格を一緒に遊ぶ仲間を探す非公式コミュニティ。
             </p>
@@ -331,10 +331,10 @@ export default function IdentityPreview({
       <div className={styles.shell}>
         <header className={styles.header}>
           <div className={styles.brand}>
-            <b>荘</b>
+            <b>五</b>
             <span>
-              <strong>荘園メイト</strong>
-              <small>SHOEN MATE</small>
+              <strong>第五マッチ</strong>
+              <small>DAIGO MATCH</small>
             </span>
           </div>
           <button onClick={() => setTab("chat")}>

@@ -204,7 +204,7 @@ test("material terms updates require every existing service profile to consent a
   assert.match(gate, /更新された利用条件とプライバシーポリシーに同意します/);
   for (const service of ["valomatch", "stamate"])
     assert.match(config, new RegExp(`${service}:\\{name:.*termsVersion:"2026-08-26-v2"`));
-  assert.match(config, /shoenmate:\{name:"荘園メイト",termsVersion:"2026-09-08-v3"/);
+  assert.match(config, /shoenmate:\{name:"第五マッチ",termsVersion:"2026-09-08-v3"/);
   assert.match(config, /roninmatch:\{name:"浪マッチ",termsVersion:"2026-09-01-v1"/);
 });
 

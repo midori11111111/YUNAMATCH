@@ -35,6 +35,9 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     manifest:"/manifest.webmanifest",
     appleWebApp:{capable:true,statusBarStyle:"default",title:"ユナマッチ"},
+    other: {
+      "google-adsense-account": "ca-pub-2909796543320281",
+    },
     openGraph: { title, description, type: "website", images: [{ url: socialImage, width: 1200, height: 630 }] },
     twitter: { card: "summary_large_image", title, description, images: [socialImage] },
   };

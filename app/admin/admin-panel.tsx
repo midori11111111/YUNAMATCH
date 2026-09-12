@@ -544,9 +544,9 @@ export default function AdminPanel() {
           </article>
           <article className="beta">
             <header>
-              <b>荘</b>
+              <b>五</b>
               <span>
-                <strong>荘園メイト</strong>
+                <strong>第五マッチ</strong>
                 <small>無料限定ベータ</small>
               </span>
               <em>BETA</em>
@@ -632,7 +632,7 @@ export default function AdminPanel() {
             <option value="">全サービス</option>
             <option value="valomatch">バロマッチ</option>
             <option value="stamate">スタメイト</option>
-            <option value="shoenmate">荘園メイト</option>
+            <option value="shoenmate">第五マッチ</option>
             <option value="roninmatch">浪マッチ</option>
           </select>
           <input
@@ -728,7 +728,7 @@ export default function AdminPanel() {
                       : report.serviceId === "stamate"
                         ? "スタメイト"
                         : report.serviceId === "shoenmate"
-                          ? "荘園メイト"
+                          ? "第五マッチ"
                           : "浪マッチ"}
                     ・通報者 {report.reporterName}・
                     {new Date(report.createdAt).toLocaleString("ja-JP")}

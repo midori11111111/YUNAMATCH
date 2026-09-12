@@ -3,7 +3,7 @@ import Link from "next/link";
 export const metadata = {
   title: "コミュニティガイドライン｜YUNAMATCH運営",
   description:
-    "YUNAMATCH、バロマッチ、スタメイト、荘園メイトを安全に利用するための共通ルールです。",
+    "YUNAMATCH、バロマッチ、スタメイト、第五マッチを安全に利用するための共通ルールです。",
 };
 
 export default function CommunityGuidelines() {
@@ -20,7 +20,7 @@ export default function CommunityGuidelines() {
         <h1>コミュニティガイドライン</h1>
         <p>最終更新日：2026年8月26日</p>
         <p className="legalLead">
-          このガイドラインは、YUNAMATCH、バロマッチ、スタメイト、荘園メイトで、安心してゲーム仲間を探すための共通ルールです。
+          このガイドラインは、YUNAMATCH、バロマッチ、スタメイト、第五マッチで、安心してゲーム仲間を探すための共通ルールです。
         </p>
 
         <h2>ゲームを一緒に遊ぶためだけに使う</h2>
@@ -48,7 +48,7 @@ export default function CommunityGuidelines() {
         <ul>
           <li>チート、代行、談合、アカウント売買など、対象ゲームの規約に反する募集は禁止です。</li>
           <li>公式・公認の運営者や選手になりすましてはいけません。</li>
-          <li>バロマッチ、スタメイト、荘園メイトはいずれも各ゲーム会社の公式サービスではありません。</li>
+          <li>バロマッチ、スタメイト、第五マッチはいずれも各ゲーム会社の公式サービスではありません。</li>
         </ul>
 
         <h2>問題を見つけた場合</h2>
