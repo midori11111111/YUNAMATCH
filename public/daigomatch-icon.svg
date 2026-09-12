@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <title>第五マッチ</title>
+  <rect x="4" y="4" width="120" height="120" rx="34" fill="#FAF6F4"/>
+  <path d="M32 30c10-6 23-2 29 8l20 35c6 10 2 23-8 29s-23 2-29-8L24 59c-6-10-2-23 8-29Z" fill="#851C3B"/>
+  <path d="M96 30c-10-6-23-2-29 8L47 73c-6 10-2 23 8 29s23 2 29-8l20-35c6-10 2-23-8-29Z" fill="#EE7C82"/>
+  <path d="m64 43 17 30c6 10 2 23-8 29a21 21 0 0 1-18 0c-10-6-14-19-8-29l17-30Z" fill="#B73857"/>
+</svg>

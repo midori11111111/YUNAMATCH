@@ -1,5 +1,5 @@
 "use client";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import styles from "./identity-preview.module.css";
 import ServiceOnboarding from "../service-onboarding";
 import ServiceTermsGate from "../service-terms-gate";
@@ -7,6 +7,18 @@ import ServiceReportButton from "../service-report-button";
 import ServiceAccountSafety from "../service-account-safety";
 import ServiceDiscordLink from "../service-discord-link";
 type Tab = "find" | "recruit" | "chat" | "profile";
+function Icon({ name }: { name: Tab | "heart" | "bell" | "arrow" }) {
+  const paths = {
+    find: <><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 5 5" /></>,
+    recruit: <><rect x="4" y="4" width="16" height="16" rx="4" /><path d="M12 8v8M8 12h8" /></>,
+    chat: <path d="M20 11a8 8 0 0 1-8 8H5l-3 3V11a9 9 0 0 1 18 0ZM7 10h8M7 14h5" />,
+    profile: <><circle cx="12" cy="8" r="4" /><path d="M4 21v-2a8 8 0 0 1 16 0v2" /></>,
+    heart: <path d="M20.5 4.8c-2-2-5.1-2-7.1 0L12 6.2l-1.4-1.4a5 5 0 0 0-7.1 7.1L12 21l8.5-9.1a5 5 0 0 0 0-7.1Z" />,
+    bell: <><path d="M5 17h14l-2-3V9a5 5 0 0 0-10 0v5l-2 3ZM10 21h4M12 2v2" /></>,
+    arrow: <path d="M4 12h16m-6-6 6 6-6 6" />,
+  };
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
+}
 type Profile = {
   id?: number;
   displayName: string;
@@ -80,6 +92,13 @@ export default function IdentityPreview({
     [message, setMessage] = useState(""),
     [loginOpen, setLoginOpen] = useState(false),
     [loginAction, setLoginAction] = useState("この機能");
+  const recruitDialog = useRef<HTMLDialogElement>(null);
+  const loginDialog = useRef<HTMLDialogElement>(null);
+  const [recruitBusy, setRecruitBusy] = useState(false);
+  const [recruitError, setRecruitError] = useState("");
+  useEffect(() => {
+    if (loginOpen) loginDialog.current?.showModal();
+  }, [loginOpen]);
   const say = (text: string) => {
     setNotice(text);
     setTimeout(() => setNotice(""), 2200);
@@ -216,15 +235,22 @@ export default function IdentityPreview({
     );
     if (response.ok) void load();
   }
-  async function createRecruit() {
+  function createRecruit() {
     if (requireProfile("募集の作成")) return;
-    const mode = prompt(
-      "モード（ランク戦 / マルチ戦 / 協力狩り / カスタム / その他）",
-      "ランク戦",
-    );
-    if (!mode) return;
-    const partySize = Number(prompt("パーティ人数（2〜5）", "4")),
-      note = prompt("募集のひとこと（任意）", "") || "";
+    setRecruitError("");
+    recruitDialog.current?.showModal();
+  }
+  async function publishRecruit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (recruitBusy) return;
+    const form = event.currentTarget;
+    const fields = new FormData(form);
+    const mode = String(fields.get("mode"));
+    const partySize = Number(fields.get("partySize"));
+    const note = String(fields.get("note") || "");
+    setRecruitBusy(true);
+    setRecruitError("");
+    try {
     const response = await fetch("/api/services/shoenmate/recruits", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -240,7 +266,16 @@ export default function IdentityPreview({
     say(
       response.ok ? "募集を公開しました" : data.error || "募集できませんでした",
     );
-    if (response.ok) void load();
+    if (response.ok) {
+      recruitDialog.current?.close();
+      form.reset();
+      void load();
+    } else setRecruitError(data.error || "募集できませんでした");
+    } catch {
+      setRecruitError("通信できませんでした。もう一度お試しください。");
+    } finally {
+      setRecruitBusy(false);
+    }
   }
   async function openChat(connection: Connection) {
     if (requireProfile("やりとり")) return;
@@ -274,7 +309,7 @@ export default function IdentityPreview({
       <main className={styles.app}>
         <div className={styles.login}>
           <section className={styles.hero}>
-            <div className={styles.seal}>五</div>
+            <img className={styles.seal} src="/daigomatch-icon.svg" alt="" />
             <h1>第五マッチ</h1>
             <p>プロフィールを確認しています…</p>
           </section>
@@ -323,19 +358,20 @@ export default function IdentityPreview({
       <div className={styles.shell}>
         <header className={styles.header}>
           <div className={styles.brand}>
-            <b>五</b>
+            <img src="/daigomatch-icon.svg" alt="" width="48" height="48" />
             <span>
               <strong>第五マッチ</strong>
               <small>DAIGO MATCH</small>
             </span>
           </div>
           <button
+            aria-label={`届いた申請${incoming.length ? ` ${incoming.length}件` : ""}`}
             onClick={() => {
               if (requireProfile("届いた申請の確認")) return;
               setTab("chat");
             }}
           >
-            ♢{incoming.length || ""}
+            <Icon name="bell" />{incoming.length > 0 && <span className={styles.badge}>{incoming.length}</span>}
           </button>
         </header>
         <aside className={styles.betaBar}>
@@ -370,6 +406,7 @@ export default function IdentityPreview({
             <div className={styles.title}>
               <small>DISCOVER</small>
               <h1>一緒に遊ぶ人を探す</h1>
+              <p>いつもの一戦に、新しい仲間を。</p>
             </div>
             {current ? (
               <article className={styles.card}>
@@ -418,14 +455,16 @@ export default function IdentityPreview({
                     >
                       次の人
                     </button>
-                    <button onClick={like}>♡ いいね</button>
-                    <button onClick={requestMate}>封蝋で申請</button>
+                    <button onClick={like}><Icon name="heart" />いいね</button>
+                    <button onClick={requestMate}>メイト申請<Icon name="arrow" /></button>
                   </div>
                 </div>
               </article>
             ) : (
-              <article className={styles.panel}>
+              <article className={`${styles.panel} ${styles.empty}`}>
+                <img src="/daigomatch-icon.svg" alt="" width="80" height="80" />
                 <h2>表示できるプレイヤーがいません</h2>
+                <p>時間をおいて、もう一度探してみましょう。<br />自分から募集して仲間を待つこともできます。</p>
                 <button
                   className={styles.primary}
                   onClick={() =>
@@ -434,8 +473,13 @@ export default function IdentityPreview({
                 >
                   再読み込み
                 </button>
+                <button className={styles.textButton} onClick={() => setTab("recruit")}>募集を見てみる →</button>
               </article>
             )}
+            <aside className={styles.guide} aria-label="仲間とつながるには">
+              <div><Icon name="heart" /><strong>まずは、いいね</strong><p>気になったことを相手に伝えます。</p></div>
+              <div><Icon name="chat" /><strong>話したい人には申請</strong><p>承認されたら、チャットで相談。</p></div>
+            </aside>
           </>
         )}
         {tab === "recruit" && (
@@ -443,6 +487,7 @@ export default function IdentityPreview({
             <div className={styles.title}>
               <small>RECRUIT</small>
               <h1>現在の募集</h1>
+              <p>遊びたいモードで、仲間と待ち合わせ。</p>
             </div>
             {recruits.map((item) => (
               <article
@@ -475,7 +520,7 @@ export default function IdentityPreview({
                 )}
               </article>
             ))}
-            {!recruits.length && <p>現在公開中の募集はありません。</p>}
+            {!recruits.length && <div className={`${styles.panel} ${styles.empty}`}><Icon name="recruit" /><h2>最初の募集を出してみませんか？</h2><p>遊ぶモードと人数を選ぶだけ。<br />ひとことは、決まっていなくても大丈夫。</p></div>}
             <button className={styles.primary} onClick={createRecruit}>
               募集を作成する
             </button>
@@ -530,7 +575,7 @@ export default function IdentityPreview({
               </button>
             ))}
             {!incoming.length && !outgoing.length && !connections.length && (
-              <p>まだやりとりがありません。</p>
+              <div className={`${styles.panel} ${styles.empty}`}><Icon name="chat" /><h2>会話は、ここから。</h2><p>メイト申請が承認されると<br />ここでやりとりできるようになります。</p><button className={styles.primary} onClick={() => setTab("find")}>仲間を探す</button></div>
             )}
           </>
         )}
@@ -541,6 +586,7 @@ export default function IdentityPreview({
               <h1>プロフィール</h1>
             </div>
             <article className={styles.panel}>
+              <div className={styles.myAvatar}>{me?.avatarUrl ? <img src={me.avatarUrl} alt="あなたのプロフィール画像" /> : <Icon name="profile" />}</div>
               <h2>{me?.displayName}</h2>
               <p>
                 {me?.gameIdentity}・{me?.skillTier}
@@ -567,11 +613,12 @@ export default function IdentityPreview({
             </article>
           </>
         )}
-        <nav className={styles.nav}>
+        <nav className={styles.nav} aria-label="メインメニュー">
           {nav.map((item) => (
             <button
               key={item[0]}
               className={tab === item[0] ? styles.active : ""}
+              aria-current={tab === item[0] ? "page" : undefined}
               onClick={() => {
                 if (
                   (auth === "guest" || (auth === "ready" && !me)) &&
@@ -587,22 +634,14 @@ export default function IdentityPreview({
                 else void loadPublic();
               }}
             >
-              <b>{item[1]}</b>
+              <Icon name={item[0]} />
               {item[2]}
             </button>
           ))}
         </nav>
         {activeChat && (
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              zIndex: 300,
-              background: "#f8f4eb",
-              padding: 24,
-              overflow: "auto",
-            }}
-          >
+          <div className={styles.chatWindow}>
+            <header className={styles.chatHeader}>
             <button onClick={() => setActiveChat(null)}>← 戻る</button>
             <h2>{activeChat.other.displayName}</h2>
             <ServiceReportButton
@@ -615,33 +654,20 @@ export default function IdentityPreview({
                 void load();
               }}
             />
+            </header>
+            <div className={styles.messageList}>
             {messages.map((item) => (
-              <p
-                key={item.id}
-                style={{ padding: 12, background: "#fff", borderRadius: 14 }}
-              >
+              <p key={item.id}>
                 {item.body}
               </p>
             ))}
+            </div>
             <form
               onSubmit={sendMessage}
-              style={{
-                position: "fixed",
-                left: 16,
-                right: 16,
-                bottom: 20,
-                display: "flex",
-                gap: 8,
-              }}
+              className={styles.composer}
             >
               <input
-                style={{
-                  flex: 1,
-                  fontSize: 16,
-                  padding: 14,
-                  borderRadius: 14,
-                  border: "1px solid #bbb",
-                }}
+                aria-label="メッセージ"
                 value={message}
                 maxLength={500}
                 onChange={(event) => setMessage(event.target.value)}
@@ -652,18 +678,17 @@ export default function IdentityPreview({
           </div>
         )}
         {auth === "guest" && loginOpen && (
-          <div
+          <dialog
+            ref={loginDialog}
             className={styles.loginBackdrop}
-            role="presentation"
+            aria-labelledby="shoenmate-login-title"
+            onClose={() => setLoginOpen(false)}
             onClick={(event) => {
               if (event.target === event.currentTarget) setLoginOpen(false);
             }}
           >
             <section
               className={styles.loginSheet}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="shoenmate-login-title"
             >
               <button
                 className={styles.loginClose}
@@ -672,7 +697,7 @@ export default function IdentityPreview({
               >
                 ×
               </button>
-              <div className={styles.loginSeal}>五</div>
+              <img className={styles.loginSeal} src="/daigomatch-icon.svg" alt="" />
               <small>OPEN THE MANOR GATE</small>
               <h2 id="shoenmate-login-title">ログインして{loginAction}を使う</h2>
               <p>
@@ -699,9 +724,22 @@ export default function IdentityPreview({
                 <a href="/privacy">プライバシーポリシー</a>に同意します。
               </p>
             </section>
-          </div>
+          </dialog>
         )}
-        {notice && <div className={styles.notice}>{notice}</div>}
+        <dialog className={styles.recruitDialog} ref={recruitDialog} aria-labelledby="recruit-title">
+          <form onSubmit={publishRecruit}>
+            <button type="button" className={styles.loginClose} aria-label="募集画面を閉じる" onClick={() => recruitDialog.current?.close()}>×</button>
+            <small className={styles.eyebrow}>LET’S PLAY</small>
+            <h2 id="recruit-title">一緒に遊ぶ仲間を募集</h2>
+            <p>募集は2時間掲載されます。</p>
+            <label>遊ぶモード<select name="mode" defaultValue="ランク戦">{["ランク戦", "マルチ戦", "協力狩り", "カスタム", "その他"].map(mode => <option key={mode}>{mode}</option>)}</select></label>
+            <label>パーティ人数<select name="partySize" defaultValue="4">{[2,3,4,5].map(size => <option value={size} key={size}>{size}人</option>)}</select></label>
+            <label>ひとこと <small>任意</small><textarea name="note" maxLength={200} placeholder="例：ゆっくり相談しながら遊びたいです" rows={3} /></label>
+            {recruitError && <p role="alert" className={styles.formError}>{recruitError}</p>}
+            <button className={styles.primary} disabled={recruitBusy}>{recruitBusy ? "公開しています…" : "募集を公開する"}</button>
+          </form>
+        </dialog>
+        {notice && <div className={styles.notice} role="status">{notice}</div>}
         <footer className={styles.disclaimer}>
           本サービスはNetEase GamesおよびIdentity
           V／第五人格の公式サービスではありません。

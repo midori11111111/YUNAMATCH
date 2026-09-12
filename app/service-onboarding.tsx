@@ -124,7 +124,7 @@ export default function ServiceOnboarding({
     }
   }
   return (
-    <main className={styles.backdrop}>
+    <main className={`${styles.backdrop} ${service === "shoenmate" ? styles.manor : ""}`}>
       <section className={styles.panel}>
         {onCancel && (
           <button type="button" className={styles.cancel} onClick={onCancel}>
