@@ -21,9 +21,11 @@ export async function GET(request:Request,{params}:{params:Promise<{provider:str
     request.headers.get("x-forwarded-host")?.split(",",1)[0]?.trim(),
   ].filter((host):host is string=>Boolean(host)).map((host)=>host.toLowerCase().split(":",1)[0]);
   const currentHost=hostCandidates.find((host)=>fifthMatchHosts.has(host));
-  if(currentHost){
+  const fifthMatchLogin=source.searchParams.get("service")==="shoenmate";
+  if(currentHost||fifthMatchLogin){
+    const targetHost=currentHost||"daigomatch.com";
     const bridgeReturnTo=new URL("/api/domain-auth-bridge","https://yunamatch.com");
-    bridgeReturnTo.searchParams.set("target",currentHost);
+    bridgeReturnTo.searchParams.set("target",targetHost);
     bridgeReturnTo.searchParams.set("returnTo",redirectTo);
     const gateway=new URL(`/api/login/${encodeURIComponent(provider)}`,"https://yunamatch.com");
     gateway.searchParams.set("returnTo",`${bridgeReturnTo.pathname}${bridgeReturnTo.search}`);

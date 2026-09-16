@@ -29,14 +29,17 @@ test("publishes the AdSense ownership tag, loader, and ads.txt", async () => {
 });
 
 test("returns Fifth Match logins to daigomatch without changing provider callbacks", async () => {
-  const [loginRoute, bridgeRoute, handoffRoute] = await Promise.all([
+  const [loginRoute, bridgeRoute, handoffRoute, fifthMatchPage] = await Promise.all([
     read("vercel-proxy/app/api/login/[provider]/route.ts"),
     read("app/api/domain-auth-bridge/route.ts"),
     read("vercel-proxy/app/api/domain-auth-handoff/route.ts"),
+    read("app/identity-preview/page.tsx"),
   ]);
   assert.match(loginRoute, /fifthMatchHosts/);
   assert.match(loginRoute, /\/api\/domain-auth-bridge/);
   assert.match(loginRoute, /https:\/\/yunamatch\.com/);
+  assert.match(loginRoute, /searchParams\.get\("service"\)===\"shoenmate\"/);
+  assert.match(fifthMatchPage, /service=shoenmate/);
   assert.match(bridgeRoute, /ALLOWED_TARGETS/);
   assert.match(bridgeRoute, /encode\(/);
   assert.match(bridgeRoute, /referrer-policy/);

@@ -761,7 +761,7 @@ export default function IdentityPreview({
                 {loginProviders.map((provider) => (
                   <a
                     key={provider.id}
-                    href={`/api/login/${provider.id}?returnTo=${encodeURIComponent(`${basePath}?setup=1`)}`}
+                    href={`/api/login/${provider.id}?returnTo=${encodeURIComponent(`${basePath}?setup=1`)}&service=shoenmate`}
                   >
                     <b style={{ background: provider.color }}>{provider.mark}</b>
                     <span>
