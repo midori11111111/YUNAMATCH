@@ -25,7 +25,12 @@ export async function POST(request: Request) {
     return new Response("Invalid session", { status: 400 });
   }
 
-  const token = await decode({ token: sessionToken, secret, salt: SESSION_COOKIE_NAME });
+  let token;
+  try {
+    token = await decode({ token: sessionToken, secret, salt: SESSION_COOKIE_NAME });
+  } catch {
+    return new Response("Invalid session", { status: 401 });
+  }
   if (!token?.sub || typeof token.userId !== "string") {
     return new Response("Invalid session", { status: 401 });
   }
