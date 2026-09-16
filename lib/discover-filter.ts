@@ -1,4 +1,5 @@
 import { pokemonRole, type PokemonRole } from "./pokemon-role.ts";
+import { activityAge, isRecentlyOnline, RECENT_WINDOW_MS, TODAY_WINDOW_MS } from "./activity-status.ts";
 
 export type DiscoverFilterCandidate = {
   trainerName: string;
@@ -32,6 +33,7 @@ function normalizeSearchText(value: string) {
 export function filterDiscoverCandidates<T extends DiscoverFilterCandidate>(
   candidates: T[],
   filters: DiscoverFilters,
+  now = Date.now(),
 ) {
   const pokemonQuery = normalizeSearchText(filters.pokemonQuery);
   const trainerQuery = normalizeSearchText(filters.trainerQuery);
@@ -46,7 +48,6 @@ export function filterDiscoverCandidates<T extends DiscoverFilterCandidate>(
       (person) => normalizeSearchText(person.trainerName) === trainerQuery,
     );
 
-  const now = Date.now();
   const filtered = candidates.filter((person) => {
     const pokemonMatches =
       !pokemonQuery ||
@@ -76,9 +77,9 @@ export function filterDiscoverCandidates<T extends DiscoverFilterCandidate>(
     const lastActiveAt = new Date(person.lastActiveAt).getTime();
     const activityMatches =
       !filters.activity ||
-      (filters.activity === "online" && person.online) ||
-      (filters.activity === "3h" && lastActiveAt >= now - 3 * 60 * 60_000) ||
-      (filters.activity === "24h" && lastActiveAt >= now - 24 * 60 * 60_000);
+      (filters.activity === "online" && person.online && isRecentlyOnline(lastActiveAt, now)) ||
+      (filters.activity === "3h" && activityAge(lastActiveAt, now) <= RECENT_WINDOW_MS) ||
+      (filters.activity === "24h" && activityAge(lastActiveAt, now) <= TODAY_WINDOW_MS);
     return (
       pokemonMatches &&
       trainerMatches &&

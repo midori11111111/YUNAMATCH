@@ -3,6 +3,7 @@ import { getDb } from "../../../db";
 import { connections, presence, profiles } from "../../../db/schema";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { identityAliases } from "../../../lib/account-aliases";
+import { isRecentlyOnline } from "../../../lib/activity-status";
 
 async function resolvedIdentity(userId: string, email?: string | null) {
   const aliases = await identityAliases(userId, email || undefined);
@@ -55,7 +56,7 @@ export async function GET(request: Request) {
     .limit(1);
   const age = row ? Date.now() - row.lastSeenAt.getTime() : Infinity;
   return Response.json({
-    online: age < 3 * 60_000,
+    online: isRecentlyOnline(row?.lastSeenAt),
     typing: Boolean(
       row?.typing && row.connectionId === connectionId && age < 8_000,
     ),

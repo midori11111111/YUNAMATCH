@@ -1,5 +1,5 @@
 import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
-import { applicationMessages, applications, blocks, connections, messages, mutualLikeMatches, notificationDismissals, profileLikes, profiles, recruits } from "../../../db/schema";
+import { applicationMessages, applications, blocks, connections, messages, mutualLikeMatches, notificationDismissals, presence, profileLikes, profiles, recruits } from "../../../db/schema";
 import { getDb } from "../../../db";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { profilePublicId, resolveProfilePublicId } from "../../../lib/profile-id";
@@ -7,6 +7,7 @@ import { sendPush } from "../../../lib/push";
 import { normalizeRank } from "../../../lib/ranks";
 import { identityAliases } from "../../../lib/account-aliases";
 import { runInBackground } from "../../../lib/background";
+import { isRecentlyOnline } from "../../../lib/activity-status";
 
 function parseList(value:string){
   try{const parsed=JSON.parse(value);if(Array.isArray(parsed))return parsed.filter((item):item is string=>typeof item==="string"&&Boolean(item.trim()))}
@@ -206,12 +207,13 @@ export async function GET(){
       senderBio:profiles.bio,
       senderRegisteredAt:profiles.createdAt,
       senderLastActiveAt:profiles.updatedAt,
+      senderPresenceAt:presence.lastSeenAt,
       senderSuspendedAt:profiles.suspendedAt,
       senderAgeConfirmed:profiles.ageConfirmed,
       senderTermsAcceptedAt:profiles.termsAcceptedAt,
       readAt:profileLikes.readAt,
       createdAt:profileLikes.createdAt,
-    }).from(profileLikes).innerJoin(profiles,eq(profileLikes.senderId,profiles.userId)).where(eq(profileLikes.recipientId,user.userId)).orderBy(desc(profileLikes.createdAt)),
+    }).from(profileLikes).innerJoin(profiles,eq(profileLikes.senderId,profiles.userId)).leftJoin(presence,eq(profiles.userId,presence.userId)).where(eq(profileLikes.recipientId,user.userId)).orderBy(desc(profileLikes.createdAt)),
     db.select({recipientId:profileLikes.recipientId}).from(profileLikes).where(eq(profileLikes.senderId,user.userId)),
     db.select({id:blocks.blockedId}).from(blocks).where(eq(blocks.blockerId,user.userId)),
     db.select({id:blocks.blockerId}).from(blocks).where(eq(blocks.blockedId,user.userId)),
@@ -270,7 +272,8 @@ export async function GET(){
       likeCount,
       popular:likeCount>=3,
       registeredAt:row.senderRegisteredAt,
-      lastActiveAt:row.senderLastActiveAt,
+      lastActiveAt:row.senderPresenceAt||row.senderLastActiveAt,
+      online:isRecentlyOnline(row.senderPresenceAt),
     };
   }));
   const receivedProfiles=await profilesFromRows(visibleReceived);

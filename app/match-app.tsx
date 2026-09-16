@@ -18,6 +18,7 @@ import {
   type DiscoverActivityFilter,
 } from "../lib/discover-filter";
 import { rankOptions } from "../lib/ranks";
+import { activityStatus } from "../lib/activity-status";
 import {
   pokemonRole,
   pokemonRoleOptions,
@@ -570,18 +571,6 @@ function formatRecruitPostedAt(value: string) {
     hour12: false,
   })}に掲載`;
 }
-function formatActivity(value: string, online = false) {
-  if (online) return "オンライン";
-  const date = new Date(value);
-  const age = Math.max(0, Date.now() - date.getTime());
-  if (!Number.isFinite(age)) return "最近ログイン";
-  if (age < 60 * 60_000)
-    return `${Math.max(1, Math.floor(age / 60_000))}分前にオンライン`;
-  if (age < 24 * 60 * 60_000)
-    return `${Math.floor(age / (60 * 60_000))}時間前にオンライン`;
-  const days = Math.max(1, Math.floor(age / (24 * 60 * 60_000)));
-  return `${days}日前にオンライン`;
-}
 function decodePushKey(value: string) {
   const padding = "=".repeat((4 - (value.length % 4)) % 4);
   const raw = atob((value + padding).replace(/-/g, "+").replace(/_/g, "/"));
@@ -760,6 +749,20 @@ export default function MatchApp({
   isAdmin?: boolean;
 }) {
   const guestMode = !authenticated && !preview;
+  const [activityClock, setActivityNow] = useState(() => Date.now());
+  const activityNow = Math.max(activityClock, Date.now());
+  useEffect(() => {
+    const refreshActivityClock = () => {
+      if (document.visibilityState === "visible") setActivityNow(Date.now());
+    };
+    // Re-evaluate cached badges locally without adding API polling/usage.
+    const timer = window.setInterval(refreshActivityClock, 60_000);
+    document.addEventListener("visibilitychange", refreshActivityClock);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshActivityClock);
+    };
+  }, []);
   const shortName = displayName.includes("@")
     ? displayName.split("@")[0]
     : displayName;
@@ -2712,9 +2715,10 @@ export default function MatchApp({
         activity: activityFilter,
         myPlayTime: profile.playTime,
         officialPokemon: pokemon,
-      }),
+      }, activityNow),
     [
       profileCandidates,
+      activityNow,
       pokemonQuery,
       trainerQuery,
       genderFilter,
@@ -2759,6 +2763,7 @@ export default function MatchApp({
     ? cards[((index % cards.length) + cards.length) % cards.length]
     : null;
   const currentPokemon = current?.mainPokemon[0] || "未設定";
+  const currentActivity = activityStatus(current?.lastActiveAt, current?.online, activityNow);
   const pendingIncoming = incoming.filter(
     (notice) => notice.status === "pending",
   );
@@ -5694,7 +5699,7 @@ export default function MatchApp({
                   <div className="fullCardTopline">
                     <span
                       className={
-                        discoverMode === "recommended" && current.online
+                        discoverMode === "recommended" && currentActivity.kind === "online"
                           ? "active"
                           : ""
                       }
@@ -5703,7 +5708,7 @@ export default function MatchApp({
                         ? discoverMode === "received"
                           ? "♥ あなたにいいね"
                           : "↩ スキップした相手"
-                        : `● ${formatActivity(current.lastActiveAt, current.online)}`}
+                        : `${currentActivity.kind === "online" ? "● " : ""}${currentActivity.label}`}
                     </span>
                     {guestMode && <b>ログインでプロフィールをすべて表示</b>}
                   </div>
@@ -9055,8 +9060,8 @@ export default function MatchApp({
                 [
                   ["", "指定なし"],
                   ["online", "オンライン中"],
-                  ["3h", "3時間以内"],
-                  ["24h", "24時間以内"],
+                  ["3h", "最近オンライン（3時間以内）"],
+                  ["24h", "今日アクセスあり（24時間以内）"],
                 ] as const
               ).map(([value, label]) => (
                 <button
@@ -9317,10 +9322,11 @@ export default function MatchApp({
             <p className="candidateDetailRank">
               {candidateDetail.highestRate} ・ {candidateDetail.gender} ・{" "}
               {candidateDetail.age !== null && `${candidateDetail.age}歳 ・ `}
-              {formatActivity(
+              {activityStatus(
                 candidateDetail.lastActiveAt,
                 candidateDetail.online,
-              )}
+                activityNow,
+              ).label}
             </p>
             <div className="candidatePopularity">
               {candidateDetail.popular && <b>人気のメイト</b>}

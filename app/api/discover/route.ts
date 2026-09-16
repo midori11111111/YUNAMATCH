@@ -21,6 +21,7 @@ import { profilePublicId, resolveProfilePublicId } from "../../../lib/profile-id
 import { normalizeRank } from "../../../lib/ranks";
 import { pokemonRole, pokemonRoleOptions, type PokemonRole } from "../../../lib/pokemon-role";
 import { rankDiscoverCandidates } from "../../../lib/discover-ranking";
+import { activityAge, isRecentlyOnline, RECENT_WINDOW_MS, TODAY_WINDOW_MS } from "../../../lib/activity-status";
 
 function parseList(value: string) {
   try {
@@ -151,15 +152,14 @@ export async function GET(request: Request) {
   if (!user) {
     const [profileRows, activityRows, stats] = await Promise.all([
       db.select().from(profiles).orderBy(desc(profiles.updatedAt)).limit(80),
-      db.select().from(presence).limit(200),
+      db.select().from(presence).orderBy(desc(presence.lastSeenAt)).limit(200),
       loadProfileStats(db),
     ]);
     const lastActiveByUser = new Map(
       activityRows.map((row) => [row.userId, row.lastSeenAt]),
     );
-    const onlineCutoff = Date.now() - 3 * 60_000;
     const isOnline = (userId: string) =>
-      (lastActiveByUser.get(userId)?.getTime() || 0) >= onlineCutoff;
+      isRecentlyOnline(lastActiveByUser.get(userId));
     const activeCutoff = Date.now() - 30 * 24 * 60 * 60_000;
     const activityAt = (row: (typeof profileRows)[number]) =>
       lastActiveByUser.get(row.userId) || row.updatedAt;
@@ -279,9 +279,8 @@ export async function GET(request: Request) {
   const lastActiveByUser = new Map(
     activityRows.map((row) => [row.userId, row.lastSeenAt]),
   );
-  const onlineCutoff = Date.now() - 3 * 60_000;
   const isOnline = (userId: string) =>
-    (lastActiveByUser.get(userId)?.getTime() || 0) >= onlineCutoff;
+    isRecentlyOnline(lastActiveByUser.get(userId));
   const activeCutoff = Date.now() - 30 * 24 * 60 * 60_000;
   const activityAt = (row: (typeof profileRows)[number]) =>
     lastActiveByUser.get(row.userId) || row.updatedAt;
@@ -334,9 +333,9 @@ export async function GET(request: Request) {
       !query.activity ||
       (query.activity === "online" && isOnline(row.userId)) ||
       (query.activity === "3h" &&
-        lastActiveAt >= Date.now() - 3 * 60 * 60_000) ||
+        activityAge(lastActiveAt) <= RECENT_WINDOW_MS) ||
       (query.activity === "24h" &&
-        lastActiveAt >= Date.now() - 24 * 60 * 60_000);
+        activityAge(lastActiveAt) <= TODAY_WINDOW_MS);
     return (
       pokemonMatches &&
       trainerMatches &&

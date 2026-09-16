@@ -1,5 +1,6 @@
 import { pokemonRole } from "./pokemon-role.ts";
 import { normalizeRank, rankOptions } from "./ranks.ts";
+import { activityAge, isRecentlyOnline, RECENT_WINDOW_MS, TODAY_WINDOW_MS } from "./activity-status.ts";
 
 export type DiscoverRankable = {
   userId: string;
@@ -43,7 +44,7 @@ const bucketPattern = [
   "discovery",
   "online",
   "quality",
-  "affinity",
+  "today",
   "online",
   "explore",
 ] as const;
@@ -107,10 +108,9 @@ function rankProximityScore(mine: string, theirs: string) {
 
 function activityScore(lastActiveAt: number, now: number, online: boolean) {
   if (online) return 32;
-  const age = Math.max(0, now - lastActiveAt);
-  if (age <= 60 * 60_000) return 22;
-  if (age <= 6 * 60 * 60_000) return 16;
-  if (age <= 24 * 60 * 60_000) return 11;
+  const age = activityAge(lastActiveAt, now);
+  if (age <= RECENT_WINDOW_MS) return 26;
+  if (age <= TODAY_WINDOW_MS) return 18;
   if (age <= 3 * 24 * 60 * 60_000) return 9;
   if (age <= 7 * 24 * 60 * 60_000) return 5;
   return 1;
@@ -135,7 +135,8 @@ function profileScore(candidate: DiscoverRankable) {
 
 /**
  * 相性の高い人を軸に、オンラインの人を10件中4枠まで優先し、
- * 最近活動した人・新規/低反応の人・高評価の人・探索枠も混ぜる。
+ * オンライン枠が足りなければ3時間以内、24時間以内の順で補う。
+ * 新規/低反応の人・高評価の人・探索枠も残す。
  * 性別は使わず、いいね数も人気加点には使わない。
  */
 export function rankDiscoverCandidates<T extends DiscoverRankable>(
@@ -153,7 +154,7 @@ export function rankDiscoverCandidates<T extends DiscoverRankable>(
       pokemonCompatibilityScore(viewer.mainPokemon, candidate.mainPokemon) +
       rankProximityScore(viewer.highestRate, candidate.highestRate);
     const activityAt = candidate.lastActiveAt.getTime();
-    const online = Boolean(candidate.online);
+    const online = Boolean(candidate.online) && isRecentlyOnline(activityAt, now);
     const createdAt = candidate.createdAt.getTime();
     const quality = Math.max(0, Math.min(5, candidate.qualityScore));
     const explore = stableUnitInterval(
@@ -184,8 +185,11 @@ export function rankDiscoverCandidates<T extends DiscoverRankable>(
   const byAffinity = [...ranked].sort(
     (a, b) => b.total - a.total || b.activityAt - a.activityAt,
   );
-  const byRecent = [...ranked].sort(
+  const byRecent = ranked.filter((item) => activityAge(item.activityAt, now) <= RECENT_WINDOW_MS).sort(
     (a, b) => b.activityAt - a.activityAt || b.total - a.total,
+  );
+  const byToday = ranked.filter((item) => activityAge(item.activityAt, now) <= TODAY_WINDOW_MS).sort(
+    (a, b) => b.total - a.total || b.activityAt - a.activityAt,
   );
   const byOnline = ranked
     .filter((item) => item.online)
@@ -206,6 +210,7 @@ export function rankDiscoverCandidates<T extends DiscoverRankable>(
     online: byOnline,
     affinity: byAffinity,
     recent: byRecent,
+    today: byToday,
     discovery: byDiscovery,
     quality: byQuality,
     explore: byExplore,
@@ -218,11 +223,12 @@ export function rankDiscoverCandidates<T extends DiscoverRankable>(
       bucketPattern.length,
   );
   while (result.length < ranked.length) {
-    const queue =
-      queues[
-        bucketPattern[(slot + bucketOffset) % bucketPattern.length]
-      ];
+    const bucket = bucketPattern[(slot + bucketOffset) % bucketPattern.length];
+    const queue = queues[bucket];
     let next = queue.find((item) => !used.has(item.candidate.userId));
+    if (!next && (bucket === "online" || bucket === "recent" || bucket === "today"))
+      next = byRecent.find((item) => !used.has(item.candidate.userId)) ||
+        byToday.find((item) => !used.has(item.candidate.userId));
     if (!next)
       next = byAffinity.find((item) => !used.has(item.candidate.userId));
     if (!next) break;

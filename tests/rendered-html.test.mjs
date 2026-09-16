@@ -126,8 +126,8 @@ test("filters and sorts discovery by recent online activity", async () => {
   assert.match(app, /24時間以内/);
   assert.match(app, /params\.set\("activity", activityFilter\)/);
   assert.match(discoverApi, /requestedActivity === "online"/);
-  assert.match(discoverApi, /Date\.now\(\) - 3 \* 60 \* 60_000/);
-  assert.match(discoverApi, /Date\.now\(\) - 24 \* 60 \* 60_000/);
+  assert.match(discoverApi, /activityAge\(lastActiveAt\) <= RECENT_WINDOW_MS/);
+  assert.match(discoverApi, /activityAge\(lastActiveAt\) <= TODAY_WINDOW_MS/);
   assert.match(discoverApi, /right\.lastActiveAt\.getTime\(\) - left\.lastActiveAt\.getTime\(\)/);
 });
 
@@ -222,7 +222,7 @@ test("raises the share of online profiles without removing other discovery slots
     highestRate: "レジェンド 1000〜1199",
     playTime: ["平日 夜（18〜22時）"],
     createdAt: new Date(now - 60 * 24 * 60 * 60_000),
-    lastActiveAt: new Date(now - (index + 1) * 60_000),
+    lastActiveAt: new Date(now - (index < 8 ? (index + 1) * 20_000 : (index + 1) * 60_000)),
     online: index < 8,
     likeCount: 10,
     qualityScore: 4,
@@ -536,8 +536,9 @@ test("ships the matching app, onboarding, lobby, safety, analytics, and notifica
   assert.match(app, /profileCompletionInline/);
   assert.doesNotMatch(app, /profileCompletionCard/);
   assert.doesNotMatch(app, /getSynergy/);
-  assert.match(app, /分前にオンライン/);
-  assert.match(app, /時間前にオンライン/);
+  assert.match(app, /activityStatus/);
+  assert.match(app, /最近オンライン（3時間以内）/);
+  assert.match(app, /今日アクセスあり（24時間以内）/);
   assert.match(app, /下に引いて更新/);
   assert.match(app, /離して更新/);
   assert.match(app, /handlePullMove/);
@@ -1266,8 +1267,8 @@ test("keeps linked-account users online under their canonical profile", async ()
   assert.match(presenceApi, /inArray\(profiles\.userId, aliases\)/);
   assert.match(presenceApi, /userId: identity\.canonicalUserId/);
   assert.match(presenceApi, /payload\.connectionId[\s\S]+\{ lastSeenAt: now \}/);
-  assert.match(presenceApi, /online: age < 3 \* 60_000/);
-  assert.match(discoverApi, /Date\.now\(\) - 3 \* 60_000/);
+  assert.match(presenceApi, /online: isRecentlyOnline\(row\?\.lastSeenAt\)/);
+  assert.match(discoverApi, /isRecentlyOnline\(lastActiveByUser.get\(userId\)\)/);
   assert.match(app, /presenceHeartbeatMs = 120_000/);
 });
 
