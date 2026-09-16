@@ -15,9 +15,13 @@ export async function GET(request:Request,{params}:{params:Promise<{provider:str
   const source=new URL(request.url);
   const requested=source.searchParams.get("returnTo")||"/";
   const redirectTo=requested.startsWith("/")&&!requested.startsWith("//")?requested:"/";
-  const forwardedHost=request.headers.get("x-forwarded-host")?.split(",",1)[0]?.trim().toLowerCase();
-  const currentHost=(forwardedHost||source.host).split(":",1)[0];
-  if(fifthMatchHosts.has(currentHost)){
+  const hostCandidates=[
+    request.headers.get("host"),
+    source.host,
+    request.headers.get("x-forwarded-host")?.split(",",1)[0]?.trim(),
+  ].filter((host):host is string=>Boolean(host)).map((host)=>host.toLowerCase().split(":",1)[0]);
+  const currentHost=hostCandidates.find((host)=>fifthMatchHosts.has(host));
+  if(currentHost){
     const bridgeReturnTo=new URL("/api/domain-auth-bridge","https://yunamatch.com");
     bridgeReturnTo.searchParams.set("target",currentHost);
     bridgeReturnTo.searchParams.set("returnTo",redirectTo);

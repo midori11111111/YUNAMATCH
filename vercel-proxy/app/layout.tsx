@@ -6,7 +6,7 @@ import "./login.css";
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
   const brand = gatewayBrandForHost(
-    requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"),
+    requestHeaders.get("host") ?? requestHeaders.get("x-forwarded-host"),
   );
   return { title: brand.title, description: brand.description };
 }

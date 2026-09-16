@@ -6,7 +6,7 @@ import LoginButton from "./login-button";
 export default async function LoginPage() {
   const requestHeaders = await headers();
   const brand = gatewayBrandForHost(
-    requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"),
+    requestHeaders.get("host") ?? requestHeaders.get("x-forwarded-host"),
   );
   const returnTo = process.env.SERVICE_HOME_PATH || "/";
   return (
