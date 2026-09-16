@@ -43,6 +43,21 @@ body { margin: 0; }
   box-shadow: 0 14px 38px rgba(190, 70, 171, .35);
 }
 
+.loginPage--daigomatch {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(181, 61, 81, .32), transparent 42%),
+    linear-gradient(155deg, #27161c 0%, #0d090b 62%);
+}
+
+.loginPage--daigomatch .loginLogo {
+  background: linear-gradient(145deg, #7f2033, #c75b68);
+  box-shadow: 0 14px 32px rgba(127, 32, 51, .28);
+}
+
+.loginPage--daigomatch h1 span {
+  color: #e87886;
+}
+
 .loginWordmark { font-size: 23px; font-weight: 900; letter-spacing: .08em; }
 .loginWordmark span { color: #fb5d88; }
 .loginEyebrow { margin: 8px 0 28px; color: #8e93ad; font-size: 11px; letter-spacing: .16em; }

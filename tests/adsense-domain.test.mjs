@@ -6,10 +6,19 @@ const root = new URL("../", import.meta.url);
 const read = (path) => readFile(new URL(path, root), "utf8");
 
 test("serves Fifth Match on its own domain without an external redirect", async () => {
-  const config = await read("vercel-proxy/next.config.ts");
+  const [config, auth, login, brand] = await Promise.all([
+    read("vercel-proxy/next.config.ts"),
+    read("vercel-proxy/auth.ts"),
+    read("vercel-proxy/app/login/page.tsx"),
+    read("vercel-proxy/lib/gateway-brand.ts"),
+  ]);
   assert.match(config, /\["daigomatch\.com", "www\.daigomatch\.com"\]/);
   assert.match(config, /destination: `\$\{upstream\}\/shoenmate`/);
   assert.doesNotMatch(config, /SERVICE_HOME_PATH/);
+  assert.match(auth, /trustHost: true/);
+  assert.match(login, /gatewayBrandForHost/);
+  assert.match(brand, /daigomatch\.com/);
+  assert.match(brand, /第五マッチ/);
 });
 
 test("publishes the AdSense ownership tag, loader, and ads.txt", async () => {
@@ -17,4 +26,23 @@ test("publishes the AdSense ownership tag, loader, and ads.txt", async () => {
   assert.match(layout, /google-adsense-account/);
   assert.match(layout, /pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=ca-pub-2909796543320281/);
   assert.equal(ads.trim(), "google.com, pub-2909796543320281, DIRECT, f08c47fec0942fa0");
+});
+
+test("returns Fifth Match logins to daigomatch without changing provider callbacks", async () => {
+  const [loginRoute, bridgeRoute, handoffRoute] = await Promise.all([
+    read("vercel-proxy/app/api/login/[provider]/route.ts"),
+    read("app/api/domain-auth-bridge/route.ts"),
+    read("vercel-proxy/app/api/domain-auth-handoff/route.ts"),
+  ]);
+  assert.match(loginRoute, /fifthMatchHosts/);
+  assert.match(loginRoute, /\/api\/domain-auth-bridge/);
+  assert.match(loginRoute, /https:\/\/yunamatch\.com/);
+  assert.match(bridgeRoute, /ALLOWED_TARGETS/);
+  assert.match(bridgeRoute, /encode\(/);
+  assert.match(bridgeRoute, /referrer-policy/);
+  assert.match(bridgeRoute, /form-action https:\/\/\$\{target\}/);
+  assert.match(handoffRoute, /decode\(/);
+  assert.match(handoffRoute, /__Secure-authjs\.session-token/);
+  assert.match(handoffRoute, /sameSite: "lax"/);
+  assert.match(handoffRoute, /Response\.redirect/);
 });

@@ -1,16 +1,26 @@
 import { signIn } from "@/auth";
+import { headers } from "next/headers";
+import { gatewayBrandForHost } from "@/lib/gateway-brand";
 import LoginButton from "./login-button";
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const requestHeaders = await headers();
+  const brand = gatewayBrandForHost(
+    requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"),
+  );
   const returnTo = process.env.SERVICE_HOME_PATH || "/";
   return (
-    <main className="loginPage">
+    <main className={`loginPage loginPage--${brand.service}`}>
       <section className="loginCard">
-        <div className="loginLogo" aria-hidden="true">Y</div>
-        <div className="loginWordmark">YUNA<span>MATCH</span></div>
-        <p className="loginEyebrow">POKÉMON UNITE MATCHING</p>
-        <h1>相性でつながる、<br /><span>ユナマッチ。</span></h1>
-        <p className="loginLead">使用ポケモンとプレイスタイルから、<br />今夜一緒に戦うメイトを見つけよう。</p>
+        <div className="loginLogo" aria-hidden="true">{brand.logo}</div>
+        <div className="loginWordmark">{brand.wordmark}</div>
+        <p className="loginEyebrow">{brand.eyebrow}</p>
+        <h1>{brand.heading}<br /><span>{brand.accent}</span></h1>
+        <p className="loginLead">
+          {brand.lead.split("\n").map((line, index) => (
+            <span key={line}>{index > 0 && <br />}{line}</span>
+          ))}
+        </p>
         <div className="returningUserGuide">
           <strong>すでに登録済みの方</strong>
           <p>登録時と同じSNS・同じアカウントを選ぶと、別のスマホでもプロフィールやチャットを引き継げます。</p>
