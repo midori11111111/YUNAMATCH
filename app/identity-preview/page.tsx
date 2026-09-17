@@ -123,7 +123,6 @@ export default function IdentityPreview({
   const recruitDetailDialog = useRef<HTMLDialogElement>(null);
   const queryRevision = useRef(0);
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
-  const swiped = useRef(false);
   useEffect(() => { setDetailNotice(""); if (detailProfile) detailDialog.current?.showModal(); }, [detailProfile]);
   useEffect(() => { if (recruitDetail) recruitDetailDialog.current?.showModal(); }, [recruitDetail]);
   useEffect(() => {
@@ -474,6 +473,16 @@ export default function IdentityPreview({
     <main className={`${styles.app} ${tab === "find" ? styles.focusMode : ""}`}>
       <div className={styles.shell}>
         <header className={styles.header}>
+          <button
+            className={styles.accountButton}
+            aria-label="マイページを開く"
+            onClick={() => {
+              if (requireProfile("マイページ")) return;
+              setTab("profile");
+            }}
+          >
+            {me?.avatarUrl ? <img src={me.avatarUrl} alt="" /> : me?.displayName ? <span>{me.displayName.slice(0, 1)}</span> : <Icon name="profile" />}
+          </button>
           <div className={styles.brand}>
             <img src="/daigomatch-icon.svg?rev=2" alt="" width="48" height="48" />
             <span>
@@ -482,6 +491,7 @@ export default function IdentityPreview({
             </span>
           </div>
           <button
+            className={styles.noticeButton}
             aria-label={`届いた申請${incoming.length ? ` ${incoming.length}件` : ""}`}
             onClick={() => {
               if (requireProfile("届いた申請の確認")) return;
@@ -526,11 +536,11 @@ export default function IdentityPreview({
                 <button className={discoverMode === "received" ? styles.selected : ""} aria-pressed={discoverMode === "received"} onClick={() => { if (!requireProfile("相手からのいいね")) { setDiscoverMode("received"); void load(); } }}>相手から{receivedLikes.length > 0 && <small>{receivedLikes.length}</small>}</button>
                 <button className={discoverMode === "skipped" ? styles.selected : ""} aria-pressed={discoverMode === "skipped"} onClick={() => setDiscoverMode("skipped")}>保留{skippedProfiles.length > 0 && <small>{skippedProfiles.length}</small>}</button>
               </div>
-              <button className={styles.filterButton} aria-label="絞り込み" onClick={() => filterDialog.current?.showModal()}><Icon name="filter" />{Object.values(filters).some(Boolean) && <i />}</button>
+              <button className={styles.filterButton} aria-label="絞り込み" onClick={() => filterDialog.current?.showModal()}><Icon name="filter" /><span>絞り込み</span>{Object.values(filters).some(Boolean) && <i />}</button>
             </div>
             {current && !publicError && !publicLoading ? (
-              <article className={styles.card} key={`${discoverMode}-${current.id}`} onTouchStart={event => { if ((event.target as HTMLElement).closest("[data-card-actions]")) { swipeStart.current = null; return; } const touch = event.touches[0]; swipeStart.current = { x: touch.clientX, y: touch.clientY }; swiped.current = false; }} onTouchEnd={event => { const start = swipeStart.current; const touch = event.changedTouches[0]; if (start && Math.abs(touch.clientX - start.x) > 80 && Math.abs(touch.clientX - start.x) > Math.abs(touch.clientY - start.y) * 1.5) { swiped.current = true; moveProfile(touch.clientX < start.x ? 1 : -1); } swipeStart.current = null; }}>
-                <button className={styles.portrait} aria-label={`${current.displayName}のプロフィールを見る`} onClick={() => { if (swiped.current) { swiped.current = false; return; } setDetailProfile(current); }}>
+              <article className={styles.card} key={`${discoverMode}-${current.id}`} onTouchStart={event => { if ((event.target as HTMLElement).closest("[data-card-actions]")) { swipeStart.current = null; return; } const touch = event.touches[0]; swipeStart.current = { x: touch.clientX, y: touch.clientY }; }} onTouchEnd={event => { const start = swipeStart.current; const touch = event.changedTouches[0]; if (start && Math.abs(touch.clientX - start.x) > 80 && Math.abs(touch.clientX - start.x) > Math.abs(touch.clientY - start.y) * 1.5) moveProfile(touch.clientX < start.x ? 1 : -1); swipeStart.current = null; }}>
+                <div className={styles.portrait} aria-hidden="true">
                   {current.avatarUrl ? (
                     <img src={current.avatarUrl} alt="" />
                   ) : (
@@ -538,13 +548,16 @@ export default function IdentityPreview({
                       {current.displayName.slice(0, 1)}
                     </div>
                   )}
-                </button>
+                </div>
                 <button type="button" className={`${styles.cardStepper} ${styles.cardPrevious}`} disabled={!canGoPrevious} aria-label="前の人を見る" onClick={() => moveProfile(-1)}><Icon name="arrow" /></button>
                 <button type="button" className={`${styles.cardStepper} ${styles.cardNext}`} disabled={!canGoNext} aria-label="次の人を見る" onClick={() => moveProfile(1)}><Icon name="arrow" /></button>
-                <div className={styles.photoProgress}><span /></div>
+                <div className={styles.photoProgress} aria-hidden="true"><span style={{ width: `${Math.max(12, ((safeCurrentIndex + 1) / activeProfiles.length) * 100)}%` }} /></div>
                 <span className={styles.activityBadge}>{activityLabel(current.updatedAt)}</span>
                 <div className={styles.profile}>
-                  <button className={styles.profileHeading} onClick={() => setDetailProfile(current)}><h2>{current.displayName}</h2><Icon name="info" /></button>
+                  <div className={styles.profileHeading}>
+                    <h2>{current.displayName}</h2>
+                    <button type="button" aria-label={`${current.displayName}のプロフィール詳細を見る`} onClick={() => setDetailProfile(current)}><Icon name="info" /></button>
+                  </div>
                   <p className={styles.cardMeta}>{current.skillTier}{current.gender ? ` · ${current.gender}` : ""}</p>
                   <div className={styles.tags}>
                     {current.roles.map((role) => (
@@ -552,7 +565,7 @@ export default function IdentityPreview({
                     ))}
                   </div>
                   {!!current.characters?.length && <p className={styles.cardMeta}>よく使うキャラ：{current.characters.slice(0,3).join(" · ")}{current.characters.length > 3 ? ` ほか${current.characters.length - 3}体` : ""}</p>}
-                  <button className={styles.cardBio} onClick={() => setDetailProfile(current)}>{current.bio || "一緒に遊べる仲間を探しています。"}</button>
+                  <p className={styles.cardBio}>{current.bio || "一緒に遊べる仲間を探しています。"}</p>
                   <div className={styles.actions} data-card-actions>
                     <button
                       onClick={discoverMode === "skipped" ? restoreCurrent : skipCurrent}

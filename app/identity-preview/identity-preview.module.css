@@ -164,7 +164,7 @@
 .header > button { box-shadow:0 8px 28px #1823440a; border:0; }
 .brand strong { font-size:24px; font-weight:800; }
 .brand small { font-size:10px; }
-.focusMode .header,.focusMode .guestBanner,.focusMode .betaBar,.focusMode .disclaimer { display:none; }
+.focusMode .guestBanner,.focusMode .betaBar,.focusMode .disclaimer { display:none; }
 .betaBar,.guestBanner { display:none; }
 .betaBar { margin:0 12px 14px; font-size:12px; }
 .betaBar b { font-size:12px; }
@@ -378,4 +378,81 @@
   .actions span { font-size:10px; }
   .nav { width:calc(100% - 20px); bottom:calc(8px + env(safe-area-inset-bottom)); }
   .nav button { font-size:9px; }
+}
+
+/* Reference-led mobile polish: one clear profile, persistent identity and thumb controls. */
+.focusMode { background:#f4f0e9; }
+.header {
+  display:grid;
+  grid-template-columns:48px minmax(0,1fr) 48px;
+  align-items:center;
+  gap:10px;
+  padding:18px 4px 10px;
+}
+.header > button { margin:0; width:46px; height:46px; border:1px solid #d8cbc5; background:#fffdf9; box-shadow:0 8px 24px #241a1e10; }
+.accountButton { overflow:hidden; color:var(--wine); }
+.accountButton img { width:100%; height:100%; object-fit:cover; }
+.accountButton span { display:grid; place-items:center; width:100%; height:100%; background:var(--tint); color:var(--wine); font-weight:800; }
+.accountButton svg,.noticeButton svg { width:23px; height:23px; }
+.brand { justify-self:center; min-width:0; gap:8px; }
+.brand img { width:40px; height:40px; }
+.brand strong { font-family:"Hiragino Mincho ProN","Yu Mincho",serif; font-size:19px; letter-spacing:.02em; white-space:nowrap; }
+.brand small { font-size:8px; letter-spacing:.2em; }
+.noticeButton { justify-self:end; }
+.discoverHeader { height:68px; gap:8px; padding:8px 2px 10px; }
+.segmented { gap:3px; padding:3px; border:1px solid #ded4cf; border-radius:11px; background:#ebe5e1; }
+.segmented button { flex:1 0 auto; min-height:42px; padding:8px 11px; border-radius:8px; color:#766c70; font-size:14px; }
+.segmented .selected { background:#fffdf9; color:var(--wine); box-shadow:0 4px 12px #241a1e0f; }
+.filterButton { width:58px; height:50px; gap:1px; border:1px solid #ded4cf; border-radius:11px; background:#fffdf9; }
+.filterButton svg { width:21px; height:21px; }
+.filterButton span { font-size:9px; font-weight:750; line-height:1.1; }
+.filterButton i { right:6px; top:6px; }
+.card {
+  height:calc(100dvh - 244px - env(safe-area-inset-bottom));
+  min-height:470px;
+  max-height:760px;
+  border:1px solid #3d3035;
+  border-radius:28px;
+  box-shadow:0 18px 46px #28181e35;
+}
+.card::before { inset:9px; height:auto; border:1px solid #ffffff4f; border-radius:21px; }
+.card::after { background:linear-gradient(180deg,#1c13170a 10%,transparent 32%,#1c13174d 56%,#171014e8 82%,#110b0efb 100%); }
+.photoProgress { display:block; left:22px; right:22px; top:17px; height:3px; overflow:hidden; border-radius:10px; background:#ffffff42; }
+.photoProgress span { background:#fff; transition:width .24s ease; }
+.activityBadge { top:31px; left:22px; transform:none; padding:5px 9px; border-radius:5px; background:#171013b8; font-size:11px; }
+.cardStepper { top:11%; bottom:205px; width:28%; opacity:.56; }
+.cardStepper svg { width:25px; height:25px; padding:5px; border-color:#ffffff59; background:#1710135c; }
+.cardPrevious svg { left:10px; }
+.cardNext svg { right:10px; }
+.profile { padding:24px 22px 18px; }
+.profileHeading { align-items:center; }
+.profileHeading h2 { flex:1; min-width:0; font-size:27px; }
+.profileHeading button { display:grid; place-items:center; width:38px; height:38px; padding:0; border:1px solid #ffffff8c; border-radius:50%; background:#17101352; color:white; }
+.profileHeading button svg { width:22px; height:22px; }
+.cardBio { margin:6px 0 0 !important; pointer-events:none; }
+.actions { margin-top:16px; }
+.nav { border-color:#d9cdc7; background:#fffdf9f5; box-shadow:0 10px 35px #241a1e20; }
+.nav button { color:#776d71; font-size:11px; }
+.nav button.active { color:var(--wine); background:#f2e8e3; }
+
+@media (max-width:390px) {
+  .shell { padding-inline:10px; }
+  .header { grid-template-columns:44px minmax(0,1fr) 44px; padding-top:14px; }
+  .header > button { width:42px; height:42px; }
+  .brand { gap:6px; }
+  .brand img { width:35px; height:35px; }
+  .brand strong { font-size:17px; }
+  .discoverHeader { height:64px; }
+  .segmented button { padding:7px 9px; font-size:13px; }
+  .filterButton { width:54px; height:46px; }
+  .card { height:calc(100dvh - 226px - env(safe-area-inset-bottom)); min-height:450px; border-radius:24px; }
+  .card::before { border-radius:18px; }
+  .cardStepper { bottom:198px; }
+  .profile { padding:21px 18px 15px; }
+  .profileHeading h2 { font-size:24px; }
+  .profile .cardMeta { margin:5px 0; font-size:13px; }
+  .profile .tags { margin:5px 0 7px; }
+  .cardBio { font-size:14px !important; line-height:1.5; }
+  .actions { margin-top:13px; }
+  .nav button { font-size:10px; }
 }
