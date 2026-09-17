@@ -80,7 +80,7 @@ export default function ServiceOnboarding({
     [selectedTimes, setSelectedTimes] = useState<string[]>(
       initialProfile?.playTimes || [],
     ),
-    [age, setAge] = useState(initialProfile?.age || 18),
+    [ageInput, setAgeInput] = useState(String(initialProfile?.age || 18)),
     [gender, setGender] = useState(initialProfile?.gender || ""),
     [showGender, setShowGender] = useState(
       initialProfile?.showGender || false,
@@ -89,6 +89,8 @@ export default function ServiceOnboarding({
     [terms, setTerms] = useState(Boolean(initialProfile)),
     [saving, setSaving] = useState(false),
     [error, setError] = useState("");
+  const age = Number(ageInput),
+    validAge = Number.isInteger(age) && age >= 13 && age <= 99;
   const toggle = (
     list: string[],
     value: string,
@@ -99,6 +101,10 @@ export default function ServiceOnboarding({
     );
   async function submit(event: FormEvent) {
     event.preventDefault();
+    if (!validAge) {
+      setError("年齢は13〜99歳で入力してください");
+      return;
+    }
     setSaving(true);
     setError("");
     try {
@@ -264,8 +270,12 @@ export default function ServiceOnboarding({
               inputMode="numeric"
               min={13}
               max={99}
-              value={age}
-              onChange={(e) => setAge(Number(e.target.value))}
+              step={1}
+              required
+              value={ageInput}
+              onChange={(e) =>
+                setAgeInput(e.target.value.replace(/^0+(?=\d)/, ""))
+              }
             />
           </label>
           <label>
@@ -323,6 +333,7 @@ export default function ServiceOnboarding({
               saving ||
               !displayName ||
               !gameIdentity ||
+              !validAge ||
               !selectedRoles.length ||
               !selectedTimes.length ||
               !terms

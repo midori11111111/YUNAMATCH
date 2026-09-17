@@ -32,6 +32,9 @@ test("uses real account login and persistent onboarding in Stamate",async()=>{
  assert.match(page,/ServiceOnboardingservice="stamate"/);
  assert.match(onboarding,/method:"PUT"/);
  assert.match(onboarding,/termsAccepted:terms/);
+ assert.match(onboarding,/\[ageInput,setAgeInput\]=useState\(String\(initialProfile\?\.age\|\|18\)\)/);
+ assert.match(onboarding,/setAgeInput\(e\.target\.value\.replace\(\/\^0\+\(\?=\\d\)\/,""\)\)/);
+ assert.match(onboarding,/validAge=Number\.isInteger\(age\)&&age>=13&&age<=99/);
  assert.match(onboarding,/age>=18&&gender/);
  assert.match(page,/fetch\("\/api\/services\/stamate\/discover"\)/);
  assert.match(page,/fetch\("\/api\/services\/stamate\/likes"/);
