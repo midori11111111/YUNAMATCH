@@ -6,7 +6,7 @@ import ServiceTermsGate from "../service-terms-gate";
 import ServiceReportButton from "../service-report-button";
 import ServiceAccountSafety from "../service-account-safety";
 import ServiceDiscordLink from "../service-discord-link";
-import { shoenmateRoles, shoenmateRoleLabel, matchesShoenmateRole } from "../../lib/shoenmate-profile";
+import { matchesShoenmateRole, normalizeShoenmateTier, shoenmateRoles, shoenmateRoleLabel, shoenmateTiers } from "../../lib/shoenmate-profile";
 type Tab = "find" | "explore" | "recruit" | "chat" | "profile";
 function Icon({ name }: { name: Tab | "heart" | "bell" | "arrow" | "filter" | "skip" | "info" }) {
   const paths = {
@@ -60,21 +60,7 @@ const loginProviders = [
   { id: "discord", label: "Discord", mark: "D", color: "#5865f2" },
   { id: "google", label: "Google", mark: "G", color: "#4285f4" },
 ];
-const tiers = [
-    "未設定",
-    "サバイバー1段",
-    "サバイバー2段",
-    "サバイバー3段",
-    "サバイバー4段",
-    "サバイバー5段",
-    "サバイバー6段以上",
-    "ハンター1段",
-    "ハンター2段",
-    "ハンター3段",
-    "ハンター4段",
-    "ハンター5段",
-    "ハンター6段以上",
-  ],
+const tiers = [...shoenmateTiers],
   roles = shoenmateRoles;
 export default function IdentityPreview({
   basePath = "/identity-preview",
@@ -195,7 +181,7 @@ export default function IdentityPreview({
     if (auth === "ready" && !me) void loadPublic();
     if (auth === "guest") void loadPublic();
   }, [auth, me]);
-  const visibleReceived = receivedLikes.filter(({ profile }) => matchesShoenmateRole(profile.roles, filters.role) && (!filters.tier || profile.skillTier === filters.tier));
+  const visibleReceived = receivedLikes.filter(({ profile }) => matchesShoenmateRole(profile.roles, filters.role) && (!filters.tier || normalizeShoenmateTier(profile.skillTier) === filters.tier));
   const current = discoverMode === "received" ? visibleReceived[0]?.profile : profiles[0];
   const removeCurrent = () => {
     if (discoverMode === "received") setReceivedLikes(value => value.filter(item => item.profile.id !== current?.id));

@@ -14,6 +14,7 @@ import {
   checkRateLimit,
   rateLimitResponse,
 } from "../../../../../lib/rate-limit";
+import { normalizeShoenmateTier } from "../../../../../lib/shoenmate-profile";
 import {
   cleanText,
   isServiceId,
@@ -113,7 +114,7 @@ export async function GET(
           ? {
               id: owner.id,
               displayName: owner.displayName,
-              skillTier: owner.skillTier,
+              skillTier: service === "shoenmate" ? normalizeShoenmateTier(owner.skillTier) : owner.skillTier,
               roles: JSON.parse(owner.roles),
               characters: JSON.parse(owner.characters),
               avatarUrl: owner.avatarUrl,

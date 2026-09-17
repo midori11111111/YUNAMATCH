@@ -22,6 +22,41 @@ export const shoenmateCharacterGroups = [
   ] },
 ];
 export const shoenmateCharacterSet = new Set(shoenmateCharacterGroups.flatMap(group => group.names));
+export const shoenmateTiers = [
+  "未設定",
+  "サバイバー1段",
+  "サバイバー2段",
+  "サバイバー3段",
+  "サバイバー4段",
+  "サバイバー5段",
+  "サバイバー6段",
+  "サバイバー7段",
+  "サバイバー最高峰7段",
+  "ハンター1段",
+  "ハンター2段",
+  "ハンター3段",
+  "ハンター4段",
+  "ハンター5段",
+  "ハンター6段",
+  "ハンター7段",
+  "ハンター最高峰7段",
+] as const;
+const shoenmateLegacyTierMap: Record<string, string> = {
+  "サバイバー6段以上": "サバイバー6段",
+  "ハンター6段以上": "ハンター6段",
+};
+export function normalizeShoenmateTier(tier: string) {
+  return shoenmateLegacyTierMap[tier] ?? tier;
+}
+export function shoenmateTierDatabaseValues(tier: string) {
+  const normalized = normalizeShoenmateTier(tier);
+  return [
+    normalized,
+    ...Object.entries(shoenmateLegacyTierMap)
+      .filter(([, value]) => value === normalized)
+      .map(([legacy]) => legacy),
+  ];
+}
 export const shoenmateSurvivorRoles = ["救助", "牽制", "補助"];
 // Retain 解読 and 指定なし so existing profiles remain editable without data loss.
 export const shoenmateRoles = ["サバイバー", ...shoenmateSurvivorRoles, "解読", "ハンター", "指定なし"];

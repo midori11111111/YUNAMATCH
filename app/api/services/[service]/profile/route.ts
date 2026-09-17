@@ -11,7 +11,7 @@ import {
   serviceReports,
 } from "../../../../../db/schema";
 import { getChatGPTUser } from "../../../../chatgpt-auth";
-import { shoenmateCharacterSet } from "../../../../../lib/shoenmate-profile";
+import { normalizeShoenmateTier, shoenmateCharacterSet } from "../../../../../lib/shoenmate-profile";
 import {
   containsProhibitedContent,
   prohibitedContentMessage,
@@ -30,6 +30,7 @@ import {
 function output(row: typeof serviceProfiles.$inferSelect) {
   return {
     ...row,
+    skillTier: row.serviceId === "shoenmate" ? normalizeShoenmateTier(row.skillTier) : row.skillTier,
     roles: JSON.parse(row.roles) as string[],
     characters: JSON.parse(row.characters) as string[],
     playTimes: JSON.parse(row.playTimes) as string[],
@@ -138,7 +139,8 @@ export async function PUT(
     config = serviceConfig[ctx.service];
   const displayName = cleanText(body.displayName, 24),
     gameIdentity = cleanText(body.gameIdentity, 60),
-    skillTier = cleanText(body.skillTier, 40),
+    rawSkillTier = cleanText(body.skillTier, 40),
+    skillTier = ctx.service === "shoenmate" ? normalizeShoenmateTier(rawSkillTier) : rawSkillTier,
     roles = stringList(body.roles, 5),
     playTimes = stringList(body.playTimes, 7),
     bio = cleanText(body.bio, 200),

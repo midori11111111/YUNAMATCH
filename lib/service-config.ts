@@ -1,5 +1,5 @@
 import { stamateBrawlerSet } from "./stamate-brawlers";
-import { shoenmateRoles } from "./shoenmate-profile";
+import { shoenmateRoles, shoenmateTiers } from "./shoenmate-profile";
 
 export const serviceIds = [
   "valomatch",
@@ -78,21 +78,7 @@ export const serviceConfig: Record<
     termsVersion: "2026-09-08-v3",
     roles: new Set(shoenmateRoles),
     modes: new Set(["ランク戦", "マルチ戦", "協力狩り", "カスタム", "その他"]),
-    tiers: new Set([
-      "未設定",
-      "サバイバー1段",
-      "サバイバー2段",
-      "サバイバー3段",
-      "サバイバー4段",
-      "サバイバー5段",
-      "サバイバー6段以上",
-      "ハンター1段",
-      "ハンター2段",
-      "ハンター3段",
-      "ハンター4段",
-      "ハンター5段",
-      "ハンター6段以上",
-    ]),
+    tiers: new Set(shoenmateTiers),
   },
   roninmatch: {
     name: "浪マッチ",

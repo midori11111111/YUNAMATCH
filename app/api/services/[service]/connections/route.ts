@@ -11,6 +11,7 @@ import {
   checkRateLimit,
   rateLimitResponse,
 } from "../../../../../lib/rate-limit";
+import { normalizeShoenmateTier } from "../../../../../lib/shoenmate-profile";
 import { isServiceId } from "../../../../../lib/service-config";
 import { isServicePairBlocked } from "../../../../../lib/service-safety";
 
@@ -149,7 +150,7 @@ export async function GET(
         ? {
             id: other.id,
             displayName: other.displayName,
-            skillTier: other.skillTier,
+            skillTier: ctx.service === "shoenmate" ? normalizeShoenmateTier(other.skillTier) : other.skillTier,
             roles: JSON.parse(other.roles),
             characters: JSON.parse(other.characters),
             avatarUrl: other.avatarUrl,

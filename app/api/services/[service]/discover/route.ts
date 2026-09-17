@@ -7,7 +7,7 @@ import {
   serviceProfiles,
 } from "../../../../../db/schema";
 import { getChatGPTUser } from "../../../../chatgpt-auth";
-import { matchesShoenmateRole } from "../../../../../lib/shoenmate-profile";
+import { matchesShoenmateRole, normalizeShoenmateTier, shoenmateTierDatabaseValues } from "../../../../../lib/shoenmate-profile";
 import {
   cleanText,
   isServiceId,
@@ -19,7 +19,7 @@ function output(row: typeof serviceProfiles.$inferSelect) {
     id: row.id,
     displayName: row.displayName,
     gameIdentity: row.gameIdentity,
-    skillTier: row.skillTier,
+    skillTier: row.serviceId === "shoenmate" ? normalizeShoenmateTier(row.skillTier) : row.skillTier,
     roles: JSON.parse(row.roles) as string[],
     characters: JSON.parse(row.characters) as string[],
     playTimes: JSON.parse(row.playTimes) as string[],
@@ -131,7 +131,11 @@ export async function GET(
         isNull(serviceProfiles.suspendedAt),
         before ? lt(serviceProfiles.id, before) : undefined,
         own ? ne(serviceProfiles.id, own.id) : undefined,
-        tier ? eq(serviceProfiles.skillTier, tier) : undefined,
+        tier
+          ? service === "shoenmate"
+            ? inArray(serviceProfiles.skillTier, shoenmateTierDatabaseValues(tier))
+            : eq(serviceProfiles.skillTier, tier)
+          : undefined,
       ),
     )
     .orderBy(desc(serviceProfiles.updatedAt), desc(serviceProfiles.id))
