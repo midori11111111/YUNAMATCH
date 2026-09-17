@@ -292,6 +292,13 @@
 .card { border:1px solid #4b3a40; border-radius:150px 150px 22px 22px; box-shadow:0 20px 55px #09060866; }
 .card::before { content:""; position:absolute; inset:10px 10px auto; height:132px; border:1px solid #ffffff70; border-bottom:0; border-radius:130px 130px 0 0; z-index:2; pointer-events:none; }
 .card::after { background:linear-gradient(180deg,transparent 18%,#1c13172e 46%,#1a1116df 78%,#120c10fa 100%); }
+.cardStepper { position:absolute; top:15%; bottom:215px; z-index:3; width:30%; border:0; background:transparent; color:white; opacity:.72; }
+.cardStepper:disabled { pointer-events:none; opacity:.18; }
+.cardStepper svg { position:absolute; top:50%; width:28px; height:28px; padding:6px; border:1px solid #ffffff85; border-radius:50%; background:#1710137a; backdrop-filter:blur(7px); }
+.cardPrevious { left:0; }
+.cardPrevious svg { left:12px; transform:rotate(180deg); }
+.cardNext { right:0; }
+.cardNext svg { right:12px; }
 .photoProgress { display:none; }
 .activityBadge { position:absolute; top:28px; left:50%; z-index:3; transform:translateX(-50%); width:max-content; max-width:75%; padding:6px 11px; border:1px solid #ffffff66; border-radius:20px; background:#191215c9; color:white; font-size:11px; font-weight:700; backdrop-filter:blur(9px); }
 .activityBadge::before { content:""; display:inline-block; width:7px; height:7px; margin-right:6px; border-radius:50%; background:#61d398; box-shadow:0 0 0 3px #61d39826; }
@@ -364,6 +371,7 @@
   .segmented button { padding:10px 11px; font-size:14px; }
   .filterButton { width:44px; height:44px; }
   .card { border-radius:112px 112px 18px 18px; }
+  .cardStepper { bottom:205px; }
   .actions { grid-template-columns:52px 1fr 1.25fr; gap:7px; }
   .actions button,.actions button:first-child,.actions button:last-child { height:52px; padding:5px; }
   .actions button:first-child { width:52px; }

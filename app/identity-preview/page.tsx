@@ -109,6 +109,7 @@ export default function IdentityPreview({
   const [recruitBusy, setRecruitBusy] = useState(false);
   const [recruitError, setRecruitError] = useState("");
   const [discoverMode, setDiscoverMode] = useState<DiscoverMode>("recommended");
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [receivedLikes, setReceivedLikes] = useState<{ id: number; profile: Candidate }[]>([]);
   const [skippedProfiles, setSkippedProfiles] = useState<Candidate[]>([]);
   const [detailProfile, setDetailProfile] = useState<Profile | null>(null);
@@ -226,7 +227,22 @@ export default function IdentityPreview({
     (!filters.character || profile.characters?.includes(filters.character)) &&
     matchesActivity(profile.updatedAt, filters.activity)
   );
-  const current = discoverMode === "received" ? visibleReceived[0]?.profile : discoverMode === "skipped" ? skippedProfiles[0] : profiles[0];
+  const activeProfiles = discoverMode === "received"
+    ? visibleReceived.map(item => item.profile)
+    : discoverMode === "skipped"
+      ? skippedProfiles
+      : profiles;
+  const safeCurrentIndex = Math.min(currentIndex, Math.max(activeProfiles.length - 1, 0));
+  const current = activeProfiles[safeCurrentIndex];
+  const canGoPrevious = safeCurrentIndex > 0;
+  const canGoNext = safeCurrentIndex < activeProfiles.length - 1;
+  useEffect(() => setCurrentIndex(0), [discoverMode]);
+  useEffect(() => {
+    setCurrentIndex(index => Math.min(index, Math.max(activeProfiles.length - 1, 0)));
+  }, [activeProfiles.length]);
+  const moveProfile = (direction: -1 | 1) => {
+    setCurrentIndex(index => Math.max(0, Math.min(index + direction, activeProfiles.length - 1)));
+  };
   const removeCurrent = () => {
     if (discoverMode === "received") setReceivedLikes(value => value.filter(item => item.profile.id !== current?.id));
     else if (discoverMode === "skipped") setSkippedProfiles(value => {
@@ -513,8 +529,8 @@ export default function IdentityPreview({
               <button className={styles.filterButton} aria-label="絞り込み" onClick={() => filterDialog.current?.showModal()}><Icon name="filter" />{Object.values(filters).some(Boolean) && <i />}</button>
             </div>
             {current && !publicError && !publicLoading ? (
-              <article className={styles.card} key={`${discoverMode}-${current.id}`} onTouchStart={event => { const touch = event.touches[0]; swipeStart.current = { x: touch.clientX, y: touch.clientY }; swiped.current = false; }} onTouchEnd={event => { const start = swipeStart.current; const touch = event.changedTouches[0]; if (start && Math.abs(touch.clientX - start.x) > 80 && Math.abs(touch.clientX - start.x) > Math.abs(touch.clientY - start.y) * 1.5) { swiped.current = true; skipCurrent(); } swipeStart.current = null; }}>
-                <button className={styles.portrait} aria-label={`${current.displayName}のプロフィールを見る`} onClick={() => { if (!swiped.current) setDetailProfile(current); }}>
+              <article className={styles.card} key={`${discoverMode}-${current.id}`} onTouchStart={event => { if ((event.target as HTMLElement).closest("[data-card-actions]")) { swipeStart.current = null; return; } const touch = event.touches[0]; swipeStart.current = { x: touch.clientX, y: touch.clientY }; swiped.current = false; }} onTouchEnd={event => { const start = swipeStart.current; const touch = event.changedTouches[0]; if (start && Math.abs(touch.clientX - start.x) > 80 && Math.abs(touch.clientX - start.x) > Math.abs(touch.clientY - start.y) * 1.5) { swiped.current = true; moveProfile(touch.clientX < start.x ? 1 : -1); } swipeStart.current = null; }}>
+                <button className={styles.portrait} aria-label={`${current.displayName}のプロフィールを見る`} onClick={() => { if (swiped.current) { swiped.current = false; return; } setDetailProfile(current); }}>
                   {current.avatarUrl ? (
                     <img src={current.avatarUrl} alt="" />
                   ) : (
@@ -523,6 +539,8 @@ export default function IdentityPreview({
                     </div>
                   )}
                 </button>
+                <button type="button" className={`${styles.cardStepper} ${styles.cardPrevious}`} disabled={!canGoPrevious} aria-label="前の人を見る" onClick={() => moveProfile(-1)}><Icon name="arrow" /></button>
+                <button type="button" className={`${styles.cardStepper} ${styles.cardNext}`} disabled={!canGoNext} aria-label="次の人を見る" onClick={() => moveProfile(1)}><Icon name="arrow" /></button>
                 <div className={styles.photoProgress}><span /></div>
                 <span className={styles.activityBadge}>{activityLabel(current.updatedAt)}</span>
                 <div className={styles.profile}>
@@ -535,7 +553,7 @@ export default function IdentityPreview({
                   </div>
                   {!!current.characters?.length && <p className={styles.cardMeta}>よく使うキャラ：{current.characters.slice(0,3).join(" · ")}{current.characters.length > 3 ? ` ほか${current.characters.length - 3}体` : ""}</p>}
                   <button className={styles.cardBio} onClick={() => setDetailProfile(current)}>{current.bio || "一緒に遊べる仲間を探しています。"}</button>
-                  <div className={styles.actions}>
+                  <div className={styles.actions} data-card-actions>
                     <button
                       onClick={discoverMode === "skipped" ? restoreCurrent : skipCurrent}
                     >
@@ -587,7 +605,7 @@ export default function IdentityPreview({
               </button>)}
             </div> : <div className={styles.galleryEmpty}><p>{publicLoading ? "読み込んでいます…" : publicError || "今の条件に合う仲間はまだいません。"}</p><button className={styles.textButton} onClick={() => filterDialog.current?.showModal()}>条件を変更する →</button></div>}
             <div className={styles.sectionHeading}><h2>役割から見つける</h2></div>
-            <div className={styles.roleChoices}>{roles.map(role => <button key={role} onClick={() => { const next = { ...filters, role }; setFilters(next); setDiscoverMode("recommended"); setTab("find"); void loadPublic(next); }}>{shoenmateRoleLabel(role)}<Icon name="arrow" /></button>)}</div>
+            <div className={styles.roleChoices}>{roles.map(role => <button key={role} onClick={() => { const next = { ...filters, role }; setFilters(next); setCurrentIndex(0); setDiscoverMode("recommended"); setTab("find"); void loadPublic(next); }}>{shoenmateRoleLabel(role)}<Icon name="arrow" /></button>)}</div>
             <aside className={styles.guide} aria-label="仲間とつながるには">
               <div><Icon name="heart" /><strong>お互いにいいねでマッチ</strong><p>マッチしたら、チャットで相談。</p></div>
               <div><Icon name="chat" /><strong>直接誘うならメイト申請</strong><p>相手の承認後にやりとりできます。</p></div>
@@ -855,7 +873,7 @@ export default function IdentityPreview({
           </form>
         </dialog>
         <dialog ref={filterDialog} className={`${styles.recruitDialog} ${styles.bottomSheet}`} aria-labelledby="filter-title">
-          <form key={Object.values(filters).join(":")} onSubmit={event => { event.preventDefault(); const data = new FormData(event.currentTarget); const next: Filters = { query: String(data.get("query") || ""), character: String(data.get("character") || ""), role: String(data.get("role") || ""), tier: String(data.get("tier") || ""), activity: String(data.get("activity") || "") }; setFilters(next); filterDialog.current?.close(); void loadPublic(next); }}>
+          <form key={Object.values(filters).join(":")} onSubmit={event => { event.preventDefault(); const data = new FormData(event.currentTarget); const next: Filters = { query: String(data.get("query") || ""), character: String(data.get("character") || ""), role: String(data.get("role") || ""), tier: String(data.get("tier") || ""), activity: String(data.get("activity") || "") }; setFilters(next); setCurrentIndex(0); filterDialog.current?.close(); void loadPublic(next); }}>
             <div className={styles.sheetHandle} />
             <button type="button" className={styles.loginClose} aria-label="絞り込みを閉じる" onClick={() => filterDialog.current?.close()}>×</button>
             <h2 id="filter-title">仲間を絞り込む</h2>
@@ -864,7 +882,7 @@ export default function IdentityPreview({
             <label>得意な役割<select name="role" defaultValue={filters.role}><option value="">すべての役割</option>{roles.map(role => <option key={role} value={role}>{shoenmateRoleLabel(role)}</option>)}</select></label>
             <label>現在の段位<select name="tier" defaultValue={filters.tier}><option value="">すべての段位</option>{tiers.map(tier => <option key={tier}>{tier}</option>)}</select></label>
             <label>活動状況<select name="activity" defaultValue={filters.activity}><option value="">すべて</option><option value="online">オンライン中</option><option value="recent">最近オンライン（3時間以内）</option><option value="today">今日アクセスあり</option></select></label>
-            <button type="button" className={styles.textButton} onClick={() => { setFilters(emptyFilters); filterDialog.current?.close(); void loadPublic(emptyFilters); }}>条件をクリア</button>
+            <button type="button" className={styles.textButton} onClick={() => { setFilters(emptyFilters); setCurrentIndex(0); filterDialog.current?.close(); void loadPublic(emptyFilters); }}>条件をクリア</button>
             <button className={styles.primary}>この条件で探す</button>
           </form>
         </dialog>

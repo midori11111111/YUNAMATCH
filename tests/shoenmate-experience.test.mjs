@@ -34,3 +34,12 @@ test("opening a Fifth Match profile refreshes its activity without a write storm
   assert.match(profile, /> 60_000/);
   assert.match(profile, /set\(\{ updatedAt: now \}\)/);
 });
+
+test("Fifth Match profile cards support previous and next navigation without discarding people", async () => {
+  const page = await read("app/identity-preview/page.tsx");
+  assert.match(page, /const \[currentIndex, setCurrentIndex\] = useState\(0\)/);
+  assert.match(page, /aria-label="前の人を見る"/);
+  assert.match(page, /aria-label="次の人を見る"/);
+  assert.match(page, /moveProfile\(touch\.clientX < start\.x \? 1 : -1\)/);
+  assert.doesNotMatch(page, /onTouchEnd=.*skipCurrent\(\)/);
+});
