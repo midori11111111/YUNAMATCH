@@ -4,8 +4,10 @@ import { readFile } from "node:fs/promises";
 import ts from "typescript";
 
 const source = await readFile(new URL("../lib/shoenmate-profile.ts", import.meta.url), "utf8");
+const onboardingSource = await readFile(new URL("../app/service-onboarding.tsx", import.meta.url), "utf8");
+const profileRouteSource = await readFile(new URL("../app/api/services/[service]/profile/route.ts", import.meta.url), "utf8");
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
-const { shoenmateCharacterGroups, shoenmateCharacterSet, shoenmateTiers, normalizeShoenmateTier, shoenmateTierDatabaseValues, matchesShoenmateRole, toggleShoenmateSide, toggleShoenmateSurvivorRole, shoenmateRoleLabel } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString("base64")}`);
+const { shoenmateCharacterGroups, shoenmateCharacterSet, shoenmateTiers, normalizeShoenmateTier, shoenmateTierDatabaseValues, shoenmateUsername, matchesShoenmateRole, toggleShoenmateSide, toggleShoenmateSurvivorRole, shoenmateRoleLabel } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString("base64")}`);
 
 test("Fifth Match separates both factions and keeps character names unique", () => {
   assert.deepEqual(shoenmateCharacterGroups.map(group => group.label), ["サバイバー", "ハンター"]);
@@ -39,4 +41,11 @@ test("legacy six-plus profiles stay visible as tier six", () => {
   assert.equal(normalizeShoenmateTier("サバイバー6段以上"), "サバイバー6段");
   assert.equal(normalizeShoenmateTier("ハンター6段以上"), "ハンター6段");
   assert.deepEqual(shoenmateTierDatabaseValues("サバイバー6段"), ["サバイバー6段", "サバイバー6段以上"]);
+});
+test("Fifth Match uses the username as its only public name", () => {
+  assert.equal(shoenmateUsername("表示名", "ユーザー名"), "ユーザー名");
+  assert.equal(shoenmateUsername("表示名", ""), "表示名");
+  assert.match(onboardingSource, /service !== "shoenmate" && \(/);
+  assert.match(onboardingSource, /displayName: service === "shoenmate" \? gameIdentity : displayName/);
+  assert.match(profileRouteSource, /displayName = ctx\.service === "shoenmate" \? gameIdentity : rawDisplayName/);
 });

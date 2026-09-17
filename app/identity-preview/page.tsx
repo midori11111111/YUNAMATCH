@@ -622,9 +622,7 @@ export default function IdentityPreview({
             <article className={`${styles.panel} ${styles.myProfile}`}>
               <div className={styles.myAvatar}>{me?.avatarUrl ? <img src={me.avatarUrl} alt="あなたのプロフィール画像" /> : <Icon name="profile" />}</div>
               <h2>{me?.displayName}</h2>
-              <p>
-                {me?.gameIdentity}・{me?.skillTier}
-              </p>
+              <p>{me?.skillTier}</p>
               <div className={styles.tags}>
                 {me?.roles.map((role) => (
                   <span key={role}>{shoenmateRoleLabel(role)}</span>
@@ -798,7 +796,7 @@ export default function IdentityPreview({
           <button type="button" className={styles.loginClose} aria-label="プロフィールを閉じる" onClick={() => setDetailProfile(null)}>×</button>
           <div className={styles.detailAvatar}>{detailProfile.avatarUrl ? <img src={detailProfile.avatarUrl} alt="" /> : <Icon name="profile" />}</div>
           <h2 id="detail-title">{detailProfile.displayName}</h2>
-          <p>{detailProfile.gameIdentity} · {detailProfile.skillTier}</p>
+          <p>{detailProfile.skillTier}</p>
           <div className={styles.tags}>{detailProfile.roles.map(role => <span key={role}>{shoenmateRoleLabel(role)}</span>)}</div>
           <h3>よく使うキャラ</h3><p>{detailProfile.characters?.join(" · ") || "未設定"}</p>
           <h3>自己紹介</h3><p className={styles.fullBio}>{detailProfile.bio || "自己紹介はまだありません。"}</p>

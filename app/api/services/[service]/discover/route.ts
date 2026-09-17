@@ -7,7 +7,7 @@ import {
   serviceProfiles,
 } from "../../../../../db/schema";
 import { getChatGPTUser } from "../../../../chatgpt-auth";
-import { matchesShoenmateRole, normalizeShoenmateTier, shoenmateTierDatabaseValues } from "../../../../../lib/shoenmate-profile";
+import { matchesShoenmateRole, normalizeShoenmateTier, shoenmateTierDatabaseValues, shoenmateUsername } from "../../../../../lib/shoenmate-profile";
 import {
   cleanText,
   isServiceId,
@@ -15,10 +15,13 @@ import {
 } from "../../../../../lib/service-config";
 
 function output(row: typeof serviceProfiles.$inferSelect) {
+  const username = row.serviceId === "shoenmate"
+    ? shoenmateUsername(row.displayName, row.gameIdentity)
+    : "";
   return {
     id: row.id,
-    displayName: row.displayName,
-    gameIdentity: row.gameIdentity,
+    displayName: username || row.displayName,
+    gameIdentity: username || row.gameIdentity,
     skillTier: row.serviceId === "shoenmate" ? normalizeShoenmateTier(row.skillTier) : row.skillTier,
     roles: JSON.parse(row.roles) as string[],
     characters: JSON.parse(row.characters) as string[],

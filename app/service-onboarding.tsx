@@ -67,7 +67,10 @@ export default function ServiceOnboarding({
       initialProfile?.displayName || suggestedName,
     ),
     [gameIdentity, setGameIdentity] = useState(
-      initialProfile?.gameIdentity || "",
+      initialProfile?.gameIdentity ||
+        (service === "shoenmate"
+          ? initialProfile?.displayName || suggestedName
+          : ""),
     ),
     [skillTier, setSkillTier] = useState(
       initialProfile?.skillTier || tiers[0] || "未設定",
@@ -112,7 +115,7 @@ export default function ServiceOnboarding({
           method: "PUT",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
-            displayName,
+            displayName: service === "shoenmate" ? gameIdentity : displayName,
             gameIdentity,
             skillTier,
             roles: selectedRoles,
@@ -153,20 +156,22 @@ export default function ServiceOnboarding({
             : "初回だけ入力します。同じSNSアカウントでログインすれば、別の端末でも引き継がれます。"}
         </p>
         <form className={styles.form} onSubmit={submit}>
-          <label>
-            表示名
-            <input
-              value={displayName}
-              maxLength={24}
-              required
-              onChange={(e) => setDisplayName(e.target.value)}
-            />
-          </label>
+          {service !== "shoenmate" && (
+            <label>
+              表示名
+              <input
+                value={displayName}
+                maxLength={24}
+                required
+                onChange={(e) => setDisplayName(e.target.value)}
+              />
+            </label>
+          )}
           <label>
             {identityLabel}
             <input
               value={gameIdentity}
-              maxLength={60}
+              maxLength={service === "shoenmate" ? 24 : 60}
               required
               onChange={(e) => setGameIdentity(e.target.value)}
             />
@@ -331,7 +336,7 @@ export default function ServiceOnboarding({
             className={styles.submit}
             disabled={
               saving ||
-              !displayName ||
+              (service !== "shoenmate" && !displayName) ||
               !gameIdentity ||
               !validAge ||
               !selectedRoles.length ||

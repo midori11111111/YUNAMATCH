@@ -11,7 +11,7 @@ import {
   serviceReports,
 } from "../../../../../db/schema";
 import { getChatGPTUser } from "../../../../chatgpt-auth";
-import { normalizeShoenmateTier, shoenmateCharacterSet } from "../../../../../lib/shoenmate-profile";
+import { normalizeShoenmateTier, shoenmateCharacterSet, shoenmateUsername } from "../../../../../lib/shoenmate-profile";
 import {
   containsProhibitedContent,
   prohibitedContentMessage,
@@ -28,8 +28,13 @@ import {
 } from "../../../../../lib/service-config";
 
 function output(row: typeof serviceProfiles.$inferSelect) {
+  const username = row.serviceId === "shoenmate"
+    ? shoenmateUsername(row.displayName, row.gameIdentity)
+    : "";
   return {
     ...row,
+    displayName: username || row.displayName,
+    gameIdentity: username || row.gameIdentity,
     skillTier: row.serviceId === "shoenmate" ? normalizeShoenmateTier(row.skillTier) : row.skillTier,
     roles: JSON.parse(row.roles) as string[],
     characters: JSON.parse(row.characters) as string[],
@@ -137,8 +142,12 @@ export async function PUT(
       unknown
     >,
     config = serviceConfig[ctx.service];
-  const displayName = cleanText(body.displayName, 24),
-    gameIdentity = cleanText(body.gameIdentity, 60),
+  const rawDisplayName = cleanText(body.displayName, 24),
+    rawGameIdentity = cleanText(body.gameIdentity, ctx.service === "shoenmate" ? 24 : 60),
+    gameIdentity = ctx.service === "shoenmate"
+      ? shoenmateUsername(rawDisplayName, rawGameIdentity)
+      : rawGameIdentity,
+    displayName = ctx.service === "shoenmate" ? gameIdentity : rawDisplayName,
     rawSkillTier = cleanText(body.skillTier, 40),
     skillTier = ctx.service === "shoenmate" ? normalizeShoenmateTier(rawSkillTier) : rawSkillTier,
     roles = stringList(body.roles, 5),

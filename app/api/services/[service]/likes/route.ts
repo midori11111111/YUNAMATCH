@@ -13,7 +13,7 @@ import {
 } from "../../../../../lib/rate-limit";
 import { isServiceId } from "../../../../../lib/service-config";
 import { isServicePairBlocked } from "../../../../../lib/service-safety";
-import { normalizeShoenmateTier } from "../../../../../lib/shoenmate-profile";
+import { normalizeShoenmateTier, shoenmateUsername } from "../../../../../lib/shoenmate-profile";
 
 async function context(params: Promise<{ service: string }>) {
   const { service } = await params;
@@ -100,8 +100,8 @@ export async function GET(
               createdAt: row.createdAt,
               profile: {
                 id: profile.id,
-                displayName: profile.displayName,
-                gameIdentity: profile.gameIdentity,
+                displayName: ctx.service === "shoenmate" ? shoenmateUsername(profile.displayName, profile.gameIdentity) : profile.displayName,
+                gameIdentity: ctx.service === "shoenmate" ? shoenmateUsername(profile.displayName, profile.gameIdentity) : profile.gameIdentity,
                 skillTier: ctx.service === "shoenmate" ? normalizeShoenmateTier(profile.skillTier) : profile.skillTier,
                 roles: JSON.parse(profile.roles),
                 characters: JSON.parse(profile.characters),

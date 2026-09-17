@@ -57,6 +57,9 @@ export function shoenmateTierDatabaseValues(tier: string) {
       .map(([legacy]) => legacy),
   ];
 }
+export function shoenmateUsername(displayName: string, gameIdentity: string) {
+  return gameIdentity.trim() || displayName.trim();
+}
 export const shoenmateSurvivorRoles = ["救助", "牽制", "補助"];
 // Retain 解読 and 指定なし so existing profiles remain editable without data loss.
 export const shoenmateRoles = ["サバイバー", ...shoenmateSurvivorRoles, "解読", "ハンター", "指定なし"];
