@@ -300,7 +300,7 @@
 .profile .tags span { border:1px solid #ffffff47; border-radius:4px; background:#21161b66; }
 .actions { display:grid; grid-template-columns:58px 1fr 1.25fr; gap:9px; margin-top:18px; }
 .actions button,.actions button:first-child,.actions button:last-child { width:auto; height:56px; border-radius:9px; flex-direction:row; gap:6px; font-size:12px; }
-.actions button:first-child { width:58px; border:1px solid #ffffff70; }
+.actions button:first-child { width:58px; grid-column:auto; border:1px solid #ffffff70; }
 .actions button:nth-child(2) { color:var(--wine); }
 .actions button:last-child { color:white; background:var(--wine); }
 .actions svg { width:22px; height:22px; }
