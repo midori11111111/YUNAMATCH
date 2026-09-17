@@ -30,6 +30,7 @@ function output(row: typeof serviceProfiles.$inferSelect) {
     gender: row.showGender && row.age >= 18 ? row.gender : "",
     bio: row.bio,
     avatarUrl: row.avatarUrl,
+    headerUrl: row.headerUrl,
     updatedAt: row.updatedAt,
   };
 }

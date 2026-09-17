@@ -573,6 +573,7 @@ export const serviceProfiles = sqliteTable(
       .default(false),
     bio: text("bio").notNull().default(""),
     avatarUrl: text("avatar_url").notNull().default(""),
+    headerUrl: text("header_url").notNull().default(""),
     status: text("status").notNull().default("active"),
     termsVersion: text("terms_version").notNull(),
     termsAcceptedAt: integer("terms_accepted_at", {

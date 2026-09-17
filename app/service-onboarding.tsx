@@ -1,5 +1,5 @@
 "use client";
-import { FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useState } from "react";
 import styles from "./service-onboarding.module.css";
 import ShoenmateProfileFields from "./shoenmate-profile-fields";
 
@@ -32,6 +32,7 @@ type Props = {
     showGender?: boolean;
     bio?: string;
     avatarUrl?: string;
+    headerUrl?: string;
   } | null;
 };
 const playTimes = [
@@ -43,6 +44,32 @@ const playTimes = [
   "土日 夜・深夜",
   "時間帯はいつでも",
 ];
+
+async function cropImage(file: File, width: number, height: number) {
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type))
+    throw new Error("JPEG・PNG・WebP画像を選んでください");
+  if (file.size > 8 * 1024 * 1024) throw new Error("画像は8MB以下にしてください");
+  const source = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image(), url = URL.createObjectURL(file);
+    image.onload = () => { URL.revokeObjectURL(url); resolve(image); };
+    image.onerror = () => { URL.revokeObjectURL(url); reject(new Error("画像を読み込めませんでした")); };
+    image.src = url;
+  });
+  const canvas = document.createElement("canvas"), context = canvas.getContext("2d");
+  if (!context) throw new Error("画像を加工できませんでした");
+  canvas.width = width;
+  canvas.height = height;
+  const sourceRatio = source.naturalWidth / source.naturalHeight,
+    targetRatio = width / height,
+    cropWidth = sourceRatio > targetRatio ? source.naturalHeight * targetRatio : source.naturalWidth,
+    cropHeight = sourceRatio > targetRatio ? source.naturalHeight : source.naturalWidth / targetRatio;
+  context.fillStyle = "#f4eff0";
+  context.fillRect(0, 0, width, height);
+  context.drawImage(source, (source.naturalWidth - cropWidth) / 2, (source.naturalHeight - cropHeight) / 2, cropWidth, cropHeight, 0, 0, width, height);
+  const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, "image/jpeg", .82));
+  if (!blob) throw new Error("画像を加工できませんでした");
+  return blob;
+}
 
 export default function ServiceOnboarding({
   service,
@@ -89,6 +116,9 @@ export default function ServiceOnboarding({
       initialProfile?.showGender || false,
     ),
     [bio, setBio] = useState(initialProfile?.bio || ""),
+    [avatarUrl, setAvatarUrl] = useState(initialProfile?.avatarUrl || ""),
+    [headerUrl, setHeaderUrl] = useState(initialProfile?.headerUrl || ""),
+    [mediaBusy, setMediaBusy] = useState<"avatar" | "header" | "">(""),
     [terms, setTerms] = useState(Boolean(initialProfile)),
     [saving, setSaving] = useState(false),
     [error, setError] = useState("");
@@ -102,6 +132,44 @@ export default function ServiceOnboarding({
     setter(
       list.includes(value) ? list.filter((x) => x !== value) : [...list, value],
     );
+  async function selectMedia(event: ChangeEvent<HTMLInputElement>, kind: "avatar" | "header") {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setMediaBusy(kind);
+    setError("");
+    try {
+      const blob = await cropImage(file, kind === "avatar" ? 512 : 1200, kind === "avatar" ? 512 : 400),
+        endpoint = `/api/media/${kind === "avatar" ? "avatar" : "header"}?service=${encodeURIComponent(service)}`,
+        response = await fetch(endpoint, { method: "POST", headers: { "content-type": "image/jpeg" }, body: blob }),
+        data = await response.json();
+      if (!response.ok) throw new Error(data.error || "画像をアップロードできませんでした");
+      if (kind === "avatar") setAvatarUrl(data.avatarUrl);
+      else setHeaderUrl(data.headerUrl);
+    } catch (value) {
+      setError(value instanceof Error ? value.message : "画像をアップロードできませんでした");
+    } finally {
+      setMediaBusy("");
+    }
+  }
+  async function removeMedia(kind: "avatar" | "header") {
+    setMediaBusy(kind);
+    setError("");
+    try {
+      const endpoint = `/api/media/${kind === "avatar" ? "avatar" : "header"}?service=${encodeURIComponent(service)}`,
+        response = await fetch(endpoint, { method: "DELETE" });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "画像を削除できませんでした");
+      }
+      if (kind === "avatar") setAvatarUrl("");
+      else setHeaderUrl("");
+    } catch (value) {
+      setError(value instanceof Error ? value.message : "画像を削除できませんでした");
+    } finally {
+      setMediaBusy("");
+    }
+  }
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!validAge) {
@@ -125,7 +193,8 @@ export default function ServiceOnboarding({
             gender,
             showGender,
             bio,
-            avatarUrl: initialProfile?.avatarUrl || "",
+            avatarUrl,
+            headerUrl,
             termsAccepted: terms,
           }),
         }),
@@ -156,6 +225,33 @@ export default function ServiceOnboarding({
             : "初回だけ入力します。同じSNSアカウントでログインすれば、別の端末でも引き継がれます。"}
         </p>
         <form className={styles.form} onSubmit={submit}>
+          <section className={styles.mediaEditor} aria-label="プロフィール画像の設定">
+            <div className={styles.headerEditor}>
+              <div className={styles.headerPreview} style={headerUrl ? { backgroundImage: `url(${headerUrl})` } : undefined}>
+                {!headerUrl && <span>PROFILE HEADER</span>}
+              </div>
+              <div className={styles.mediaCopy}>
+                <strong>ヘッダー画像 <small>任意</small></strong>
+                <p>プロフィール上部と探すカードの背景に表示します。</p>
+                <span className={styles.mediaActions}>
+                  <label className={styles.mediaSelect}>{mediaBusy === "header" ? "処理中…" : "画像を選ぶ"}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={Boolean(mediaBusy)} onChange={event => void selectMedia(event, "header")} /></label>
+                  {headerUrl && <button type="button" disabled={Boolean(mediaBusy)} onClick={() => void removeMedia("header")}>削除</button>}
+                </span>
+              </div>
+            </div>
+            <div className={styles.avatarEditor}>
+              <div className={styles.avatarPreview}>{avatarUrl ? <img src={avatarUrl} alt="現在のプロフィールアイコン" /> : <span>{gameIdentity.slice(0, 1) || "人"}</span>}</div>
+              <div className={styles.mediaCopy}>
+                <strong>プロフィールアイコン <small>任意</small></strong>
+                <p>正方形に切り抜いて表示します。</p>
+                <span className={styles.mediaActions}>
+                  <label className={styles.mediaSelect}>{mediaBusy === "avatar" ? "処理中…" : "写真を選ぶ"}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={Boolean(mediaBusy)} onChange={event => void selectMedia(event, "avatar")} /></label>
+                  {avatarUrl && <button type="button" disabled={Boolean(mediaBusy)} onClick={() => void removeMedia("avatar")}>削除</button>}
+                </span>
+              </div>
+            </div>
+            <p className={styles.mediaNotice}>自分が権利を持つ画像を設定してください。</p>
+          </section>
           {service !== "shoenmate" && (
             <label>
               表示名

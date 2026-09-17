@@ -113,6 +113,7 @@ export async function GET(
                     : "",
                 bio: profile.bio,
                 avatarUrl: profile.avatarUrl,
+                headerUrl: profile.headerUrl,
               },
             },
           ]

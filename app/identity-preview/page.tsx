@@ -34,6 +34,7 @@ type Profile = {
   playTimes: string[];
   bio: string;
   avatarUrl: string;
+  headerUrl?: string;
   age?: number;
   gender?: string;
   showGender?: boolean;
@@ -260,6 +261,7 @@ export default function IdentityPreview({
     ["遊べる時間", me?.playTimes?.length],
     ["自己紹介", me?.bio],
     ["プロフィール画像", me?.avatarUrl],
+    ["ヘッダー画像", me?.headerUrl],
   ] as const;
   const completedItems = completionItems.filter(([, value]) => Boolean(value)).length;
   const profileCompletion = Math.round((completedItems / completionItems.length) * 100);
@@ -602,8 +604,8 @@ export default function IdentityPreview({
             {current && !publicError && !publicLoading ? (
               <article className={styles.card} key={`${discoverMode}-${current.id}`} onTouchStart={event => { if ((event.target as HTMLElement).closest("[data-card-actions],[data-card-detail]")) { swipeStart.current = null; return; } const touch = event.touches[0]; swipeStart.current = { x: touch.clientX, y: touch.clientY }; }} onTouchEnd={event => { const start = swipeStart.current; const touch = event.changedTouches[0]; if (start && Math.abs(touch.clientX - start.x) > 80 && Math.abs(touch.clientX - start.x) > Math.abs(touch.clientY - start.y) * 1.5) moveProfile(touch.clientX < start.x ? 1 : -1); swipeStart.current = null; }}>
                 <div className={styles.portrait} aria-hidden="true">
-                  {current.avatarUrl ? (
-                    <img src={current.avatarUrl} alt="" />
+                  {current.headerUrl || current.avatarUrl ? (
+                    <img src={current.headerUrl || current.avatarUrl} alt="" />
                   ) : (
                     <div className={styles.silhouette}>
                       {current.displayName.slice(0, 1)}
@@ -627,7 +629,7 @@ export default function IdentityPreview({
                     <small className={styles.characterLabel}>MAIN CHARACTER</small>
                     <h2>{current.characters?.[0] || "使用キャラ未設定"}</h2>
                     <div className={styles.cardAccount}>
-                      <span className={styles.cardAccountAvatar}>{current.displayName.slice(0, 1)}</span>
+                      <span className={styles.cardAccountAvatar}>{current.avatarUrl ? <img src={current.avatarUrl} alt="" /> : current.displayName.slice(0, 1)}</span>
                       <span className={styles.cardAccountIdentity}>
                         <strong>{current.displayName}</strong>
                         <small>{current.skillTier}{current.gender ? ` · ${current.gender}` : ""}</small>
@@ -802,7 +804,7 @@ export default function IdentityPreview({
               <h1>マイページ</h1>
             </div>
             <section className={styles.profileHero}>
-              <div className={styles.profileHeaderArt}><span>MANOR PASS</span></div>
+              <div className={styles.profileHeaderArt} style={me?.headerUrl ? { backgroundImage: `url(${me.headerUrl})` } : undefined}>{!me?.headerUrl && <span>MANOR PASS</span>}</div>
               <div className={styles.myAvatar}>{me?.avatarUrl ? <img src={me.avatarUrl} alt="あなたのプロフィール画像" /> : <Icon name="profile" />}</div>
               <small>MY PLAYER PROFILE</small>
               <h2>{me?.displayName}</h2>
@@ -1026,7 +1028,8 @@ export default function IdentityPreview({
         {detailProfile && <dialog ref={detailDialog} className={`${styles.recruitDialog} ${styles.bottomSheet} ${styles.detailSheet}`} aria-labelledby="detail-title" onClose={() => setDetailProfile(null)}>
           <div className={styles.sheetHandle} />
           <button type="button" className={styles.loginClose} aria-label="プロフィールを閉じる" onClick={() => setDetailProfile(null)}>×</button>
-          <div className={styles.detailAvatar}>{detailProfile.avatarUrl ? <img src={detailProfile.avatarUrl} alt="" /> : <Icon name="profile" />}</div>
+          {detailProfile.headerUrl && <div className={styles.detailHeader} style={{ backgroundImage: `url(${detailProfile.headerUrl})` }} />}
+          <div className={`${styles.detailAvatar} ${detailProfile.headerUrl ? styles.detailAvatarOverHeader : ""}`}>{detailProfile.avatarUrl ? <img src={detailProfile.avatarUrl} alt="" /> : <Icon name="profile" />}</div>
           <h2 id="detail-title">{detailProfile.displayName}</h2>
           <p>{detailProfile.skillTier}</p><p className={styles.detailActivity}>{activityLabel(detailProfile.updatedAt)}</p>
           <div className={styles.tags}>{detailProfile.roles.map(role => <span key={role}>{shoenmateRoleLabel(role)}</span>)}</div>

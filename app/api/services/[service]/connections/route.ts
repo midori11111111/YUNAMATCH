@@ -161,6 +161,7 @@ export async function GET(
             gender: other.showGender && other.age >= 18 ? other.gender : "",
             showGender: other.showGender,
             avatarUrl: other.avatarUrl,
+            headerUrl: other.headerUrl,
             updatedAt: other.updatedAt,
           }
         : {
@@ -176,6 +177,7 @@ export async function GET(
             gender: "",
             showGender: false,
             avatarUrl: "",
+            headerUrl: "",
             updatedAt: null,
           },
       latestMessage: latest

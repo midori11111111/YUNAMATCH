@@ -431,6 +431,7 @@
 .profileSummary h2 { margin:0 0 7px; overflow:hidden; color:white; font-family:"Hiragino Mincho ProN","Yu Mincho",serif; font-size:29px; line-height:1.18; letter-spacing:.01em; text-overflow:ellipsis; white-space:nowrap; }
 .cardAccount { display:grid; grid-template-columns:34px minmax(0,1fr) 34px; align-items:center; gap:9px; }
 .cardAccountAvatar { display:grid; place-items:center; width:34px; height:34px; border:1px solid #ffffffb3; border-radius:50%; background:#f5e8e0; color:var(--wine); font-size:14px; font-weight:800; }
+.cardAccountAvatar img { width:100%; height:100%; border-radius:inherit; object-fit:cover; }
 .cardAccountIdentity { display:flex; min-width:0; flex-direction:column; }
 .cardAccountIdentity strong { overflow:hidden; font-size:15px; line-height:1.25; text-overflow:ellipsis; white-space:nowrap; }
 .cardAccountIdentity small { color:#ffffffc9; font-size:11px; }
@@ -536,8 +537,10 @@
 
 /* My Page follows a profile dossier rather than a stack of generic cards. */
 .profileHero { position:relative; margin-bottom:16px; padding:0 20px 24px; border:1px solid #d4c6bf; background:#fffdf9; text-align:center; }
-.profileHeaderArt { height:126px; margin:0 -20px 0; display:grid; place-items:center; background:repeating-linear-gradient(135deg,#2b2024 0 18px,#32252a 18px 36px); color:#ffffff73; font:700 11px/1 Georgia,serif; letter-spacing:.3em; }
+.profileHeaderArt { height:126px; margin:0 -20px 0; display:grid; place-items:center; background:repeating-linear-gradient(135deg,#2b2024 0 18px,#32252a 18px 36px); background-position:center; background-size:cover; color:#ffffff73; font:700 11px/1 Georgia,serif; letter-spacing:.3em; }
 .profileHero .myAvatar { position:relative; width:112px; height:112px; margin:-56px auto 15px; border:5px solid #fffdf9; outline:1px solid #cbbdb6; background:var(--tint); }
+.detailHeader { height:128px; margin:-6px -20px 0; border-radius:14px 14px 0 0; background-position:center; background-size:cover; }
+.detailAvatarOverHeader { position:relative; margin-top:-54px; border:4px solid #fffdf9; box-shadow:0 0 0 1px #d8cdd0; }
 .profileHero > small,.profileSection > small,.profileSection header small { color:var(--wine); font-size:9px; font-weight:800; letter-spacing:.2em; }
 .profileHero h2 { margin:4px 0 0; font-family:"Hiragino Mincho ProN","Yu Mincho",serif; font-size:27px; }
 .profileHero > p { margin:2px 0; color:var(--muted); font-size:13px; }

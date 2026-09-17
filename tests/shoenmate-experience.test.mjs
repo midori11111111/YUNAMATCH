@@ -89,3 +89,28 @@ test("Fifth Match My Page includes completion, stats, history and safety section
   assert.match(page, /COMMUNITY/);
   assert.match(page, /SAFETY &amp; ACCOUNT/);
 });
+
+test("Fifth Match uploads service-isolated icons and headers and shows them across profiles", async () => {
+  const [onboarding, page, profile, discover, avatar, header, schema, migration] = await Promise.all([
+    read("app/service-onboarding.tsx"),
+    read("app/identity-preview/page.tsx"),
+    read("app/api/services/[service]/profile/route.ts"),
+    read("app/api/services/[service]/discover/route.ts"),
+    read("app/api/media/avatar/route.ts"),
+    read("app/api/media/header/route.ts"),
+    read("db/schema.ts"),
+    read("drizzle/0046_lovely_hellcat.sql"),
+  ]);
+  assert.match(onboarding, /ヘッダー画像/);
+  assert.match(onboarding, /プロフィールアイコン/);
+  assert.match(onboarding, /\?service=\$\{encodeURIComponent\(service\)\}/);
+  assert.match(onboarding, /headerUrl,/);
+  assert.match(profile, /headerUrl = cleanText\(body\.headerUrl, 500\)/);
+  assert.match(discover, /headerUrl: row\.headerUrl/);
+  assert.match(page, /current\.headerUrl \|\| current\.avatarUrl/);
+  assert.match(page, /me\?\.headerUrl/);
+  assert.match(avatar, /mediaOwner=requestedService\?`\$\{requestedService\}:\$\{user\.userId\}`/);
+  assert.match(header, /mediaOwner = requestedService \? `\$\{requestedService\}:\$\{user\.userId\}`/);
+  assert.match(schema, /headerUrl: text\("header_url"\)/);
+  assert.match(migration, /service_profiles.*header_url/);
+});

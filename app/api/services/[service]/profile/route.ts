@@ -167,6 +167,7 @@ export async function PUT(
     playTimes = stringList(body.playTimes, 7),
     bio = cleanText(body.bio, 200),
     avatarUrl = cleanText(body.avatarUrl, 500),
+    headerUrl = cleanText(body.headerUrl, 500),
     age =
       typeof body.age === "number" && Number.isInteger(body.age) ? body.age : 0,
     gender = cleanText(body.gender, 10),
@@ -214,6 +215,7 @@ export async function PUT(
       showGender,
       bio,
       avatarUrl,
+      headerUrl,
       status: "active",
       termsVersion: config.termsVersion,
       termsAcceptedAt: now,
@@ -237,6 +239,7 @@ export async function PUT(
         showGender,
         bio,
         avatarUrl,
+        headerUrl,
         termsVersion: config.termsVersion,
         termsAcceptedAt: now,
         updatedAt: now,

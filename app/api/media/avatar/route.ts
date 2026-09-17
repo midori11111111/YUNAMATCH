@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers";
 import { getChatGPTUser } from "../../../chatgpt-auth";
 import { checkRateLimit, rateLimitResponse } from "../../../../lib/rate-limit";
+import { isServiceId } from "../../../../lib/service-config";
 
 type MediaEnv = { MEDIA?: R2Bucket };
 
@@ -12,7 +13,10 @@ async function avatarId(userId:string){
 export async function POST(request:Request){
   const user=await getChatGPTUser();
   if(!user)return Response.json({error:"ログインが必要です"},{status:401});
-  const rateLimit=await checkRateLimit(user.userId,{action:"avatar",limit:10,windowMs:60*60_000});
+  const requestedService=new URL(request.url).searchParams.get("service")||"";
+  if(requestedService&&!isServiceId(requestedService))return Response.json({error:"サービスIDが不正です"},{status:400});
+  const mediaOwner=requestedService?`${requestedService}:${user.userId}`:user.userId;
+  const rateLimit=await checkRateLimit(mediaOwner,{action:"avatar",limit:10,windowMs:60*60_000});
   if(!rateLimit.allowed)return rateLimitResponse(rateLimit.retryAfter);
   const media=(env as unknown as MediaEnv).MEDIA;
   if(!media)return Response.json({error:"画像保存を準備中です"},{status:503});
@@ -20,15 +24,17 @@ export async function POST(request:Request){
   if(!["image/jpeg","image/png","image/webp"].includes(contentType))return Response.json({error:"JPEG・PNG・WebP画像を選んでください"},{status:400});
   const bytes=await request.arrayBuffer();
   if(!bytes.byteLength||bytes.byteLength>700_000)return Response.json({error:"画像サイズが大きすぎます"},{status:413});
-  const id=await avatarId(user.userId);
+  const id=await avatarId(mediaOwner);
   await media.put(`avatars/${id}`,bytes,{httpMetadata:{contentType,cacheControl:"public, max-age=31536000, immutable"}});
   return Response.json({avatarUrl:`/api/media/avatar/${id}?v=${Date.now()}`});
 }
 
-export async function DELETE(){
+export async function DELETE(request:Request){
   const user=await getChatGPTUser();
   if(!user)return Response.json({error:"ログインが必要です"},{status:401});
+  const requestedService=new URL(request.url).searchParams.get("service")||"";
+  if(requestedService&&!isServiceId(requestedService))return Response.json({error:"サービスIDが不正です"},{status:400});
   const media=(env as unknown as MediaEnv).MEDIA;
-  if(media)await media.delete(`avatars/${await avatarId(user.userId)}`);
+  if(media)await media.delete(`avatars/${await avatarId(requestedService?`${requestedService}:${user.userId}`:user.userId)}`);
   return Response.json({ok:true});
 }
