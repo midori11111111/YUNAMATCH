@@ -600,7 +600,7 @@ export default function IdentityPreview({
               </div>
             </div>
             {current && !publicError && !publicLoading ? (
-              <article className={styles.card} key={`${discoverMode}-${current.id}`} onTouchStart={event => { if ((event.target as HTMLElement).closest("[data-card-actions]")) { swipeStart.current = null; return; } const touch = event.touches[0]; swipeStart.current = { x: touch.clientX, y: touch.clientY }; }} onTouchEnd={event => { const start = swipeStart.current; const touch = event.changedTouches[0]; if (start && Math.abs(touch.clientX - start.x) > 80 && Math.abs(touch.clientX - start.x) > Math.abs(touch.clientY - start.y) * 1.5) moveProfile(touch.clientX < start.x ? 1 : -1); swipeStart.current = null; }}>
+              <article className={styles.card} key={`${discoverMode}-${current.id}`} onTouchStart={event => { if ((event.target as HTMLElement).closest("[data-card-actions],[data-card-detail]")) { swipeStart.current = null; return; } const touch = event.touches[0]; swipeStart.current = { x: touch.clientX, y: touch.clientY }; }} onTouchEnd={event => { const start = swipeStart.current; const touch = event.changedTouches[0]; if (start && Math.abs(touch.clientX - start.x) > 80 && Math.abs(touch.clientX - start.x) > Math.abs(touch.clientY - start.y) * 1.5) moveProfile(touch.clientX < start.x ? 1 : -1); swipeStart.current = null; }}>
                 <div className={styles.portrait} aria-hidden="true">
                   {current.avatarUrl ? (
                     <img src={current.avatarUrl} alt="" />
@@ -615,18 +615,34 @@ export default function IdentityPreview({
                 <div className={styles.photoProgress} aria-hidden="true"><span style={{ width: `${Math.max(12, ((safeCurrentIndex + 1) / activeProfiles.length) * 100)}%` }} /></div>
                 <span className={styles.activityBadge}>{activityLabel(current.updatedAt)}</span>
                 <div className={styles.profile}>
-                  <div className={styles.profileHeading}>
-                    <h2>{current.displayName}</h2>
-                    <button type="button" aria-label={`${current.displayName}のプロフィール詳細を見る`} onClick={() => setDetailProfile(current)}><Icon name="info" /></button>
+                  <div
+                    className={styles.profileSummary}
+                    data-card-detail
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`${current.displayName}のプロフィール詳細を見る`}
+                    onClick={() => setDetailProfile(current)}
+                    onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setDetailProfile(current); } }}
+                  >
+                    <small className={styles.characterLabel}>MAIN CHARACTER</small>
+                    <h2>{current.characters?.[0] || "使用キャラ未設定"}</h2>
+                    <div className={styles.cardAccount}>
+                      <span className={styles.cardAccountAvatar}>{current.displayName.slice(0, 1)}</span>
+                      <span className={styles.cardAccountIdentity}>
+                        <strong>{current.displayName}</strong>
+                        <small>{current.skillTier}{current.gender ? ` · ${current.gender}` : ""}</small>
+                      </span>
+                      <Icon name="info" />
+                    </div>
+                    <div className={styles.tags}>
+                      {current.roles.map((role) => (
+                        <span key={role}>{shoenmateRoleLabel(role)}</span>
+                      ))}
+                    </div>
+                    {current.characters && current.characters.length > 1 && <p className={styles.cardMeta}>ほか：{current.characters.slice(1,3).join(" · ")}{current.characters.length > 3 ? ` ほか${current.characters.length - 3}体` : ""}</p>}
+                    <p className={styles.cardBio}>{current.bio || "一緒に遊べる仲間を探しています。"}</p>
+                    <small className={styles.detailHint}>下側をタップしてプロフィールを見る</small>
                   </div>
-                  <p className={styles.cardMeta}>{current.skillTier}{current.gender ? ` · ${current.gender}` : ""}</p>
-                  <div className={styles.tags}>
-                    {current.roles.map((role) => (
-                      <span key={role}>{shoenmateRoleLabel(role)}</span>
-                    ))}
-                  </div>
-                  {!!current.characters?.length && <p className={styles.cardMeta}>よく使うキャラ：{current.characters.slice(0,3).join(" · ")}{current.characters.length > 3 ? ` ほか${current.characters.length - 3}体` : ""}</p>}
-                  <p className={styles.cardBio}>{current.bio || "一緒に遊べる仲間を探しています。"}</p>
                   <div className={styles.actions} data-card-actions>
                     <button
                       onClick={discoverMode === "skipped" ? restoreCurrent : skipCurrent}

@@ -44,11 +44,17 @@ test("Fifth Match profile cards support previous and next navigation without dis
   assert.doesNotMatch(page, /onTouchEnd=.*skipCurrent\(\)/);
 });
 
-test("Fifth Match opens profile details only from the information button", async () => {
+test("Fifth Match uses the upper card for navigation and the lower card for details", async () => {
   const page = await read("app/identity-preview/page.tsx");
   assert.match(page, /<div className=\{styles\.portrait\} aria-hidden="true">/);
+  assert.match(page, /MAIN CHARACTER/);
+  assert.match(page, /current\.characters\?\.\[0\] \|\| "使用キャラ未設定"/);
+  assert.match(page, /data-card-detail/);
+  assert.match(page, /className=\{styles\.profileSummary\}/);
   assert.match(page, /aria-label=\{`\$\{current\.displayName\}のプロフィール詳細を見る`\}/);
   assert.match(page, /<p className=\{styles\.cardBio\}>/);
+  assert.match(page, /aria-label="前の人を見る"/);
+  assert.match(page, /aria-label="次の人を見る"/);
   assert.doesNotMatch(page, /className=\{styles\.portrait\}[^>]*setDetailProfile/);
 });
 
