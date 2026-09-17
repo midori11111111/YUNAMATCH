@@ -32,6 +32,20 @@ test("limits the AdSense ownership tag and loader to Fifth Match", async () => {
   assert.equal(ads.trim(), "google.com, pub-2909796543320281, DIRECT, f08c47fec0942fa0");
 });
 
+test("shares Fifth Match with its own title, copy, and social card", async () => {
+  const [rootLayout, fifthLayout, socialCard] = await Promise.all([
+    read("app/layout.tsx"),
+    read("app/shoenmate/layout.tsx"),
+    read("public/og-daigomatch.png"),
+  ]);
+  assert.match(rootLayout, /fifthMatchHost[\s\S]*第五マッチ｜ゲーム仲間探し/);
+  assert.match(rootLayout, /https:\/\/daigomatch\.com\/og-daigomatch\.png/);
+  assert.match(fifthLayout, /openGraph/);
+  assert.match(fifthLayout, /twitter/);
+  assert.match(fifthLayout, /og-daigomatch\.png/);
+  assert.ok(socialCard.length > 10_000);
+});
+
 test("returns Fifth Match logins to daigomatch without changing provider callbacks", async () => {
   const [loginRoute, bridgeRoute, handoffRoute, fifthMatchPage] = await Promise.all([
     read("vercel-proxy/app/api/login/[provider]/route.ts"),

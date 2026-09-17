@@ -26,26 +26,32 @@ export async function generateMetadata(): Promise<Metadata> {
   const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "yunamatch.com";
   const protocol = requestHeaders.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
   const base = new URL(`${protocol}://${host}`);
-  const title = "ユナマッチ｜相性でつながるユナイト仲間";
-  const description = "使用ポケモンと実力からメイトを探し、プレイ申請・承認で一緒にユナイトできるファンメイドサービス。";
-  const socialImage = new URL("/og-yunamatch-logo.png", base).toString();
   const fifthMatchHost = isFifthMatchHost(host);
+  const title = fifthMatchHost
+    ? "第五マッチ｜ゲーム仲間探し"
+    : "ユナマッチ｜相性でつながるユナイト仲間";
+  const description = fifthMatchHost
+    ? "サバイバー・ハンター、段位、得意な役割、遊べる時間帯から一緒に遊ぶ仲間を探せる非公式コミュニティサービス。"
+    : "使用ポケモンと実力からメイトを探し、プレイ申請・承認で一緒にユナイトできるファンメイドサービス。";
+  const socialImage = fifthMatchHost
+    ? "https://daigomatch.com/og-daigomatch.png"
+    : new URL("/og-yunamatch-logo.png", base).toString();
 
   return {
     metadataBase: base,
     title,
     description,
     icons: {
-      icon: "/favicon.svg",
-      shortcut: "/favicon.svg",
-      apple: "/yunamatch-official-icon-v2.png",
+      icon: fifthMatchHost ? "/daigomatch-icon.svg?rev=2" : "/favicon.svg",
+      shortcut: fifthMatchHost ? "/daigomatch-icon.svg?rev=2" : "/favicon.svg",
+      apple: fifthMatchHost ? "/daigomatch-icon.svg?rev=2" : "/yunamatch-official-icon-v2.png",
     },
     manifest:"/manifest.webmanifest",
-    appleWebApp:{capable:true,statusBarStyle:"default",title:"ユナマッチ"},
+    appleWebApp:{capable:true,statusBarStyle:"default",title:fifthMatchHost ? "第五マッチ" : "ユナマッチ"},
     other: fifthMatchHost
       ? { "google-adsense-account": adsensePublisherId }
       : undefined,
-    openGraph: { title, description, type: "website", images: [{ url: socialImage, width: 1200, height: 630 }] },
+    openGraph: { title, description, type: "website", url: fifthMatchHost ? "https://daigomatch.com/" : base, images: [{ url: socialImage, width: 1200, height: 630 }] },
     twitter: { card: "summary_large_image", title, description, images: [socialImage] },
   };
 }
