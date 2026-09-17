@@ -14,6 +14,13 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const adsensePublisherId = "ca-pub-2909796543320281";
+
+function isFifthMatchHost(host: string | null) {
+  const hostname = (host ?? "").split(":")[0].toLowerCase();
+  return hostname === "daigomatch.com" || hostname === "www.daigomatch.com";
+}
+
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
   const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "yunamatch.com";
@@ -22,6 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const title = "ユナマッチ｜相性でつながるユナイト仲間";
   const description = "使用ポケモンと実力からメイトを探し、プレイ申請・承認で一緒にユナイトできるファンメイドサービス。";
   const socialImage = new URL("/og-yunamatch-logo.png", base).toString();
+  const fifthMatchHost = isFifthMatchHost(host);
 
   return {
     metadataBase: base,
@@ -34,9 +42,9 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     manifest:"/manifest.webmanifest",
     appleWebApp:{capable:true,statusBarStyle:"default",title:"ユナマッチ"},
-    other: {
-      "google-adsense-account": "ca-pub-2909796543320281",
-    },
+    other: fifthMatchHost
+      ? { "google-adsense-account": adsensePublisherId }
+      : undefined,
     openGraph: { title, description, type: "website", images: [{ url: socialImage, width: 1200, height: 630 }] },
     twitter: { card: "summary_large_image", title, description, images: [socialImage] },
   };
@@ -47,14 +55,20 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
+  const fifthMatchHost = isFifthMatchHost(host);
+
   return (
     <html lang="ja">
       <head>
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2909796543320281"
-          crossOrigin="anonymous"
-        />
+        {fifthMatchHost ? (
+          <script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsensePublisherId}`}
+            crossOrigin="anonymous"
+          />
+        ) : null}
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

@@ -21,10 +21,14 @@ test("serves Fifth Match on its own domain without an external redirect", async 
   assert.match(brand, /第五マッチ/);
 });
 
-test("publishes the AdSense ownership tag, loader, and ads.txt", async () => {
+test("limits the AdSense ownership tag and loader to Fifth Match", async () => {
   const [layout, ads] = await Promise.all([read("app/layout.tsx"), read("public/ads.txt")]);
+  assert.match(layout, /hostname === "daigomatch\.com"/);
+  assert.match(layout, /hostname === "www\.daigomatch\.com"/);
+  assert.match(layout, /fifthMatchHost\s*\?\s*\{ "google-adsense-account"/);
+  assert.match(layout, /\{fifthMatchHost \? \(/);
   assert.match(layout, /google-adsense-account/);
-  assert.match(layout, /pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=ca-pub-2909796543320281/);
+  assert.match(layout, /pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=/);
   assert.equal(ads.trim(), "google.com, pub-2909796543320281, DIRECT, f08c47fec0942fa0");
 });
 
