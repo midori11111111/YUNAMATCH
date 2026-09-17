@@ -93,6 +93,8 @@ test("keeps Shoenmate functional but separately scoped while approval is pending
  assert.match(page,/fetch\("\/api\/services\/shoenmate\/connections"/);
  assert.match(page,/fetch\("\/api\/services\/shoenmate\/recruits"/);
  assert.match(page,/fetch\("\/api\/services\/shoenmate\/messages"/);
+ assert.match(page,/senderProfileId:number/);
+ assert.match(page,/className=\{item\.senderProfileId===me\?\.id\?styles\.mine:""\}/);
  assert.match(page,/本サービスはNetEaseGamesおよびIdentityV／第五人格の公式サービスではありません/);
  assert.match(page,/auth==="guest"\)voidloadPublic\(\)/);
  assert.match(page,/auth==="ready"&&!me\)voidloadPublic\(\)/);

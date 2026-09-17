@@ -53,7 +53,7 @@ type Connection = {
   other: Profile & { id: number };
   latestMessage: { body: string } | null;
 };
-type Message = { id: number; body: string };
+type Message = { id: number; senderProfileId: number; body: string };
 const loginProviders = [
   { id: "line", label: "LINE", mark: "L", color: "#06c755" },
   { id: "twitter", label: "X", mark: "X", color: "#181818" },
@@ -711,7 +711,10 @@ export default function IdentityPreview({
             </header>
             <div className={styles.messageList}>
             {messages.map((item) => (
-              <p key={item.id}>
+              <p
+                key={item.id}
+                className={item.senderProfileId === me?.id ? styles.mine : ""}
+              >
                 {item.body}
               </p>
             ))}

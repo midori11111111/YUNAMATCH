@@ -116,6 +116,7 @@
 .chatHeader > button { padding:8px 0; border:0; background:transparent; color:var(--wine); font-size:14px; }
 .messageList { overflow-y:auto; overscroll-behavior-y:contain; padding:24px max(20px,calc((100vw - 780px) / 2)); }
 .messageList p { padding:14px 18px; background:white; border:1px solid var(--line); border-radius:4px 16px 16px; width:fit-content; max-width:85%; font-size:16px; overflow-wrap:anywhere; white-space:pre-wrap; }
+.messageList p.mine { margin-left:auto; background:var(--wine); border-color:var(--wine); color:white; border-radius:16px 4px 16px 16px; }
 .composer { display:flex; gap:10px; padding:14px max(16px,calc((100vw - 780px) / 2)) max(16px,env(safe-area-inset-bottom)); border-top:1px solid var(--line); background:white; }
 .composer input { min-width:0; flex:1; font-size:16px; padding:12px; border-radius:12px; border:1px solid var(--line); color:var(--ink); background:#f7f6f5; }
 @media (max-width:800px) {
