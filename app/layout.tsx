@@ -34,7 +34,7 @@ export async function generateMetadata(): Promise<Metadata> {
     ? "サバイバー・ハンター、段位、得意な役割、遊べる時間帯から一緒に遊ぶ仲間を探せる非公式コミュニティサービス。"
     : "使用ポケモンと実力からメイトを探し、プレイ申請・承認で一緒にユナイトできるファンメイドサービス。";
   const socialImage = fifthMatchHost
-    ? "https://daigomatch.com/og-daigomatch.png"
+    ? "https://daigomatch.com/og-daigomatch.png?v=237"
     : new URL("/og-yunamatch-logo.png", base).toString();
 
   return {

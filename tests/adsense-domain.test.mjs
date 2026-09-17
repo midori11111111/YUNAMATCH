@@ -39,10 +39,10 @@ test("shares Fifth Match with its own title, copy, and social card", async () =>
     read("public/og-daigomatch.png"),
   ]);
   assert.match(rootLayout, /fifthMatchHost[\s\S]*第五マッチ｜ゲーム仲間探し/);
-  assert.match(rootLayout, /https:\/\/daigomatch\.com\/og-daigomatch\.png/);
+  assert.match(rootLayout, /https:\/\/daigomatch\.com\/og-daigomatch\.png\?v=237/);
   assert.match(fifthLayout, /openGraph/);
   assert.match(fifthLayout, /twitter/);
-  assert.match(fifthLayout, /og-daigomatch\.png/);
+  assert.match(fifthLayout, /og-daigomatch\.png\?v=237/);
   assert.ok(socialCard.length > 10_000);
 });
 

@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     url: "https://daigomatch.com/",
     images: [
       {
-        url: "https://daigomatch.com/og-daigomatch.png",
+        url: "https://daigomatch.com/og-daigomatch.png?v=237",
         width: 1200,
         height: 630,
         alt: "第五マッチ",
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     title: "第五マッチ｜ゲーム仲間探し",
     description:
       "サバイバー・ハンター、段位、得意な役割、遊べる時間帯から一緒に遊ぶ仲間を探せます。",
-    images: ["https://daigomatch.com/og-daigomatch.png"],
+    images: ["https://daigomatch.com/og-daigomatch.png?v=237"],
   },
 };
 
