@@ -75,8 +75,21 @@ export async function GET(
       { error: "このサービスではアカウントが停止されています" },
       { status: 403 },
     );
+  let currentRow = row;
+  if (
+    row &&
+    ctx.service === "shoenmate" &&
+    Date.now() - row.updatedAt.getTime() > 60_000
+  ) {
+    const now = new Date();
+    await getDb()
+      .update(serviceProfiles)
+      .set({ updatedAt: now })
+      .where(eq(serviceProfiles.id, row.id));
+    currentRow = { ...row, updatedAt: now };
+  }
   return Response.json({
-    profile: row ? output(row) : null,
+    profile: currentRow ? output(currentRow) : null,
     suggestedName: ctx.user.displayName,
     termsCurrent:
       !row || row.termsVersion === serviceConfig[ctx.service].termsVersion,

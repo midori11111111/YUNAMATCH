@@ -6,12 +6,12 @@ import ServiceTermsGate from "../service-terms-gate";
 import ServiceReportButton from "../service-report-button";
 import ServiceAccountSafety from "../service-account-safety";
 import ServiceDiscordLink from "../service-discord-link";
-import { matchesShoenmateRole, normalizeShoenmateTier, shoenmateRoles, shoenmateRoleLabel, shoenmateTiers } from "../../lib/shoenmate-profile";
+import { matchesShoenmateRole, normalizeShoenmateTier, shoenmateCharacterGroups, shoenmateRoles, shoenmateRoleLabel, shoenmateTiers } from "../../lib/shoenmate-profile";
 type Tab = "find" | "explore" | "recruit" | "chat" | "profile";
 function Icon({ name }: { name: Tab | "heart" | "bell" | "arrow" | "filter" | "skip" | "info" }) {
   const paths = {
     find: <path d="m3 10 9-8 9 8v11h-6v-7H9v7H3Z" />,
-    explore: <><circle cx="12" cy="12" r="9" /><path d="m16 8-3 5-5 3 3-5Z" /></>,
+    explore: <><path d="M5 21V10a7 7 0 0 1 14 0v11" /><path d="M9 21v-8h6v8M12 6v3" /></>,
     filter: <><path d="M3 6h5m4 0h9M3 12h11m4 0h3M3 18h3m4 0h11" /><circle cx="10" cy="6" r="2" /><circle cx="16" cy="12" r="2" /><circle cx="8" cy="18" r="2" /></>,
     skip: <><path d="M5 8a8 8 0 1 1-1 8M5 3v5h5" /></>,
     info: <><circle cx="12" cy="12" r="9" /><path d="M12 11v6M12 7h.01" /></>,
@@ -37,6 +37,7 @@ type Profile = {
   age?: number;
   gender?: string;
   showGender?: boolean;
+  updatedAt?: string;
 };
 type Candidate = Profile & { id: number; age: number; gender: string };
 type Recruit = {
@@ -62,6 +63,25 @@ const loginProviders = [
 ];
 const tiers = [...shoenmateTiers],
   roles = shoenmateRoles;
+type DiscoverMode = "recommended" | "received" | "skipped";
+type Filters = { query: string; character: string; role: string; tier: string; activity: string };
+const emptyFilters: Filters = { query: "", character: "", role: "", tier: "", activity: "" };
+function activityLabel(updatedAt?: string) {
+  if (!updatedAt) return "活動状況は未取得";
+  const elapsed = Date.now() - new Date(updatedAt).getTime();
+  if (elapsed <= 5 * 60_000) return "オンライン中";
+  if (elapsed <= 3 * 60 * 60_000) return "最近オンライン";
+  if (elapsed <= 24 * 60 * 60_000) return "今日アクセスあり";
+  const days = Math.max(1, Math.floor(elapsed / (24 * 60 * 60_000)));
+  return `${days}日前にアクセス`;
+}
+function matchesActivity(updatedAt: string | undefined, activity: string) {
+  if (!activity) return true;
+  if (!updatedAt) return false;
+  const elapsed = Date.now() - new Date(updatedAt).getTime();
+  const limit = activity === "online" ? 5 : activity === "recent" ? 180 : 1440;
+  return elapsed <= limit * 60_000;
+}
 export default function IdentityPreview({
   basePath = "/identity-preview",
 }: {
@@ -88,19 +108,29 @@ export default function IdentityPreview({
   const loginDialog = useRef<HTMLDialogElement>(null);
   const [recruitBusy, setRecruitBusy] = useState(false);
   const [recruitError, setRecruitError] = useState("");
-  const [discoverMode, setDiscoverMode] = useState<"recommended" | "received">("recommended");
+  const [discoverMode, setDiscoverMode] = useState<DiscoverMode>("recommended");
   const [receivedLikes, setReceivedLikes] = useState<{ id: number; profile: Candidate }[]>([]);
+  const [skippedProfiles, setSkippedProfiles] = useState<Candidate[]>([]);
   const [detailProfile, setDetailProfile] = useState<Profile | null>(null);
   const [detailNotice, setDetailNotice] = useState("");
-  const [filters, setFilters] = useState({ role: "", tier: "" });
+  const [filters, setFilters] = useState<Filters>(emptyFilters);
+  const [recruitDetail, setRecruitDetail] = useState<Recruit | null>(null);
   const [publicLoading, setPublicLoading] = useState(true);
   const [publicError, setPublicError] = useState("");
   const filterDialog = useRef<HTMLDialogElement>(null);
   const detailDialog = useRef<HTMLDialogElement>(null);
+  const recruitDetailDialog = useRef<HTMLDialogElement>(null);
   const queryRevision = useRef(0);
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const swiped = useRef(false);
   useEffect(() => { setDetailNotice(""); if (detailProfile) detailDialog.current?.showModal(); }, [detailProfile]);
+  useEffect(() => { if (recruitDetail) recruitDetailDialog.current?.showModal(); }, [recruitDetail]);
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("shoenmate-skipped") || "[]");
+      if (Array.isArray(stored)) setSkippedProfiles(stored.slice(0, 60));
+    } catch { /* Device-local history is optional. */ }
+  }, []);
   useEffect(() => {
     if (loginOpen) loginDialog.current?.showModal();
   }, [loginOpen]);
@@ -114,8 +144,11 @@ export default function IdentityPreview({
     setPublicError("");
     try {
     const params = new URLSearchParams();
+    if (selected.query) params.set("q", selected.query);
+    if (selected.character) params.set("character", selected.character);
     if (selected.role) params.set("role", selected.role);
     if (selected.tier) params.set("tier", selected.tier);
+    if (selected.activity) params.set("activity", selected.activity);
     const [d, r] = await Promise.all([
         params.size ? fetch(`/api/services/shoenmate/discover?${params}`) : fetch("/api/services/shoenmate/discover"),
         fetch("/api/services/shoenmate/recruits"),
@@ -123,7 +156,12 @@ export default function IdentityPreview({
       [dd, rr] = await Promise.all([d.json(), r.json()]);
     if (revision !== queryRevision.current) return;
     if (!d.ok) throw new Error("仲間を読み込めませんでした");
-    setProfiles(dd.profiles || []);
+    let skippedIds = new Set<number>();
+    try {
+      const stored = JSON.parse(localStorage.getItem("shoenmate-skipped") || "[]");
+      skippedIds = new Set((Array.isArray(stored) ? stored : []).map((person: Candidate) => person.id));
+    } catch { /* Device-local history is optional. */ }
+    setProfiles((dd.profiles || []).filter((person: Candidate) => !skippedIds.has(person.id)));
     if (r.ok) setRecruits(rr.recruits || []);
     } catch {
       if (revision === queryRevision.current) setPublicError("読み込めませんでした。もう一度お試しください。");
@@ -181,11 +219,42 @@ export default function IdentityPreview({
     if (auth === "ready" && !me) void loadPublic();
     if (auth === "guest") void loadPublic();
   }, [auth, me]);
-  const visibleReceived = receivedLikes.filter(({ profile }) => matchesShoenmateRole(profile.roles, filters.role) && (!filters.tier || normalizeShoenmateTier(profile.skillTier) === filters.tier));
-  const current = discoverMode === "received" ? visibleReceived[0]?.profile : profiles[0];
+  const visibleReceived = receivedLikes.filter(({ profile }) =>
+    matchesShoenmateRole(profile.roles, filters.role) &&
+    (!filters.tier || normalizeShoenmateTier(profile.skillTier) === filters.tier) &&
+    (!filters.query || profile.displayName.includes(filters.query)) &&
+    (!filters.character || profile.characters?.includes(filters.character)) &&
+    matchesActivity(profile.updatedAt, filters.activity)
+  );
+  const current = discoverMode === "received" ? visibleReceived[0]?.profile : discoverMode === "skipped" ? skippedProfiles[0] : profiles[0];
   const removeCurrent = () => {
     if (discoverMode === "received") setReceivedLikes(value => value.filter(item => item.profile.id !== current?.id));
+    else if (discoverMode === "skipped") setSkippedProfiles(value => {
+      const next = value.filter(person => person.id !== current?.id);
+      localStorage.setItem("shoenmate-skipped", JSON.stringify(next));
+      return next;
+    });
     else setProfiles(value => value.filter(person => person.id !== current?.id));
+  };
+  const skipCurrent = () => {
+    if (!current) return;
+    if (discoverMode === "skipped") {
+      setSkippedProfiles(value => value.length > 1 ? [...value.slice(1), value[0]] : value);
+      return;
+    }
+    setSkippedProfiles(value => {
+      const next = [current, ...value.filter(person => person.id !== current.id)].slice(0, 60);
+      localStorage.setItem("shoenmate-skipped", JSON.stringify(next));
+      return next;
+    });
+    removeCurrent();
+  };
+  const restoreCurrent = () => {
+    if (!current || discoverMode !== "skipped") return;
+    setProfiles(value => [current, ...value.filter(person => person.id !== current.id)]);
+    removeCurrent();
+    setDiscoverMode("recommended");
+    say("おすすめに戻しました");
   };
   function requireLogin(action: string) {
     if (auth !== "guest") return false;
@@ -379,10 +448,10 @@ export default function IdentityPreview({
       />
     );
   const nav: [Tab, string, string][] = [
-    ["find", "", "ホーム"],
-    ["explore", "", "さがす"],
+    ["find", "", "探す"],
     ["recruit", "＋", "募集"],
     ["chat", "✉", "やりとり"],
+    ["explore", "", "ロビー"],
     ["profile", "♙", "マイページ"],
   ];
   return (
@@ -439,11 +508,12 @@ export default function IdentityPreview({
               <div className={styles.segmented} aria-label="表示する仲間">
                 <button className={discoverMode === "recommended" ? styles.selected : ""} aria-pressed={discoverMode === "recommended"} onClick={() => setDiscoverMode("recommended")}>おすすめ</button>
                 <button className={discoverMode === "received" ? styles.selected : ""} aria-pressed={discoverMode === "received"} onClick={() => { if (!requireProfile("相手からのいいね")) { setDiscoverMode("received"); void load(); } }}>相手から{receivedLikes.length > 0 && <small>{receivedLikes.length}</small>}</button>
+                <button className={discoverMode === "skipped" ? styles.selected : ""} aria-pressed={discoverMode === "skipped"} onClick={() => setDiscoverMode("skipped")}>保留{skippedProfiles.length > 0 && <small>{skippedProfiles.length}</small>}</button>
               </div>
-              <button className={styles.filterButton} aria-label="絞り込み" onClick={() => filterDialog.current?.showModal()}><Icon name="filter" />{(filters.role || filters.tier) && <i />}</button>
+              <button className={styles.filterButton} aria-label="絞り込み" onClick={() => filterDialog.current?.showModal()}><Icon name="filter" />{Object.values(filters).some(Boolean) && <i />}</button>
             </div>
             {current && !publicError && !publicLoading ? (
-              <article className={styles.card} key={`${discoverMode}-${current.id}`} onTouchStart={event => { const touch = event.touches[0]; swipeStart.current = { x: touch.clientX, y: touch.clientY }; swiped.current = false; }} onTouchEnd={event => { const start = swipeStart.current; const touch = event.changedTouches[0]; if (start && Math.abs(touch.clientX - start.x) > 80 && Math.abs(touch.clientX - start.x) > Math.abs(touch.clientY - start.y) * 1.5) { swiped.current = true; removeCurrent(); } swipeStart.current = null; }}>
+              <article className={styles.card} key={`${discoverMode}-${current.id}`} onTouchStart={event => { const touch = event.touches[0]; swipeStart.current = { x: touch.clientX, y: touch.clientY }; swiped.current = false; }} onTouchEnd={event => { const start = swipeStart.current; const touch = event.changedTouches[0]; if (start && Math.abs(touch.clientX - start.x) > 80 && Math.abs(touch.clientX - start.x) > Math.abs(touch.clientY - start.y) * 1.5) { swiped.current = true; skipCurrent(); } swipeStart.current = null; }}>
                 <button className={styles.portrait} aria-label={`${current.displayName}のプロフィールを見る`} onClick={() => { if (!swiped.current) setDetailProfile(current); }}>
                   {current.avatarUrl ? (
                     <img src={current.avatarUrl} alt="" />
@@ -454,6 +524,7 @@ export default function IdentityPreview({
                   )}
                 </button>
                 <div className={styles.photoProgress}><span /></div>
+                <span className={styles.activityBadge}>{activityLabel(current.updatedAt)}</span>
                 <div className={styles.profile}>
                   <button className={styles.profileHeading} onClick={() => setDetailProfile(current)}><h2>{current.displayName}</h2><Icon name="info" /></button>
                   <p className={styles.cardMeta}>{current.skillTier}{current.gender ? ` · ${current.gender}` : ""}</p>
@@ -466,9 +537,9 @@ export default function IdentityPreview({
                   <button className={styles.cardBio} onClick={() => setDetailProfile(current)}>{current.bio || "一緒に遊べる仲間を探しています。"}</button>
                   <div className={styles.actions}>
                     <button
-                      onClick={removeCurrent}
+                      onClick={discoverMode === "skipped" ? restoreCurrent : skipCurrent}
                     >
-                      <Icon name="skip" /><span>次の人</span>
+                      <Icon name={discoverMode === "skipped" ? "arrow" : "skip"} /><span>{discoverMode === "skipped" ? "戻す" : "保留"}</span>
                     </button>
                     <button onClick={like}><Icon name="heart" /><span>いいね</span></button>
                     <button onClick={requestMate}><Icon name="chat" /><span>メイト申請</span></button>
@@ -478,8 +549,8 @@ export default function IdentityPreview({
             ) : (
               <article className={`${styles.panel} ${styles.empty}`}>
                 <img src="/daigomatch-icon.svg?rev=2" alt="" width="80" height="80" />
-                <h2>{publicLoading ? "仲間を探しています…" : publicError ? "読み込みに失敗しました" : discoverMode === "received" ? "まだ表示できるいいねがありません" : "今の条件では仲間が見つかりません"}</h2>
-                <p>{publicError || (discoverMode === "received" ? "あなたへのいいねが、ここに届きます。" : "条件を変えるか、募集から探してみましょう。")}</p>
+                <h2>{publicLoading ? "仲間を探しています…" : publicError ? "読み込みに失敗しました" : discoverMode === "received" ? "まだ表示できるいいねがありません" : discoverMode === "skipped" ? "保留中の相手はいません" : "今の条件では仲間が見つかりません"}</h2>
+                <p>{publicError || (discoverMode === "received" ? "あなたへのいいねが、ここに届きます。" : discoverMode === "skipped" ? "保留した相手はここから戻せます。" : "条件を変えるか、募集から探してみましょう。")}</p>
                 <button
                   className={styles.primary}
                   onClick={() =>
@@ -496,10 +567,17 @@ export default function IdentityPreview({
         {tab === "explore" && (
           <section className={styles.explore}>
             <button className={styles.pickup} onClick={() => { setDiscoverMode("recommended"); setTab("find"); }}>
-              <span>気の合う仲間と、次の一戦へ</span>
-              <strong>あなたのメイトを<br />見つけよう。</strong>
-              <em>おすすめの仲間を見る <Icon name="arrow" /></em>
+              <span>MANOR LOBBY</span>
+              <strong>今いる仲間に、<br />声をかけよう。</strong>
+              <em>おすすめを見る <Icon name="arrow" /></em>
             </button>
+            <div className={styles.sectionHeading}><h1>募集中のロビー</h1><button onClick={() => setTab("recruit")}>すべて見る</button></div>
+            <p className={styles.sectionLead}>いま参加できる募集</p>
+            {recruits.length ? <div className={styles.lobbyList}>
+              {recruits.slice(0, 3).map(item => <button type="button" key={item.id} onClick={() => setRecruitDetail(item)}>
+                <span>{item.mode}</span><strong>{item.partySize}人募集</strong><small>{item.owner?.displayName || "募集者"} · 詳細を見る</small>
+              </button>)}
+            </div> : <div className={styles.galleryEmpty}><p>{publicLoading ? "読み込んでいます…" : "現在公開中の募集はありません。"}</p><button className={styles.textButton} onClick={createRecruit}>募集を作る →</button></div>}
             <div className={styles.sectionHeading}><h1>仲間をさがす</h1><button aria-label="仲間を絞り込む" onClick={() => filterDialog.current?.showModal()}><Icon name="filter" /></button></div>
             <p className={styles.sectionLead}>公開中のプレイヤーをチェック</p>
             {profiles.length ? <div className={styles.peopleRail}>
@@ -524,9 +602,11 @@ export default function IdentityPreview({
               <p>遊びたいモードで、仲間と待ち合わせ。</p>
             </div>
             {recruits.map((item) => (
-              <article
-                className={`${styles.panel} ${styles.recruit}`}
+              <button
+                type="button"
+                className={styles.recruitCard}
                 key={item.id}
+                onClick={() => setRecruitDetail(item)}
               >
                 <header>
                   <strong>{item.mode}</strong>
@@ -537,22 +617,14 @@ export default function IdentityPreview({
                     })}
                   </small>
                 </header>
-                <h2>{item.partySize}人パーティー募集</h2>
-                <p>
-                  {item.owner?.displayName}／{item.owner?.skillTier}／
-                  {item.desiredRoles.join(" / ") || "役割指定なし"}
-                  <br />
-                  {item.note}
-                </p>
-                {item.owner?.id && (
-                  <button
-                    className={styles.primary}
-                    onClick={() => void requestTarget(item.owner!.id!)}
-                  >
-                    募集へ参加する
-                  </button>
-                )}
-              </article>
+                <div className={styles.recruitLine}>
+                  <span>{item.owner?.avatarUrl ? <img src={item.owner.avatarUrl} alt="" /> : (item.owner?.displayName || "募").slice(0, 1)}</span>
+                  <div><strong>{item.owner?.displayName || "募集者"}</strong><small>{item.owner?.skillTier || "段位未設定"}</small></div>
+                  <b>{item.partySize}人</b>
+                </div>
+                <p>{item.note || "ひとことはありません"}</p>
+                <footer>募集の詳細を見る <Icon name="arrow" /></footer>
+              </button>
             ))}
             {!recruits.length && <div className={`${styles.panel} ${styles.empty}`}><Icon name="recruit" /><h2>最初の募集を出してみませんか？</h2><p>遊ぶモードと人数を選ぶだけ。<br />ひとことは、決まっていなくても大丈夫。</p></div>}
             <button className={styles.primary} onClick={createRecruit}>
@@ -566,6 +638,7 @@ export default function IdentityPreview({
               <small>MESSAGES</small>
               <h1>やりとり</h1>
             </div>
+            {!!(incoming.length || outgoing.length) && <div className={styles.listHeading}><h2>申請待ち</h2><span>{incoming.length + outgoing.length}</span></div>}
             {incoming.map((item) => (
               <article
                 className={`${styles.panel} ${styles.chat}`}
@@ -593,6 +666,7 @@ export default function IdentityPreview({
                 <button onClick={() => act(item.id, "cancel")}>取消</button>
               </article>
             ))}
+            {!!connections.length && <div className={styles.listHeading}><h2>チャット</h2><span>{connections.length}</span></div>}
             {connections.map((item) => (
               <button
                 type="button"
@@ -781,13 +855,16 @@ export default function IdentityPreview({
           </form>
         </dialog>
         <dialog ref={filterDialog} className={`${styles.recruitDialog} ${styles.bottomSheet}`} aria-labelledby="filter-title">
-          <form key={`${filters.role}:${filters.tier}`} onSubmit={event => { event.preventDefault(); const data = new FormData(event.currentTarget); const next = { role: String(data.get("role") || ""), tier: String(data.get("tier") || "") }; setFilters(next); filterDialog.current?.close(); void loadPublic(next); }}>
+          <form key={Object.values(filters).join(":")} onSubmit={event => { event.preventDefault(); const data = new FormData(event.currentTarget); const next: Filters = { query: String(data.get("query") || ""), character: String(data.get("character") || ""), role: String(data.get("role") || ""), tier: String(data.get("tier") || ""), activity: String(data.get("activity") || "") }; setFilters(next); filterDialog.current?.close(); void loadPublic(next); }}>
             <div className={styles.sheetHandle} />
             <button type="button" className={styles.loginClose} aria-label="絞り込みを閉じる" onClick={() => filterDialog.current?.close()}>×</button>
             <h2 id="filter-title">仲間を絞り込む</h2>
+            <label>ユーザー名<input name="query" defaultValue={filters.query} maxLength={24} placeholder="名前で検索" /></label>
+            <label>よく使うキャラ<select name="character" defaultValue={filters.character}><option value="">すべてのキャラ</option>{shoenmateCharacterGroups.map(group => <optgroup label={group.label} key={group.label}>{group.names.map(character => <option key={character}>{character}</option>)}</optgroup>)}</select></label>
             <label>得意な役割<select name="role" defaultValue={filters.role}><option value="">すべての役割</option>{roles.map(role => <option key={role} value={role}>{shoenmateRoleLabel(role)}</option>)}</select></label>
             <label>現在の段位<select name="tier" defaultValue={filters.tier}><option value="">すべての段位</option>{tiers.map(tier => <option key={tier}>{tier}</option>)}</select></label>
-            <button type="button" className={styles.textButton} onClick={() => { const next = {role:"",tier:""}; setFilters(next); filterDialog.current?.close(); void loadPublic(next); }}>条件をクリア</button>
+            <label>活動状況<select name="activity" defaultValue={filters.activity}><option value="">すべて</option><option value="online">オンライン中</option><option value="recent">最近オンライン（3時間以内）</option><option value="today">今日アクセスあり</option></select></label>
+            <button type="button" className={styles.textButton} onClick={() => { setFilters(emptyFilters); filterDialog.current?.close(); void loadPublic(emptyFilters); }}>条件をクリア</button>
             <button className={styles.primary}>この条件で探す</button>
           </form>
         </dialog>
@@ -796,7 +873,7 @@ export default function IdentityPreview({
           <button type="button" className={styles.loginClose} aria-label="プロフィールを閉じる" onClick={() => setDetailProfile(null)}>×</button>
           <div className={styles.detailAvatar}>{detailProfile.avatarUrl ? <img src={detailProfile.avatarUrl} alt="" /> : <Icon name="profile" />}</div>
           <h2 id="detail-title">{detailProfile.displayName}</h2>
-          <p>{detailProfile.skillTier}</p>
+          <p>{detailProfile.skillTier}</p><p className={styles.detailActivity}>{activityLabel(detailProfile.updatedAt)}</p>
           <div className={styles.tags}>{detailProfile.roles.map(role => <span key={role}>{shoenmateRoleLabel(role)}</span>)}</div>
           <h3>よく使うキャラ</h3><p>{detailProfile.characters?.join(" · ") || "未設定"}</p>
           <h3>自己紹介</h3><p className={styles.fullBio}>{detailProfile.bio || "自己紹介はまだありません。"}</p>
@@ -804,6 +881,19 @@ export default function IdentityPreview({
           <button className={styles.primary} onClick={() => { const id = detailProfile.id; setDetailProfile(null); if (id) void requestTarget(id); }}>メイト申請を送る</button>
           {auth === "ready" && me && detailProfile.id ? <ServiceReportButton service="shoenmate" targetProfileId={detailProfile.id} onNotice={text => { setDetailNotice(text); say(text); }} onBlocked={() => { setDetailProfile(null); void load(); }} /> : <button className={styles.textButton} onClick={() => { setDetailProfile(null); requireProfile("通報"); }}>このプロフィールを通報</button>}
           {detailNotice && <p role="status">{detailNotice}</p>}
+        </dialog>}
+        {recruitDetail && <dialog ref={recruitDetailDialog} className={`${styles.recruitDialog} ${styles.bottomSheet} ${styles.recruitDetail}`} aria-labelledby="recruit-detail-title" onClose={() => setRecruitDetail(null)}>
+          <div className={styles.sheetHandle} />
+          <button type="button" className={styles.loginClose} aria-label="募集詳細を閉じる" onClick={() => setRecruitDetail(null)}>×</button>
+          <small className={styles.eyebrow}>OPEN RECRUIT</small>
+          <h2 id="recruit-detail-title">{recruitDetail.mode}・{recruitDetail.partySize}人募集</h2>
+          <div className={styles.recruitOwner}>
+            <span>{recruitDetail.owner?.avatarUrl ? <img src={recruitDetail.owner.avatarUrl} alt="" /> : (recruitDetail.owner?.displayName || "募").slice(0, 1)}</span>
+            <div><strong>{recruitDetail.owner?.displayName || "募集者"}</strong><small>{recruitDetail.owner?.skillTier || "段位未設定"}</small></div>
+          </div>
+          <dl><div><dt>希望する役割</dt><dd>{recruitDetail.desiredRoles.join(" / ") || "指定なし"}</dd></div><div><dt>募集した時間</dt><dd>{new Date(recruitDetail.createdAt).toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</dd></div></dl>
+          <h3>ひとこと</h3><p className={styles.fullBio}>{recruitDetail.note || "ひとことはありません。"}</p>
+          {recruitDetail.owner?.id && <button className={styles.primary} onClick={() => { const id = recruitDetail.owner!.id!; setRecruitDetail(null); void requestTarget(id); }}>募集へ参加する</button>}
         </dialog>}
         {notice && <div className={styles.notice} role="status">{notice}</div>}
         <footer className={styles.disclaimer}>

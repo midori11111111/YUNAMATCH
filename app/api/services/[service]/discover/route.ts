@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull, lt, ne, or } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, lt, ne, or, sql } from "drizzle-orm";
 import { getDb } from "../../../../../db";
 import {
   serviceBlocks,
@@ -7,7 +7,7 @@ import {
   serviceProfiles,
 } from "../../../../../db/schema";
 import { getChatGPTUser } from "../../../../chatgpt-auth";
-import { matchesShoenmateRole, normalizeShoenmateTier, shoenmateTierDatabaseValues, shoenmateUsername } from "../../../../../lib/shoenmate-profile";
+import { matchesShoenmateRole, normalizeShoenmateTier, shoenmateCharacterSet, shoenmateTierDatabaseValues, shoenmateUsername } from "../../../../../lib/shoenmate-profile";
 import {
   cleanText,
   isServiceId,
@@ -45,6 +45,9 @@ export async function GET(
     before = Number(url.searchParams.get("before") || 0),
     role = cleanText(url.searchParams.get("role"), 40),
     tier = cleanText(url.searchParams.get("tier"), 40),
+    query = cleanText(url.searchParams.get("q"), 24),
+    character = cleanText(url.searchParams.get("character"), 40),
+    activity = cleanText(url.searchParams.get("activity"), 20),
     config = serviceConfig[service];
   if (role && !config.roles.has(role))
     return Response.json(
@@ -53,6 +56,11 @@ export async function GET(
     );
   if (tier && !config.tiers.has(tier))
     return Response.json({ error: "ランクの指定が不正です" }, { status: 400 });
+  if (character && (service !== "shoenmate" || !shoenmateCharacterSet.has(character)))
+    return Response.json({ error: "キャラの指定が不正です" }, { status: 400 });
+  const activityMinutes = activity === "online" ? 5 : activity === "recent" ? 180 : activity === "today" ? 1440 : 0;
+  if (activity && !activityMinutes)
+    return Response.json({ error: "活動状況の指定が不正です" }, { status: 400 });
   const user = await getChatGPTUser(),
     db = getDb();
   const [own] = user
@@ -138,6 +146,18 @@ export async function GET(
           ? service === "shoenmate"
             ? inArray(serviceProfiles.skillTier, shoenmateTierDatabaseValues(tier))
             : eq(serviceProfiles.skillTier, tier)
+          : undefined,
+        query
+          ? or(
+              sql`instr(${serviceProfiles.displayName}, ${query}) > 0`,
+              sql`instr(${serviceProfiles.gameIdentity}, ${query}) > 0`,
+            )
+          : undefined,
+        character
+          ? sql`instr(${serviceProfiles.characters}, ${JSON.stringify(character)}) > 0`
+          : undefined,
+        activityMinutes
+          ? gte(serviceProfiles.updatedAt, new Date(Date.now() - activityMinutes * 60_000))
           : undefined,
       ),
     )
