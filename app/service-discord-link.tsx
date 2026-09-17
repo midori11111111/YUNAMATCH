@@ -20,6 +20,11 @@ const inviteUrls: Record<ServiceId, string> = {
     process.env.NEXT_PUBLIC_RONINMATCH_DISCORD_URL || defaultInviteUrls.roninmatch,
 };
 
+export function getServiceDiscordInviteUrl(service: ServiceId) {
+  const url = inviteUrls[service];
+  return isDiscordInviteUrl(url) ? url : "";
+}
+
 export function isDiscordInviteUrl(value: string | undefined) {
   if (!value) return false;
   try {

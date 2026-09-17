@@ -14,7 +14,7 @@ import {
 import { isServiceId } from "../../../../../lib/service-config";
 import { isServicePairBlocked } from "../../../../../lib/service-safety";
 
-const allowedReactions = new Set(["👍", "❤️", "😂", "🎮"]);
+const allowedReactions = new Set(["👍", "❤️", "😂", "🎮", "🎭"]);
 
 async function reactionState(
   service: string,

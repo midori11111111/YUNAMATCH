@@ -51,3 +51,35 @@ test("Fifth Match opens profile details only from the information button", async
   assert.match(page, /<p className=\{styles\.cardBio\}>/);
   assert.doesNotMatch(page, /className=\{styles\.portrait\}[^>]*setDetailProfile/);
 });
+
+test("Fifth Match exposes Discord and a four-step tutorial beside discovery", async () => {
+  const page = await read("app/identity-preview/page.tsx");
+  assert.match(page, /shoenmateDiscordUrl/);
+  assert.match(page, /aria-label="第五マッチの使い方を見る"/);
+  assert.match(page, /MANOR GUIDE · \{tutorialStep \+ 1\}\/4/);
+  for (const label of ["仲間を見つける", "マッチして話す", "募集に参加する", "Discordでも集まる"])
+    assert.match(page, new RegExp(label));
+});
+
+test("Fifth Match chat shows the other player, activity and reactions", async () => {
+  const [page, connections, reactions] = await Promise.all([
+    read("app/identity-preview/page.tsx"),
+    read("app/api/services/[service]/connections/route.ts"),
+    read("app/api/services/[service]/message-reactions/route.ts"),
+  ]);
+  assert.match(page, /className=\{styles\.chatAccount\}/);
+  assert.match(page, /activityLabel\(activeChat\.other\.updatedAt\)/);
+  assert.match(page, /reactToMessage/);
+  assert.match(page, /\["👍", "❤️", "😂", "🎭"\]/);
+  assert.match(connections, /updatedAt: other\.updatedAt/);
+  assert.match(reactions, /"🎭"/);
+});
+
+test("Fifth Match My Page includes completion, stats, history and safety sections", async () => {
+  const page = await read("app/identity-preview/page.tsx");
+  assert.match(page, /profileCompletion/);
+  assert.match(page, /MATCH HISTORY/);
+  assert.match(page, /マッチした人/);
+  assert.match(page, /COMMUNITY/);
+  assert.match(page, /SAFETY &amp; ACCOUNT/);
+});

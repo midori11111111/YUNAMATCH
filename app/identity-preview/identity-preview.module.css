@@ -456,3 +456,122 @@
   .actions { margin-top:13px; }
   .nav button { font-size:10px; }
 }
+
+/* Guided discovery controls: compact enough for one-handed mobile use. */
+.discoverTools { display:flex; flex-shrink:0; gap:6px; }
+.discordShortcut,.tutorialButton,.discoverTools .filterButton {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  width:54px;
+  height:50px;
+  gap:2px;
+  border:1px solid #ded4cf;
+  border-radius:11px;
+  background:#fffdf9;
+  color:var(--wine);
+  text-decoration:none;
+  box-sizing:border-box;
+}
+.discordShortcut { border-color:#5865f2; background:#5865f2; color:white; }
+.discordShortcut b,.tutorialButton b { display:grid; place-items:center; width:20px; height:20px; border-radius:5px; font-size:12px; line-height:1; }
+.discordShortcut b { background:white; color:#5865f2; }
+.tutorialButton b { border:1px solid currentColor; border-radius:50%; }
+.discordShortcut span,.tutorialButton span { font-size:8px; font-weight:800; line-height:1; }
+.discoverTools .filterButton { flex-shrink:0; }
+.tutorialSheet { color:var(--ink); }
+.tutorialProgress { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin:12px 0 24px; }
+.tutorialProgress span { height:3px; border-radius:4px; background:#ded4cf; }
+.tutorialProgress span.done { background:var(--wine); }
+.tutorialSheet section { min-height:285px; padding:18px 0; }
+.tutorialSheet section h2 { margin:16px 0 10px; font-family:"Hiragino Mincho ProN","Yu Mincho",serif; font-size:25px; }
+.tutorialSheet section p { color:var(--muted); font-size:14px; line-height:1.9; }
+.tutorialSheet section p strong { color:var(--ink); }
+.tutorialMark { display:grid; place-items:center; width:64px; height:78px; border:1px solid #b89a86; border-radius:32px 32px 6px 6px; background:#2b2024; color:#fff8f2; font:28px/1 Georgia,serif; box-shadow:inset 0 0 0 5px #ffffff14; }
+.tutorialActions { display:grid; grid-template-columns:1fr 1.7fr; gap:8px; }
+.tutorialActions button,.tutorialDiscord { display:flex; align-items:center; justify-content:center; min-height:48px; border:1px solid var(--line); border-radius:7px; background:#fffdf9; color:var(--wine); font-weight:750; text-decoration:none; }
+.tutorialActions button:last-child { border-color:var(--wine); background:var(--wine); color:white; }
+.tutorialDiscord { margin-top:20px; border-color:#5865f2; background:#5865f2; color:white; }
+
+/* Conversation header and message reactions. */
+.chatHeader { flex-wrap:nowrap; background:#fffdf9; box-shadow:0 4px 20px #241a1e0b; }
+.chatHeader .chatBack { width:40px; height:40px; flex:0 0 40px; border:1px solid var(--line); border-radius:8px; padding:0; }
+.chatAccount { display:flex; align-items:center; gap:10px; min-width:0; flex:1; border:0; background:transparent; color:var(--ink); text-align:left; padding:0; }
+.chatAccount > span:last-child { min-width:0; }
+.chatAccount strong,.chatAccount small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.chatAccount strong { font-size:15px; }
+.chatAccount small { color:var(--muted); font-size:10px; }
+.chatAvatar { display:grid; place-items:center; width:42px; height:42px; flex:0 0 42px; overflow:hidden; border-radius:50%; background:var(--tint); color:var(--wine); font-weight:800; }
+.chatAvatar img { width:100%; height:100%; object-fit:cover; }
+.onlineDot { display:inline-block; width:7px; height:7px; margin-right:5px; border-radius:50%; background:#39a96b; box-shadow:0 0 0 2px #39a96b1f; vertical-align:1px; }
+.messageList { display:flex; flex-direction:column; align-items:stretch; gap:14px; background:linear-gradient(90deg,#8e294305 1px,transparent 1px); background-size:32px 100%; }
+.messageBubble { position:relative; align-self:flex-start; max-width:82%; }
+.messageBubble.mine { align-self:flex-end; }
+.messageList .messageBubble > p { width:auto; max-width:none; margin:0; padding:12px 15px; border:1px solid var(--line); border-radius:5px 15px 15px; background:#fffdf9; color:var(--ink); box-shadow:0 4px 16px #241a1e08; }
+.messageList .messageBubble.mine > p { margin:0; border-color:var(--wine); border-radius:15px 5px 15px 15px; background:var(--wine); color:white; }
+.messageList .chatEmpty { align-self:center; width:auto; max-width:90%; margin:auto; border:0; background:transparent; color:var(--muted); text-align:center; box-shadow:none; }
+.reactionArea { position:relative; display:flex; flex-wrap:wrap; align-items:center; gap:4px; margin-top:5px; }
+.messageBubble.mine .reactionArea { justify-content:flex-end; }
+.reactionArea > button { display:flex; align-items:center; gap:3px; min-height:28px; padding:3px 8px; border:1px solid #d9cec9; border-radius:15px; background:#fffdf9; color:var(--ink); font-size:13px; }
+.reactionArea > button.reacted { border-color:var(--wine); background:var(--tint); }
+.reactionArea button b { font-size:10px; }
+.reactionArea .reactionAdd { color:var(--muted); font-size:11px; }
+.reactionPicker { position:absolute; z-index:4; left:0; bottom:34px; display:flex; gap:4px; padding:7px; border:1px solid var(--line); border-radius:22px; background:#fffdf9; box-shadow:0 10px 32px #241a1e24; }
+.messageBubble.mine .reactionPicker { left:auto; right:0; }
+.reactionPicker button { width:36px; height:36px; border:0; border-radius:50%; background:transparent; font-size:20px; }
+.reactionPicker button:hover { background:var(--tint); }
+.composer { background:#fffdf9; }
+.composer input { border-radius:7px; background:white; }
+.composer .primary { flex:0 0 auto; min-height:46px; border-radius:7px; }
+
+/* My Page follows a profile dossier rather than a stack of generic cards. */
+.profileHero { position:relative; margin-bottom:16px; padding:0 20px 24px; border:1px solid #d4c6bf; background:#fffdf9; text-align:center; }
+.profileHeaderArt { height:126px; margin:0 -20px 0; display:grid; place-items:center; background:repeating-linear-gradient(135deg,#2b2024 0 18px,#32252a 18px 36px); color:#ffffff73; font:700 11px/1 Georgia,serif; letter-spacing:.3em; }
+.profileHero .myAvatar { position:relative; width:112px; height:112px; margin:-56px auto 15px; border:5px solid #fffdf9; outline:1px solid #cbbdb6; background:var(--tint); }
+.profileHero > small,.profileSection > small,.profileSection header small { color:var(--wine); font-size:9px; font-weight:800; letter-spacing:.2em; }
+.profileHero h2 { margin:4px 0 0; font-family:"Hiragino Mincho ProN","Yu Mincho",serif; font-size:27px; }
+.profileHero > p { margin:2px 0; color:var(--muted); font-size:13px; }
+.profileHero .tags { justify-content:center; }
+.completionMeter { margin:18px 0; padding:14px; border:1px solid var(--line); background:#f8f3ef; text-align:left; }
+.completionMeter > div { display:flex; justify-content:space-between; gap:12px; }
+.completionMeter strong { font-size:12px; }
+.completionMeter div span,.completionMeter small { color:var(--muted); font-size:10px; }
+.completionMeter > i { display:block; height:5px; margin:9px 0 6px; overflow:hidden; border-radius:5px; background:#e1d7d2; }
+.completionMeter > i span { display:block; height:100%; background:var(--wine); }
+.profileHero > .primary { width:100%; }
+.profileStats { grid-template-columns:repeat(4,1fr); gap:7px; margin:0 0 16px; }
+.profileStats button { min-width:0; min-height:104px; gap:4px; border:1px solid #d9cbc4; border-radius:5px; padding:12px 4px; background:#fffdf9; }
+.profileStats svg { width:20px; height:20px; }
+.profileStats strong { font-size:18px; }
+.profileStats span { font-size:9px; }
+.profileSection { margin-bottom:16px; padding:20px; border:1px solid #d4c6bf; background:#fffdf9; }
+.profileSection > h2,.profileSection header h2 { margin:4px 0 6px; font-family:"Hiragino Mincho ProN","Yu Mincho",serif; font-size:21px; }
+.profileSection > p { margin:4px 0 14px; color:var(--muted); font-size:12px; }
+.profileSection > header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+.profileSection > header button { border:0; background:transparent; color:var(--wine); font-size:11px; font-weight:750; }
+.historyRow { display:flex; align-items:center; gap:10px; width:100%; padding:12px 0; border:0; border-top:1px solid var(--line); background:transparent; color:var(--ink); text-align:left; }
+.historyRow > span:nth-child(2) { min-width:0; flex:1; }
+.historyRow strong,.historyRow small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.historyRow strong { font-size:14px; }
+.historyRow small { color:var(--muted); font-size:10px; }
+.historyRow > b { color:var(--wine); font-size:10px; }
+.historyAvatar { display:grid; place-items:center; width:44px; height:44px; flex:0 0 44px; overflow:hidden; border-radius:50%; background:var(--tint); color:var(--wine); font-weight:800; }
+.historyAvatar img { width:100%; height:100%; object-fit:cover; }
+.profileEmpty { padding:18px 0; border-top:1px solid var(--line); color:var(--muted); font-size:12px; }
+.communitySection { border-left:4px solid #5865f2; }
+.communitySection > a { margin:12px 0 0; }
+.logoutLink { display:block; margin:24px 0 0 !important; color:var(--muted); text-align:center; font-size:12px; }
+
+@media (max-width:430px) {
+  .discoverHeader { height:68px; gap:5px; }
+  .segmented button { padding-inline:8px; font-size:12px; }
+  .discoverTools { gap:4px; }
+  .discordShortcut,.tutorialButton,.discoverTools .filterButton { width:46px; height:46px; }
+  .discordShortcut span,.tutorialButton span,.discoverTools .filterButton span { font-size:7px; }
+  .card { height:calc(100dvh - 226px - env(safe-area-inset-bottom)); }
+  .chatHeader { padding:10px 12px; gap:8px; }
+  .chatHeader .chatBack { width:36px; height:36px; flex-basis:36px; }
+  .chatAvatar { width:38px; height:38px; flex-basis:38px; }
+  .profileStats span { line-height:1.25; }
+}

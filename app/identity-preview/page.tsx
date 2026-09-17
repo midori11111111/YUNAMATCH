@@ -5,7 +5,7 @@ import ServiceOnboarding from "../service-onboarding";
 import ServiceTermsGate from "../service-terms-gate";
 import ServiceReportButton from "../service-report-button";
 import ServiceAccountSafety from "../service-account-safety";
-import ServiceDiscordLink from "../service-discord-link";
+import ServiceDiscordLink, { getServiceDiscordInviteUrl } from "../service-discord-link";
 import { matchesShoenmateRole, normalizeShoenmateTier, shoenmateCharacterGroups, shoenmateRoles, shoenmateRoleLabel, shoenmateTiers } from "../../lib/shoenmate-profile";
 type Tab = "find" | "explore" | "recruit" | "chat" | "profile";
 function Icon({ name }: { name: Tab | "heart" | "bell" | "arrow" | "filter" | "skip" | "info" }) {
@@ -51,10 +51,19 @@ type Recruit = {
 };
 type Connection = {
   id: number;
+  createdAt?: string;
   other: Profile & { id: number };
-  latestMessage: { body: string } | null;
+  latestMessage: { body: string; createdAt?: string } | null;
 };
-type Message = { id: number; senderProfileId: number; body: string };
+type Message = {
+  id: number;
+  senderProfileId: number;
+  body: string;
+  createdAt?: string;
+  deleted?: boolean;
+  reactions: Array<{ reaction: string; count: number }>;
+  myReaction: string | null;
+};
 const loginProviders = [
   { id: "line", label: "LINE", mark: "L", color: "#06c755" },
   { id: "twitter", label: "X", mark: "X", color: "#181818" },
@@ -63,6 +72,7 @@ const loginProviders = [
 ];
 const tiers = [...shoenmateTiers],
   roles = shoenmateRoles;
+const shoenmateDiscordUrl = getServiceDiscordInviteUrl("shoenmate");
 type DiscoverMode = "recommended" | "received" | "skipped";
 type Filters = { query: string; character: string; role: string; tier: string; activity: string };
 const emptyFilters: Filters = { query: "", character: "", role: "", tier: "", activity: "" };
@@ -81,6 +91,9 @@ function matchesActivity(updatedAt: string | undefined, activity: string) {
   const elapsed = Date.now() - new Date(updatedAt).getTime();
   const limit = activity === "online" ? 5 : activity === "recent" ? 180 : 1440;
   return elapsed <= limit * 60_000;
+}
+function isOnline(updatedAt?: string) {
+  return matchesActivity(updatedAt, "online");
 }
 export default function IdentityPreview({
   basePath = "/identity-preview",
@@ -102,10 +115,14 @@ export default function IdentityPreview({
     [activeChat, setActiveChat] = useState<Connection | null>(null),
     [messages, setMessages] = useState<Message[]>([]),
     [message, setMessage] = useState(""),
+    [reactionPickerId, setReactionPickerId] = useState<number | null>(null),
+    [reactionUpdatingId, setReactionUpdatingId] = useState<number | null>(null),
+    [tutorialStep, setTutorialStep] = useState(0),
     [loginOpen, setLoginOpen] = useState(false),
     [loginAction, setLoginAction] = useState("この機能");
   const recruitDialog = useRef<HTMLDialogElement>(null);
   const loginDialog = useRef<HTMLDialogElement>(null);
+  const tutorialDialog = useRef<HTMLDialogElement>(null);
   const [recruitBusy, setRecruitBusy] = useState(false);
   const [recruitError, setRecruitError] = useState("");
   const [discoverMode, setDiscoverMode] = useState<DiscoverMode>("recommended");
@@ -235,6 +252,18 @@ export default function IdentityPreview({
   const current = activeProfiles[safeCurrentIndex];
   const canGoPrevious = safeCurrentIndex > 0;
   const canGoNext = safeCurrentIndex < activeProfiles.length - 1;
+  const completionItems = [
+    ["ユーザー名", me?.displayName],
+    ["段位", me?.skillTier && me.skillTier !== "未設定"],
+    ["役割", me?.roles?.length],
+    ["よく使うキャラ", me?.characters?.length],
+    ["遊べる時間", me?.playTimes?.length],
+    ["自己紹介", me?.bio],
+    ["プロフィール画像", me?.avatarUrl],
+  ] as const;
+  const completedItems = completionItems.filter(([, value]) => Boolean(value)).length;
+  const profileCompletion = Math.round((completedItems / completionItems.length) * 100);
+  const missingProfileItems = completionItems.filter(([, value]) => !value).map(([label]) => label);
   useEffect(() => setCurrentIndex(0), [discoverMode]);
   useEffect(() => {
     setCurrentIndex(index => Math.min(index, Math.max(activeProfiles.length - 1, 0)));
@@ -395,6 +424,7 @@ export default function IdentityPreview({
   async function openChat(connection: Connection) {
     if (requireProfile("やりとり")) return;
     setActiveChat(connection);
+    setReactionPickerId(null);
     const response = await fetch(
         `/api/services/shoenmate/messages?connectionId=${connection.id}`,
       ),
@@ -418,6 +448,33 @@ export default function IdentityPreview({
       data = await response.json();
     if (response.ok) setMessages((value) => [...value, data.message]);
     else say(data.error || "送信できませんでした");
+  }
+  async function reactToMessage(item: Message, reaction: string) {
+    if (reactionUpdatingId !== null || item.deleted) return;
+    setReactionUpdatingId(item.id);
+    try {
+      const response = await fetch("/api/services/shoenmate/message-reactions", {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            messageId: item.id,
+            reaction: item.myReaction === reaction ? null : reaction,
+          }),
+        }),
+        data = await response.json();
+      if (!response.ok) {
+        say(data.error || "リアクションできませんでした");
+        return;
+      }
+      setMessages((rows) => rows.map((row) => row.id === item.id ? {
+        ...row,
+        reactions: data.reactions || [],
+        myReaction: data.myReaction || null,
+      } : row));
+      setReactionPickerId(null);
+    } finally {
+      setReactionUpdatingId(null);
+    }
   }
   if (auth === "checking")
     return (
@@ -536,7 +593,11 @@ export default function IdentityPreview({
                 <button className={discoverMode === "received" ? styles.selected : ""} aria-pressed={discoverMode === "received"} onClick={() => { if (!requireProfile("相手からのいいね")) { setDiscoverMode("received"); void load(); } }}>相手から{receivedLikes.length > 0 && <small>{receivedLikes.length}</small>}</button>
                 <button className={discoverMode === "skipped" ? styles.selected : ""} aria-pressed={discoverMode === "skipped"} onClick={() => setDiscoverMode("skipped")}>保留{skippedProfiles.length > 0 && <small>{skippedProfiles.length}</small>}</button>
               </div>
-              <button className={styles.filterButton} aria-label="絞り込み" onClick={() => filterDialog.current?.showModal()}><Icon name="filter" /><span>絞り込み</span>{Object.values(filters).some(Boolean) && <i />}</button>
+              <div className={styles.discoverTools}>
+                {shoenmateDiscordUrl && <a className={styles.discordShortcut} href={shoenmateDiscordUrl} target="_blank" rel="noopener noreferrer" aria-label="第五マッチ公式Discordを開く"><b>D</b><span>Discord</span></a>}
+                <button className={styles.tutorialButton} aria-label="第五マッチの使い方を見る" onClick={() => { setTutorialStep(0); tutorialDialog.current?.showModal(); }}><b>?</b><span>使い方</span></button>
+                <button className={styles.filterButton} aria-label="絞り込み" onClick={() => filterDialog.current?.showModal()}><Icon name="filter" /><span>絞り込み</span>{Object.values(filters).some(Boolean) && <i />}</button>
+              </div>
             </div>
             {current && !publicError && !publicLoading ? (
               <article className={styles.card} key={`${discoverMode}-${current.id}`} onTouchStart={event => { if ((event.target as HTMLElement).closest("[data-card-actions]")) { swipeStart.current = null; return; } const touch = event.touches[0]; swipeStart.current = { x: touch.clientX, y: touch.clientY }; }} onTouchEnd={event => { const start = swipeStart.current; const touch = event.changedTouches[0]; if (start && Math.abs(touch.clientX - start.x) > 80 && Math.abs(touch.clientX - start.x) > Math.abs(touch.clientY - start.y) * 1.5) moveProfile(touch.clientX < start.x ? 1 : -1); swipeStart.current = null; }}>
@@ -708,7 +769,7 @@ export default function IdentityPreview({
                 <span>{item.other.displayName.slice(0, 1)}</span>
                 <div>
                   <strong>{item.other.displayName}</strong>
-                  <small>{item.latestMessage?.body || "マッチしました"}</small>
+                  <small>{isOnline(item.other.updatedAt) && <span className={styles.onlineDot} />}{activityLabel(item.other.updatedAt)} · {item.latestMessage?.body || "マッチしました"}</small>
                 </div>
                 <b>›</b>
               </button>
@@ -722,10 +783,12 @@ export default function IdentityPreview({
           <>
             <div className={styles.title}>
               <small>MY PAGE</small>
-              <h1>プロフィール</h1>
+              <h1>マイページ</h1>
             </div>
-            <article className={`${styles.panel} ${styles.myProfile}`}>
+            <section className={styles.profileHero}>
+              <div className={styles.profileHeaderArt}><span>MANOR PASS</span></div>
               <div className={styles.myAvatar}>{me?.avatarUrl ? <img src={me.avatarUrl} alt="あなたのプロフィール画像" /> : <Icon name="profile" />}</div>
+              <small>MY PLAYER PROFILE</small>
               <h2>{me?.displayName}</h2>
               <p>{me?.skillTier}</p>
               <div className={styles.tags}>
@@ -733,12 +796,10 @@ export default function IdentityPreview({
                   <span key={role}>{shoenmateRoleLabel(role)}</span>
                 ))}
               </div>
-              <p>よく使うキャラ：{me?.characters?.join(" · ") || "未設定"}</p>
-              <p>{me?.bio}</p>
-              <div className={styles.profileStats}>
-                <button onClick={() => { setDiscoverMode("received"); setTab("find"); }}><Icon name="heart" /><strong>{receivedLikes.length}</strong><span>届いたいいね</span></button>
-                <button onClick={() => setTab("chat")}><Icon name="chat" /><strong>{connections.length}</strong><span>メイト</span></button>
-                <button onClick={() => setTab("chat")}><Icon name="bell" /><strong>{incoming.length}</strong><span>届いた申請</span></button>
+              <div className={styles.completionMeter}>
+                <div><strong>プロフィール {profileCompletion}%</strong><span>{missingProfileItems.length ? `あと${missingProfileItems.length}項目` : "完成しています"}</span></div>
+                <i><span style={{ width: `${profileCompletion}%` }} /></i>
+                {!!missingProfileItems.length && <small>未入力：{missingProfileItems.slice(0, 3).join("・")}</small>}
               </div>
               <button
                 className={styles.primary}
@@ -746,14 +807,40 @@ export default function IdentityPreview({
               >
                 プロフィールを編集
               </button>
+            </section>
+            <div className={styles.profileStats}>
+              <button onClick={() => { setDiscoverMode("received"); setTab("find"); }}><Icon name="heart" /><strong>{receivedLikes.length}</strong><span>届いたいいね</span></button>
+              <button onClick={() => setTab("chat")}><Icon name="chat" /><strong>{outgoing.length}</strong><span>申請中</span></button>
+              <button onClick={() => setTab("chat")}><Icon name="profile" /><strong>{connections.length}</strong><span>メイト</span></button>
+              <button onClick={() => setAuth("onboarding")}><Icon name="filter" /><strong>編集</strong><span>プレイヤー情報</span></button>
+            </div>
+            <section className={styles.profileSection}>
+              <header><div><small>MATCH HISTORY</small><h2>マッチした人</h2></div><button onClick={() => setTab("chat")}>すべて見る</button></header>
+              {connections.slice(0, 3).map((item) => <button className={styles.historyRow} key={item.id} onClick={() => void openChat(item)}>
+                <span className={styles.historyAvatar}>{item.other.avatarUrl ? <img src={item.other.avatarUrl} alt="" /> : item.other.displayName.slice(0, 1)}</span>
+                <span><strong>{item.other.displayName}</strong><small>{isOnline(item.other.updatedAt) && <i className={styles.onlineDot} />}{activityLabel(item.other.updatedAt)} · {item.other.skillTier}</small></span>
+                <b>会話する</b>
+              </button>)}
+              {!connections.length && <p className={styles.profileEmpty}>マッチした相手はまだいません。</p>}
+            </section>
+            <section className={`${styles.profileSection} ${styles.communitySection}`}>
+              <small>COMMUNITY</small>
+              <h2>公式Discord</h2>
+              <p>募集やVCで、今すぐ遊べる仲間を見つけられます。</p>
               <ServiceDiscordLink service="shoenmate" />
+            </section>
+            <section className={styles.profileSection}>
+              <small>SAFETY &amp; ACCOUNT</small>
+              <h2>アカウントと安全設定</h2>
+              <p>ブロック解除やアカウント削除などを管理できます。</p>
+              <ServiceAccountSafety service="shoenmate" onNotice={say} />
               <a
+                className={styles.logoutLink}
                 href={`/api/auth/signout?callbackUrl=${encodeURIComponent(basePath)}`}
               >
                 ログアウト
               </a>
-              <ServiceAccountSafety service="shoenmate" onNotice={say} />
-            </article>
+            </section>
           </>
         )}
         <nav className={styles.nav} aria-label="メインメニュー">
@@ -785,28 +872,35 @@ export default function IdentityPreview({
         {activeChat && (
           <div className={styles.chatWindow}>
             <header className={styles.chatHeader}>
-            <button onClick={() => setActiveChat(null)}>← 戻る</button>
-            <h2>{activeChat.other.displayName}</h2>
-            <ServiceReportButton
-              service="shoenmate"
-              targetProfileId={activeChat.other.id}
-              connectionId={activeChat.id}
-              onNotice={say}
-              onBlocked={() => {
-                setActiveChat(null);
-                void load();
-              }}
-            />
+              <button className={styles.chatBack} onClick={() => setActiveChat(null)} aria-label="やりとり一覧へ戻る">←</button>
+              <button className={styles.chatAccount} onClick={() => setDetailProfile(activeChat.other)}>
+                <span className={styles.chatAvatar}>{activeChat.other.avatarUrl ? <img src={activeChat.other.avatarUrl} alt="" /> : activeChat.other.displayName.slice(0, 1)}</span>
+                <span><strong>{activeChat.other.displayName}</strong><small>{isOnline(activeChat.other.updatedAt) && <i className={styles.onlineDot} />}{activityLabel(activeChat.other.updatedAt)} · プロフィールを見る</small></span>
+              </button>
+              <ServiceReportButton
+                service="shoenmate"
+                targetProfileId={activeChat.other.id}
+                connectionId={activeChat.id}
+                onNotice={say}
+                onBlocked={() => {
+                  setActiveChat(null);
+                  void load();
+                }}
+              />
             </header>
             <div className={styles.messageList}>
-            {messages.map((item) => (
-              <p
-                key={item.id}
-                className={item.senderProfileId === me?.id ? styles.mine : ""}
-              >
-                {item.body}
-              </p>
-            ))}
+              {!messages.length && <p className={styles.chatEmpty}>マッチしました。まずは挨拶してみましょう。</p>}
+              {messages.map((item) => {
+                const mine = item.senderProfileId === me?.id;
+                return <article key={item.id} className={`${styles.messageBubble} ${mine ? styles.mine : ""}`}>
+                  <p>{item.body}</p>
+                  {!item.deleted && <div className={styles.reactionArea}>
+                    {(item.reactions || []).map((reaction) => <button type="button" key={reaction.reaction} className={item.myReaction === reaction.reaction ? styles.reacted : ""} disabled={reactionUpdatingId === item.id} onClick={() => void reactToMessage(item, reaction.reaction)}>{reaction.reaction}<b>{reaction.count}</b></button>)}
+                    <button type="button" className={styles.reactionAdd} aria-label="リアクションを追加" onClick={() => setReactionPickerId((value) => value === item.id ? null : item.id)}>＋☺</button>
+                    {reactionPickerId === item.id && <div className={styles.reactionPicker}>{["👍", "❤️", "😂", "🎭"].map((reaction) => <button type="button" key={reaction} disabled={reactionUpdatingId === item.id} onClick={() => void reactToMessage(item, reaction)}>{reaction}</button>)}</div>}
+                  </div>}
+                </article>;
+              })}
             </div>
             <form
               onSubmit={sendMessage}
@@ -823,6 +917,20 @@ export default function IdentityPreview({
             </form>
           </div>
         )}
+        <dialog ref={tutorialDialog} className={`${styles.recruitDialog} ${styles.bottomSheet} ${styles.tutorialSheet}`} aria-labelledby="tutorial-title">
+          <div className={styles.sheetHandle} />
+          <button type="button" className={styles.loginClose} aria-label="使い方を閉じる" onClick={() => tutorialDialog.current?.close()}>×</button>
+          <small className={styles.eyebrow}>MANOR GUIDE · {tutorialStep + 1}/4</small>
+          <div className={styles.tutorialProgress} aria-hidden="true">{[0,1,2,3].map((step) => <span key={step} className={step <= tutorialStep ? styles.done : ""} />)}</div>
+          {tutorialStep === 0 && <section><b className={styles.tutorialMark}>Ⅰ</b><h2 id="tutorial-title">仲間を見つける</h2><p>プロフィールを左右に切り替えて、気になる相手を探します。<strong>いいね</strong>は気持ちを伝える機能、<strong>メイト申請</strong>は一緒に遊びたい相手へ直接送る申請です。</p></section>}
+          {tutorialStep === 1 && <section><b className={styles.tutorialMark}>Ⅱ</b><h2 id="tutorial-title">マッチして話す</h2><p>お互いにいいねすると自動でマッチします。メイト申請は相手が承認すると、やりとりでチャットできるようになります。</p></section>}
+          {tutorialStep === 2 && <section><b className={styles.tutorialMark}>Ⅲ</b><h2 id="tutorial-title">募集に参加する</h2><p>募集では、モード・人数・ひとことを確認できます。募集カードを開いて参加申請するか、自分で新しい募集を作れます。</p></section>}
+          {tutorialStep === 3 && <section><b className={styles.tutorialMark}>Ⅳ</b><h2 id="tutorial-title">Discordでも集まる</h2><p>公式Discordでは、その場で遊べる仲間の募集やVCを利用できます。サイトのマッチ・チャットと使い分けてください。</p>{shoenmateDiscordUrl && <a className={styles.tutorialDiscord} href={shoenmateDiscordUrl} target="_blank" rel="noopener noreferrer">Discordを開く</a>}</section>}
+          <div className={styles.tutorialActions}>
+            <button type="button" disabled={tutorialStep === 0} onClick={() => setTutorialStep((step) => Math.max(0, step - 1))}>戻る</button>
+            {tutorialStep < 3 ? <button type="button" onClick={() => setTutorialStep((step) => Math.min(3, step + 1))}>次へ</button> : <button type="button" onClick={() => tutorialDialog.current?.close()}>使ってみる</button>}
+          </div>
+        </dialog>
         {auth === "guest" && loginOpen && (
           <dialog
             ref={loginDialog}

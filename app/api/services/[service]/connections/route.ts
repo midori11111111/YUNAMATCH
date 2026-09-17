@@ -143,6 +143,7 @@ export async function GET(
     return {
       id: row.id,
       status: row.status,
+      createdAt: row.createdAt,
       direction:
         row.requesterProfileId === ctx.profile.id ? "outgoing" : "incoming",
       createdAt: row.createdAt,
@@ -153,7 +154,14 @@ export async function GET(
             skillTier: ctx.service === "shoenmate" ? normalizeShoenmateTier(other.skillTier) : other.skillTier,
             roles: JSON.parse(other.roles),
             characters: JSON.parse(other.characters),
+            playTimes: JSON.parse(other.playTimes),
+            bio: other.bio,
+            gameIdentity: other.gameIdentity,
+            age: other.age,
+            gender: other.showGender && other.age >= 18 ? other.gender : "",
+            showGender: other.showGender,
             avatarUrl: other.avatarUrl,
+            updatedAt: other.updatedAt,
           }
         : {
             id: 0,
@@ -161,7 +169,14 @@ export async function GET(
             skillTier: "",
             roles: [],
             characters: [],
+            playTimes: [],
+            bio: "",
+            gameIdentity: "",
+            age: 0,
+            gender: "",
+            showGender: false,
             avatarUrl: "",
+            updatedAt: null,
           },
       latestMessage: latest
         ? { body: latest.body, createdAt: latest.createdAt }
