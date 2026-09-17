@@ -603,14 +603,8 @@ export default function IdentityPreview({
             </div>
             {current && !publicError && !publicLoading ? (
               <article className={styles.card} key={`${discoverMode}-${current.id}`} onTouchStart={event => { if ((event.target as HTMLElement).closest("[data-card-actions],[data-card-detail]")) { swipeStart.current = null; return; } const touch = event.touches[0]; swipeStart.current = { x: touch.clientX, y: touch.clientY }; }} onTouchEnd={event => { const start = swipeStart.current; const touch = event.changedTouches[0]; if (start && Math.abs(touch.clientX - start.x) > 80 && Math.abs(touch.clientX - start.x) > Math.abs(touch.clientY - start.y) * 1.5) moveProfile(touch.clientX < start.x ? 1 : -1); swipeStart.current = null; }}>
-                <div className={styles.portrait} aria-hidden="true">
-                  {current.headerUrl || current.avatarUrl ? (
-                    <img src={current.headerUrl || current.avatarUrl} alt="" />
-                  ) : (
-                    <div className={styles.silhouette}>
-                      {current.displayName.slice(0, 1)}
-                    </div>
-                  )}
+                <div className={`${styles.portrait} ${!current.headerUrl ? (shoenmateCharacterGroups[1].names.includes(current.characters?.[0] || "") ? styles.hunterPortrait : styles.survivorPortrait) : styles.customPortrait}`} aria-hidden="true">
+                  {current.headerUrl && <img src={current.headerUrl} alt="" />}
                 </div>
                 <button type="button" className={`${styles.cardStepper} ${styles.cardPrevious}`} disabled={!canGoPrevious} aria-label="前の人を見る" onClick={() => moveProfile(-1)}><Icon name="arrow" /></button>
                 <button type="button" className={`${styles.cardStepper} ${styles.cardNext}`} disabled={!canGoNext} aria-label="次の人を見る" onClick={() => moveProfile(1)}><Icon name="arrow" /></button>

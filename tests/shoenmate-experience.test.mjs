@@ -46,7 +46,7 @@ test("Fifth Match profile cards support previous and next navigation without dis
 
 test("Fifth Match uses the upper card for navigation and the lower card for details", async () => {
   const page = await read("app/identity-preview/page.tsx");
-  assert.match(page, /<div className=\{styles\.portrait\} aria-hidden="true">/);
+  assert.match(page, /className=\{`\$\{styles\.portrait\}/);
   assert.match(page, /MAIN CHARACTER/);
   assert.match(page, /current\.characters\?\.\[0\] \|\| "使用キャラ未設定"/);
   assert.match(page, /data-card-detail/);
@@ -107,10 +107,20 @@ test("Fifth Match uploads service-isolated icons and headers and shows them acro
   assert.match(onboarding, /headerUrl,/);
   assert.match(profile, /headerUrl = cleanText\(body\.headerUrl, 500\)/);
   assert.match(discover, /headerUrl: row\.headerUrl/);
-  assert.match(page, /current\.headerUrl \|\| current\.avatarUrl/);
+  assert.match(page, /current\.headerUrl && <img src=\{current\.headerUrl\}/);
+  assert.match(page, /current\.avatarUrl \? <img src=\{current\.avatarUrl\}/);
   assert.match(page, /me\?\.headerUrl/);
   assert.match(avatar, /mediaOwner=requestedService\?`\$\{requestedService\}:\$\{user\.userId\}`/);
   assert.match(header, /mediaOwner = requestedService \? `\$\{requestedService\}:\$\{user\.userId\}`/);
   assert.match(schema, /headerUrl: text\("header_url"\)/);
   assert.match(migration, /service_profiles.*header_url/);
+});
+
+test("Fifth Match cards use a plain faction color until a custom header is uploaded", async () => {
+  const page = await read("app/identity-preview/page.tsx");
+  assert.match(page, /!current\.headerUrl/);
+  assert.match(page, /styles\.hunterPortrait : styles\.survivorPortrait/);
+  assert.match(page, /current\.headerUrl && <img src=\{current\.headerUrl\}/);
+  assert.doesNotMatch(page, /current\.headerUrl \|\| current\.avatarUrl/);
+  assert.doesNotMatch(page, /className=\{styles\.silhouette\}>\s*\{current\.displayName\.slice/);
 });
