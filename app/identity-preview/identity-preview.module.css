@@ -590,3 +590,81 @@
   .chatAvatar { width:38px; height:38px; flex-basis:38px; }
   .profileStats span { line-height:1.25; }
 }
+
+/* Reviewable public introduction: rendered before account checks complete. */
+.publicIntro { width:min(920px,100%); margin:auto; padding:34px 22px 70px; color:#241a1e; }
+.publicIntro > header { display:flex; align-items:center; gap:14px; padding-bottom:22px; border-bottom:1px solid #d8cbc5; }
+.publicIntro > header .seal { width:58px; height:58px; }
+.publicIntro > header small { display:block; color:#8e2943; font-size:9px; font-weight:800; letter-spacing:.2em; }
+.publicIntro > header h1 { margin:2px 0 0; font-family:"Hiragino Mincho ProN","Yu Mincho",serif; font-size:25px; }
+.publicIntroHero { padding:58px 0 46px; border-bottom:1px solid #d8cbc5; }
+.publicIntroHero > small { color:#8e2943; font-weight:800; letter-spacing:.14em; }
+.publicIntroHero h2 { margin:12px 0 18px; max-width:720px; font-family:"Hiragino Mincho ProN","Yu Mincho",serif; font-size:clamp(34px,7vw,64px); font-weight:600; line-height:1.25; letter-spacing:.01em; }
+.publicIntroHero p { max-width:690px; margin:0; color:#655b5e; line-height:2; }
+.publicIntroHero span { display:inline-block; margin-top:28px; padding:8px 12px; border-left:3px solid #8e2943; background:#fffdf9; color:#655b5e; font-size:12px; }
+.publicIntroGrid { display:grid; grid-template-columns:repeat(3,1fr); border-bottom:1px solid #d8cbc5; }
+.publicIntroGrid article { padding:28px 24px 30px 0; border-right:1px solid #d8cbc5; }
+.publicIntroGrid article + article { padding-left:24px; }
+.publicIntroGrid article:last-child { border-right:0; }
+.publicIntroGrid b { color:#8e2943; font:600 12px/1 Georgia,serif; }
+.publicIntroGrid h2 { margin:12px 0 8px; font-family:"Hiragino Mincho ProN","Yu Mincho",serif; font-size:20px; }
+.publicIntroGrid p { margin:0; color:#746a6d; font-size:13px; line-height:1.8; }
+.publicIntroLinks { display:flex; flex-wrap:wrap; gap:8px 22px; padding:28px 0; }
+.publicIntroLinks a { color:#8e2943; font-size:13px; font-weight:700; text-underline-offset:4px; }
+.publicIntro > footer { padding-top:22px; border-top:1px solid #d8cbc5; color:#81777a; font-size:11px; line-height:1.9; }
+
+/* Player registry: a game roster, deliberately not a full-screen dating card. */
+.focusMode { background:#f4f0e9; }
+.focusMode .shell { max-width:660px; }
+.card {
+  height:auto;
+  min-height:0;
+  max-height:none;
+  overflow:hidden;
+  border:1px solid #382c31;
+  border-radius:8px;
+  background:#fffdf9;
+  box-shadow:0 16px 44px #28181e20;
+}
+.card::before,.card::after { display:none; }
+.portrait { position:relative; inset:auto; height:190px; min-height:190px; border-bottom:1px solid #382c31; background:#8d5965; }
+.portrait::after { content:""; position:absolute; inset:0; background:linear-gradient(180deg,#1b11151a,#1b111575); pointer-events:none; }
+.portrait > img { position:absolute; inset:0; }
+.survivorPortrait { background:linear-gradient(135deg,#a34b61,#dc8392); }
+.hunterPortrait { background:linear-gradient(135deg,#363845,#777987); }
+.customPortrait { background:#31262b; }
+.silhouette { top:50%; transform:translate(-50%,-50%); width:104px; height:104px; font-size:46px; }
+.photoProgress { top:14px; left:18px; right:18px; z-index:5; }
+.activityBadge { top:28px; left:18px; z-index:5; }
+.cardStepper { top:0; bottom:auto; height:190px; width:50%; z-index:4; }
+.cardStepper svg { top:50%; }
+.profile { position:relative; inset:auto; z-index:auto; padding:22px 22px 18px; color:var(--ink); background:#fffdf9; pointer-events:auto; }
+.profileSummary { color:var(--ink); }
+.characterLabel { color:var(--wine); }
+.profileSummary h2 { color:var(--ink); font-size:28px; }
+.cardAccountIdentity small,.detailHint { color:var(--muted); }
+.cardAccountAvatar { border-color:#d6c7c1; }
+.cardAccount > svg { color:var(--wine); }
+.profile .tags span { border:1px solid #dfd2cd; border-radius:4px; background:#f3ebe6; color:#6f263b; }
+.profile .cardMeta { color:var(--muted); }
+.cardBio { color:var(--ink); }
+.actions { display:grid; grid-template-columns:.9fr 1fr 1.25fr; gap:8px; margin-top:18px; padding-top:15px; border-top:1px solid #e3d8d3; }
+.actions button,.actions button:first-child,.actions button:last-child { width:100%; height:54px; min-height:54px; border:1px solid #d8cbc5; border-radius:5px; flex-direction:row; gap:6px; background:#fffdf9; color:var(--wine); }
+.actions button:first-child { color:var(--muted); }
+.actions button:last-child { border-color:var(--wine); background:var(--wine); color:white; }
+.actions svg { width:20px; height:20px; }
+.actions span { font-size:11px; }
+
+@media (max-width:640px) {
+  .publicIntro { padding:22px 18px 48px; }
+  .publicIntroHero { padding:42px 0 34px; }
+  .publicIntroGrid { grid-template-columns:1fr; }
+  .publicIntroGrid article,.publicIntroGrid article + article { padding:22px 0; border-right:0; border-bottom:1px solid #d8cbc5; }
+  .publicIntroGrid article:last-child { border-bottom:0; }
+  .card { height:auto; min-height:0; border-radius:7px; }
+  .portrait,.cardStepper { height:172px; min-height:172px; }
+  .profile { padding:20px 17px 15px; }
+  .profileSummary h2 { font-size:25px; }
+  .actions { gap:6px; }
+  .actions button,.actions button:first-child,.actions button:last-child { height:50px; min-height:50px; padding:4px; }
+}

@@ -481,12 +481,26 @@ export default function IdentityPreview({
   if (auth === "checking")
     return (
       <main className={styles.app}>
-        <div className={styles.login}>
-          <section className={styles.hero}>
+        <div className={styles.publicIntro}>
+          <header>
             <img className={styles.seal} src="/daigomatch-icon.svg?rev=2" alt="" />
-            <h1>第五マッチ</h1>
-            <p>プロフィールを確認しています…</p>
+            <div><small>IDENTITY V PLAYER COMMUNITY</small><h1>第五マッチ</h1></div>
+          </header>
+          <section className={styles.publicIntroHero}>
+            <small>第五人格のゲーム仲間探し</small>
+            <h2>段位も、役割も、<br />遊ぶ時間も合う仲間へ。</h2>
+            <p>第五マッチは、サバイバー／ハンター、現在の段位、得意な役割、よく使うキャラ、活動時間から、一緒にプレイする仲間を探せる非公式コミュニティサービスです。</p>
+            <span>公開中のプレイヤーを読み込んでいます…</span>
           </section>
+          <section className={styles.publicIntroGrid} aria-label="第五マッチでできること">
+            <article><b>01</b><h2>プレイヤー名簿</h2><p>段位や役割、使用キャラから、条件の合うプレイヤーを確認できます。</p></article>
+            <article><b>02</b><h2>ランク・マルチ募集</h2><p>遊ぶモード、人数、役割を書いて募集し、その日に遊べる仲間と合流できます。</p></article>
+            <article><b>03</b><h2>マッチ後の相談</h2><p>お互いに同意した後だけチャットを開き、キャラ編成やVCの有無を相談できます。</p></article>
+          </section>
+          <nav className={styles.publicIntroLinks} aria-label="第五マッチのガイド">
+            <a href="/guide">使い方ガイド</a><a href="/safety">安全に使うために</a><a href="/legal?service=shoenmate">運営・安全方針</a><a href="/contact">お問い合わせ</a>
+          </nav>
+          <footer>恋愛、異性交際、面会、性的目的の利用は禁止しています。本サービスはNetEase GamesおよびIdentity V／第五人格の公式サービスではありません。</footer>
         </div>
       </main>
     );
@@ -591,9 +605,9 @@ export default function IdentityPreview({
           <>
             <div className={styles.discoverHeader}>
               <div className={styles.segmented} aria-label="表示する仲間">
-                <button className={discoverMode === "recommended" ? styles.selected : ""} aria-pressed={discoverMode === "recommended"} onClick={() => setDiscoverMode("recommended")}>おすすめ</button>
-                <button className={discoverMode === "received" ? styles.selected : ""} aria-pressed={discoverMode === "received"} onClick={() => { if (!requireProfile("相手からのいいね")) { setDiscoverMode("received"); void load(); } }}>相手から{receivedLikes.length > 0 && <small>{receivedLikes.length}</small>}</button>
-                <button className={discoverMode === "skipped" ? styles.selected : ""} aria-pressed={discoverMode === "skipped"} onClick={() => setDiscoverMode("skipped")}>保留{skippedProfiles.length > 0 && <small>{skippedProfiles.length}</small>}</button>
+                <button className={discoverMode === "recommended" ? styles.selected : ""} aria-pressed={discoverMode === "recommended"} onClick={() => setDiscoverMode("recommended")}>名簿</button>
+                <button className={discoverMode === "received" ? styles.selected : ""} aria-pressed={discoverMode === "received"} onClick={() => { if (!requireProfile("届いた誘い")) { setDiscoverMode("received"); void load(); } }}>届いた誘い{receivedLikes.length > 0 && <small>{receivedLikes.length}</small>}</button>
+                <button className={discoverMode === "skipped" ? styles.selected : ""} aria-pressed={discoverMode === "skipped"} onClick={() => setDiscoverMode("skipped")}>あとで{skippedProfiles.length > 0 && <small>{skippedProfiles.length}</small>}</button>
               </div>
               <div className={styles.discoverTools}>
                 {shoenmateDiscordUrl && <a className={styles.discordShortcut} href={shoenmateDiscordUrl} target="_blank" rel="noopener noreferrer" aria-label="第五マッチ公式Discordを開く"><b>D</b><span>Discord</span></a>}
@@ -643,10 +657,10 @@ export default function IdentityPreview({
                     <button
                       onClick={discoverMode === "skipped" ? restoreCurrent : skipCurrent}
                     >
-                      <Icon name={discoverMode === "skipped" ? "arrow" : "skip"} /><span>{discoverMode === "skipped" ? "戻す" : "保留"}</span>
+                      <Icon name={discoverMode === "skipped" ? "arrow" : "skip"} /><span>{discoverMode === "skipped" ? "名簿に戻す" : "あとで見る"}</span>
                     </button>
-                    <button onClick={like}><Icon name="heart" /><span>いいね</span></button>
-                    <button onClick={requestMate}><Icon name="chat" /><span>メイト申請</span></button>
+                    <button onClick={like}><Icon name="heart" /><span>気になる</span></button>
+                    <button onClick={requestMate}><Icon name="chat" /><span>一緒に遊ぶ</span></button>
                   </div>
                 </div>
               </article>

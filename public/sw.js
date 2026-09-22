@@ -7,8 +7,9 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("push", (event) => {
+  const fifthMatch = self.location.hostname === "daigomatch.com" || self.location.hostname === "www.daigomatch.com";
   let data = {
-    title: "YUNAMATCH",
+    title: fifthMatch ? "第五マッチ" : "YUNAMATCH",
     body: "新しい通知があります",
     url: "/",
     realtime: null,
@@ -45,8 +46,8 @@ self.addEventListener("push", (event) => {
     if (windows.some((client) => client.focused)) return;
     await self.registration.showNotification(data.title, {
       body: data.body,
-      icon: "/yunamatch-official-icon-v2.png",
-      badge: "/yunamatch-official-icon-v2.png",
+      icon: fifthMatch ? "/brand/shoenmate-social-avatar.png" : "/yunamatch-official-icon-v2.png",
+      badge: fifthMatch ? "/brand/shoenmate-social-avatar.png" : "/yunamatch-official-icon-v2.png",
       tag: data.url,
       data: { url: data.url },
     });
