@@ -317,7 +317,7 @@ export default function IdentityPreview({
     return false;
   }
   async function like() {
-    if (requireProfile("いいね")) return;
+    if (requireProfile("候補への追加")) return;
     if (!current) return;
     const response = await fetch("/api/services/shoenmate/likes", {
         method: "POST",
@@ -328,8 +328,8 @@ export default function IdentityPreview({
     say(
       response.ok
         ? data.matched
-          ? "相互いいねでマッチしました！"
-          : "いいねを送りました"
+          ? "お互いのプレイ候補が成立しました！"
+          : "候補に追加しました"
         : data.error || "送信できませんでした",
     );
     if (response.ok) {
@@ -338,7 +338,7 @@ export default function IdentityPreview({
     }
   }
   async function requestTarget(targetProfileId: number) {
-    if (requireProfile("メイト申請")) return;
+    if (requireProfile("プレイ申請")) return;
     const response = await fetch("/api/services/shoenmate/connections", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -347,7 +347,7 @@ export default function IdentityPreview({
       data = await response.json();
     say(
       response.ok
-        ? "メイト申請を送りました"
+        ? "プレイ申請を送りました"
         : data.error || "申請できませんでした",
     );
     if (response.ok) {
@@ -357,7 +357,7 @@ export default function IdentityPreview({
     return response.ok;
   }
   async function requestMate() {
-    if (requireProfile("メイト申請")) return;
+    if (requireProfile("プレイ申請")) return;
     if (!current) return;
     const id = current.id;
     if (await requestTarget(id)) removeCurrent();
@@ -606,7 +606,7 @@ export default function IdentityPreview({
             <div className={styles.discoverHeader}>
               <div className={styles.segmented} aria-label="表示する仲間">
                 <button className={discoverMode === "recommended" ? styles.selected : ""} aria-pressed={discoverMode === "recommended"} onClick={() => setDiscoverMode("recommended")}>名簿</button>
-                <button className={discoverMode === "received" ? styles.selected : ""} aria-pressed={discoverMode === "received"} onClick={() => { if (!requireProfile("届いた誘い")) { setDiscoverMode("received"); void load(); } }}>届いた誘い{receivedLikes.length > 0 && <small>{receivedLikes.length}</small>}</button>
+                <button className={discoverMode === "received" ? styles.selected : ""} aria-pressed={discoverMode === "received"} onClick={() => { if (!requireProfile("受信した申請")) { setDiscoverMode("received"); void load(); } }}>受信した申請{receivedLikes.length > 0 && <small>{receivedLikes.length}</small>}</button>
                 <button className={discoverMode === "skipped" ? styles.selected : ""} aria-pressed={discoverMode === "skipped"} onClick={() => setDiscoverMode("skipped")}>あとで{skippedProfiles.length > 0 && <small>{skippedProfiles.length}</small>}</button>
               </div>
               <div className={styles.discoverTools}>
@@ -659,16 +659,16 @@ export default function IdentityPreview({
                     >
                       <Icon name={discoverMode === "skipped" ? "arrow" : "skip"} /><span>{discoverMode === "skipped" ? "名簿に戻す" : "あとで見る"}</span>
                     </button>
-                    <button onClick={like}><Icon name="heart" /><span>気になる</span></button>
-                    <button onClick={requestMate}><Icon name="chat" /><span>一緒に遊ぶ</span></button>
+                    <button onClick={like}><Icon name="heart" /><span>候補に追加</span></button>
+                    <button onClick={requestMate}><Icon name="chat" /><span>プレイ申請</span></button>
                   </div>
                 </div>
               </article>
             ) : (
               <article className={`${styles.panel} ${styles.empty}`}>
                 <img src="/daigomatch-icon.svg?rev=2" alt="" width="80" height="80" />
-                <h2>{publicLoading ? "仲間を探しています…" : publicError ? "読み込みに失敗しました" : discoverMode === "received" ? "まだ表示できるいいねがありません" : discoverMode === "skipped" ? "保留中の相手はいません" : "今の条件では仲間が見つかりません"}</h2>
-                <p>{publicError || (discoverMode === "received" ? "あなたへのいいねが、ここに届きます。" : discoverMode === "skipped" ? "保留した相手はここから戻せます。" : "条件を変えるか、募集から探してみましょう。")}</p>
+                <h2>{publicLoading ? "仲間を探しています…" : publicError ? "読み込みに失敗しました" : discoverMode === "received" ? "受信した申請はありません" : discoverMode === "skipped" ? "あとで見る相手はいません" : "今の条件では仲間が見つかりません"}</h2>
+                <p>{publicError || (discoverMode === "received" ? "ほかのプレイヤーから届いた候補追加や申請を確認できます。" : discoverMode === "skipped" ? "あとで見るに入れた相手はここから戻せます。" : "条件を変えるか、募集から探してみましょう。")}</p>
                 <button
                   className={styles.primary}
                   onClick={() =>
@@ -707,8 +707,8 @@ export default function IdentityPreview({
             <div className={styles.sectionHeading}><h2>役割から見つける</h2></div>
             <div className={styles.roleChoices}>{roles.map(role => <button key={role} onClick={() => { const next = { ...filters, role }; setFilters(next); setCurrentIndex(0); setDiscoverMode("recommended"); setTab("find"); void loadPublic(next); }}>{shoenmateRoleLabel(role)}<Icon name="arrow" /></button>)}</div>
             <aside className={styles.guide} aria-label="仲間とつながるには">
-              <div><Icon name="heart" /><strong>お互いにいいねでマッチ</strong><p>マッチしたら、チャットで相談。</p></div>
-              <div><Icon name="chat" /><strong>直接誘うならメイト申請</strong><p>相手の承認後にやりとりできます。</p></div>
+              <div><Icon name="heart" /><strong>お互いに候補へ追加</strong><p>成立したら、チャットで相談。</p></div>
+              <div><Icon name="chat" /><strong>直接誘うならプレイ申請</strong><p>相手の承認後にやりとりできます。</p></div>
             </aside>
           </section>
         )}
@@ -765,7 +765,7 @@ export default function IdentityPreview({
                 <span>申</span>
                 <div>
                   <strong>{item.other.displayName}</strong>
-                  <small>メイト申請が届いています</small>
+                  <small>プレイ申請が届いています</small>
                 </div>
                 <button onClick={() => act(item.id, "accept")}>承認</button>
                 <button onClick={() => act(item.id, "decline")}>断る</button>
@@ -801,7 +801,7 @@ export default function IdentityPreview({
               </button>
             ))}
             {!incoming.length && !outgoing.length && !connections.length && (
-              <div className={`${styles.panel} ${styles.empty}`}><Icon name="chat" /><h2>会話は、ここから。</h2><p>メイト申請が承認されると<br />ここでやりとりできるようになります。</p><button className={styles.primary} onClick={() => setTab("find")}>仲間を探す</button></div>
+              <div className={`${styles.panel} ${styles.empty}`}><Icon name="chat" /><h2>会話は、ここから。</h2><p>プレイ申請が承認されると<br />ここでやりとりできるようになります。</p><button className={styles.primary} onClick={() => setTab("find")}>仲間を探す</button></div>
             )}
           </>
         )}
@@ -835,9 +835,9 @@ export default function IdentityPreview({
               </button>
             </section>
             <div className={styles.profileStats}>
-              <button onClick={() => { setDiscoverMode("received"); setTab("find"); }}><Icon name="heart" /><strong>{receivedLikes.length}</strong><span>届いたいいね</span></button>
+              <button onClick={() => { setDiscoverMode("received"); setTab("find"); }}><Icon name="heart" /><strong>{receivedLikes.length}</strong><span>受信した申請</span></button>
               <button onClick={() => setTab("chat")}><Icon name="chat" /><strong>{outgoing.length}</strong><span>申請中</span></button>
-              <button onClick={() => setTab("chat")}><Icon name="profile" /><strong>{connections.length}</strong><span>メイト</span></button>
+              <button onClick={() => setTab("chat")}><Icon name="profile" /><strong>{connections.length}</strong><span>プレイ仲間</span></button>
               <button onClick={() => setAuth("onboarding")}><Icon name="filter" /><strong>編集</strong><span>プレイヤー情報</span></button>
             </div>
             <section className={styles.profileSection}>
@@ -948,8 +948,8 @@ export default function IdentityPreview({
           <button type="button" className={styles.loginClose} aria-label="使い方を閉じる" onClick={() => tutorialDialog.current?.close()}>×</button>
           <small className={styles.eyebrow}>MANOR GUIDE · {tutorialStep + 1}/4</small>
           <div className={styles.tutorialProgress} aria-hidden="true">{[0,1,2,3].map((step) => <span key={step} className={step <= tutorialStep ? styles.done : ""} />)}</div>
-          {tutorialStep === 0 && <section><b className={styles.tutorialMark}>Ⅰ</b><h2 id="tutorial-title">仲間を見つける</h2><p>プロフィールを左右に切り替えて、気になる相手を探します。<strong>いいね</strong>は気持ちを伝える機能、<strong>メイト申請</strong>は一緒に遊びたい相手へ直接送る申請です。</p></section>}
-          {tutorialStep === 1 && <section><b className={styles.tutorialMark}>Ⅱ</b><h2 id="tutorial-title">マッチして話す</h2><p>お互いにいいねすると自動でマッチします。メイト申請は相手が承認すると、やりとりでチャットできるようになります。</p></section>}
+          {tutorialStep === 0 && <section><b className={styles.tutorialMark}>Ⅰ</b><h2 id="tutorial-title">仲間を見つける</h2><p>プロフィールを左右に切り替えて、一緒に遊びたい相手を探します。<strong>候補に追加</strong>はプレイヤーを整理する機能、<strong>プレイ申請</strong>は相手へ直接送る申請です。</p></section>}
+          {tutorialStep === 1 && <section><b className={styles.tutorialMark}>Ⅱ</b><h2 id="tutorial-title">成立後に相談する</h2><p>お互いに候補へ追加するとチャットが開きます。プレイ申請は相手が承認すると、やりとりで相談できるようになります。</p></section>}
           {tutorialStep === 2 && <section><b className={styles.tutorialMark}>Ⅲ</b><h2 id="tutorial-title">募集に参加する</h2><p>募集では、モード・人数・ひとことを確認できます。募集カードを開いて参加申請するか、自分で新しい募集を作れます。</p></section>}
           {tutorialStep === 3 && <section><b className={styles.tutorialMark}>Ⅳ</b><h2 id="tutorial-title">Discordでも集まる</h2><p>公式Discordでは、その場で遊べる仲間の募集やVCを利用できます。サイトのマッチ・チャットと使い分けてください。</p>{shoenmateDiscordUrl && <a className={styles.tutorialDiscord} href={shoenmateDiscordUrl} target="_blank" rel="noopener noreferrer">Discordを開く</a>}</section>}
           <div className={styles.tutorialActions}>
@@ -1044,7 +1044,7 @@ export default function IdentityPreview({
           <h3>よく使うキャラ</h3><p>{detailProfile.characters?.join(" · ") || "未設定"}</p>
           <h3>自己紹介</h3><p className={styles.fullBio}>{detailProfile.bio || "自己紹介はまだありません。"}</p>
           <h3>遊べる時間</h3><p>{detailProfile.playTimes.join(" · ") || "未設定"}</p>
-          <button className={styles.primary} onClick={() => { const id = detailProfile.id; setDetailProfile(null); if (id) void requestTarget(id); }}>メイト申請を送る</button>
+          <button className={styles.primary} onClick={() => { const id = detailProfile.id; setDetailProfile(null); if (id) void requestTarget(id); }}>プレイ申請を送る</button>
           {auth === "ready" && me && detailProfile.id ? <ServiceReportButton service="shoenmate" targetProfileId={detailProfile.id} onNotice={text => { setDetailNotice(text); say(text); }} onBlocked={() => { setDetailProfile(null); void load(); }} /> : <button className={styles.textButton} onClick={() => { setDetailProfile(null); requireProfile("通報"); }}>このプロフィールを通報</button>}
           {detailNotice && <p role="status">{detailNotice}</p>}
         </dialog>}

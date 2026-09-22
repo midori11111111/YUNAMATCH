@@ -102,8 +102,8 @@ test("keeps Shoenmate functional but separately scoped while approval is pending
  assert.match(page,/get\("setup"\)==="1"/);
  assert.match(page,/setAuth\(setupRequested\?"onboarding":"ready"\)/);
  assert.match(page,/encodeURIComponent\(`\$\{basePath\}\?setup=1`\)/);
- assert.match(page,/requireProfile\("いいね"\)/);
- assert.match(page,/requireProfile\("メイト申請"\)/);
+ assert.match(page,/requireProfile\("候補への追加"\)/);
+ assert.match(page,/requireProfile\("プレイ申請"\)/);
  assert.match(page,/requireProfile\("募集の作成"\)/);
  assert.match(page,/requireProfile\("やりとり"\)/);
  assert.match(page,/onCancel=\{\(\)=>\{history\.replaceState\(null,"",basePath\);setAuth\("ready"\);\}\}/);

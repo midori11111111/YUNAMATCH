@@ -63,7 +63,7 @@ test("Fifth Match exposes Discord and a four-step tutorial beside discovery", as
   assert.match(page, /shoenmateDiscordUrl/);
   assert.match(page, /aria-label="第五マッチの使い方を見る"/);
   assert.match(page, /MANOR GUIDE · \{tutorialStep \+ 1\}\/4/);
-  for (const label of ["仲間を見つける", "マッチして話す", "募集に参加する", "Discordでも集まる"])
+  for (const label of ["仲間を見つける", "成立後に相談する", "募集に参加する", "Discordでも集まる"])
     assert.match(page, new RegExp(label));
 });
 
