@@ -21,24 +21,40 @@ test("serves Fifth Match on its own domain without an external redirect", async 
   assert.match(brand, /第五マッチ/);
 });
 
-test("limits the AdSense ownership tag and loader to Fifth Match", async () => {
-  const [layout, loader, guideLayout, safetyLayout, ads] = await Promise.all([
+test("limits the AdSense ownership tag and loader to editorial Fifth Match pages", async () => {
+  const [layout, loader, guideLayout, safetyLayout, notFound, fifthMatchPage, ads] = await Promise.all([
     read("app/layout.tsx"),
     read("app/adsense-script.tsx"),
     read("app/guide/layout.tsx"),
     read("app/safety/layout.tsx"),
+    read("app/not-found.tsx"),
+    read("app/identity-preview/page.tsx"),
     read("public/ads.txt"),
   ]);
-  assert.match(layout, /hostname === "daigomatch\.com"/);
-  assert.match(layout, /hostname === "www\.daigomatch\.com"/);
-  assert.match(layout, /fifthMatchHost\s*\?\s*\{ "google-adsense-account"/);
-  assert.match(layout, /google-adsense-account/);
+  assert.doesNotMatch(layout, /google-adsense-account/);
+  assert.doesNotMatch(layout, /ca-pub-/);
   assert.doesNotMatch(layout, /pagead2\.googlesyndication\.com/);
   assert.match(loader, /hostname === "daigomatch\.com"/);
   assert.match(loader, /pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=/);
   assert.match(guideLayout, /AdSenseScript/);
+  assert.match(guideLayout, /google-adsense-account/);
   assert.match(safetyLayout, /AdSenseScript/);
+  assert.match(safetyLayout, /google-adsense-account/);
+  assert.doesNotMatch(notFound, /AdSense|ca-pub-|adsbygoogle/);
+  assert.doesNotMatch(fifthMatchPage, /AdSenseScript|ca-pub-|adsbygoogle/);
   assert.equal(ads.trim(), "google.com, pub-2909796543320281, DIRECT, f08c47fec0942fa0");
+});
+
+test("publishes at least twelve substantial Fifth Match guides with editorial context", async () => {
+  const [guides, article] = await Promise.all([
+    read("lib/shoenmate-guides.ts"),
+    read("app/guide/[slug]/page.tsx"),
+  ]);
+  assert.ok((guides.match(/slug:/g) || []).length >= 12);
+  assert.match(article, /第五マッチ編集部/);
+  assert.match(article, /最終更新/);
+  assert.match(article, /PRACTICAL EXAMPLE/);
+  assert.match(article, /EDITORIAL NOTE/);
 });
 
 test("shares Fifth Match with its own title, copy, and social card", async () => {
@@ -65,7 +81,7 @@ test("returns Fifth Match logins to daigomatch without changing provider callbac
   assert.match(loginRoute, /fifthMatchHosts/);
   assert.match(loginRoute, /\/api\/domain-auth-bridge/);
   assert.match(loginRoute, /https:\/\/yunamatch\.com/);
-  assert.match(loginRoute, /searchParams\.get\("service"\)===\"shoenmate\"/);
+  assert.match(loginRoute, /searchParams[.]get[(]"service"[)][=]{3}"shoenmate"/);
   assert.match(fifthMatchPage, /service=shoenmate/);
   assert.match(bridgeRoute, /ALLOWED_TARGETS/);
   assert.match(bridgeRoute, /encode\(/);

@@ -14,8 +14,6 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const adsensePublisherId = "ca-pub-2909796543320281";
-
 function isFifthMatchHost(host: string | null) {
   const hostname = (host ?? "").split(":")[0].toLowerCase();
   return hostname === "daigomatch.com" || hostname === "www.daigomatch.com";
@@ -48,9 +46,6 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     manifest:"/manifest.webmanifest",
     appleWebApp:{capable:true,statusBarStyle:"default",title:fifthMatchHost ? "第五マッチ" : "ユナマッチ"},
-    other: fifthMatchHost
-      ? { "google-adsense-account": adsensePublisherId }
-      : undefined,
     openGraph: { title, description, type: "website", url: fifthMatchHost ? "https://daigomatch.com/" : base, images: [{ url: socialImage, width: 1200, height: 630 }] },
     twitter: { card: "summary_large_image", title, description, images: [socialImage] },
   };

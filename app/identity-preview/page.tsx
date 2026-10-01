@@ -611,6 +611,7 @@ export default function IdentityPreview({
               </div>
               <div className={styles.discoverTools}>
                 {shoenmateDiscordUrl && <a className={styles.discordShortcut} href={shoenmateDiscordUrl} target="_blank" rel="noopener noreferrer" aria-label="第五マッチ公式Discordを開く"><b>D</b><span>Discord</span></a>}
+                <a className={styles.tutorialButton} href="/guide" aria-label="第五マッチの攻略・使い方ガイドを読む"><b>読</b><span>ガイド</span></a>
                 <button className={styles.tutorialButton} aria-label="第五マッチの使い方を見る" onClick={() => { setTutorialStep(0); tutorialDialog.current?.showModal(); }}><b>?</b><span>使い方</span></button>
                 <button className={styles.filterButton} aria-label="絞り込み" onClick={() => filterDialog.current?.showModal()}><Icon name="filter" /><span>絞り込み</span>{Object.values(filters).some(Boolean) && <i />}</button>
               </div>
